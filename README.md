@@ -17,6 +17,10 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
+## Architecture
+
+**Read [`docs/architecture.md`](docs/architecture.md) before changing code.** It defines the stat/modifier system, data schemas, the forge, performance budgets, and the milestone order (M0–M8).
+
 ## Layout
 
 ```
@@ -35,4 +39,4 @@ src/data/         (planned) data-driven weapons, upgrades, classes, enemies
 
 ## Status
 
-Scaffold only: canvas loop, joystick, and a placeholder player. Architecture plan comes next.
+M0 (scaffold) done. Next: M1, core runtime refactor. See the milestone table in `docs/architecture.md` §10.
