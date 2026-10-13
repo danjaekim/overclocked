@@ -1,5 +1,6 @@
 // Enemy definitions. Data only. `xp` and `ore` are used from M4/M6.
-// ai: 'chase' = walk straight at the player (boss AIs arrive with M7).
+// ai: 'chase' = walk straight at the player; 'boss_charge' = chase, then telegraph and dash.
+// boss: true marks the single big enemy tracked by run.boss (HUD bar, drops, titles).
 
 export const ENEMIES = {
   goblin: {
@@ -17,6 +18,16 @@ export const ENEMIES = {
     ore: { chance: 0.3, type: 'iron' },
     ai: 'chase',
     color: '#a64d79',
+  },
+  warlord: {
+    name: 'Warlord',
+    hp: 1800, speed: 52, damage: 25, radius: 34,
+    xp: 100,
+    ore: { chance: 1, type: 'starsteel', count: 2 },
+    ai: 'boss_charge',
+    boss: true,
+    charge: { every: 5, windup: 0.9, speed: 340, time: 0.7 },
+    color: '#c0392b',
   },
 };
 

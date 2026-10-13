@@ -5,8 +5,14 @@ import { SHRINE } from '../data/forge.js';
 
 // Candidate spots just past the left or right view edge (the view is tall and narrow).
 // The least crowded of several random candidates wins.
-export function spawnShrine(run, ttl = SHRINE.ttl) {
-  if (run.shrines.length >= SHRINE.maxActive) return null;
+// `at` ({x, y}) places it exactly (the boss shrine); `force` ignores maxActive.
+export function spawnShrine(run, ttl = SHRINE.ttl, at = null, force = false) {
+  if (!force && run.shrines.length >= SHRINE.maxActive) return null;
+  if (at) {
+    const s = { x: at.x, y: at.y, ttl, maxTtl: ttl, progress: 0 };
+    run.shrines.push(s);
+    return s;
+  }
   const pl = SHRINE.placement;
   const w = run.world;
   const p = run.player;

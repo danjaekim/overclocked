@@ -3,6 +3,8 @@
 
 import { ENHANCE, AFFIXES } from '../data/forge.js';
 import { RARITIES } from '../data/rarities.js';
+import { WEAPONS } from '../data/weapons.js';
+import { recipesFor, checklist, canEvolve, evolve } from '../game/evolution.js';
 import {
   enhance, enhanceCost, enhanceChance, canEnhance, downgradeChance,
   reforge, reforgeCost, canReforge, salvage, salvageValue, canSalvage,
@@ -37,6 +39,16 @@ export function showForge(overlays, run, { onDone }) {
       ? 'Sure?'
       : `Salvage<small>+${salvageValue(inst)} ore</small>`;
 
+    const evo = recipesFor(inst).map((r) => {
+      const list = checklist(run, inst, r);
+      const ready = canEvolve(run, inst, r);
+      return `<div class="fevo${ready ? ' ready' : ''}">
+        <div class="fevo-top"><b>Evolve: ${WEAPONS[r.into].name}</b></div>
+        <ul>${list.map((c) => `<li class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'} ${c.text}</li>`).join('')}</ul>
+        <button class="fbtn evo" data-act="evo:${inst.instanceId}:${r.id}" ${ready ? '' : 'disabled'}>Combine</button>
+      </div>`;
+    }).join('');
+
     return `<div class="fcard" style="--c:${color}">
       <div class="ftop"><b>${def.name}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
       <div class="faff">${affixes}</div>
@@ -46,6 +58,7 @@ export function showForge(overlays, run, { onDone }) {
         <button class="fbtn" data-act="ref:${inst.instanceId}" ${canReforge(run, inst) ? '' : 'disabled'}>Reforge<small>${reforgeCost(inst)} ore</small></button>
         <button class="fbtn${confirming === inst.instanceId ? ' warn' : ''}" data-act="sal:${inst.instanceId}" ${canSalvage(run) ? '' : 'disabled'}>${salLabel}</button>
       </div>
+      ${evo}
     </div>`;
   }
 
@@ -71,7 +84,7 @@ export function showForge(overlays, run, { onDone }) {
 
   function onAct(act) {
     if (act === 'done') return onDone();
-    const [kind, id] = act.split(':');
+    const [kind, id, extra] = act.split(':');
     const inst = find(id);
     if (!inst) return;
     if (kind !== 'sal') confirming = null;
@@ -82,6 +95,11 @@ export function showForge(overlays, run, { onDone }) {
     } else if (kind === 'ref') {
       const r = reforge(run, inst);
       message = r.ok ? `Reforged: ${r.affixes.map((a) => AFFIXES[a].name).join(', ') || 'nothing'}` : '';
+      tone = 'good';
+    } else if (kind === 'evo') {
+      const recipe = recipesFor(inst).find((r) => r.id === extra);
+      const r = recipe ? evolve(run, inst, recipe) : { ok: false };
+      message = r.ok ? `${r.into.name} forged!` : '';
       tone = 'good';
     } else if (kind === 'sal') {
       if (confirming !== inst.instanceId) {

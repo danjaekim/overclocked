@@ -26,6 +26,9 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1) {
   e.damage = def.damage;
   e.sx = e.sy = e.kx = e.ky = 0;
   e.flash = 0;
+  e.ai = 0;
+  e.aiT = 0;
+  e.aiCd = def.charge ? def.charge.every : 0;
   return e;
 }
 

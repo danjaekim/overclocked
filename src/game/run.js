@@ -35,6 +35,10 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
     bossAlive: false,
     pendingLevelUps: 0,
     ore: 0,                 // iron-equivalents, spent at the forge
+    starsteel: 0,           // rare ore from the boss, spent on evolutions
+    titles: [],             // earned titles { id, def, level: '' }
+    boss: null,
+    toast: null,            // { text, ttl }: a short banner under the timer
     shrines: [],            // active anvil shrines { x, y, ttl, maxTtl, progress }
     forgeReady: false,      // a shrine was channelled: game.js opens the forge next
     player: null,
@@ -60,6 +64,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
       updateShrines(run, dt);                                   // 7c shrine channel / expiry
       // 9 status effects (later)
       updateFx(run, dt);
+      if (run.toast && (run.toast.ttl -= dt) <= 0) run.toast = null;
 
       const cam = run.cam;
       cam.x = run.player.x;
@@ -115,6 +120,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
     // Debug: every weapon at max level, for performance and visual checks.
     debugLoadout() {
       for (const id of Object.keys(WEAPONS)) {
+        if (WEAPONS[id].pool === false) continue;             // evolved weapons come from the forge
         if (WEAPONS[id].class != null && WEAPONS[id].class !== run.player.classId) continue;
         if (!run.player.weapons.some((w) => w.weaponId === id)) addWeapon(run, id);
       }
@@ -129,13 +135,18 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
         `enemies ${w.enemies.count}  proj ${w.projectiles.count}  gems ${w.pickups.count}  fx ${w.fx.count}`,
         `hash max bucket ${w.hash.stats.maxBucket}  dmg dropped ${w.dmg.dropped}`,
         `hpScale ${run.director.hpScale.toFixed(2)}  seed ${run.seed}`,
+        `ore ${run.ore}  starsteel ${run.starsteel}  titles ${run.titles.map((t) => t.id).join(',') || '-'}`,
         `weapons: ${ws}`,
         `passives: ${ps || '-'}`,
       ];
     },
 
     summary() {
-      return { time: run.time, kills: run.kills, seed: run.seed, won: run.won };
+      return {
+        time: run.time, kills: run.kills, seed: run.seed, won: run.won,
+        level: run.player.level, titles: run.titles.map((t) => t.def.name),
+        weapons: run.player.weapons.map((w) => w.def.name),
+      };
     },
   };
 

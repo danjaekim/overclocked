@@ -15,6 +15,9 @@ function makeEnemy() {
     sx: 0, sy: 0,          // separation push (refreshed every other tick)
     kx: 0, ky: 0,          // knockback velocity, decays
     flash: 0,              // hit flash seconds left
+    ai: 0, aiT: 0,         // boss state machine: 0 chase, 1 windup, 2 dash; seconds left in it
+    ax: 0, ay: 0,          // boss dash direction
+    aiCd: 0,               // seconds until the next charge
   };
 }
 
@@ -28,7 +31,7 @@ function makeProjectile() {
 }
 
 function makePickup() {
-  return { kind: 0, x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore
+  return { kind: 0, ore: 'iron', x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore
 }
 
 function makeFx() {

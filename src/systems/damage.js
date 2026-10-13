@@ -3,6 +3,9 @@
 import { addDamageNumber, addPuff } from '../render/fx.js';
 import { spawnGem, spawnOre } from './pickups.js';
 import { fireTriggers } from '../game/triggers.js';
+import { onMilestone } from '../game/titles.js';
+import { spawnShrine } from './shrines.js';
+import { SHRINE } from '../data/forge.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -17,7 +20,15 @@ export function killEnemy(run, e) {
   if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
     spawnOre(run, e.x + 6, e.y - 4, ore.type, ore.count || 1);
   }
+  if (e.def.boss) {
+    run.bossAlive = false;
+    run.boss = null;
+    spawnShrine(run, SHRINE.bossShrineTtl, { x: e.x, y: e.y }, true);
+    run.toast = { text: `${e.def.name} slain!`, ttl: 3 };
+    onMilestone(run, 'boss', 1);
+  }
   run.world.enemies.release(e);
+  onMilestone(run, 'kills', run.kills);
 }
 
 // Step 8 of the tick: apply every queued hit.

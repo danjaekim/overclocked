@@ -8,6 +8,7 @@ import { param } from '../src/game/weapon-params.js';
 import { ENHANCE, REFORGE, AFFIXES, SHRINE } from '../src/data/forge.js';
 import { RUN, EVENTS } from '../src/data/waves.js';
 import { validateData } from '../src/data/validate.js';
+import { grantTitle } from '../src/game/titles.js';
 import { killEnemy } from '../src/systems/damage.js';
 import { spawnShrine, updateShrines } from '../src/systems/shrines.js';
 import { spawnOre, updatePickups } from '../src/systems/pickups.js';
@@ -76,12 +77,13 @@ test('enhance: breakpoint at +5 grants its bonus, and a weapon override replaces
   const ward = run3.player.weapons[1];
   run3.ore = 1e6;
   ward.enhance = 4;
+  grantTitle(run3, 'forgemaster', false);               // reaching +5 grants it; take it out of the comparison
   const area0 = run3.player.stats.getFor('area', ward.tags);
   const restore3 = scripted(run3, [0]);
   enhance(run3, ward);
   restore3();
   assert.equal(run3.player.stats.getFor('projectiles', ward.tags), 0, 'override: no projectile bonus');
-  approx(run3.player.stats.getFor('area', ward.tags), area0 * 1.25, 1e-6);
+  approx(run3.player.stats.getFor('area', ward.tags), area0 + 0.25, 1e-6);   // inc stacks additively
 });
 
 test('enhance failure never removes the weapon, whatever the roll or level', () => {

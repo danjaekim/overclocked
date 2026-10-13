@@ -6,13 +6,15 @@
 //   luck,
 //   weapons:  [{ weaponId, level, instanceId }],
 //   passives: [{ id, level }],
+//   titles:   [id],                (optional)
 // }
 //
 // An offer is { kind, id, name, rarity, toLevel, isNew, desc, instanceId? } with kind one of
-// 'weapon_new' | 'weapon_up' | 'passive_new' | 'passive_up' | 'heal'.
+// 'weapon_new' | 'weapon_up' | 'passive_new' | 'passive_up' | 'title_new' | 'heal'.
 
 import { WEAPONS } from '../data/weapons.js';
 import { PASSIVES } from '../data/passives.js';
+import { TITLES } from '../data/titles.js';
 import { RARITIES } from '../data/rarities.js';
 import { SLOTS, LEVELUP } from '../data/progression.js';
 
@@ -66,6 +68,14 @@ export function buildCandidates(state) {
         toLevel: 1, isNew: true, owned: false, desc: `${def.desc} ${def.levelText[0]}.`,
       });
     }
+  }
+  const ownedTitles = new Set(state.titles || []);
+  for (const [id, def] of Object.entries(TITLES)) {
+    if (def.grant.type !== 'offer' || ownedTitles.has(id)) continue;
+    out.push({
+      kind: 'title_new', id, name: def.name, rarity: def.rarity,
+      toLevel: 1, isNew: true, owned: false, desc: def.desc,
+    });
   }
   return out;
 }

@@ -50,6 +50,7 @@ await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'de
 await page.tap('[data-act=play]');
 await page.tap(`[data-act="class:${opt('--class', 'archer')}"]`);       // class select
 if (flag('--loadout')) await page.evaluate(() => window.__overforged.game.run.debugLoadout());
+if (flag('--boss')) await page.evaluate(() => { const o = window.__overforged; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
 if (flag('--forge')) {
   // drive the shrine -> forge -> back-to-battle flow
   await page.evaluate(() => {

@@ -12,6 +12,7 @@ import { showResults } from '../ui/results.js';
 import { showLevelUp } from '../ui/levelup.js';
 import { showForge } from '../ui/forge.js';
 import { spawnShrine } from '../systems/shrines.js';
+import { RUN_EVENTS } from './run-events.js';
 import { generateOffers } from './upgrades.js';
 import { offerState, applyOffer } from './apply-offer.js';
 import { xpToNext, gainXp } from './xp.js';
@@ -129,6 +130,8 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
       if (e.key === 'l' && game.state === 'run') gainXp(game.run, xpToNext(game.run.player.level));   // debug: level up
       if (e.key === 'o' && game.state === 'run') game.run.ore += 20;                                  // debug: +20 ore
       if (e.key === 'f' && game.state === 'run') spawnShrine(game.run);                               // debug: a shrine now
+      if (e.key === 'b' && game.state === 'run') RUN_EVENTS.boss(game.run, { enemy: 'warlord' });     // debug: the boss now
+      if (e.key === 'x' && game.state === 'run') game.run.starsteel += 2;                             // debug: +2 starsteel
     });
   }
 

@@ -1,3 +1,4 @@
+import { TITLES } from '../src/data/titles.js';
 import { test, assert, approx } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { createRng } from '../src/core/rng.js';
@@ -190,6 +191,7 @@ test('when everything is maxed the offer falls back to Rest', () => {
     weapons: Object.entries(WEAPONS)
       .filter(([, d]) => d.class == null || d.class === 'archer')
       .map(([id, d], i) => ({ weaponId: id, level: d.maxLevel, instanceId: i + 1 })),
+    titles: Object.keys(TITLES),
     passives: Object.entries(PASSIVES).map(([id, d]) => ({ id, level: d.maxLevel })),
   };
   const offers = generateOffers(st, createRng(1));

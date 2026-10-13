@@ -10,6 +10,7 @@
 import { ENHANCE, REFORGE, SALVAGE, AFFIXES } from '../data/forge.js';
 import { RARITIES } from '../data/rarities.js';
 import { CLASSES } from '../data/classes.js';
+import { onMilestone } from './titles.js';
 
 const enhSource = (inst, n) => `forge:${inst.instanceId}:enh:${n}:`;
 
@@ -51,6 +52,7 @@ export function enhance(run, inst) {
   if (run.rng.next() < enhanceChance(inst)) {
     inst.enhance++;
     addEnhanceMods(run, inst, inst.enhance);
+    onMilestone(run, 'enhance', inst.enhance);
     return { ok: true, outcome: 'success', cost, level: inst.enhance };
   }
   // failure: the ore is lost; above the threshold one enhance level may be lost too

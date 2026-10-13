@@ -49,12 +49,48 @@ export function drawHud(ctx, view, run) {
   // Ore (under the kills line)
   ctx.fillStyle = '#ffb45e';
   ctx.fillText('Ore ' + run.ore, 12 + 70, y0 + bh + 6);
+  if (run.starsteel > 0) {
+    ctx.fillStyle = '#7fe9ff';
+    ctx.fillText('Starsteel ' + run.starsteel, 12 + 130, y0 + bh + 6);
+  }
 
   drawShrineArrows(ctx, view, run);
 
   // Owned items: one row of weapon chips, one of passive chips (placeholders until art)
   drawChips(ctx, run.player.weapons, 12, y0 + bh + 26);
   drawChips(ctx, run.player.passives, 12, y0 + bh + 52);
+  drawChips(ctx, run.titles, 12, y0 + bh + 78);
+
+  // Boss bar (top-center, under the timer)
+  const boss = run.boss;
+  if (boss) {
+    const bwid = 190;
+    const bx0 = view.w / 2 + 28 - bwid / 2;
+    const by0 = y0 + 30;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(bx0, by0, bwid, 10);
+    ctx.fillStyle = '#c0392b';
+    ctx.fillRect(bx0, by0, bwid * Math.max(0, boss.hp / boss.maxHp), 10);
+    ctx.fillStyle = '#e8e6df';
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(boss.def.name, view.w / 2 + 28, by0 + 13);
+  }
+
+  // Toast banner
+  if (run.toast) {
+    ctx.globalAlpha = Math.min(1, run.toast.ttl * 2);
+    ctx.fillStyle = '#ffd34d';
+    ctx.font = '700 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = 4;
+    ctx.strokeText(run.toast.text, view.w / 2, view.insetTop + 76);
+    ctx.fillText(run.toast.text, view.w / 2, view.insetTop + 76);
+    ctx.globalAlpha = 1;
+  }
 
   // Pause button (top-right)
   const s = 30;

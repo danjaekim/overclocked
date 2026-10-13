@@ -15,6 +15,8 @@ import { RUN, WAVES, EVENTS } from './waves.js';
 import { RUN_EVENTS } from '../game/run-events.js';
 import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
 import { ORES } from './ores.js';
+import { EVOLUTIONS } from './evolutions.js';
+import { TITLES } from './titles.js';
 
 const OPS = new Set(['flat', 'inc', 'more', 'set']);
 // Events the dispatcher fires so far; the rest of the §4.6 list arrives with the systems that raise them.
@@ -115,6 +117,7 @@ export function validateData() {
   EVENTS.forEach((ev, i) => {
     const at = `event ${i}`;
     if (!RUN_EVENTS[ev.event]) problems.push(`${at}: unknown event "${ev.event}"`);
+    if (ev.event === 'boss' && !(ENEMIES[ev.enemy] && ENEMIES[ev.enemy].boss)) problems.push(`${at}: boss event needs an enemy with boss: true`);
     if (!(ev.at >= prev)) problems.push(`${at}: EVENTS must be sorted by "at"`);
     if (!(ev.at >= 0 && ev.at < RUN.designLength)) problems.push(`${at}: "at" must be within the run`);
     prev = ev.at;
@@ -140,6 +143,38 @@ export function validateData() {
     for (const t of a.triggers || []) {
       if (!EFFECTS[t.effect]) problems.push(`${at}: unknown effect "${t.effect}"`);
       if (t.on === 'interval') problems.push(`${at}: affix triggers can't be interval (no timer is kept)`);
+    }
+  }
+
+  for (const [id, e] of Object.entries(ENEMIES)) {
+    if (e.ai === 'boss_charge' && !(e.charge && e.charge.every > 0 && e.charge.windup > 0 && e.charge.speed > 0 && e.charge.time > 0)) {
+      problems.push(`enemy ${id}: boss_charge needs charge { every, windup, speed, time }`);
+    }
+  }
+
+  for (const [id, w] of Object.entries(WEAPONS)) {
+    if (w.evolvesInto && !WEAPONS[w.evolvesInto]) problems.push(`weapon ${id}: evolvesInto "${w.evolvesInto}" does not exist`);
+    if (w.rarity === 'evolved' && w.pool !== false) problems.push(`weapon ${id}: evolved weapons must set pool: false`);
+  }
+  for (const r of EVOLUTIONS) {
+    const at = `evolution ${r.id}`;
+    if (!WEAPONS[r.from]) problems.push(`${at}: unknown from weapon "${r.from}"`);
+    if (!WEAPONS[r.into]) problems.push(`${at}: unknown into weapon "${r.into}"`);
+    else if (WEAPONS[r.into].pool !== false) problems.push(`${at}: the evolved weapon must set pool: false`);
+    for (const q of r.requires) {
+      if (q.passive && !PASSIVES[q.passive]) problems.push(`${at}: unknown passive "${q.passive}"`);
+      if (q.title && !TITLES[q.title]) problems.push(`${at}: unknown title "${q.title}"`);
+      if (q.passive && q.minLevel > PASSIVES[q.passive].maxLevel) problems.push(`${at}: minLevel above the passive's maxLevel`);
+      if (q.weaponLevel > WEAPONS[r.from].maxLevel) problems.push(`${at}: weaponLevel above the weapon's maxLevel`);
+    }
+  }
+  for (const [id, t] of Object.entries(TITLES)) {
+    const at = `title ${id}`;
+    if (!RARITIES[t.rarity]) problems.push(`${at}: unknown rarity "${t.rarity}"`);
+    checkMods(t.mods, `${at} mods`, problems);
+    if (!['offer', 'milestone'].includes(t.grant && t.grant.type)) problems.push(`${at}: grant.type must be offer or milestone`);
+    if (t.grant.type === 'milestone' && !(t.grant.count > 0 && ['kills', 'enhance', 'boss'].includes(t.grant.event))) {
+      problems.push(`${at}: milestone needs an event (kills|enhance|boss) and a count`);
     }
   }
 

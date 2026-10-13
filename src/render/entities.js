@@ -36,7 +36,8 @@ export function drawGems(ctx, view, run) {
   }
 }
 
-// Ore: small squares, one fill.
+// Ore: small squares, one fill per ore type (starsteel is bigger and glows cyan).
+const ORE_IDS = Object.keys(ORES);
 export function drawOre(ctx, view, run) {
   const list = run.world.pickups.active;
   const cam = run.cam;
@@ -44,15 +45,17 @@ export function drawOre(ctx, view, run) {
   const x1 = cam.x + view.w / 2 + 10;
   const y0 = cam.y - view.h / 2 - 10;
   const y1 = cam.y + view.h / 2 + 10;
-  ctx.fillStyle = ORES.iron.color;
-  ctx.beginPath();
-  for (let i = 0; i < list.length; i++) {
-    const g = list[i];
-    if (g.kind !== KIND_ORE) continue;
-    if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
-    ctx.rect(g.x - g.r, g.y - g.r, g.r * 2, g.r * 2);
+  for (let t = 0; t < ORE_IDS.length; t++) {
+    ctx.fillStyle = ORES[ORE_IDS[t]].color;
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const g = list[i];
+      if (g.kind !== KIND_ORE || g.ore !== ORE_IDS[t]) continue;
+      if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+      ctx.rect(g.x - g.r, g.y - g.r, g.r * 2, g.r * 2);
+    }
+    ctx.fill();
   }
-  ctx.fill();
 }
 
 // Arrows: one stroked path for the whole batch.

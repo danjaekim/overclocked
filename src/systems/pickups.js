@@ -45,18 +45,24 @@ export function spawnGem(run, x, y, value) {
   return g;
 }
 
+function bankOre(run, type, amount) {
+  if (ORES[type].bank === 'starsteel') run.starsteel += amount;
+  else run.ore += amount;
+}
+
 // Ore never merges: if the pool is full it is banked directly so nothing is lost.
 export function spawnOre(run, x, y, type, amount = 1) {
   const o = ORES[type];
   const g = run.world.pickups.acquire();
   if (!g) {
-    run.ore += o.value * amount;
+    bankOre(run, type, amount);
     return null;
   }
   g.kind = KIND_ORE;
+  g.ore = type;
   g.x = x;
   g.y = y;
-  g.value = o.value * amount;
+  g.value = amount;
   g.r = o.r;
   g.magnet = false;
   g.speed = GEM.baseMagnet;
@@ -93,7 +99,7 @@ export function updatePickups(run, dt) {
 
     const rr = p.r + g.r;
     if (d2 <= rr * rr) {
-      if (g.kind === KIND_ORE) run.ore += g.value;
+      if (g.kind === KIND_ORE) bankOre(run, g.ore, g.value);
       else gainXp(run, g.value * xpGain);
       store.release(g);
     }

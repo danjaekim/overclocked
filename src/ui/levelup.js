@@ -9,6 +9,7 @@ const KIND_LABEL = {
   weapon_up: 'Weapon',
   passive_new: 'New passive',
   passive_up: 'Passive',
+  title_new: 'Title',
   heal: 'Recover',
 };
 

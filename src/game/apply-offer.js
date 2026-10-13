@@ -2,6 +2,7 @@
 
 import { addWeapon, levelUpWeapon } from './weapons.js';
 import { addPassive, findPassive, levelUpPassive } from './passives.js';
+import { grantTitle } from './titles.js';
 import { LEVELUP } from '../data/progression.js';
 
 // Snapshot of the player in the shape generateOffers() expects.
@@ -12,6 +13,7 @@ export function offerState(run) {
     luck: p.stats.get('luck'),
     weapons: p.weapons.map((w) => ({ weaponId: w.weaponId, level: w.level, instanceId: w.instanceId })),
     passives: p.passives.map((x) => ({ id: x.id, level: x.level })),
+    titles: run.titles.map((t) => t.id),
   };
 }
 
@@ -29,6 +31,9 @@ export function applyOffer(run, offer) {
       break;
     case 'passive_up':
       levelUpPassive(run, findPassive(p, offer.id));
+      break;
+    case 'title_new':
+      grantTitle(run, offer.id);
       break;
     case 'heal':
       p.hp = Math.min(p.maxHp, p.hp + p.maxHp * LEVELUP.healFraction);

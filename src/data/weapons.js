@@ -30,7 +30,7 @@ export const WEAPONS = {
     triggers: [
       { on: 'kill', chance: 0.15, effect: 'explode', params: { radius: 55, damageFrac: 0.5 }, minLevel: 5 },
     ],
-    evolvesInto: null,     // storm_volley arrives with evolutions (M7)
+    evolvesInto: 'storm_volley',
   },
 
   forge_hammer: {
@@ -56,7 +56,7 @@ export const WEAPONS = {
     triggers: [
       { on: 'interval', every: 12, effect: 'shield', params: { amount: 20 }, minLevel: 3 },   // lv3+: forge aegis
     ],
-    evolvesInto: null,
+    evolvesInto: 'colossus_maul',
   },
 
   spirit_blades: {
@@ -129,6 +129,58 @@ export const WEAPONS = {
     ],
     levelText: ['+25% damage', '+2 pierce', '-15% cooldown', '+1 javelin', '+30% damage', '+3 pierce', '30% more damage'],
     triggers: [],
+    evolvesInto: null,
+  },
+
+  // ---- evolved weapons (pool: false; reached only through the forge's Combine, data/evolutions.js)
+
+  storm_volley: {
+    name: 'Storm Volley',
+    desc: 'A fan of lightning-wreathed arrows that tears through the line.',
+    class: null,
+    pool: false,
+    glyph: 'V',
+    rarity: 'evolved',
+    tags: ['projectile', 'ranged', 'fire', 'lightning'],
+    behavior: 'projectile',
+    base: { damage: 15, cooldown: 0.75, speed: 620, count: 4, pierce: 3, spread: 0.16, ttl: 1.3, radius: 6, range: 440 },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'pierce', op: 'flat', value: 2 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '+1 arrow', '-15% cooldown', '+2 pierce', '30% more damage'],
+    triggers: [
+      { on: 'kill', chance: 0.2, effect: 'explode', params: { radius: 60, damageFrac: 0.6 } },
+    ],
+    evolvesInto: null,
+  },
+
+  colossus_maul: {
+    name: 'Colossus Maul',
+    desc: 'A huge maul that crushes everything in a wide arc and shields you as you fight.',
+    class: null,
+    pool: false,
+    glyph: 'M',
+    rarity: 'evolved',
+    tags: ['melee', 'arc', 'physical'],
+    behavior: 'arc',
+    base: { damage: 60, cooldown: 1.1, count: 1, range: 105, arcWidth: 2.4 },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.3 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'damage', op: 'more', value: 0.35 }],
+    ],
+    levelText: ['+30% damage', '+20% area', 'swings again behind you', '-15% cooldown', '35% more damage'],
+    triggers: [
+      { on: 'interval', every: 8, effect: 'shield', params: { amount: 30 } },
+    ],
     evolvesInto: null,
   },
 };

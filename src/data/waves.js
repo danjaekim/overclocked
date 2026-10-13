@@ -15,11 +15,12 @@ export const WAVES = [
   { from: 360, to: 600, spawns: [{ enemy: 'goblin', perSec: 4.8, perSecEnd: 6.5 }, { enemy: 'brute', perSec: 0.4, perSecEnd: 0.8 }], hpScale: 2.2 },
 ];
 
-// One-off events (the boss arrives in M7). `at` is authored against RUN.designLength and
+// One-off events. `at` is authored against RUN.designLength and
 // rescaled like segments. Shrines are how the player reaches the forge (docs §6.3).
 export const EVENTS = [
   { at: 120, event: 'shrine' },
   { at: 240, event: 'shrine' },
+  { at: 300, event: 'boss', enemy: 'warlord' },   // its death also drops a shrine
   { at: 390, event: 'shrine' },
   { at: 510, event: 'shrine' },
 ];

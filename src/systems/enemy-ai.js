@@ -9,6 +9,32 @@ const SEP_SPEED = 55;         // world units / second of push at full overlap
 const KNOCK_DECAY = 8;        // per second
 const tmp = { x: 0, y: 0 };
 
+const AI_CHASE = 0;
+const AI_WINDUP = 1;
+const AI_DASH = 2;
+
+// Boss charge: chase for `every` seconds, stand and flash for `windup` (aiming at where the
+// player is when it ends), then dash in a straight line. Returns the speed multiplier mode.
+function bossStep(e, p, dt) {
+  const c = e.def.charge;
+  if (e.ai === AI_CHASE) {
+    e.aiCd -= dt;
+    if (e.aiCd <= 0) { e.ai = AI_WINDUP; e.aiT = c.windup; }
+  } else if (e.ai === AI_WINDUP) {
+    e.aiT -= dt;
+    e.flash = 0.05;                                   // flicker white as the telegraph
+    const dx = p.x - e.x;
+    const dy = p.y - e.y;
+    const d = Math.hypot(dx, dy) || 1;
+    e.ax = dx / d;
+    e.ay = dy / d;
+    if (e.aiT <= 0) { e.ai = AI_DASH; e.aiT = c.time; }
+  } else {
+    e.aiT -= dt;
+    if (e.aiT <= 0) { e.ai = AI_CHASE; e.aiCd = c.every; }
+  }
+}
+
 export function updateEnemies(run, dt) {
   const w = run.world;
   const p = run.player;
@@ -54,10 +80,17 @@ export function updateEnemies(run, dt) {
       e.sy = py;
     }
 
+    if (e.def.charge) bossStep(e, p, dt);
     const d = Math.sqrt(d2);
     const inv = d > 1e-3 ? 1 / d : 0;
-    e.x += (dx * inv * e.speed + e.sx * SEP_SPEED + e.kx) * dt;
-    e.y += (dy * inv * e.speed + e.sy * SEP_SPEED + e.ky) * dt;
+    let vx = dx * inv * e.speed;
+    let vy = dy * inv * e.speed;
+    if (e.def.charge) {
+      if (e.ai === AI_WINDUP) { vx = 0; vy = 0; }
+      else if (e.ai === AI_DASH) { vx = e.ax * e.def.charge.speed; vy = e.ay * e.def.charge.speed; }
+    }
+    e.x += (vx + e.sx * SEP_SPEED + e.kx) * dt;
+    e.y += (vy + e.sy * SEP_SPEED + e.ky) * dt;
     e.kx *= decay;
     e.ky *= decay;
     if (e.flash > 0) e.flash -= dt;
