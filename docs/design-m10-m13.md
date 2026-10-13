@@ -15,7 +15,7 @@ Contents
 7. Forge choices: reforge pick-one, affix pool, tempers (M13)
 8. Fit with existing code, file by file
 9. Tests and bench additions
-10. Open questions for Dan
+10. Decisions
 
 ---
 
@@ -63,11 +63,10 @@ fire + storm = **Overload**, frost + storm = **Superconduct**. The forge theme n
 They're gated perks, not always-on rules, so the screen stays readable on a phone and mixing
 elements is a choice you make.
 
-**D. Resonance: owning several weapons with one tag gives a set bonus.** *(Optional, M11b,
+**D. Resonance: owning several weapons with one tag gives a set bonus.** *(Recommended, M11b,
 small.)* It's like Teamfight Tactics traits: 2 or 3 owned weapons sharing `fire`, `frost`, `storm`,
 `projectile` or `close` grant a bonus. It guides weapon picks without using any offer slots.
-It's cheap: recompute when weapons change or are infused. Skip it if the screen feels busy after
-M11a.
+It's cheap: recompute when weapons change or are infused.
 
 **What I'd not do:** always-on elemental reactions (too much to read at 300 enemies); resistances
 or immune enemies (frustrating with random offers); a fourth physical status like bleed (crit and
@@ -82,7 +81,7 @@ the first 12 work.
 |---|---|---|
 | **M10** | Status layer (burn, chill/freeze, shock + chain), unified hit resolution, target stats, elemental identity for existing weapons, new frost weapon **Rime Shards** (`nova` behavior), the `close` tag. | one session |
 | **M11a** | Perk engine: schema, `requires`, offers (first-card rule, affinity), HUD/levelup display. The 12 non-payoff perks (enablers, amplifiers, projectile, close, crit). Ricochet and split in the projectile pipeline. | one session |
-| **M11b** | Payoff rules: Wildfire, Shatter, Thunderclap, Quench, Overload, Superconduct, Headsman (via `executeBelow`). Bloodletting. Optional Resonance. | one session |
+| **M11b** | Payoff rules: Wildfire, Shatter, Thunderclap, Quench, Overload, Superconduct, Headsman (via `executeBelow`). Bloodletting. Resonance. | one session |
 | **M12** | Elites (3 affixes), chests (1/3/5 rolls, evolution bias, chest-evolve jackpot), treasure overlay. | one session |
 | **M13** | Forge choices: reforge one slot and pick 1 of 3, expanded affix pool with infusion tags, tempers at +5/+10. | one session |
 
@@ -249,7 +248,8 @@ elite, eliteAffix, lastHitT`.
 `enemy-ai.js` multiplies speed by `e.slowMul`, and frozen enemies don't move (knockback still
 applies). The boss's charge timers pause while it's slowed past 50%. It can't freeze.
 
-**Rendering.** After the enemy batch, a second pass draws status rings: one `beginPath` per status
+**Rendering.** Rings go on **every** enemy (Dan's call; revisit if it gets busy or costs frames at
+300+ enemies). After the enemy batch, a second pass draws status rings: one `beginPath` per status
 color (orange burning, blue chilled, white-filled frozen, yellow shocked). That's at most 4 extra
 fills, culled the same way as the main batch. Chain arcs are a new fx kind, a jagged line with
 ttl 0.12 s, in the existing fx pool.
@@ -376,7 +376,7 @@ That's 21 perks and 57 perk levels. A run gets about 25 level-ups, and with the 
 roughly 8–12 go to perks. So a run can max one or two lines and dip into a payoff, which forces a
 direction. That's the point.
 
-### 4.4 Resonance (optional, M11b)
+### 4.4 Resonance (M11b)
 
 `game/resonance.js` recomputes when weapons are added, evolved or infused. It counts owned instances
 per tag and installs modifiers with source `resonance:` (removed and re-added each time).
@@ -465,9 +465,15 @@ export function rollChest(state, rng, tier) -> { count, rolls: [{ kind, id, inst
 - The **first elite chest of a run is at least 3**, so new players see the jackpot early.
 
 **Each roll**
-- Picks one *upgrade of something owned*: `weapon_up`, `passive_up` or `perk_up`. Chests deepen a
-  build; they never add new items. That's the VS rule, and it keeps chests from undoing a
-  deliberate build.
+- Picks one *upgrade of something owned*: `weapon_up`, `passive_up` or `perk_up`. Chests mostly
+  deepen a build, so a chest rarely undoes a deliberate one.
+- **New-weapon roll (5-roll chests only).** If a weapon slot is free, each roll after the first
+  has a **12% chance** to be a `weapon_new` instead. At most one per chest, so a 5-roll chest
+  gives a new weapon about 40% of the time (1 − 0.88⁴). The weapon is drawn like a level-up
+  offer: class filter, rarity weights, luck, banishes respected, and ×1.5 if it shares an element
+  tag with an owned weapon (so it tends to feed resonance). It arrives at level 1, and later rolls
+  in the same chest can level it. **[playtest]**: if it feels like too much, lower the 12%; if it
+  never feels like it happens, raise it or allow it on 3-roll chests.
 - Rolls are sequential on a copy of the state, so the same item can be rolled twice and maxed items
   drop out.
 - Weights: weapon_up 1.5, passive_up 1.0, perk_up 1.0, **×3 if the item blocks an available
@@ -496,6 +502,8 @@ Tests:
 - Blocked-evolution items are picked about 3× as often.
 - The jackpot fires only when the checklist is fully met, and spends starsteel.
 - The first elite chest is never 1.
+- Never more than one new weapon per chest; none when weapon slots are full; never on 1- or
+  3-roll chests.
 
 ---
 
@@ -613,7 +621,7 @@ choice again. Tempers are what make two Ember Bows in two runs feel like differe
 - `systems/status.js`: `onStatusDeath` (Wildfire, Shatter, Thunderclap), alloy hooks inside
   `applyStatus` (Quench) and `chainArc` (Overload). `game/hit.js`: Superconduct in the crit roll.
   `damage.js`: execute.
-- `game/resonance.js` (optional), plus a HUD chip.
+- `game/resonance.js`, plus a HUD chip.
 
 **M12**
 - `data/elites.js` (new). `data/waves.js`: `elite` events. `director.js`: spawn an elite (flag,
@@ -657,12 +665,10 @@ choice again. Tempers are what make two Ember Bows in two runs feel like differe
 
 ---
 
-## 10. Open questions for Dan
+## 10. Decisions (Dan, 2026-10-13)
 
-1. **Tempers (§7.3):** in or out? This is the idea I'd most like you to try. It's the most
-   "Overforged" thing in this spec.
-2. **Resonance (§4.4):** include in M11b, or wait to see how busy the screen gets?
-3. **Chests never add new items** (only upgrades). That's the VS rule. Would you rather a 5-roll
-   chest sometimes offers a new weapon?
-4. **Status visuals:** colored rings are cheap and readable. Do you want them on every enemy, or
-   only on elites and the boss when there are 300+ on screen?
+1. **Tempers:** in (M13).
+2. **Infusion, alloys:** in (M13, M11b).
+3. **Resonance:** in (M11b).
+4. **Chests:** favour upgrades; 5-roll chests can include one new weapon (§6.2).
+5. **Status visuals:** rings on every enemy to start; adjust if they get busy or cost frames.
