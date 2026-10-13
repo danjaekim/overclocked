@@ -207,15 +207,6 @@
     });
     // Startup watchdog: main.js sets window.__overforged when it has booted. If it has not within a
     // few seconds (a module failed to load or parse, a stale cache), say so and offer a clean reload.
-    // The old service worker is retired; drop any registration and cache an earlier visit left behind.
-    try {
-      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-        navigator.serviceWorker.getRegistrations().then(function (rs) {
-          rs.forEach(function (r) { r.unregister(); });
-          if (rs.length && window.caches) caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
-        }).catch(function () {});
-      }
-    } catch (e) {}
     function bootReport(msg) {
       var el = document.getElementById('boot-error');
       el.style.display = 'block';

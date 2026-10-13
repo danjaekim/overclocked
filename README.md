@@ -47,7 +47,7 @@ src/systems/      per-tick systems: enemy AI, movement, collision, damage
 src/render/       view, renderer, entities, fx, HUD
 src/save/         versioned localStorage save (bests, unlocks, settings)
 src/audio/        synthesized sound blips
-icons/, manifest.webmanifest, sw.js   PWA files; sw.js is a retired self-unregistering stub (icons made by tools/make-icons.py)
+icons/, manifest.webmanifest, sw.js   PWA files; sw.js gives offline play (icons made by tools/make-icons.py)
 src/ui/           DOM overlays: title, class select, level-up, forge, pause, results, rotate prompt
 src/input/        joystick + keyboard
 src/data/         ALL content as data: weapons, classes, enemies, waves, validation
