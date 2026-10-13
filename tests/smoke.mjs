@@ -50,6 +50,24 @@ page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) errors.
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
 await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1')}`);
+if (flag('--guide')) {                                           // the compendium, from the title screen
+  await page.tap('[data-act=guide]');
+  await page.waitForSelector('.overlay.compendium');
+  const shotG = (n) => opt('--shot') && page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${n}.png`) });
+  await shotG('guide-weapons');
+  await page.tap('[data-act="cf:element:fire"]');
+  console.log('fire weapons:', await page.locator('.centry').count());
+  await page.tap('.centry >> nth=0');
+  await shotG('guide-open');
+  await page.tap('[data-act="ct:techniques"]');
+  await page.fill('.csearch', 'chain');
+  console.log('techniques matching chain:', await page.locator('.centry').count());
+  await shotG('guide-search');
+  await page.tap('[data-act="ct:builds"]');
+  await shotG('guide-builds');
+  await page.tap('[data-act=close]');
+  await page.waitForSelector('[data-act=play]');
+}
 await page.tap('[data-act=play]');
 if (flag('--ui') && opt('--shot')) {
   const shot = (name) => page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${name}.png`) });

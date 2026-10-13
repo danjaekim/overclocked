@@ -65,6 +65,25 @@
     .overlay.levelup { justify-content: center; gap: 10px; }
     .overlay.levelup h2 { margin: 0; color: var(--ember); }
     .overlay.levelup .sub { margin: 0 0 8px; }
+    .overlay.compendium { background: rgba(10, 11, 16, 0.97); justify-content: flex-start; gap: 8px; padding-top: calc(env(safe-area-inset-top) + 18px); }
+    .overlay.compendium h2 { margin: 0; color: var(--ember); }
+    .ctabs { display: flex; gap: 6px; width: 100%; max-width: 400px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .ctab { flex: none; min-height: 40px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 600; color: var(--dim); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; touch-action: manipulation; }
+    .ctab.on { color: #1a1205; background: var(--ember); border-color: var(--ember); }
+    .csearch { width: 100%; max-width: 400px; min-height: 42px; box-sizing: border-box; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; }
+    .cfacets { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 4px; }
+    .cfacet { display: flex; gap: 6px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cfacet > span { flex: none; width: 52px; text-align: left; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+    .cchip { flex: none; min-height: 34px; padding: 0 11px; font: inherit; font-size: 13px; color: var(--ink); background: #171923; border: 1px solid #2a2d3b; border-radius: 999px; touch-action: manipulation; }
+    .cchip.on { background: #e8e6df; color: #14161d; border-color: #e8e6df; }
+    .cchip.el { border-color: var(--e); } .cchip.el.on { background: var(--e); color: #14161d; }
+    .clist { flex: 1; width: 100%; max-width: 400px; overflow-y: auto; text-align: left; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; }
+    .centry { display: block; text-align: left; font: inherit; color: var(--ink); background: var(--panel); border: 0; border-left: 4px solid var(--c, #2c2f3d); border-radius: 8px; padding: 8px 10px; touch-action: manipulation; }
+    .centry .btop em { display: flex; align-items: center; gap: 4px; }
+    .cdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+    .ccat { display: block; font-size: 11px; color: var(--dim); }
+    .cbody p { margin: 4px 0 0; font-size: 13px; line-height: 1.35; color: #cfd0d8; }
+    .cbody .cbuilds { color: var(--ember); }
     .overlay.build { background: rgba(10, 11, 16, 0.97); justify-content: flex-start; gap: 8px; padding-top: calc(env(safe-area-inset-top) + 24px); }
     .overlay.build h2 { margin: 0; color: var(--ember); }
     .build-wrap { flex: 1; width: 100%; max-width: 400px; overflow-y: auto; text-align: left; -webkit-overflow-scrolling: touch; }

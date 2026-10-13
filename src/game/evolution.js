@@ -28,7 +28,7 @@ export function pair(run, recipe) {
   return { a, b };
 }
 
-function describe(req, recipe) {
+export function describe(req, recipe) {
   if (req.weaponLevel !== undefined) {
     return recipe && recipe.with ? `${WEAPONS[recipe.from].name} and ${WEAPONS[recipe.with].name} at level ${req.weaponLevel}` : `Weapon level ${req.weaponLevel}`;
   }

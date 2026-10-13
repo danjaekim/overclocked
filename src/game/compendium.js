@@ -1,0 +1,199 @@
+// The compendium's data model (M16): every weapon, evolution, technique, passive, forge effect and
+// build, generated from the data files so the guide can never drift from the game. Pure functions,
+// no DOM; ui/compendium.js renders them.
+//
+// An entry: { tab, id, name, glyph, rarity, elements[], cat, classes[], summary, lines[], builds[], text }
+//   elements  subset of fire / frost / storm (empty = neutral)    cat  a facet value within the tab
+//   lines     detail rows shown when the entry is opened          builds  names of builds that use it
+
+import { WEAPONS } from '../data/weapons.js';
+import { PERKS } from '../data/perks.js';
+import { PASSIVES } from '../data/passives.js';
+import { EVOLUTIONS } from '../data/evolutions.js';
+import { AFFIXES, ENHANCE } from '../data/forge.js';
+import { RESONANCE } from '../data/resonance.js';
+import { CLASSES } from '../data/classes.js';
+import { BUILDS } from '../data/builds.js';
+import { RARITIES } from '../data/rarities.js';
+import { describe as describeReq } from './evolution.js';
+
+export const ELEMENTS = ['fire', 'frost', 'storm'];
+export const TABS = [
+  { id: 'weapons', label: 'Weapons' },
+  { id: 'evolve', label: 'Evolve' },
+  { id: 'techniques', label: 'Techniques' },
+  { id: 'passives', label: 'Passives' },
+  { id: 'forge', label: 'Forge' },
+  { id: 'builds', label: 'Builds' },
+];
+
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const elementsOf = (tags) => ELEMENTS.filter((e) => tags.includes(e));
+const ENABLER = { kindling: 'fire', frostbite: 'frost', static_charge: 'storm' };
+
+// 'tag:fire' -> "a Fire weapon", 'perk:kindling:2' -> "Kindling 2", 'class:berserker' -> "the Berserker class"
+function requireText(token) {
+  const [kind, id, lvl] = token.split(':');
+  if (kind === 'tag') return ELEMENTS.includes(id) ? `a ${cap(id)} weapon` : `a ${id} weapon`;
+  if (kind === 'perk') return `${PERKS[id].name}${lvl ? ` ${lvl}` : ''}`;
+  if (kind === 'class') return `the ${CLASSES[id].name} class`;
+  return token;
+}
+export function requiresText(requires) {
+  if (!requires || requires.length === 0) return 'Always available';
+  return requires.map((any) => any.map(requireText).join(' or ')).join(', and ');
+}
+
+function perkElements(id, def) {
+  const out = new Set();
+  if (ENABLER[id]) out.add(ENABLER[id]);
+  for (const t of def.affinity || []) if (ELEMENTS.includes(t)) out.add(t);
+  for (const any of def.requires || []) for (const tok of any) {
+    const [kind, v] = tok.split(':');
+    if (kind === 'tag' && ELEMENTS.includes(v)) out.add(v);
+    if (kind === 'perk' && ENABLER[v]) out.add(ENABLER[v]);
+  }
+  return ELEMENTS.filter((e) => out.has(e));
+}
+
+export function perkCategory(id, def) {
+  if (def.rarity === 'epic') return 'Alloy';
+  if (id === 'headsman') return 'Execute';
+  if (def.rule) return 'Payoff';
+  if (ENABLER[id]) return 'Enabler';
+  if ((def.requires || []).some((any) => any.some((t) => t === 'tag:projectile'))) return 'Projectile';
+  if ((def.requires || []).some((any) => any.some((t) => t === 'tag:close' || t === 'tag:arc'))) return 'Close range';
+  if (perkElements(id, def).length) return 'Amplifier';
+  return 'General';
+}
+
+function recipeLines(recipe) {
+  return recipe.requires.map((r) => describeReq(r, recipe));
+}
+
+function weaponEntry(id, def, buildsFor) {
+  const evolved = def.pool === false;
+  const lines = [def.desc];
+  for (const r of EVOLUTIONS.filter((x) => x.into === id)) {
+    lines.push(r.with
+      ? `Made by fusing ${WEAPONS[r.from].name} with ${WEAPONS[r.with].name}: ${recipeLines(r).join(', ')}.`
+      : `Made by evolving ${WEAPONS[r.from].name}: ${recipeLines(r).join(', ')}.`);
+  }
+  def.levelText.forEach((t, i) => lines.push(`Level ${i + 2}: ${t}`));
+  if (def.baseMods && def.baseMods.length) lines.push('Comes with a built-in elemental effect.');
+  for (const r of EVOLUTIONS.filter((x) => x.from === id || x.with === id)) {
+    const into = WEAPONS[r.into].name;
+    lines.push(r.with
+      ? `Fuses with ${WEAPONS[r.with === id ? r.from : r.with].name} into ${into}: ${recipeLines(r).join(', ')}.`
+      : `Evolves into ${into}: ${recipeLines(r).join(', ')}.`);
+  }
+  if (def.forge && def.forge.tempers) {
+    for (const lvl of Object.keys(def.forge.tempers)) lines.push(`+${lvl} temper: ${def.forge.tempers[lvl].map((t) => t.name).join(' or ')}.`);
+  }
+  const classes = def.class ? [def.class] : [];
+  return {
+    tab: evolved ? 'evolve' : 'weapons', id, name: def.name, glyph: def.glyph, rarity: def.rarity,
+    elements: elementsOf(def.tags),
+    cat: def.tags.includes('close') ? 'Close range' : def.behavior === 'summon' ? 'Summon' : 'Ranged',
+    classes, summary: def.desc, lines, builds: buildsFor('weapon', id),
+  };
+}
+
+export function buildEntries() {
+  const buildsFor = (kind, id) => BUILDS.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
+  const out = [];
+
+  for (const [id, def] of Object.entries(WEAPONS)) out.push(weaponEntry(id, def, buildsFor));
+
+  for (const [id, def] of Object.entries(PERKS)) {
+    const lines = [def.desc, `Offered when: ${requiresText(def.requires)}.`];
+    def.levelText.forEach((t, i) => lines.push(`Level ${i + 1}: ${t}`));
+    out.push({
+      tab: 'techniques', id, name: def.name, glyph: def.glyph, rarity: def.rarity,
+      elements: perkElements(id, def), cat: perkCategory(id, def), classes: [],
+      summary: def.desc, lines, builds: buildsFor('perk', id),
+    });
+  }
+
+  for (const [id, def] of Object.entries(PASSIVES)) {
+    const lines = [def.desc];
+    def.levelText.forEach((t, i) => lines.push(`Level ${i + 1}: ${t}`));
+    const evo = EVOLUTIONS.filter((r) => r.requires.some((q) => q.passive === id));
+    for (const r of evo) lines.push(`Needed to evolve ${WEAPONS[r.from].name}.`);
+    out.push({
+      tab: 'passives', id, name: def.name, glyph: def.glyph || def.name[0], rarity: def.rarity,
+      elements: [], cat: cap(def.tags[0] || 'general'), classes: [], summary: def.desc, lines, builds: [],
+    });
+  }
+
+  for (const [id, a] of Object.entries(AFFIXES)) {
+    out.push({
+      tab: 'forge', id: `affix:${id}`, name: a.name, glyph: a.infusion ? '✦' : '◆', rarity: a.rarity,
+      elements: elementsOf(a.addTags || []), cat: a.infusion ? 'Infusion' : 'Effect', classes: [],
+      summary: a.desc,
+      lines: [a.desc, a.requires ? `Only on ${a.requires.map(cap).join(', ')} weapons.` : 'Any weapon.', 'Rolled by reforging a weapon: you see three and pick one.'], builds: [],
+    });
+  }
+  for (const lvl of Object.keys(ENHANCE.tempers)) {
+    for (const t of ENHANCE.tempers[lvl]) {
+      out.push({
+        tab: 'forge', id: `temper:${lvl}:${t.id}`, name: t.name, glyph: '+', rarity: 'rare', elements: elementsOf(t.addTags || []),
+        cat: 'Temper', classes: [], summary: `+${lvl} temper: ${t.desc}`,
+        lines: [`Offered at +${lvl}: ${t.desc}`, 'Most weapons have their own pair of tempers; these are the defaults.'], builds: [],
+      });
+    }
+  }
+  for (const [id, r] of Object.entries(RESONANCE)) {
+    out.push({
+      tab: 'forge', id: `resonance:${id}`, name: `${r.name} resonance`, glyph: '≈', rarity: 'epic', elements: ELEMENTS.includes(id) ? [id] : [],
+      cat: 'Resonance', classes: [], summary: `Own ${r.tiers.length === 2 ? '2 or 3' : 'several'} ${id} weapons: ${r.text.join('; then ')}.`,
+      lines: [`Two ${id} weapons: ${r.text[0]}.`, `Three: ${r.text[1]}.`, 'Infusions and tempers count, so any weapon can join a set.'], builds: [],
+    });
+  }
+
+  for (const b of BUILDS) {
+    const parts = [...b.weapons.map((w) => WEAPONS[w].name), ...b.perks.map((p) => PERKS[p].name)];
+    const els = new Set();
+    for (const w of b.weapons) elementsOf(WEAPONS[w].tags).forEach((e) => els.add(e));
+    for (const p of b.perks) perkElements(p, PERKS[p]).forEach((e) => els.add(e));
+    out.push({
+      tab: 'builds', id: `build:${b.id}`, name: b.name, glyph: b.name[0], rarity: 'rare', elements: ELEMENTS.filter((e) => els.has(e)),
+      cat: CLASSES[b.cls].name, classes: [b.cls], summary: b.idea,
+      lines: [b.idea, `Weapons: ${b.weapons.map((w) => WEAPONS[w].name).join(', ')}.`, `Techniques: ${b.perks.map((p) => PERKS[p].name).join(', ')}.`, b.tips],
+      builds: [], parts,
+    });
+  }
+
+  for (const e of out) e.text = `${e.name} ${e.summary} ${e.cat} ${e.elements.join(' ')} ${(e.parts || []).join(' ')}`.toLowerCase();
+  return out;
+}
+
+// Facets available on each tab (the UI offers one row of chips per facet).
+export function facetsFor(tab, entries) {
+  const list = entries.filter((e) => e.tab === tab);
+  const uniq = (f) => [...new Set(list.flatMap(f))];
+  const facets = [];
+  if (['weapons', 'evolve', 'techniques', 'forge', 'builds'].includes(tab)) {
+    const els = uniq((e) => e.elements);
+    if (els.length) facets.push({ key: 'element', label: 'Element', options: ELEMENTS.filter((e) => els.includes(e)) });
+  }
+  const cats = uniq((e) => [e.cat]);
+  if (cats.length > 1) facets.push({ key: 'cat', label: tab === 'builds' ? 'Class' : 'Type', options: cats });
+  if (['weapons', 'evolve'].includes(tab)) {
+    const cls = uniq((e) => e.classes);
+    if (cls.length) facets.push({ key: 'cls', label: 'Class', options: cls });
+  }
+  const rar = Object.keys(RARITIES).filter((r) => list.some((e) => e.rarity === r));
+  if (rar.length > 1 && tab !== 'builds') facets.push({ key: 'rarity', label: 'Rarity', options: rar });
+  return facets;
+}
+
+export function filterEntries(entries, { tab, element, cat, cls, rarity, q } = {}) {
+  const needle = (q || '').trim().toLowerCase();
+  return entries.filter((e) => e.tab === tab
+    && (!element || e.elements.includes(element))
+    && (!cat || e.cat === cat)
+    && (!cls || e.classes.includes(cls))
+    && (!rarity || e.rarity === rarity)
+    && (!needle || e.text.includes(needle)));
+}

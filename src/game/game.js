@@ -9,6 +9,7 @@ import { showClassSelect } from '../ui/class-select.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { showPause } from '../ui/pause.js';
 import { showBuild, buildHtml, ownedLine } from '../ui/build.js';
+import { showCompendium } from '../ui/compendium.js';
 import { showResults } from '../ui/results.js';
 import { showLevelUp } from '../ui/levelup.js';
 import { showForge } from '../ui/forge.js';
@@ -45,6 +46,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     game.run = null;
     showTitle(overlays, {
       onPlay: params.classId ? () => startRun() : toClassSelect,
+      onCompendium: () => showCompendium(overlays, { onClose: toTitle }),
       onToggleSound: () => toggleSound(toTitle),
       sound: save.data.sound,
       bests: save.data.bests,
@@ -79,6 +81,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const show = () => showPause(overlays, {
       onResume: resume,
       onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
+      onCompendium: () => showCompendium(overlays, { onClose: show }),
       onQuit: toTitle,
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,

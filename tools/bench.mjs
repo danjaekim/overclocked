@@ -19,6 +19,7 @@ import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { WAVES } from '../src/data/waves.js';
+import { BUILDS as SHARED_BUILDS } from '../src/data/builds.js';
 import { CLASSES } from '../src/data/classes.js';
 import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
@@ -176,16 +177,17 @@ function playBot(classId, seed) {
 
 const BUILDS = [
   { id: 'baseline-archer', cls: 'archer', weapons: ['ember_bow'], perks: [] },
-  { id: 'wildfire', cls: 'archer', weapons: ['ember_bow', 'cinder_ward'], perks: ['kindling', 'fan_the_flames', 'wildfire', 'volley'] },
-  { id: 'storm chain', cls: 'archer', weapons: ['ember_bow', 'storm_javelin'], perks: ['static_charge', 'arc_conductor', 'thunderclap', 'ricochet'] },
-  { id: 'splinter volley', cls: 'archer', weapons: ['ember_bow'], perks: ['ricochet', 'splitting_tips', 'volley', 'heavy_fletching', 'keen_eye'] },
-  { id: 'superconductor', cls: 'archer', weapons: ['ember_bow', 'rime_shards', 'storm_javelin'], perks: ['frostbite', 'static_charge', 'superconduct', 'keen_eye', 'headsman'] },
-  { id: 'overload', cls: 'archer', weapons: ['ember_bow', 'storm_javelin', 'cinder_ward'], perks: ['kindling', 'arc_conductor', 'overload', 'fan_the_flames'] },
+  ...SHARED_BUILDS.filter((b) => b.bench && ['archer'].includes(b.cls)),
   { id: 'baseline-smith', cls: 'smith', weapons: ['forge_hammer'], perks: [] },
-  { id: 'glacier', cls: 'smith', weapons: ['forge_hammer', 'rime_shards'], perks: ['frostbite', 'deep_freeze', 'shatter', 'long_reach'] },
-  { id: 'steam engine', cls: 'smith', weapons: ['forge_hammer', 'cinder_ward', 'rime_shards'], perks: ['kindling', 'frostbite', 'quench', 'long_reach'] },
+  ...SHARED_BUILDS.filter((b) => b.bench && b.cls === 'smith'),
   { id: 'baseline-berserker', cls: 'berserker', weapons: ['rending_axe'], perks: [] },
-  { id: 'reaper', cls: 'berserker', weapons: ['rending_axe', 'spirit_blades'], perks: ['echo_strike', 'long_reach', 'bloodletting', 'keen_eye', 'headsman'] },
+  ...SHARED_BUILDS.filter((b) => b.bench && b.cls === 'berserker'),
+  { id: 'baseline-mage', cls: 'mage', weapons: ['arc_bolt'], perks: [] },
+  ...SHARED_BUILDS.filter((b) => b.bench && b.cls === 'mage'),
+  { id: 'baseline-summoner', cls: 'summoner', weapons: ['bone_call'], perks: [] },
+  ...SHARED_BUILDS.filter((b) => b.bench && b.cls === 'summoner'),
+  { id: 'baseline-saint', cls: 'saint', weapons: ['halo'], perks: [] },
+  ...SHARED_BUILDS.filter((b) => b.bench && b.cls === 'saint'),
 ];
 
 function buildRun(b, seed = 1) {
