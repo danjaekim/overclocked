@@ -30,18 +30,21 @@ export function createDebug(params) {
     simMs: 0,
     renderMs: 0,
     worstFrameMs: 0,
+    spikes: 0,          // frames whose real interval exceeded 20 ms
+    lastSpikeMs: 0,
     onFrameStats(dtReal, simMs, renderMs, frameMs) {
       const a = 0.05;
       dbg.fps += ((dtReal > 0 ? 1 / dtReal : 60) - dbg.fps) * a;
       dbg.simMs += (simMs - dbg.simMs) * a;
       dbg.renderMs += (renderMs - dbg.renderMs) * a;
+      if (dtReal > 0.020) { dbg.spikes++; dbg.lastSpikeMs = dtReal * 1000; }
       dbg.worstFrameMs = Math.max(dbg.worstFrameMs * 0.98, frameMs);
     },
     draw(ctx, view, run, extraLines) {
       if (!dbg.enabled) return;
       const lines = [
         `fps ${dbg.fps.toFixed(0)}  sim ${dbg.simMs.toFixed(1)}ms  draw ${dbg.renderMs.toFixed(1)}ms`,
-        `worst frame ${dbg.worstFrameMs.toFixed(1)}ms  view ${view.w}x${view.h.toFixed(0)}`,
+        `spikes ${dbg.spikes} (last ${dbg.lastSpikeMs.toFixed(0)}ms)  work ${dbg.worstFrameMs.toFixed(1)}ms  view ${view.w}x${view.h.toFixed(0)}`,
       ];
       if (run && run.debugLines) lines.push(...run.debugLines());
       if (extraLines) lines.push(...extraLines);

@@ -9,10 +9,10 @@ export const RUN = {
 
 // perSec may ramp to perSecEnd across the segment. hpScale multiplies enemy hp.
 export const WAVES = [
-  { from: 0,   to: 60,  spawns: [{ enemy: 'goblin', perSec: 1.5, perSecEnd: 3 }], hpScale: 1.0 },
-  { from: 60,  to: 180, spawns: [{ enemy: 'goblin', perSec: 4 }, { enemy: 'brute', perSec: 0.2 }], hpScale: 1.2 },
-  { from: 180, to: 360, spawns: [{ enemy: 'goblin', perSec: 6 }, { enemy: 'brute', perSec: 0.5 }], hpScale: 1.6 },
-  { from: 360, to: 600, spawns: [{ enemy: 'goblin', perSec: 8 }, { enemy: 'brute', perSec: 1.0 }], hpScale: 2.2 },
+  { from: 0,   to: 60,  spawns: [{ enemy: 'goblin', perSec: 1.2, perSecEnd: 2.2 }], hpScale: 1.0 },
+  { from: 60,  to: 180, spawns: [{ enemy: 'goblin', perSec: 2.2, perSecEnd: 3.5 }, { enemy: 'brute', perSec: 0.1, perSecEnd: 0.2 }], hpScale: 1.2 },
+  { from: 180, to: 360, spawns: [{ enemy: 'goblin', perSec: 3.5, perSecEnd: 4.8 }, { enemy: 'brute', perSec: 0.2, perSecEnd: 0.4 }], hpScale: 1.6 },
+  { from: 360, to: 600, spawns: [{ enemy: 'goblin', perSec: 4.8, perSecEnd: 6.5 }, { enemy: 'brute', perSec: 0.4, perSecEnd: 0.8 }], hpScale: 2.2 },
 ];
 
 export const ENEMY_SOFT_CAP = 500;   // director stops spawning here and buffs hp instead

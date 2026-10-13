@@ -46,8 +46,8 @@ export function drawHud(ctx, view, run) {
   ctx.fillText('Kills ' + run.kills, 12, y0 + bh + 6);
 
   // Owned items: one row of weapon chips, one of passive chips (placeholders until art)
-  drawChips(ctx, run.player.weapons.map((w) => ({ label: w.def.name[0], level: w.level, rarity: w.def.rarity })), 12, y0 + bh + 26);
-  drawChips(ctx, run.player.passives.map((x) => ({ label: x.def.name[0], level: x.level, rarity: x.def.rarity })), 12, y0 + bh + 52);
+  drawChips(ctx, run.player.weapons, 12, y0 + bh + 26);
+  drawChips(ctx, run.player.passives, 12, y0 + bh + 52);
 
   // Pause button (top-right)
   const s = 30;
@@ -89,14 +89,14 @@ function drawChips(ctx, chips, x, y) {
     const cx = x + i * (size + 4);
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(cx, y, size, size);
-    ctx.strokeStyle = RARITIES[c.rarity].color;
+    ctx.strokeStyle = RARITIES[c.def.rarity].color;
     ctx.lineWidth = 2;
     ctx.strokeRect(cx + 1, y + 1, size - 2, size - 2);
     ctx.fillStyle = '#e8e6df';
     ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText(c.label, cx + size / 2 - 2, y + size / 2 - 1);
+    ctx.fillText(c.def.name[0], cx + size / 2 - 2, y + size / 2 - 1);
     ctx.font = '600 8px system-ui, sans-serif';
     ctx.fillStyle = '#ffd34d';
-    ctx.fillText(String(c.level), cx + size - 5, y + size - 5);
+    ctx.fillText(c.level, cx + size - 5, y + size - 5);
   }
 }

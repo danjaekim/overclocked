@@ -6,7 +6,7 @@ export const STATS = {
   // survival / utility
   maxHp:        { base: 100,  min: 1,              fmt: 'int' },
   moveSpeed:    { base: 150,  min: 40, max: 600,   fmt: 'int' },
-  pickupRadius: { base: 60,   min: 20,             fmt: 'int' },
+  pickupRadius: { base: 100,  min: 20,             fmt: 'int' },
   armor:        { base: 0,                         fmt: 'int' },   // flat damage reduction
   regen:        { base: 0,                         fmt: 'dec' },   // hp per second
   xpGain:       { base: 1,    min: 0,              fmt: 'pct' },
