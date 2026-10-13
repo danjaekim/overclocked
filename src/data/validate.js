@@ -18,6 +18,7 @@ import { ORES } from './ores.js';
 import { EVOLUTIONS } from './evolutions.js';
 import { TITLES } from './titles.js';
 import { PERKS, RULE_IDS } from './perks.js';
+import { ELITE, CHEST } from './elites.js';
 
 // Read on every hit: a `when` modifier would bypass the stat cache for them.
 const NO_WHEN = new Set(['burnChance', 'chillChance', 'shockChance', 'burnPower', 'chillStacks', 'chains', 'chainDamage',
@@ -150,11 +151,18 @@ export function validateData() {
   EVENTS.forEach((ev, i) => {
     const at = `event ${i}`;
     if (!RUN_EVENTS[ev.event]) problems.push(`${at}: unknown event "${ev.event}"`);
+    if (ev.event === 'elite' && !(ENEMIES[ev.enemy] && !ENEMIES[ev.enemy].boss)) problems.push(`${at}: elite event needs a non-boss enemy`);
     if (ev.event === 'boss' && !(ENEMIES[ev.enemy] && ENEMIES[ev.enemy].boss)) problems.push(`${at}: boss event needs an enemy with boss: true`);
     if (!(ev.at >= prev)) problems.push(`${at}: EVENTS must be sorted by "at"`);
     if (!(ev.at >= 0 && ev.at < RUN.designLength)) problems.push(`${at}: "at" must be within the run`);
     prev = ev.at;
   });
+
+  for (const [id, a] of Object.entries(ELITE.affixes)) {
+    if (!a.name) problems.push(`elite affix ${id}: missing name`);
+  }
+  if (CHEST.elite.length !== 3 || CHEST.boss.length !== 3) problems.push('CHEST weights need three entries (1, 3, 5 rolls)');
+  if (!(CHEST.newWeaponChance >= 0 && CHEST.newWeaponChance <= 1)) problems.push('CHEST.newWeaponChance must be 0..1');
 
   const n = ENHANCE.maxLevel;
   if (ENHANCE.cost.length !== n) problems.push(`ENHANCE.cost must have ${n} entries`);

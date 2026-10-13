@@ -15,6 +15,7 @@ const SOUNDS = {
   fail:    ['sawtooth', 220, 90,  0.25, 0.10, 0.1],
   shrine:  ['sine',     520, 780, 0.35, 0.10, 0.3],
   boss:    ['sawtooth', 90,  60,  0.7,  0.16, 0.5],
+  chest:   ['triangle', 520, 1040, 0.25, 0.14, 0.2],
   evolve:  ['triangle', 330, 1320, 0.6, 0.16, 0.5],
   win:     ['triangle', 520, 1040, 0.8, 0.14, 0.5],
   lose:    ['sawtooth', 300, 60,  0.9,  0.14, 0.5],

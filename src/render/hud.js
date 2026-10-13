@@ -2,7 +2,7 @@
 import { fmtTime } from '../ui/overlay.js';
 import { xpToNext } from '../game/xp.js';
 import { RARITIES } from '../data/rarities.js';
-import { drawShrineArrows } from './shrines.js';
+import { drawShrineArrows, drawChestArrows } from './shrines.js';
 
 export function drawHud(ctx, view, run) {
   const p = run.player;
@@ -55,6 +55,7 @@ export function drawHud(ctx, view, run) {
   }
 
   drawShrineArrows(ctx, view, run);
+  drawChestArrows(ctx, view, run);
 
   // Owned items: one row of weapon chips, one of passive chips (placeholders until art)
   drawChips(ctx, run.player.weapons, 12, y0 + bh + 26);

@@ -25,6 +25,7 @@ import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { enhance, canEnhance } from '../src/game/forge.js';
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
+import { openChest } from '../src/game/chests.js';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -92,6 +93,11 @@ function scoreOffer(o, run) {
   return 0;
 }
 
+function chestPickup(run) {
+  for (const g of run.world.pickups.active) if (g.kind === 2) return g;
+  return null;
+}
+
 // Classes whose kit is short range: the bot engages instead of kiting (a fair fight for each role)
 const MELEE = new Set(['smith', 'berserker']);
 
@@ -99,6 +105,7 @@ function playBot(classId, seed) {
   const run = createRun({ seed, view: VIEW, debug: { god: false }, classId });
   const move = { x: 0, y: 0 };
   let evolved = 0;
+  let chests = 0;
   let bossSeen = false;
   const at = { 300: null };
   while (!run.over && run.time < 601) {
@@ -124,6 +131,10 @@ function playBot(classId, seed) {
       const fx = sx / l; const fy = sy / l; const a = 0.6;
       move.x = fx * Math.cos(a) - fy * Math.sin(a);
       move.y = fx * Math.sin(a) + fy * Math.cos(a);
+    } else if (chestPickup(run)) {                 // chests are worth a detour
+      const s = chestPickup(run);
+      const dx = s.x - p.x; const dy = s.y - p.y; const d = Math.hypot(dx, dy) || 1;
+      move.x = dx / d; move.y = dy / d;
     } else if (run.shrines[0]) {
       const s = run.shrines[0];
       const dx = s.x - p.x; const dy = s.y - p.y; const d = Math.hypot(dx, dy) || 1;
@@ -137,6 +148,7 @@ function playBot(classId, seed) {
     if (run.bossAlive) bossSeen = true;
     if (at[300] === null && run.time >= 300) at[300] = { level: p.level, kills: run.kills, hp: Math.round(p.hp) };
 
+    while (run.pendingChests.length > 0) { openChest(run, run.pendingChests.shift()); chests++; }
     while (run.pendingLevelUps > 0) {
       const offers = generateOffers(offerState(run), run.rng);
       offers.sort((a, b) => scoreOffer(b, run) - scoreOffer(a, run));
@@ -151,7 +163,7 @@ function playBot(classId, seed) {
   }
   return {
     won: run.won, time: Math.round(run.time), level: run.player.level, kills: run.kills,
-    bossSeen, bossKilled: run.bossKilled, evolved, titles: run.titles.length,
+    bossSeen, bossKilled: run.bossKilled, evolved, chests, titles: run.titles.length,
     at300: at[300],
   };
 }
@@ -258,7 +270,7 @@ if (!flag('--weapons') && !flag('--builds')) {
   const classes = Object.keys(CLASSES);
   if (!flag('--json')) {
     console.log(`\nBOT RUNS  (${seeds.length} seeds per class; crude bot, compare classes against each other)`);
-    console.log(pad('class', 11) + pad('won', 6) + pad('avg time', 10) + pad('avg lvl', 9) + pad('avg kills', 11) + pad('lvl@5:00', 10) + pad('boss kills', 11));
+    console.log(pad('class', 11) + pad('won', 6) + pad('avg time', 10) + pad('avg lvl', 9) + pad('avg kills', 11) + pad('lvl@5:00', 10) + pad('boss kills', 11) + pad('chests', 8));
   }
   for (const cls of classes) {
     const runs = seeds.map((s) => playBot(cls, s));
@@ -271,6 +283,7 @@ if (!flag('--weapons') && !flag('--builds')) {
         + pad(num(avg((r) => r.level), 1), 9) + pad(num(avg((r) => r.kills)), 11)
         + pad(lvl5.length ? num(lvl5.reduce((a, b) => a + b, 0) / lvl5.length, 1) : '-', 10)
         + pad(`${runs.filter((r) => r.bossKilled).length}/${runs.length}`, 11)
+        + pad(num(avg((r) => r.chests), 1), 8)
       );
     }
   }

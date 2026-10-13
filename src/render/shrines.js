@@ -81,3 +81,34 @@ export function drawShrineArrows(ctx, view, run) {
     ctx.stroke();
   }
 }
+
+// HUD pass: an arrow toward each off-screen chest (gold; cyan for the boss's).
+export function drawChestArrows(ctx, view, run) {
+  const list = run.world.pickups.active;
+  const cam = run.cam;
+  const top = view.insetTop + 56;
+  const bottom = view.h - 40;
+  const m = 26;
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.kind !== 2) continue;
+    const sx = view.w / 2 + (g.x - cam.x);
+    const sy = view.h / 2 + (g.y - cam.y);
+    if (sx > m && sx < view.w - m && sy > top && sy < bottom) continue;
+    const cx = view.w / 2;
+    const cy = view.h / 2;
+    const dx = sx - cx;
+    const dy = sy - cy;
+    const k = Math.min((view.w / 2 - m) / (Math.abs(dx) || 1e-6), (cy - top) / (Math.abs(dy) || 1e-6), (bottom - cy) / (Math.abs(dy) || 1e-6));
+    const ax = cx + dx * Math.min(1, k);
+    const ay = cy + dy * Math.min(1, k);
+    const a = Math.atan2(dy, dx);
+    ctx.fillStyle = g.value === 1 ? '#7fe9ff' : '#ffd34d';
+    ctx.beginPath();
+    ctx.moveTo(ax + Math.cos(a) * 14, ay + Math.sin(a) * 14);
+    ctx.lineTo(ax + Math.cos(a + 2.5) * 12, ay + Math.sin(a + 2.5) * 12);
+    ctx.lineTo(ax + Math.cos(a - 2.5) * 12, ay + Math.sin(a - 2.5) * 12);
+    ctx.closePath();
+    ctx.fill();
+  }
+}

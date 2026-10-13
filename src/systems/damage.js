@@ -1,7 +1,9 @@
 // Applying damage: the queued enemy damage flush, enemy deaths, and damage to the player.
 
 import { addDamageNumber, addPuff } from '../render/fx.js';
-import { spawnGem, spawnOre } from './pickups.js';
+import { spawnGem, spawnOre, spawnChest } from './pickups.js';
+import { ELITE } from '../data/elites.js';
+import { ORES } from '../data/ores.js';
 import { fireTriggers } from '../game/triggers.js';
 import { onMilestone } from '../game/titles.js';
 import { spawnShrine } from './shrines.js';
@@ -19,16 +21,20 @@ export function killEnemy(run, e) {
   run.sfx('kill');
   run.lastKillTime = run.time;
   addPuff(run, e.x, e.y, e.r, e.def.color);
-  spawnGem(run, e.x, e.y, e.def.xp);
+  spawnGem(run, e.x, e.y, e.def.xp * (e.elite ? ELITE.xpMult : 1));
   const ore = e.def.ore;
-  if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
+  if (ore && ORES[ore.type].bank === 'starsteel') {
+    run.starsteel += ore.count || 1;               // starsteel is banked at once, so the boss chest can use it
+  } else if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
     spawnOre(run, e.x + 6, e.y - 4, ore.type, ore.count || 1);
   }
+  if (e.elite) spawnChest(run, e.x, e.y, 0);
   if (e.def.boss) {
     run.bossAlive = false;
     run.bossKilled = true;
     run.boss = null;
     spawnShrine(run, SHRINE.bossShrineTtl, { x: e.x, y: e.y }, true);
+    spawnChest(run, e.x - 40, e.y, 1);
     run.toast = { text: `${e.def.name} slain!`, ttl: 3 };
     onMilestone(run, 'boss', 1);
   }
@@ -82,11 +88,15 @@ export function flushDamage(run) {
     const ex = e.x;
     const ey = e.y;
     let amount = q.amount[i] * targetMult(run, e, src);
+    if (e.elite && ELITE.affixes[e.affix].untilHpFrac !== undefined && e.hp > e.maxHp * ELITE.affixes[e.affix].untilHpFrac) {
+      amount *= ELITE.affixes[e.affix].damageTaken;           // Warded: half damage until it is wounded
+    }
     if (q.crit[i] === 1 && src && !e.def.boss) {          // Headsman: a crit that would leave it under the threshold kills it
       const thr = run.player.stats.getFor('executeBelow', src.tags);
       if (thr > 0 && (e.hp - amount) / e.maxHp < thr) amount = e.hp;
     }
     e.hp -= amount;
+    e.lastHitT = run.time;
     e.flash = HIT_FLASH;
     e.kx += q.kx[i];
     e.ky += q.ky[i];

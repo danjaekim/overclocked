@@ -2,6 +2,7 @@
 // at most 4 neighbours), decay knockback, teleport stragglers back to the spawn perimeter.
 
 import { randomPerimeterPoint } from '../game/director.js';
+import { ELITE } from '../data/elites.js';
 
 const SEP_RADIUS = 2.2;       // x enemy radius
 const SEP_MAX_NEIGHBOURS = 4;
@@ -95,5 +96,11 @@ export function updateEnemies(run, dt) {
     e.kx *= decay;
     e.ky *= decay;
     if (e.flash > 0) e.flash -= dt;
+    if (e.elite === 1) {                                  // Regenerating: heals once it has gone unhit for a while
+      const a = ELITE.affixes[e.affix];
+      if (a.regenFrac && run.time - e.lastHitT > a.delay && e.hp < e.maxHp) {
+        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * a.regenFrac * dt);
+      }
+    }
   }
 }

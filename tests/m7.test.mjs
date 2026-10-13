@@ -160,13 +160,12 @@ test('killing the boss: drops starsteel, a long-lived shrine on the spot (even w
   assert.equal(s.x, 200); assert.equal(s.y, 300);
   assert.ok(s.maxTtl > 45);
   assert.ok(hasTitle(run, 'warbreaker'));
-  // collect the starsteel
-  const ore = run.world.pickups.active.find((g) => g.kind === 1 && g.ore === 'starsteel');
-  assert.ok(ore, 'starsteel dropped');
-  ore.x = run.player.x; ore.y = run.player.y;
-  updatePickups(run, STEP);
+  // starsteel is credited at once (so the boss chest can use it for an evolution), and a 5-roll chest drops
   assert.equal(run.starsteel, ENEMIES.warlord.ore.count);
   assert.equal(run.ore, 0, 'starsteel is not iron');
+  assert.ok(!run.world.pickups.active.some((g) => g.kind === 1 && g.ore === 'starsteel'), 'no starsteel pickup');
+  const chest = run.world.pickups.active.find((g) => g.kind === 2);
+  assert.ok(chest && chest.value === 1, 'a boss chest dropped');
 });
 
 test('the timeline brings the boss at 5:00', () => {

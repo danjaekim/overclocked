@@ -18,6 +18,8 @@ function makeEnemy() {
     ai: 0, aiT: 0,         // boss state machine: 0 chase, 1 windup, 2 dash; seconds left in it
     ax: 0, ay: 0,          // boss dash direction
     aiCd: 0,               // seconds until the next charge
+    elite: 0, affix: '',   // elites (data/elites.js): flag and affix id
+    lastHitT: 0,           // run.time of the last damage taken (regenerating elites)
     // status effects (systems/status.js)
     status: 0,             // bit flags, data/statuses.js ST (0 = untouched: skipped everywhere)
     burnDps: 0, burnT: 0, burnAcc: 0, burnSrc: null,
@@ -38,7 +40,7 @@ function makeProjectile() {
 }
 
 function makePickup() {
-  return { kind: 0, ore: 'iron', x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore
+  return { kind: 0, ore: 'iron', x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore, 2 = chest (value = tier: 0 elite, 1 boss)
 }
 
 function makeFx() {

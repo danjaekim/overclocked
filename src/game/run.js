@@ -16,7 +16,7 @@ import { flushDamage } from '../systems/damage.js';
 import { updateStatuses } from '../systems/status.js';
 import { updateShrines } from '../systems/shrines.js';
 import { updateFx, drawFx } from '../render/fx.js';
-import { drawGems, drawOre, drawEnemies, drawProjectiles } from '../render/entities.js';
+import { drawGems, drawOre, drawChests, drawEnemies, drawProjectiles } from '../render/entities.js';
 import { drawShrines } from '../render/shrines.js';
 import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
@@ -49,6 +49,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     boss: null,
     toast: null,            // { text, ttl }: a short banner under the timer
     shrines: [],            // active anvil shrines { x, y, ttl, maxTtl, progress }
+    pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
+    chestsOpened: 0,
     forgeReady: false,      // a shrine was channelled: game.js opens the forge next
     player: null,
     cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
@@ -96,6 +98,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       drawShrines(ctx, view, run);
       drawGems(ctx, view, run);
       drawOre(ctx, view, run);
+      drawChests(ctx, view, run);
       drawEnemies(ctx, view, run);
       drawProjectiles(ctx, view, run);
     },

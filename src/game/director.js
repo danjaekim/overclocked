@@ -1,6 +1,7 @@
 // Spawn director: reads data/waves.js and spawns enemies on the perimeter just outside
 // the view. At the soft cap it stops spawning and buffs enemy hp so pressure keeps rising.
 
+import { ELITE } from '../data/elites.js';
 import { ENEMIES } from '../data/enemies.js';
 import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP } from '../data/waves.js';
 import { RUN_EVENTS } from './run-events.js';
@@ -29,12 +30,29 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1) {
   e.ai = 0;
   e.aiT = 0;
   e.aiCd = def.charge ? def.charge.every : 0;
+  e.elite = 0;
+  e.affix = '';
+  e.lastHitT = -1e9;
   e.status = 0;
   e.burnDps = e.burnT = e.burnAcc = 0;
   e.burnSrc = null;
   e.chill = 0;
   e.chillT = e.freezeT = e.freezeImm = e.shockT = 0;
   e.slowMul = 1;
+  return e;
+}
+
+// An elite: the same def with a bigger body, more hp and damage, and one affix.
+export function spawnElite(run, defId, x, y, hpScale, affixId) {
+  const e = spawnEnemy(run, defId, x, y, hpScale);
+  if (!e) return null;
+  e.elite = 1;
+  e.affix = affixId;
+  e.maxHp = e.hp = e.maxHp * ELITE.hpMult;
+  e.r *= ELITE.radiusMult;
+  e.damage *= ELITE.damageMult;
+  const a = ELITE.affixes[affixId];
+  if (a.speedMult) e.speed *= a.speedMult;
   return e;
 }
 

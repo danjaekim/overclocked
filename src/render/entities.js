@@ -5,7 +5,8 @@ import { ENEMIES } from '../data/enemies.js';
 import { GEM } from '../data/progression.js';
 import { ORES } from '../data/ores.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
-import { gemTier, KIND_GEM, KIND_ORE } from '../systems/pickups.js';
+import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST } from '../systems/pickups.js';
+import { ELITE } from '../data/elites.js';
 
 const TAU = Math.PI * 2;
 const DEF_IDS = Object.keys(ENEMIES);
@@ -56,6 +57,33 @@ export function drawOre(ctx, view, run) {
       ctx.rect(g.x - g.r, g.y - g.r, g.r * 2, g.r * 2);
     }
     ctx.fill();
+  }
+}
+
+// Chests: a gold box with a dark lid line (cyan and larger for the boss's), gently bobbing.
+export function drawChests(ctx, view, run) {
+  const list = run.world.pickups.active;
+  const cam = run.cam;
+  const x0 = cam.x - view.w / 2 - 20;
+  const x1 = cam.x + view.w / 2 + 20;
+  const y0 = cam.y - view.h / 2 - 20;
+  const y1 = cam.y + view.h / 2 + 20;
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.kind !== KIND_CHEST) continue;
+    if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+    const s = g.value === 1 ? 1.4 : 1;
+    const y = g.y + Math.sin(run.time * 3 + g.x) * 2;
+    ctx.fillStyle = g.value === 1 ? '#7fe9ff' : '#ffd34d';
+    ctx.fillRect(g.x - 12 * s, y - 8 * s, 24 * s, 16 * s);
+    ctx.fillStyle = 'rgba(40,24,6,0.85)';
+    ctx.fillRect(g.x - 12 * s, y - 2 * s, 24 * s, 2.5 * s);
+    ctx.fillRect(g.x - 2.5 * s, y - 4 * s, 5 * s, 6 * s);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4 + 0.3 * Math.sin(run.time * 4);
+    ctx.strokeRect(g.x - 14 * s, y - 10 * s, 28 * s, 20 * s);
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -116,6 +144,32 @@ export function drawEnemies(ctx, view, run) {
   ctx.fill();
 
   drawStatusRings(ctx, list, x0, x1, y0, y1);
+  drawEliteMarks(ctx, list, x0, x1, y0, y1, run.time);
+}
+
+// Elites get a pulsing gold ring and their affix name above them (there are only a few at a time).
+function drawEliteMarks(ctx, list, x0, x1, y0, y1, t) {
+  let started = false;
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (e.elite !== 1) continue;
+    if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+    if (!started) {
+      started = true;
+      ctx.lineWidth = 3;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.font = '700 12px system-ui, sans-serif';
+    }
+    ctx.strokeStyle = ELITE.color;
+    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 6);
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r + 4, 0, TAU);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = ELITE.color;
+    ctx.fillText(ELITE.affixes[e.affix].name, e.x, e.y - e.r - 8);
+  }
 }
 
 // Status rings on every enemy that has one: one stroked path per colour, plus a pale fill for

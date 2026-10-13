@@ -99,6 +99,22 @@ if (flag('--forge')) {
   await page.tap('[data-act=done]');
   await page.waitForTimeout(500);
 }
+if (flag('--chest')) {
+  // drive an elite -> chest pickup -> treasure screen -> back-to-battle flow
+  await page.evaluate(() => {
+    const r = window.__overforged.game.run;
+    r.debug.god = true;
+    r.world.enemies.releaseAll();
+    import('/src/systems/pickups.js').then((m) => { m.spawnChest(r, r.player.x, r.player.y, 1); });
+  });
+  await page.waitForSelector('.chest-count', { timeout: 5000 });
+  await page.waitForTimeout(3200);
+  if (opt('--shot')) await page.screenshot({ path: opt('--shot').replace(/\.png$/, '-chest.png') });
+  console.log('treasure cards:', await page.locator('.card.reveal').count());
+  await page.click('[data-act=done]');
+  await page.waitForTimeout(500);
+  console.log('state after chest:', await page.evaluate(() => window.__overforged.game.state));
+}
 if (flag('--stress')) await page.evaluate(() => window.__overforged.game.run.stress());
 await page.waitForTimeout(4000);
 

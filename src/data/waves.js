@@ -18,11 +18,18 @@ export const WAVES = [
 // One-off events. `at` is authored against RUN.designLength and
 // rescaled like segments. Shrines are how the player reaches the forge (docs §6.3).
 export const EVENTS = [
+  { at: 90,  event: 'elite', enemy: 'brute' },    // elites drop chests (data/elites.js)
   { at: 120, event: 'shrine' },
+  { at: 165, event: 'elite', enemy: 'brute' },
   { at: 240, event: 'shrine' },
-  { at: 300, event: 'boss', enemy: 'warlord' },   // its death also drops a shrine
+  { at: 240, event: 'elite', enemy: 'brute' },
+  { at: 300, event: 'boss', enemy: 'warlord' },   // its death also drops a shrine and a 5-roll chest
+  { at: 345, event: 'elite', enemy: 'brute' },
   { at: 390, event: 'shrine' },
+  { at: 420, event: 'elite', enemy: 'brute' },
+  { at: 480, event: 'elite', enemy: 'brute' },
   { at: 510, event: 'shrine' },
+  { at: 540, event: 'elite', enemy: 'brute' },
 ];
 
 export const ENEMY_SOFT_CAP = 500;   // director stops spawning here and buffs hp instead

@@ -11,6 +11,9 @@ import { showPause } from '../ui/pause.js';
 import { showResults } from '../ui/results.js';
 import { showLevelUp } from '../ui/levelup.js';
 import { showForge } from '../ui/forge.js';
+import { showTreasure } from '../ui/treasure.js';
+import { openChest } from './chests.js';
+import { spawnChest } from '../systems/pickups.js';
 import { spawnShrine } from '../systems/shrines.js';
 import { RUN_EVENTS } from './run-events.js';
 import { generateOffers } from './upgrades.js';
@@ -142,6 +145,25 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     show();
   }
 
+  // Opens the next collected chest (run frozen). Level-ups go first; the forge goes after.
+  function openTreasure() {
+    const run = game.run;
+    const tier = run.pendingChests.shift();
+    game.state = 'treasure';
+    input.reset();
+    const result = openChest(run, tier);
+    showTreasure(overlays, {
+      ...result,
+      boss: tier === 1,
+      sfx,
+      onDone() {
+        overlays.hide();
+        run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);
+        game.state = 'run';
+      },
+    });
+  }
+
   // Opens the forge (run frozen) after a shrine was channelled. Level-ups always go first.
   function openForge() {
     const run = game.run;
@@ -167,6 +189,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     run.update(dt, input.getMove());
     if (run.over) finishRun();
     else if (run.pendingLevelUps > 0) openLevelUp();
+    else if (run.pendingChests.length > 0) openTreasure();
     else if (run.forgeReady) openForge();
   };
 
@@ -181,6 +204,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       if (e.key === 'o' && game.state === 'run') game.run.ore += 20;                                  // debug: +20 ore
       if (e.key === 'f' && game.state === 'run') spawnShrine(game.run);                               // debug: a shrine now
       if (e.key === 'b' && game.state === 'run') RUN_EVENTS.boss(game.run, { enemy: 'warlord' });     // debug: the boss now
+      if (e.key === 'c' && game.state === 'run') spawnChest(game.run, game.run.player.x + 40, game.run.player.y, 0);   // debug: an elite chest at your feet
+      if (e.key === 'e' && game.state === 'run') RUN_EVENTS.elite(game.run, { enemy: 'brute' });                       // debug: an elite now
       if (e.key === 'x' && game.state === 'run') game.run.starsteel += 2;                             // debug: +2 starsteel
     });
   }

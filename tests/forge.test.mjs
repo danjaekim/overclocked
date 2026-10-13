@@ -281,7 +281,8 @@ test('the timeline spawns a shrine at each event time, scaled by run length', ()
   run.debug.god = true;
   run.player.x = 0;
   // jump the clock to just before and just after the first event
-  run.time = EVENTS[0].at - 1;
+  const firstShrine = EVENTS.find((ev) => ev.event === 'shrine');
+  run.time = firstShrine.at - 1;
   tick(run, 0.5);
   assert.equal(run.shrines.length, 0);
   tick(run, 1.5);

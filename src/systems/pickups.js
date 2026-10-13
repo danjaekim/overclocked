@@ -8,6 +8,7 @@ import { ORES } from '../data/ores.js';
 
 export const KIND_GEM = 0;
 export const KIND_ORE = 1;
+export const KIND_CHEST = 2;
 
 export function gemTier(value) {
   let t = 0;
@@ -42,6 +43,24 @@ export function spawnGem(run, x, y, value) {
   g.r = GEM.tiers[gemTier(value)][1];
   g.magnet = false;
   g.speed = GEM.baseMagnet;
+  return g;
+}
+
+// A chest (value = tier: 0 elite, 1 boss). It never magnetises or expires; touching it queues it
+// for game.js to open. If the pool is full it is queued directly so it can never be lost.
+export function spawnChest(run, x, y, tier) {
+  const g = run.world.pickups.acquire();
+  if (!g) {
+    run.pendingChests.push(tier);
+    return null;
+  }
+  g.kind = KIND_CHEST;
+  g.x = x;
+  g.y = y;
+  g.value = tier;
+  g.r = 13;
+  g.magnet = false;
+  g.speed = 0;
   return g;
 }
 
@@ -82,7 +101,7 @@ export function updatePickups(run, dt) {
     let dx = p.x - g.x;
     let dy = p.y - g.y;
     let d2 = dx * dx + dy * dy;
-    if (!g.magnet && d2 <= radius2) g.magnet = true;
+    if (g.kind !== KIND_CHEST && !g.magnet && d2 <= radius2) g.magnet = true;
 
     if (g.magnet) {
       g.speed = Math.min(g.speed + GEM.accel * dt, GEM.maxSpeed);
@@ -99,7 +118,8 @@ export function updatePickups(run, dt) {
 
     const rr = p.r + g.r;
     if (d2 <= rr * rr) {
-      if (g.kind === KIND_ORE) { bankOre(run, g.ore, g.value); run.sfx('ore'); }
+      if (g.kind === KIND_CHEST) { run.pendingChests.push(g.value); run.sfx('chest'); }
+      else if (g.kind === KIND_ORE) { bankOre(run, g.ore, g.value); run.sfx('ore'); }
       else { gainXp(run, g.value * xpGain); run.sfx('gem'); }
       store.release(g);
     }
