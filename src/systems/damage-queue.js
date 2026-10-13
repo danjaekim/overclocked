@@ -14,11 +14,12 @@ export function createDamageQueue() {
     crit: new Uint8Array(CAP),
     kx: new Float32Array(CAP),
     ky: new Float32Array(CAP),
+    src: new Array(CAP).fill(null),   // weapon instance that caused the hit (drives triggers)
     depth: new Uint8Array(CAP),       // trigger recursion depth (capped at 3 once triggers exist)
   };
 }
 
-export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0) {
+export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0, src = null) {
   const q = run.world.dmg;
   if (q.n >= CAP) {
     q.dropped++;
@@ -32,4 +33,5 @@ export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0)
   q.kx[i] = kx;
   q.ky[i] = ky;
   q.depth[i] = depth;
+  q.src[i] = src;
 }

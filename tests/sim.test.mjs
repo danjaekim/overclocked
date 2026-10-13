@@ -164,3 +164,146 @@ test('director never exceeds the soft cap and buffs hp instead', () => {
   assert.ok(run.world.enemies.count <= CAPS.enemies);
   assert.ok(run.director.capBuff > before, 'hp buff should grow while at the cap');
 });
+
+// ---- M5: weapon behaviors, triggers, shield, classes --------------------------------------
+
+import { addWeapon } from '../src/game/weapons.js';
+import { CLASSES } from '../src/data/classes.js';
+import { WEAPONS } from '../src/data/weapons.js';
+import { damagePlayer } from '../src/systems/damage.js';
+import { queueDamage } from '../src/systems/damage-queue.js';
+
+const classRun = (classId, seed = 1) => createRun({ seed, view: VIEW, debug: { god: false }, classId });
+
+// Puts a motionless, huge-hp dummy at an offset from the player.
+function dummy(run, dx, dy, id = 'brute') {
+  const e = spawnEnemy(run, id, run.player.x + dx, run.player.y + dy);
+  e.speed = 0;
+  e.hp = e.maxHp = 1e6;
+  return e;
+}
+// One full tick with the hash rebuilt so weapons can see the dummies.
+function settle(run) {
+  const w = run.world;
+  w.hash.rebuild(w.enemies.active, w.enemies.count);
+}
+
+test('every class starts with its own weapon and class mods', () => {
+  for (const [id, c] of Object.entries(CLASSES)) {
+    const run = classRun(id);
+    assert.equal(run.player.weapons[0].weaponId, c.startWeapon);
+  }
+  const smith = classRun('smith');
+  assert.ok(smith.player.maxHp > classRun('archer').player.maxHp);
+});
+
+test('arc: hits enemies inside the cone, spares ones behind, and kills with repeated swings', () => {
+  const run = classRun('smith');
+  const front = dummy(run, 50, 0);
+  const behind = dummy(run, -50, 0);
+  settle(run);
+  tick(run, 0.5);
+  assert.ok(front.hp < front.maxHp, 'the enemy in front is hit');
+  assert.equal(behind.hp, behind.maxHp, 'the enemy behind is spared');
+});
+
+test('arc: a second swing (projectiles +1) also hits behind the player', () => {
+  const run = classRun('smith');
+  const hammer = run.player.weapons[0];
+  run.player.stats.add({ stat: 'projectiles', op: 'flat', value: 1, tags: [hammer.instanceTag], source: 't' });
+  const front = dummy(run, 50, 0);
+  const behind = dummy(run, -50, 0);
+  settle(run);
+  tick(run, 0.5);
+  assert.ok(front.hp < front.maxHp && behind.hp < behind.maxHp);
+});
+
+test('arc: out-of-range enemies are not hit', () => {
+  const run = classRun('smith');
+  const far = dummy(run, 300, 0);
+  settle(run);
+  tick(run, 1);
+  assert.equal(far.hp, far.maxHp);
+});
+
+test('orbit: blades damage enemies near the orbit radius, not ones far away', () => {
+  const run = classRun('archer');
+  addWeapon(run, 'spirit_blades');
+  const r = WEAPONS.spirit_blades.base.range;
+  // enemies around the ring (blades sweep every angle) and one far away
+  const ring = [];
+  for (let a = 0; a < 8; a++) ring.push(dummy(run, Math.cos(a * Math.PI / 4) * r, Math.sin(a * Math.PI / 4) * r, 'goblin'));
+  const far = dummy(run, 400, 0, 'goblin');
+  run.player.weapons[0].cd = 1e9;                       // silence the bow
+  settle(run);
+  tick(run, 2);
+  assert.ok(ring.some((e) => e.hp < e.maxHp), 'a blade hit someone on the ring');
+  assert.equal(far.hp, far.maxHp);
+});
+
+test('aura: damages everything inside its radius, nothing outside', () => {
+  const run = classRun('archer');
+  addWeapon(run, 'cinder_ward');
+  run.player.weapons[0].cd = 1e9;
+  const near = dummy(run, 40, 20, 'goblin');
+  const far = dummy(run, 200, 0, 'goblin');
+  settle(run);
+  tick(run, 1);
+  assert.ok(near.hp < near.maxHp);
+  assert.equal(far.hp, far.maxHp);
+});
+
+test('explode trigger: a killing blow damages neighbours, and chains stop at the depth cap', () => {
+  const run = classRun('archer');
+  const bow = run.player.weapons[0];
+  bow.level = 5;                                         // trigger is active from level 5
+  bow.def = { ...bow.def, triggers: [{ on: 'kill', effect: 'explode', params: { radius: 80, damageFrac: 2 } }] };
+  run.player.weapons.forEach((w) => { w.cd = 1e9; });
+  // goblins 85 apart: each explosion reaches only the next one, so the depth cap alone ends the chain
+  const chain = [];
+  for (let i = 0; i < 10; i++) {
+    const e = spawnEnemy(run, 'goblin', 200 + i * 85, 0);
+    e.speed = 0;
+    e.hp = e.maxHp = 1;
+    chain.push(e);
+  }
+  const bait = chain[0];
+  settle(run);
+  queueDamage(run, bait, 5, false, 0, 0, 0, bow);
+  flushDamage(run);
+  const dead = chain.filter((e) => !e.alive).length;
+  assert.equal(dead, 4, 'bait plus three chained kills (depth 1, 2, 3), then the cap stops it');
+});
+
+test('shield: absorbs damage before hp, and the interval trigger grants it', () => {
+  const run = classRun('smith');
+  const p = run.player;
+  p.shield = 30;
+  damagePlayer(run, 12);
+  assert.equal(p.shield, 19);                            // smith armor 1 takes 12 down to 11
+  assert.equal(p.hp, p.maxHp);
+  p.iframes = 0;
+  damagePlayer(run, 40);
+  assert.equal(p.shield, 0);
+  approx(p.hp, p.maxHp - 20);                            // 39 after armor: 19 soaked, 20 to hp
+
+  const r2 = classRun('smith');
+  const hammer = r2.player.weapons[0];
+  hammer.level = 3;                                      // shield trigger unlocks at level 3
+  r2.player.shield = 0;
+  tick(r2, 12.5);
+  assert.ok(r2.player.shield > 0, 'forge aegis granted a shield');
+});
+
+test('a full minute with every weapon equipped stays finite and within caps', () => {
+  const run = classRun('smith', 4);
+  run.debug.god = true;
+  for (const id of ['spirit_blades', 'cinder_ward', 'storm_javelin']) addWeapon(run, id);
+  for (const w of run.player.weapons) while (w.level < w.def.maxLevel) levelUpWeapon(run, w);
+  for (let s = 0; s < 60; s++) {
+    tick(run, 1);
+    for (const e of run.world.enemies.active) assert.ok(Number.isFinite(e.x) && Number.isFinite(e.hp));
+  }
+  assert.ok(run.kills > 50);
+  assert.equal(run.world.dmg.dropped, 0);
+});

@@ -5,7 +5,9 @@ import { createRng } from '../core/rng.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createWorld } from './world.js';
 import { createDirector, spawnEnemy } from './director.js';
-import { addWeapon, updateWeapons } from './weapons.js';
+import { BEHAVIORS } from '../behaviors/index.js';
+import { addWeapon, updateWeapons, levelUpWeapon, canLevelUp } from './weapons.js';
+import { WEAPONS } from '../data/weapons.js';
 import { updateEnemies } from '../systems/enemy-ai.js';
 import { updateProjectiles } from '../systems/movement.js';
 import { updateCollision } from '../systems/collision.js';
@@ -76,6 +78,15 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
       drawProjectiles(ctx, view, run);
     },
 
+    // Weapon visuals (swings, blades, auras) draw above the player.
+    drawWeapons(ctx) {
+      const ws = run.player.weapons;
+      for (let i = 0; i < ws.length; i++) {
+        const b = BEHAVIORS[ws[i].def.behavior];
+        if (b.draw) b.draw(ws[i], ctx, run);
+      }
+    },
+
     drawFx(ctx, view) {
       drawFx(ctx, view, run);
     },
@@ -91,6 +102,15 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
         spawnEnemy(run, i % 10 === 0 ? 'brute' : 'goblin',
           run.player.x + Math.cos(a) * d, run.player.y + Math.sin(a) * d);
       }
+    },
+
+    // Debug: every weapon at max level, for performance and visual checks.
+    debugLoadout() {
+      for (const id of Object.keys(WEAPONS)) {
+        if (WEAPONS[id].class != null && WEAPONS[id].class !== run.player.classId) continue;
+        if (!run.player.weapons.some((w) => w.weaponId === id)) addWeapon(run, id);
+      }
+      for (const w of run.player.weapons) while (canLevelUp(w)) levelUpWeapon(run, w);
     },
 
     debugLines() {

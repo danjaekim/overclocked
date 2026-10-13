@@ -31,6 +31,15 @@ export function createRenderer(canvas, view) {
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fill();
+    if (p.shield > 0) {
+      ctx.strokeStyle = '#6ec5ff';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.5 + 0.5 * Math.min(1, p.shield / 20);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r + 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     // facing tick
     ctx.strokeStyle = 'rgba(0,0,0,0.5)';
     ctx.lineWidth = 3;
@@ -55,6 +64,7 @@ export function createRenderer(canvas, view) {
     if (run) {
       if (run.drawWorld) run.drawWorld(ctx, view);
       drawPlayer(run.player);
+      if (run.drawWeapons) run.drawWeapons(ctx);
       if (run.drawFx) run.drawFx(ctx, view);
     }
 

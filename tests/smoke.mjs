@@ -48,6 +48,8 @@ page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
 await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1')}`);
 await page.tap('[data-act=play]');
+await page.tap(`[data-act="class:${opt('--class', 'archer')}"]`);       // class select
+if (flag('--loadout')) await page.evaluate(() => window.__overforged.game.run.debugLoadout());
 if (flag('--stress')) await page.evaluate(() => window.__overforged.game.run.stress());
 await page.waitForTimeout(4000);
 

@@ -23,6 +23,7 @@ export function createPlayer(run, classId) {
     maxHp,
     speed: stats.get('moveSpeed'),
     moving: false,
+    shield: 0,          // absorbs damage before hp (effects/shield)
     iframes: 0,         // seconds of invulnerability left after a hit
     hurtFlash: 0,       // seconds of hit flash left
     facingX: 0,

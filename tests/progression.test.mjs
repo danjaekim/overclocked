@@ -187,7 +187,9 @@ test('slot caps: no new passives at the passive cap, no new weapons at the weapo
 test('when everything is maxed the offer falls back to Rest', () => {
   const st = {
     classId: 'archer', luck: 0,
-    weapons: [{ weaponId: 'ember_bow', level: 8, instanceId: 1 }],
+    weapons: Object.entries(WEAPONS)
+      .filter(([, d]) => d.class == null || d.class === 'archer')
+      .map(([id, d], i) => ({ weaponId: id, level: d.maxLevel, instanceId: i + 1 })),
     passives: Object.entries(PASSIVES).map(([id, d]) => ({ id, level: d.maxLevel })),
   };
   const offers = generateOffers(st, createRng(1));

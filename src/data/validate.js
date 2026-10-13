@@ -10,9 +10,12 @@ import { PASSIVES } from './passives.js';
 import { RARITIES } from './rarities.js';
 import { CLASSES } from './classes.js';
 import { ENEMIES } from './enemies.js';
+import { EFFECTS } from '../effects/index.js';
 import { RUN, WAVES } from './waves.js';
 
 const OPS = new Set(['flat', 'inc', 'more', 'set']);
+// Events the dispatcher fires so far; the rest of the §4.6 list arrives with the systems that raise them.
+const TRIGGER_EVENTS = new Set(['hit', 'crit', 'kill', 'interval']);
 
 function checkMods(mods, where, problems) {
   if (!Array.isArray(mods)) {
@@ -45,6 +48,18 @@ export function validateData() {
       problems.push(`${at}: levelText.length (${w.levelText.length}) must equal levels.length (${w.levels.length})`);
     }
     w.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 2}`, problems));
+    if (!Array.isArray(w.triggers)) problems.push(`${at}: triggers must be an array`);
+    else {
+      w.triggers.forEach((t, i) => {
+        const ta = `${at} trigger ${i}`;
+        if (!TRIGGER_EVENTS.has(t.on)) problems.push(`${ta}: unknown event "${t.on}"`);
+        if (!EFFECTS[t.effect]) problems.push(`${ta}: unknown effect "${t.effect}"`);
+        if (t.on === 'interval' && !(t.every > 0)) problems.push(`${ta}: interval needs every > 0`);
+        if (t.chance !== undefined && !(t.chance >= 0 && t.chance <= 1)) problems.push(`${ta}: chance must be 0..1`);
+        if (t.minLevel !== undefined && !(t.minLevel >= 1 && t.minLevel <= w.maxLevel)) problems.push(`${ta}: minLevel out of range`);
+        if (!t.params) problems.push(`${ta}: missing params`);
+      });
+    }
   }
 
   for (const [id, w] of Object.entries(WEAPONS)) {

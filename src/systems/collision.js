@@ -46,7 +46,7 @@ function projectileHits(run) {
       const crit = run.rng.next() < stats.getFor('critChance', tags);
       const amount = pr.dmg * (crit ? stats.getFor('critMult', tags) : 1);
       const kb = KNOCKBACK_IMPULSE * stats.getFor('knockback', tags) * (10 / e.r);
-      queueDamage(run, e, amount, crit, pr.dx * kb, pr.dy * kb);
+      queueDamage(run, e, amount, crit, pr.dx * kb, pr.dy * kb, 0, pr.inst);
 
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy
         w.projectiles.release(pr);

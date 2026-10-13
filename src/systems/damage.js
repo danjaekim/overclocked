@@ -2,6 +2,7 @@
 
 import { addDamageNumber, addPuff } from '../render/fx.js';
 import { spawnGem } from './pickups.js';
+import { fireTriggers } from '../game/triggers.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -22,13 +23,25 @@ export function flushDamage(run) {
   for (let i = 0; i < q.n; i++) {
     const e = q.enemy[i];
     q.enemy[i] = null;
+    const src = q.src[i];
+    q.src[i] = null;
     if (!e.alive || e.uid !== q.uid[i]) continue;     // already dead (or slot reused) this tick
+    const depth = q.depth[i];
+    const ex = e.x;
+    const ey = e.y;
     e.hp -= q.amount[i];
     e.flash = HIT_FLASH;
     e.kx += q.kx[i];
     e.ky += q.ky[i];
     addDamageNumber(run, e.x, e.y - e.r, q.amount[i], q.crit[i] === 1);
-    if (e.hp <= 0) killEnemy(run, e);
+    if (src) {
+      if (q.crit[i] === 1) fireTriggers(run, 'crit', src, ex, ey, depth);
+      fireTriggers(run, 'hit', src, ex, ey, depth);
+    }
+    if (e.hp <= 0) {
+      killEnemy(run, e);
+      if (src) fireTriggers(run, 'kill', src, ex, ey, depth);
+    }
   }
   q.n = 0;
 }
@@ -40,7 +53,13 @@ export function damagePlayer(run, amount) {
   p.hurtFlash = HURT_FLASH;
   run.cam.shake = 7;
   if (run.debug.god) return;
-  p.hp -= Math.max(1, amount - p.stats.get('armor'));
+  let dmg = Math.max(1, amount - p.stats.get('armor'));
+  if (p.shield > 0) {                    // the shield soaks damage first
+    const soak = Math.min(p.shield, dmg);
+    p.shield -= soak;
+    dmg -= soak;
+  }
+  p.hp -= dmg;
   if (p.hp <= 0) {
     p.hp = 0;
     run.over = true;

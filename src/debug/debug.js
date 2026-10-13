@@ -5,6 +5,7 @@ export function readParams() {
   return {
     enabled: q.get('debug') === '1',
     god: q.get('god') === '1',
+    classId: q.get('class'),         // ?class=smith starts that class directly, skipping class select
     seed: q.has('seed') ? Number(q.get('seed')) >>> 0 : null,
   };
 }

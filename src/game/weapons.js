@@ -4,6 +4,7 @@
 import { WEAPONS } from '../data/weapons.js';
 import { BEHAVIORS } from '../behaviors/index.js';
 import { makeTags } from '../stats/stats.js';
+import { updateIntervalTriggers } from './triggers.js';
 import { SLOTS } from '../data/progression.js';
 
 export const MAX_WEAPONS = SLOTS.weapons;
@@ -29,6 +30,7 @@ export function addWeapon(run, weaponId) {
     tags: makeTags([...def.tags, `weapon:${instanceId}`]),
     instanceTag: `weapon:${instanceId}`,
     cd: 0,
+    trigT: def.triggers.map(() => 0),     // interval-trigger timers
   };
   p.weapons.push(inst);
   BEHAVIORS[def.behavior].init(inst, run);
@@ -55,5 +57,6 @@ export function updateWeapons(run, dt) {
   for (let i = 0; i < ws.length; i++) {
     const inst = ws[i];
     BEHAVIORS[inst.def.behavior].update(inst, dt, run);
+    if (inst.trigT.length) updateIntervalTriggers(run, inst, dt);
   }
 }

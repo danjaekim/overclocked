@@ -8,7 +8,7 @@ Inspired by the genre of 20 Minutes Till Dawn, Vampire Survivors, and Magic Surv
 
 - **On your phone:** open https://danjaekim.github.io/overforged/ in Safari (needs GitHub Pages enabled: Settings → Pages → Deploy from branch → `main` / root). Use Share → Add to Home Screen for a fullscreen app-like launch. Pages can take a minute or two to update after a push, and Safari may cache the old build; if a change doesn't show up, reload or add `?v=2` to the URL.
 - **Controls:** drag anywhere on the lower part of the screen to move (a floating joystick appears under your thumb). Weapons fire automatically. Desktop: WASD or arrow keys, Esc to pause.
-- **Debug URL flags:** `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run). Combine them: `?debug=1&god=1&seed=7`.
+- **Debug URL flags:** `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run), `?class=smith` (skip class select). Combine them: `?debug=1&god=1&seed=7&class=smith`.
 
 Portrait-only, 10-minute runs. A native wrapper (e.g. Capacitor) is a possible later step.
 
@@ -41,7 +41,8 @@ src/main.js       boot: wires view, input, game, renderer, loop
 src/core/         loop, rng, pool, spatial hash, events, math (pure, no DOM)
 src/stats/        StatBlock, stat definitions, conditions (pure)
 src/game/         run, world, player, director, weapons, passives, upgrades, xp, state machine
-src/behaviors/    weapon behaviors (projectile so far)
+src/behaviors/    weapon behaviors (projectile, arc, orbit, aura)
+src/effects/      trigger effects (explode, shield)
 src/systems/      per-tick systems: enemy AI, movement, collision, damage
 src/render/       view, renderer, entities, fx, HUD
 src/ui/           DOM overlays: title, pause, results, rotate prompt
@@ -53,11 +54,11 @@ docs/             architecture.md
 
 ## Design notes
 
-- **Classes (archetypes):** Smith, Archer, Berserker, Mage, Summoner, Saint (only the Archer exists so far).
+- **Classes (archetypes):** Smith, Archer, Berserker, Mage, Summoner, Saint (Archer and Smith playable so far).
 - **Signature mechanic:** the forge. Enemies drop ore; shrines let you enhance (risk/reward), reforge (reroll modifiers), or combine items into evolved forms.
 - **Build depth:** weapon x passive evolution recipes, run-long "titles" as stacking modifiers, set bonuses, meta-progression.
 - **Content is data, not code.** New weapons and upgrades are data entries on top of a shared modifier system.
 
 ## Status
 
-M0–M4 done: portrait view, state machine, enemies and spawn director, spatial hash, stat/modifier system, the Archer with the Ember Bow, hit feedback, XP gems, levelling, a 3-choice level-up screen and six passives. This is the core loop: you can build a character over a 10-minute run. Next: M5 (more weapon behaviors, the Smith class, class select).
+M0–M5 done: the core loop (move, auto-attack, gems, level-up choices, six passives) plus two classes (Archer, Smith), class select, five weapons across four behaviors (projectile, arc, orbit, aura), and the trigger system (explode, shield). Next: M6 (forge and shrines).

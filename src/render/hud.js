@@ -94,7 +94,7 @@ function drawChips(ctx, chips, x, y) {
     ctx.strokeRect(cx + 1, y + 1, size - 2, size - 2);
     ctx.fillStyle = '#e8e6df';
     ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText(c.def.name[0], cx + size / 2 - 2, y + size / 2 - 1);
+    ctx.fillText(c.def.glyph || c.def.name[0], cx + size / 2 - 2, y + size / 2 - 1);
     ctx.font = '600 8px system-ui, sans-serif';
     ctx.fillStyle = '#ffd34d';
     ctx.fillText(c.level, cx + size - 5, y + size - 5);
