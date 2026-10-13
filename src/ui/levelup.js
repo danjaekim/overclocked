@@ -16,10 +16,19 @@ const KIND_LABEL = {
   heal: 'Recover',
 };
 
-export function showLevelUp(overlays, { level, offers, rerolls = 0, banishes = 0, onPick, onReroll, onBanish }) {
+export function showLevelUp(overlays, { level, offers, rerolls = 0, banishes = 0, getBuild, owned = '', onPick, onReroll, onBanish }) {
   let banishMode = false;
+  let viewBuild = false;
 
   function render(locked) {
+    if (viewBuild) {
+      overlays.show(
+        `<h2>Your build</h2><div class="build-wrap">${getBuild()}</div><button class="btn primary" data-act="back">Back to choices</button>`,
+        (act) => { if (act === 'back') { viewBuild = false; render(false); } },
+        'build'
+      );
+      return;
+    }
     const cards = offers.map((o, i) => {
       const color = RARITIES[o.rarity].color;
       const badge = o.kind === 'heal' ? '' : o.isNew ? 'NEW' : `Lv ${o.toLevel - 1} → ${o.toLevel}`;
@@ -33,15 +42,17 @@ export function showLevelUp(overlays, { level, offers, rerolls = 0, banishes = 0
 
     const tools = (onReroll || onBanish)
       ? `<div class="lu-tools">
+           ${getBuild ? '<button class="btn small" data-act="build">Build</button>' : ''}
            <button class="btn small" data-act="reroll" ${rerolls > 0 ? '' : 'disabled'}>Reroll (${rerolls})</button>
            <button class="btn small${banishMode ? ' on' : ''}" data-act="banish" ${banishes > 0 ? '' : 'disabled'}>${banishMode ? 'Cancel' : 'Banish'} (${banishes})</button>
          </div>`
       : '';
 
     const el = overlays.show(
-      `<h2>Level up!</h2><p class="sub">You reached level ${level}</p><div class="cards">${cards}</div>${tools}`,
+      `<h2>Level up!</h2><p class="sub">You reached level ${level}</p>${owned ? `<p class="owned">${owned}</p>` : ''}<div class="cards">${cards}</div>${tools}`,
       (act) => {
         if (act === 'reroll') return onReroll && onReroll();
+        if (act === 'build') { viewBuild = true; return render(false); }
         if (act === 'banish') { banishMode = !banishMode; return render(false); }
         if (!act.startsWith('pick:')) return;
         const offer = offers[Number(act.slice(5))];

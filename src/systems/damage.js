@@ -9,6 +9,7 @@ import { onMilestone } from '../game/titles.js';
 import { spawnShrine } from './shrines.js';
 import { SHRINE } from '../data/forge.js';
 import { KIND_HIT, KIND_DOT } from './damage-queue.js';
+import { recordDamage, recordKill } from '../game/run-stats.js';
 import { ST } from '../data/statuses.js';
 import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath } from './status.js';
 
@@ -95,6 +96,8 @@ export function flushDamage(run) {
       const thr = run.player.stats.getFor('executeBelow', src.tags);
       if (thr > 0 && (e.hp - amount) / e.maxHp < thr) amount = e.hp;
     }
+    const dealt = amount < e.hp ? amount : e.hp;          // overkill is not damage dealt
+    recordDamage(run, src, q.cause[i], dealt > 0 ? dealt : 0, q.crit[i] === 1);
     e.hp -= amount;
     e.lastHitT = run.time;
     e.flash = HIT_FLASH;
@@ -115,6 +118,7 @@ export function flushDamage(run) {
       const maxHp = e.maxHp;
       const burnLeft = e.burnT > 0 ? e.burnDps * e.burnT : 0;
       killEnemy(run, e);
+      recordKill(run, src);
       if ((mask & 15) !== 0 && src) onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount);
       if (src) fireTriggers(run, 'kill', src, ex, ey, depth);   // burn kills still count as the weapon's kills
     }

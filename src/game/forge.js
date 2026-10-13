@@ -8,6 +8,7 @@
 //
 // INVARIANT (tested): no outcome of a failed enhance removes the weapon. Only salvage does.
 
+import { markGone } from './run-stats.js';
 import { ENHANCE, REFORGE, SALVAGE, AFFIXES } from '../data/forge.js';
 import { instanceTagSet } from './weapons.js';
 import { refreshResonance } from './resonance.js';
@@ -216,6 +217,7 @@ export function salvage(run, inst) {
   p.stats.removeBySource(`weapon:${inst.instanceId}:`);
   p.stats.removeBySource(`forge:${inst.instanceId}:`);
   p.weapons.splice(p.weapons.indexOf(inst), 1);
+  markGone(run, inst);
   refreshResonance(run);
   const ore = salvageValue(inst);
   run.ore += ore;

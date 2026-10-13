@@ -58,10 +58,16 @@ if (flag('--ui') && opt('--shot')) {
 await page.tap(`[data-act="class:${opt('--class', 'archer')}"]`);       // class select
 if (flag('--ui') && opt('--shot')) {
   const shot = (name) => page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${name}.png`) });
+  await page.waitForTimeout(6000);                                // let some damage happen for the build stats
   await page.keyboard.press('l');                                 // debug: level up
   await page.waitForSelector('.overlay.levelup');
   await page.waitForTimeout(500);
   await shot('levelup');
+  await page.tap('[data-act=build]');                             // the build panel, from the level-up screen
+  await page.waitForSelector('.overlay.build');
+  await shot('levelup-build');
+  await page.tap('[data-act=back]');
+  await page.waitForSelector('.overlay.levelup');
   await page.tap('[data-act=banish]');
   await shot('banish');
   await page.tap('[data-act^="pick:"]');                          // banish the first offer
@@ -74,9 +80,26 @@ if (flag('--ui') && opt('--shot')) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   await shot('pause');
+  await page.tap('[data-act=build]');
+  await page.waitForSelector('.overlay.build');
+  await shot('pause-build');
+  await page.tap('[data-act=back]');
   await page.tap('[data-act=sound]');
   console.log('sound saved:', await page.evaluate(() => window.__overforged.save.data.sound));
   await page.tap('[data-act=resume]');
+  await page.tap('canvas', { position: { x: 60, y: 40 } });          // a tap on the HUD opens the build view
+  await page.waitForSelector('.overlay.build', { timeout: 2000 });
+  await shot('hud-build');
+  await page.tap('[data-act=back]');
+  await page.waitForSelector('[data-act=resume]');
+  await page.tap('[data-act=resume]');
+}
+if (flag('--results')) {                                         // end screen with the damage breakdown
+  await page.waitForTimeout(8000);
+  await page.keyboard.press('r');
+  await page.waitForSelector('[data-act=again]');
+  if (opt('--shot')) await page.screenshot({ path: opt('--shot').replace(/\.png$/, '-results.png') });
+  console.log('results damage block:', await page.locator('.build-wrap.results').count());
 }
 if (flag('--loadout')) await page.evaluate(() => window.__overforged.game.run.debugLoadout());
 if (flag('--boss')) await page.evaluate(() => { const o = window.__overforged; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
@@ -134,5 +157,5 @@ await browser.close();
 server.close();
 
 if (errors.length) { console.log('console errors:\n' + errors.join('\n')); process.exit(1); }
-if (info.state !== 'run' || info.time < 2) { console.log('run did not progress'); process.exit(1); }
+if ((info.state !== 'run' && !flag('--results')) || info.time < 2) { console.log('run did not progress'); process.exit(1); }
 console.log('smoke ok');

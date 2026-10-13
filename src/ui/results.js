@@ -1,4 +1,5 @@
 import { fmtTime } from './overlay.js';
+import { resultsDamageHtml } from './build.js';
 
 const BEST_LABEL = { time: 'time', kills: 'kills', level: 'level' };
 
@@ -16,6 +17,7 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
      ${summary.bossKilled ? '<p class="sub">The Warlord is slain.</p>' : ''}
      ${unlocked.length ? `<p class="unlock">Unlocked: ${unlocked.join(', ')}!</p>` : ''}
      ${summary.titles.length ? `<p class="sub">Titles: ${summary.titles.join(', ')}</p>` : ''}
+     ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>
      <button class="btn primary" data-act="again">Play again</button>
      <button class="btn" data-act="title">Title</button>`,

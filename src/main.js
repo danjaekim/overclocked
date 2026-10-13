@@ -29,7 +29,7 @@ const overlays = createOverlays(document.getElementById('ui'));
 const renderer = createRenderer(canvas, view);
 
 let game;
-const input = createInput(canvas, { onPause: () => game && game.togglePause() });
+const input = createInput(canvas, { onPause: () => game && game.togglePause(), onBuild: () => game && game.openBuild() });
 const save = createSave(browserStorage());
 const audio = createAudio({ enabled: save.data.sound });
 debug.audioState = () => audio.state;

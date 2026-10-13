@@ -7,7 +7,7 @@
 // before the flush so burn damage resolves in the same tick.
 
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
-import { queueDamage, KIND_PROC, KIND_DOT } from './damage-queue.js';
+import { queueDamage, KIND_PROC, KIND_DOT, CAUSE } from './damage-queue.js';
 import { MAX_TRIGGER_DEPTH } from '../effects/index.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addArc, addPuff } from '../render/fx.js';
@@ -77,7 +77,7 @@ export function applyChill(run, e, src, depth = 0) {
 }
 
 // Queues PROC damage to every living enemy within `radius` of (x, y).
-function burst(run, x, y, radius, dmg, src, depth) {
+function burst(run, x, y, radius, dmg, src, depth, cause) {
   if (depth + 1 > MAX_TRIGGER_DEPTH) return;
   const w = run.world;
   const n = w.hash.queryRadius(x, y, radius + MAX_ENEMY_RADIUS, w.scratch);
@@ -89,7 +89,7 @@ function burst(run, x, y, radius, dmg, src, depth) {
     const rr = radius + o.r;
     if (dx * dx + dy * dy > rr * rr) continue;
     const d = Math.hypot(dx, dy) || 1;
-    queueDamage(run, o, dmg, false, (dx / d) * 50, (dy / d) * 50, depth + 1, src, KIND_PROC);
+    queueDamage(run, o, dmg, false, (dx / d) * 50, (dy / d) * 50, depth + 1, src, KIND_PROC, cause);
   }
 }
 
@@ -105,7 +105,7 @@ function quench(run, e, src, depth) {
   e.slowMul = 1;
   refreshMask(e);
   addPuff(run, e.x, e.y, QUENCH_RADIUS / 2.4, '#eaf6ff');
-  if (pool > 0) burst(run, e.x, e.y, QUENCH_RADIUS, pool * run.rules.quench.mult, src, depth);
+  if (pool > 0) burst(run, e.x, e.y, QUENCH_RADIUS, pool * run.rules.quench.mult, src, depth, CAUSE.QUENCH);
 }
 
 export function applyShock(run, e, src) {
@@ -116,7 +116,7 @@ export function applyShock(run, e, src) {
 // Arc from `from` through up to `chains` nearest un-hit enemies. Each hop is PROC damage at
 // chainDamage x the original hit, shocks its target, and draws a short bolt.
 // hopsOverride / dmgFrac (>= 0) replace the weapon's `chains` / `chainDamage` (Thunderclap).
-export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dmgFrac = -1) {
+export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dmgFrac = -1, cause = CAUSE.CHAIN) {
   if (depth + 1 > MAX_TRIGGER_DEPTH) return;
   const stats = run.player.stats;
   const hops = Math.min(SHOCK.maxHops, hopsOverride >= 0 ? hopsOverride : Math.round(stats.getFor('chains', src.tags)));
@@ -147,7 +147,7 @@ export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dm
     addArc(run, cx, cy, best.x, best.y);
     applyShock(run, best, src);
     const d = Math.sqrt(bestD) || 1;
-    queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC);
+    queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC, cause);
     if (run.rules.overload && (best.status & ST.BURN)) overload(run, best, src, dmg, depth);
     cx = best.x;
     cy = best.y;
@@ -169,7 +169,7 @@ function overload(run, e, src, hopDmg, depth) {
     const rr = OVERLOAD_RADIUS + o.r;
     if (dx * dx + dy * dy > rr * rr) continue;
     const d = Math.hypot(dx, dy) || 1;
-    queueDamage(run, o, dmg, false, (dx / d) * 50, (dy / d) * 50, depth + 1, src, KIND_PROC);
+    queueDamage(run, o, dmg, false, (dx / d) * 50, (dy / d) * 50, depth + 1, src, KIND_PROC, CAUSE.OVERLOAD);
     addBurnPool(run, o, src, run.player.stats.getFor('burnPower', src.tags) * dmg);
   }
 }
@@ -208,10 +208,10 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
   }
   if ((mask & ST.FROZEN) && rules.shatter) {
     addPuff(run, e.x, e.y, SHATTER_RADIUS / 2.4, '#bfeaff');
-    burst(run, e.x, e.y, SHATTER_RADIUS, maxHp * rules.shatter.frac, src, depth);
+    burst(run, e.x, e.y, SHATTER_RADIUS, maxHp * rules.shatter.frac, src, depth, CAUSE.SHATTER);
   }
   if ((mask & ST.SHOCK) && rules.thunderclap) {
-    chainArc(run, e, src, amount, depth, rules.thunderclap.hops, THUNDERCLAP_FRAC);
+    chainArc(run, e, src, amount, depth, rules.thunderclap.hops, THUNDERCLAP_FRAC, CAUSE.THUNDERCLAP);
   }
 }
 

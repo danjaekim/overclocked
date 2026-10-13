@@ -8,6 +8,7 @@ import { showTitle } from '../ui/title.js';
 import { showClassSelect } from '../ui/class-select.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { showPause } from '../ui/pause.js';
+import { showBuild, buildHtml, ownedLine } from '../ui/build.js';
 import { showResults } from '../ui/results.js';
 import { showLevelUp } from '../ui/levelup.js';
 import { showForge } from '../ui/forge.js';
@@ -70,17 +71,19 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     game.state = 'run';
   }
 
-  function pause() {
+  function pause(openBuild = false) {
     if (game.state !== 'run') return;
     game.state = 'paused';
     input.reset();
     const show = () => showPause(overlays, {
       onResume: resume,
+      onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
       onQuit: toTitle,
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
     });
-    show();
+    if (openBuild) showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' });
+    else show();
   }
 
   function resume() {
@@ -115,6 +118,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const level = run.player.level - (run.pendingLevelUps - 1);
     const show = () => showLevelUp(overlays, {
       level,
+      getBuild: () => buildHtml(run),
+      owned: ownedLine(run),
       offers,
       rerolls: run.rerolls,
       banishes: run.banishes,
@@ -180,6 +185,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
+  game.openBuild = () => { if (game.state === 'run') pause(true); };
   game.togglePause = () => (game.state === 'run' ? pause() : game.state === 'paused' ? resume() : undefined);
   game.isSimulating = () => game.state === 'run' && !rotate.blocked;
 

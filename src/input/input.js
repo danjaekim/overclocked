@@ -2,14 +2,14 @@
 // Exposes a normalized movement vector via getMove().
 //
 // Touches that begin in the top zone (HUD area) never start the joystick; a tap on the
-// pause button there calls onPause. Stick coordinates are CSS pixels relative to the canvas.
+// pause button there calls onPause and any other HUD tap calls onBuild. Stick coordinates are CSS pixels relative to the canvas.
 
 const MAX_RADIUS = 60;      // CSS px of finger travel for full speed
 const DEAD_ZONE = 6;        // CSS px
 const TOP_ZONE = 0.12;      // fraction of canvas height reserved for the HUD
 const PAUSE_BTN = 64;       // CSS px square in the top-right corner
 
-export function createInput(canvas, { onPause = () => {} } = {}) {
+export function createInput(canvas, { onPause = () => {}, onBuild = () => {} } = {}) {
   const keys = new Set();
   const stick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, maxRadius: MAX_RADIUS };
   const out = { x: 0, y: 0 };
@@ -39,6 +39,7 @@ export function createInput(canvas, { onPause = () => {} } = {}) {
     const ly = e.clientY - r.top;
     if (ly < r.height * TOP_ZONE) {
       if (lx > r.width - PAUSE_BTN && ly < PAUSE_BTN + 24) onPause();
+      else onBuild();                 // a tap on the rest of the HUD opens the build view
       return;
     }
     canvas.setPointerCapture(e.pointerId);

@@ -12,6 +12,11 @@ export const KIND_HIT = 0;
 export const KIND_PROC = 1;
 export const KIND_DOT = 2;
 
+// Where an entry's damage came from, for the run stats (what the end screen breaks down).
+export const CAUSE = { DIRECT: 0, BURN: 1, CHAIN: 2, BLAST: 3, QUENCH: 4, OVERLOAD: 5, SHATTER: 6, THUNDERCLAP: 7 };
+export const CAUSE_NAMES = ['Direct hits', 'Burn', 'Shock chains', 'Blasts', 'Quench', 'Overload', 'Shatter', 'Thunderclap'];
+const DEFAULT_CAUSE = [CAUSE.DIRECT, CAUSE.BLAST, CAUSE.BURN];   // by kind: HIT, PROC, DOT
+
 export function createDamageQueue() {
   return {
     n: 0,
@@ -24,11 +29,12 @@ export function createDamageQueue() {
     ky: new Float32Array(CAP),
     src: new Array(CAP).fill(null),   // weapon instance that caused the hit (drives triggers)
     kind: new Uint8Array(CAP),
+    cause: new Uint8Array(CAP),
     depth: new Uint8Array(CAP),       // trigger recursion depth (capped at 3 once triggers exist)
   };
 }
 
-export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0, src = null, kind = KIND_HIT) {
+export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0, src = null, kind = KIND_HIT, cause = DEFAULT_CAUSE[kind]) {
   const q = run.world.dmg;
   if (q.n >= CAP) {
     q.dropped++;
@@ -44,4 +50,5 @@ export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0,
   q.depth[i] = depth;
   q.src[i] = src;
   q.kind[i] = kind;
+  q.cause[i] = cause;
 }

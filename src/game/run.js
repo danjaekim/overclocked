@@ -21,6 +21,7 @@ import { drawShrines } from '../render/shrines.js';
 import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { LEVELUP } from '../data/progression.js';
+import { createStats, statsSnapshot } from './run-stats.js';
 
 export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = () => {} }) {
   const run = {
@@ -51,6 +52,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     shrines: [],            // active anvil shrines { x, y, ttl, maxTtl, progress }
     pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
     chestsOpened: 0,
+    stats: createStats(),   // damage by weapon and cause, per-second timeline (game/run-stats.js)
     forgeReady: false,      // a shrine was channelled: game.js opens the forge next
     player: null,
     cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
@@ -154,11 +156,16 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       ];
     },
 
+    statsSnapshot() {
+      return statsSnapshot(run);
+    },
+
     summary() {
       return {
         time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, classId: run.player.classId,
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
         weapons: run.player.weapons.map((w) => w.def.name),
+        stats: statsSnapshot(run),
       };
     },
   };
