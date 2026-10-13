@@ -25,6 +25,8 @@ combine) is not: it decides what content to build. So: measure first, build the 
 
 ## Milestones
 
+M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit pipeline, perk catalogue, builds, chests, forge choices), which also proposes splitting M11 into M11a/M11b and adding tempers to M13.
+
 | # | Name | Contents |
 |---|---|---|
 | **M9** *(done)* | Measure and fix the basics | Confirm sound on the phone. `tools/bench.mjs`: a headless benchmark that reports, per weapon at levels 1, 4 and 8, single-target DPS and time to clear a 20-enemy crowd, plus a simple bot run per class (level, kills, survival at 5:00 and 10:00). Archer starting kit buff (the bench decides how: base pierce 1, a 2-arrow fan, or faster fire). |
