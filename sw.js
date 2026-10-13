@@ -1,34 +1,16 @@
-// Service worker: makes the game load offline after the first visit.
-// Strategy: network-first for everything same-origin (so a new deploy shows up right away when
-// online), falling back to the cache when the network fails. Bump CACHE to drop old entries.
+// Retired service worker. Offline caching caused Safari to serve stale or failed module loads, so
+// the game no longer registers one. This stub stays so any browser that still has the old worker
+// fetches it, clears the old caches and unregisters itself. It has no fetch handler.
 
-const CACHE = 'overforged-v2';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
-});
+self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  event.respondWith(
-    fetch(req, { cache: 'no-cache' })   // always revalidate: Safari's HTTP cache can otherwise serve a mix of old and new modules
-      .then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-        }
-        return res;
-      })
-      .catch(() => caches.match(req).then((hit) => hit || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then((clients) => clients.forEach((c) => c.navigate(c.url)))
+      .catch(() => {})
   );
 });

@@ -40,11 +40,6 @@ document.getElementById('ui').addEventListener('click', (e) => {
   if (e.target.closest('[data-act]')) audio.play('tap');
 });
 
-// Offline support / installability (needs https or localhost; failure is harmless)
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
-}
-
 const loop = createLoop({
   update: (dt) => game.update(dt),
   render: () => renderer.draw(game.run, input, debug),

@@ -190,10 +190,13 @@ test('manifest is valid, portrait, standalone, and its icons exist', () => {
   assert.ok(existsSync(new URL('../icons/apple-touch-icon.png', import.meta.url)));
 });
 
-test('index.html links the manifest and apple icon; the service worker file exists', () => {
+test('index.html links the manifest and apple icon; the retired service worker stub unregisters itself', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(html.includes('rel="manifest"'));
   assert.ok(html.includes('apple-touch-icon'));
   const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
-  assert.ok(sw.includes("addEventListener('fetch'"));
+  assert.ok(!sw.includes("addEventListener('fetch'"), 'the retired worker must not intercept requests');
+  assert.ok(sw.includes('unregister'));
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  assert.ok(!main.includes('serviceWorker'), 'the game no longer registers a service worker');
 });
