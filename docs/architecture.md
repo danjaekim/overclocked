@@ -8,9 +8,9 @@ This is the source of truth for how the game is built. Any agent or person addin
 
 | | |
 |---|---|
-| **Genre** | Survivors-style roguelike: move only, weapons auto-fire, enemy hordes, XP → level-up choices, 15-minute runs. |
+| **Genre** | Survivors-style roguelike: move only, weapons auto-fire, enemy hordes, XP → level-up choices. **10-minute runs** (short sessions suit mobile; length is one constant, §5.8). |
 | **Hook** | The **forge**: ore drops feed enhance / reforge / combine decisions that turn a run absurdly strong. |
-| **Platform** | Web app. **Mobile-first** (iPhone Safari, Add to Home Screen, portrait and landscape), desktop playable with keyboard. |
+| **Platform** | Web app. **Mobile-first, portrait-only** (iPhone Safari, Add to Home Screen). Desktop is playable with keyboard in the same portrait-shaped view, so balance is identical on both (§8). |
 | **Tech** | Plain ES modules, Canvas 2D, **no build step, no runtime dependencies.** Served as static files (GitHub Pages). |
 | **Performance floor** | 60 fps on iPhone 12-class hardware with the budgets in §7. |
 | **Iteration** | Content (weapons, passives, enemies, waves) is **data**, not code. Adding a weapon that uses an existing behavior must not touch engine code. |
@@ -47,7 +47,7 @@ src/
     run.js                     one run: owns world, player, director, timers
     world.js                   entity stores + system update order
     player.js                  player entity, StatBlock, inventory, xp/level
-    director.js                spawn director: reads waves data, spawns enemies
+    director.js                spawn director: reads waves data, spawns enemies and forge shrines
     upgrades.js                level-up offer generation (§5.6)
     forge.js                   forge actions; pure functions over inventory (§6)
     evolutions.js              recipe checks
@@ -63,9 +63,10 @@ src/
     renderer.js                camera, layers, culling, draw order
     shapes.js                  placeholder primitives (circle, ring, tri, bar)
     fx.js                      damage numbers, hit flash, screen shake, particles
-    hud.js                     canvas HUD: hp, xp bar, timer, level, ore
+    hud.js                     canvas HUD: hp, xp bar, timer, level, ore, off-screen shrine arrow
   ui/                          DOM overlays (menus are DOM, gameplay is canvas)
     overlay.js                 mount/unmount helper, safe-area aware
+    rotate-prompt.js           "rotate to portrait" cover shown (and run paused) in landscape on touch devices
     levelup.js  forge-ui.js  pause.js  results.js  title.js  class-select.js
   data/                        ALL tunable content lives here
     classes.js  weapons.js  passives.js  titles.js  evolutions.js
@@ -103,19 +104,20 @@ No general ECS. A few typed **stores**, each a fixed-capacity pool of plain obje
 | `enemies` | 600 | hp, speed, radius, defId, status timers, hitFlash |
 | `projectiles` | 800 | owner weapon instance, pierce left, ttl, hit-set |
 | `pickups` | 600 | xp gems, ore, chests, heals; merge when over cap (§7) |
+| `shrines` | 4 | forge shrines (§6.3); at most 1 active by default |
 | `summons` | 50 | minions; share enemy-like AI pointed at enemies |
 | `fx` | 400 | damage numbers, particles; pure visual, droppable |
 
 Each store keeps an `active` dense array plus a free list. Removal is swap-remove (O(1)); never splice. Systems iterate the dense array backwards so removal during iteration is safe.
 
 ### 3.3 Update order (one tick)
-1. `director.update` — spawn enemies per wave schedule
+1. `director.update` — spawn enemies and shrines per wave schedule
 2. `player.update` — movement from input, regen, timers
 3. `weapons.update` — each weapon instance ticks its behavior (fires/spawns projectiles, applies auras)
 4. `enemyAI.update` — seek player, separation via spatial hash
 5. `movement.update` — integrate projectiles, summons
 6. `spatialHash.rebuild(enemies)`
-7. `collision.update` — projectile↔enemy, enemy↔player, player↔pickup (magnet radius)
+7. `collision.update` — projectile↔enemy, enemy↔player, player↔pickup (magnet radius), player↔shrine (channel progress; opens the forge when full)
 8. `damage.flush` — apply queued damage, crits, deaths → drops, triggers
 9. `status.update` — burn/slow/bleed ticks
 10. `run.checkEvents` — level-up pending? forge pending? boss? win/lose?
@@ -404,16 +406,25 @@ export const ENEMIES = {
 };
 
 // data/waves.js — a timeline; director interpolates rates within each segment
+export const RUN = {
+  length: 600,            // seconds. THE run-length knob (10 min). Win = survive until `length`.
+  designLength: 600,      // the length the timeline below was authored for
+};
 export const WAVES = [
   { from: 0,   to: 60,  spawns: [{ enemy: 'goblin', perSec: 1.5 }], hpScale: 1.0 },
   { from: 60,  to: 180, spawns: [{ enemy: 'goblin', perSec: 4 }, { enemy: 'brute', perSec: 0.2 }], hpScale: 1.2 },
-  { at: 300, event: 'boss', enemy: 'warlord' },
-  { at: 300, event: 'forge' },       // see §6
+  { at: 120, event: 'shrine' },    // forge shrines, see §6.3
+  { at: 240, event: 'shrine' },
+  { at: 300, event: 'boss', enemy: 'warlord' },   // boss death also drops a shrine
+  { at: 390, event: 'shrine' },
+  { at: 510, event: 'shrine' },
   // ...
 ];
 ```
 
-Enemies spawn on a ring just outside the visible area (radius = half diagonal + 40). Director enforces the enemy cap (§7): at cap, it stops spawning and instead buffs `hpScale` so pressure still rises.
+**Changing run length.** Every time value in `WAVES` (`from`, `to`, `at`) is authored against `RUN.designLength`. The director multiplies them by `RUN.length / RUN.designLength`, so setting `RUN.length = 480` compresses the whole arc (boss at 4:00, shrines earlier) without editing the timeline. Spawn *rates* (`perSec`) are not scaled, so a shorter run also has fewer total enemies; retune rates if that matters. HUD timer and the win check read `RUN.length`.
+
+Enemies spawn on the **perimeter of a rectangle** just outside the visible view (view rect expanded by 40 units), with the side chosen weighted by side length. The view is portrait and tall (§8), so a ring would waste most spawns far to the left and right. Director enforces the enemy cap (§7): at cap, it stops spawning and instead buffs `hpScale` so pressure still rises.
 
 ---
 
@@ -434,11 +445,21 @@ Title → ClassSelect → Run ─┬─ Playing ⇄ Paused
 - **Ore** drops from enemies (`ENEMIES[*].ore`), bosses and chests. Types (`data/ores.js`): `iron` (common), `mithril` (uncommon), `starsteel` (boss), `void_ember` (late/rare). Ore is a pickup like XP gems, pulled by the magnet.
 - **Gold**: secondary, from chests and fallbacks; used for reroll/banish costs and meta shop.
 
-### 6.3 When the forge opens
-Forge is **an event, not a menu you can open any time**, to keep pacing tight:
-- Scheduled `forge` events in `WAVES` (default every 3 minutes: 3:00, 6:00, 9:00, 12:00).
-- After each boss kill (guaranteed `starsteel`).
-- Optional: an **anvil shrine** pickup that spawns on the map; touching it opens the forge (good for mid-wave decisions later).
+### 6.3 When the forge opens: shrines
+Forge is **an event, not a menu you can open any time**, to keep pacing tight. On a 10-minute mobile run it opens through **anvil shrines**, so reaching the forge is itself a small risk/reward decision made mid-horde.
+
+Sources of shrines:
+- `shrine` events in `WAVES` (default 2:00, 4:00, 6:30, 8:30 of a 10:00 run).
+- A boss kill drops a shrine at the boss's death position, along with `starsteel`.
+- The `forge` event type (opens the forge immediately, no shrine) still exists for debug, tests and scripted moments, but is **not used in the default timeline**. Auto-opening on top of shrines would mean 6+ interruptions in 10 minutes.
+
+Shrine behavior (all numbers in `data/forge.js#SHRINE`):
+- **Placement:** 220–360 units from the player (just beyond the screen edge), choosing the least crowded of 6 random candidate spots via the spatial hash, and never inside the current view.
+- **Finding it:** a glowing anvil, plus a **HUD edge arrow** pointing at it with a ring showing remaining time, and a sound cue on spawn.
+- **Activating:** stand within `radius` for `channel` seconds (progress ring fills; leaving the radius drains it at 2× speed). Standing still in danger is the cost. When full, state → `Forge`.
+- **Expiry:** `ttl` seconds after spawning it fades (the boss-drop shrine lasts longer). A missed shrine is simply a missed forge; nothing carries over.
+- **One use.** Unspent ore carries to the next shrine.
+- **Concurrency:** at most `maxActive` (default 1) shrines exist; a spawn event while one is active is skipped.
 
 During the forge the run is paused. The player can perform any number of actions while ore lasts, then press **Return to battle**.
 
@@ -453,7 +474,7 @@ Each weapon instance carries:
 
 | Action | Cost | Effect | Risk |
 |---|---|---|---|
-| **Enhance** | ore scaled by current `enhance` | `enhance += 1`; adds `{damage, op:'inc', value: 0.08}` per level, plus a **breakpoint** bonus at +5, +10, +15 (e.g. +1 projectile, `more` damage) | Success chance from table (100% to +3, falls after). On fail: lose ore; above +7, may drop 1 level (Smith class and `luck` reduce this; a "protection" ore prevents it). |
+| **Enhance** | ore scaled by current `enhance` | `enhance += 1`; adds `{damage, op:'inc', value: 0.08}` per level, plus a **breakpoint** bonus at +5, +10, +15 (e.g. +1 projectile, `more` damage) | Success chance from table (100% to +3, falls after). On fail: lose the ore spent; above +7 it may also drop 1 enhance level (Smith class and `luck` reduce this; a "protection" ore prevents it). **A failed enhance never destroys or removes the weapon**; the worst case is losing one enhance level. Only the player's own **Salvage** removes a weapon. |
 | **Reforge** | iron + gold | Reroll a weapon's affixes (1 affix at common, up to 3 at epic). Affixes come from `data/forge.js#AFFIXES` with weights and tag filters. | Can lock one affix for extra cost. |
 | **Combine** | recipe-defined | Execute an evolution whose requirements are met (§5.5). | None; it's the payoff. |
 | **Salvage** | — | Remove a weapon you don't want for ore back; frees a slot. | — |
@@ -471,7 +492,16 @@ export const ENHANCE = {
     15: [{ stat: 'damage', op: 'more', value: 0.5 }, { stat: 'area', op: 'inc', value: 0.25 }],
   },
   downgradeAbove: 7,
-  downgradeChance: 0.5,
+  downgradeChance: 0.5,    // lose 1 enhance level on failure above the threshold; 0 disables downgrades entirely
+  // invariant (tested): no failure outcome removes the weapon instance
+};
+export const SHRINE = {
+  maxActive: 1,
+  ttl: 45,                 // seconds before a shrine fades
+  bossShrineTtl: 90,
+  radius: 32,              // activation radius, world units
+  channel: 0.6,            // seconds standing in radius to open the forge
+  placement: { min: 220, max: 360, candidates: 6 },
 };
 // A weapon may override breakpoints with `forge: { breakpoints: { 5: [...] } }` on its WEAPONS entry
 // (e.g. a melee arc gets +area at +5 instead of +1 projectile). Overrides replace that level only.
@@ -514,7 +544,7 @@ Level-ups give **breadth** (which weapons/passives); the forge gives **depth** (
 - **No per-frame allocation**: math helpers write into out-params; no closures, spreads or array literals inside systems. Damage queue is a preallocated ring buffer.
 - **Rendering**: cull by camera rect; batch by fill style (draw all goblins in one path), avoid `save/restore` per entity, avoid `shadowBlur`, text only for damage numbers with a cap. Pre-render repeated shapes to small offscreen canvases if profiling shows `arc` cost. DPR capped at 2.
 - **Gem merging**: when pickups exceed cap, combine far-away gems into a single larger gem.
-- **Off-screen enemies**: when > 900 px from the player, teleport them to the opposite spawn ring instead of simulating a long walk back.
+- **Off-screen enemies**: when farther than 1.5 view-heights from the player, teleport them to the opposite side of the spawn perimeter instead of simulating a long walk back.
 - **Mobile power**: pause on hidden; drop to 30 fps render (sim still 60 Hz) if frame time > 20 ms for 2 s, show in debug overlay.
 
 ### 7.3 Measurement
@@ -524,10 +554,13 @@ Level-ups give **breadth** (which weapons/passives); the forge gives **depth** (
 
 ## 8. Platform and UX details
 
-- **Input**: floating joystick anywhere on screen (already in `src/input.js`); keyboard WASD/arrows; Esc / two-finger tap = pause. Level-up and forge UIs are large tap targets (≥ 48 px), reachable with one thumb in portrait.
-- **Layout**: canvas full-viewport; overlays use `env(safe-area-inset-*)`. World view scales so the visible radius is roughly constant across phone and desktop (camera zoom from the shorter screen side) to keep difficulty fair.
+- **Orientation: portrait only.** Played one-handed with the thumb. The manifest declares `orientation: portrait` (M8), and on a touch device in landscape `ui/rotate-prompt.js` covers the screen and pauses the run.
+- **Logical view**: the camera shows a fixed **480 world units of width**; height is whatever the screen aspect gives, capped at **1040** units (about 19.5:9). Taller than that is letterboxed with dark bars. Scale = canvas pixel width / 480, so every phone sees the same horizontal field and fairness doesn't depend on the device. All spawn, shrine and teleport distances are expressed against this view rect.
+- **Desktop**: the same portrait view is drawn as a centered column (max about 9:16, as tall as the window allows) on a dark background, not a stretched wide view. Balance is therefore identical to the phone.
+- **Input**: floating joystick appearing wherever the thumb lands, ignoring touches that begin in the top ~12% (HUD and pause button). Keyboard WASD/arrows on desktop; Esc / pause button = pause. The joystick must also work when the first touch lands during a shrine channel.
+- **Thumb layout**: HUD (hp, xp bar, timer, ore, pause) sits at the top, away from the playing thumb. Level-up cards stack **vertically**, each ≥ 72 px tall. The forge is a bottom-sheet: weapon list at the top, actions and cost in the lower half within thumb reach. Minimum tap target 48 px. Overlays use `env(safe-area-inset-*)`.
 - **Audio**: WebAudio, unlocked on first touch; procedural blips in the prototype.
-- **PWA (M8)**: `manifest.webmanifest`, icons, `display: fullscreen`; a service worker for offline play is optional later.
+- **PWA (M8)**: `manifest.webmanifest` (`orientation: portrait`, `display: fullscreen`), icons; a service worker for offline play is optional later.
 - **Persistence**: `meta/save.js` stores `{ version, unlocks, currency, bestTimes, settings }` in `localStorage` under `overforged:save`, wrapped in try/catch; on version mismatch, run a migration function or reset safely.
 - **Determinism**: every run has a seed (shown on results screen). All gameplay randomness goes through `run.rng`; visual-only randomness may use a separate FX rng.
 
@@ -536,7 +569,7 @@ Level-ups give **breadth** (which weapons/passives); the forge gives **depth** (
 ## 9. Testing
 
 - `node tests/run.mjs` — tiny zero-dependency runner (`test(name, fn)`, `assert` helpers).
-- Required tests: stat formula and caching (flat/inc/more/set, tags, conditions), offer generation determinism and slot rules, forge enhance tables and downgrade rules, evolution requirement checks, spatial hash queries vs brute force, data validation passes for all shipped data.
+- Required tests: stat formula and caching (flat/inc/more/set, tags, conditions), offer generation determinism and slot rules, forge enhance tables and downgrade rules (including the invariant that no failure removes the weapon), shrine placement/expiry/channel rules, `RUN.length` timeline scaling, evolution requirement checks, spatial hash queries vs brute force, data validation passes for all shipped data.
 - Manual checklist per milestone: play 3 minutes on phone, play 3 minutes on desktop, run debug stress.
 
 ---
@@ -548,13 +581,13 @@ Each milestone ends playable, is one or a few commits, and has a clear done-chec
 | # | Milestone | Done when |
 |---|---|---|
 | **M0** | Scaffold *(done)* | Canvas, loop, joystick, player moves. |
-| **M1** | Core runtime refactor | `core/` loop, rng, pool, events split out; `game.js` state machine with Title → Run → Results stubs; debug overlay with fps. |
+| **M1** | Core runtime refactor | `core/` loop, rng, pool, events split out; `game.js` state machine with Title → Run → Results stubs; debug overlay with fps; **portrait view** (480-unit width, desktop column, rotate prompt, joystick top-zone ignore, §8). |
 | **M2** | Enemies + spatial hash | `goblin` spawns from `waves.js`, chases, separates; player takes contact damage and can die; stress test shows 500 enemies at 60 fps on phone. |
 | **M3** | Stats + first weapon | `StatBlock` with tests; `projectile` behavior; Archer's `ember_bow` kills enemies; damage numbers, hit flash. |
 | **M4** | XP + level-up | Gems drop and magnet in; xp curve; level-up overlay with 3 offers from `upgrades.js`; weapon levels and 4 passives working through modifiers. |
 | **M5** | Weapon variety | `arc`, `orbit`, `aura` behaviors; Smith class with `forge_hammer`; class select screen; 5–6 weapons total; triggers + 2 effects (`explode`, `shield`). Perf budget re-verified. |
-| **M6** | Forge | Ore drops; scheduled forge events; enhance (with tables + breakpoints), reforge (affixes), salvage; forge overlay; unit tests for `forge.js`. |
-| **M7** | Evolutions + boss + titles | 2 evolution recipes executed at the forge; a boss at 5:00 with starsteel drop; 4 titles (milestone + offer). A full 10-minute run is winnable and feels escalating. |
+| **M6** | Forge + shrines | Ore drops; `shrine` events spawn shrines with edge arrow, channel and expiry (§6.3); enhance (with tables + breakpoints; failures never remove the weapon), reforge (affixes), salvage; forge bottom-sheet overlay; unit tests for `forge.js` and shrine rules. |
+| **M7** | Evolutions + boss + titles | 2 evolution recipes executed at the forge; a boss at 5:00 that drops starsteel and a shrine; 4 titles (milestone + offer). A full 10-minute run (`RUN.length = 600`) is winnable by surviving to the end and feels escalating. |
 | **M8** | Polish for phone | PWA manifest + icons, pause menu, results screen with seed and stats, simple meta unlock (Berserker after first boss kill), save/load, audio blips, GitHub Pages deploy. |
 
 After M8: remaining classes (Mage, Summoner, Saint), more biomes/enemies, balance passes, art.
@@ -575,9 +608,15 @@ After M8: remaining classes (Mage, Summoner, Saint), more biomes/enemies, balanc
 
 ---
 
-## 12. Open questions
+## 12. Decisions
 
-- Portrait vs landscape as the primary phone orientation (current plan: support both, design UI for portrait first).
-- Whether Enhance failure should ever destroy a weapon (current plan: no, only downgrade).
-- Run length: 10 vs 15 minutes for the prototype (plan: 10, then tune).
-- Whether the forge should also be openable via shrine pickups from M6 or later.
+Closed on 2026-10-12. Changing any of these means updating the sections cited.
+
+| Question | Decision | Where |
+|---|---|---|
+| Orientation | **Portrait only**, phone-first. Desktop shows the same portrait-shaped view. | §1, §8 |
+| Run length | **10 minutes**, kept short for mobile. One constant (`RUN.length`) rescales the whole timeline if it feels wrong. | §5.8 |
+| Enhance failure | **Never destroys a weapon.** Worst case is losing one enhance level above +7 (tunable, can be set to 0). | §6.5 |
+| Forge access | **Via shrine pickups**, from M6. Replaces timed auto-opens in the default timeline. | §6.3 |
+
+Tuning knobs to revisit after playtesting (not blockers): `RUN.length`, `ENHANCE.downgradeChance`, shrine count and `ttl`.

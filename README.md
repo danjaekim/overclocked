@@ -6,7 +6,7 @@ Inspired by the genre of 20 Minutes Till Dawn, Vampire Survivors, and Magic Surv
 
 ## Platform
 
-HTML5 canvas, plain ES modules, no build step. Target is iPhone Safari via "Add to Home Screen" (fullscreen), with desktop support (WASD / arrows) for fast testing. A native wrapper (e.g. Capacitor) is a possible later step.
+HTML5 canvas, plain ES modules, no build step. Target is iPhone Safari via "Add to Home Screen" (fullscreen), with desktop support (WASD / arrows) for fast testing. Portrait-only, 10-minute runs. A native wrapper (e.g. Capacitor) is a possible later step.
 
 ## Run locally
 
