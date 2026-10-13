@@ -35,6 +35,10 @@ export function addWeapon(run, weaponId) {
     affixes: [],            // affix ids rolled by the forge
     extraTriggers: [],      // triggers granted by affixes
     reforges: 0,
+    tempers: {},            // chosen tempers by enhance level: { 5: temperDef } (game/forge.js)
+    pendingTemper: 0,       // enhance level (5 or 10) whose temper has not been chosen yet
+    pendingReforge: null,   // { slot, options: [affixId] } rolled and paid for, not yet picked
+    addTags: [],            // element tags gained from affixes and tempers
     // read scope: the weapon's own tags plus a tag unique to this instance, so weapon-local
     // upgrades (levels, forge) and global ones flow through the same stat math
     tags: makeTags([...def.tags, `weapon:${instanceId}`]),
@@ -47,6 +51,12 @@ export function addWeapon(run, weaponId) {
   BEHAVIORS[def.behavior].init(inst, run);
   refreshResonance(run);
   return inst;
+}
+
+// A weapon's tag scope: its own tags, any it gained from affixes/tempers (infusions), and the
+// per-instance tag. Rebuild whenever those change (game/forge.js#syncTags).
+export function instanceTagSet(inst) {
+  return makeTags([...inst.def.tags, ...inst.addTags, inst.instanceTag]);
 }
 
 export function canLevelUp(inst) {

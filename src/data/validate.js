@@ -170,6 +170,18 @@ export function validateData() {
   if (!ENHANCE.success.every((c) => c > 0 && c <= 1)) problems.push('ENHANCE.success entries must be in (0, 1]');
   checkMods(ENHANCE.perLevel, 'ENHANCE.perLevel', problems);
   for (const [lvl, mods] of Object.entries(ENHANCE.breakpoints)) checkMods(mods, `ENHANCE breakpoint ${lvl}`, problems);
+  const checkTempers = (tempers, where) => {
+    for (const [lvl, opts] of Object.entries(tempers)) {
+      if (!Array.isArray(opts) || opts.length !== 2) { problems.push(`${where} ${lvl}: needs exactly two tempers`); continue; }
+      opts.forEach((t, i) => {
+        if (!t.id || !t.name || !t.desc) problems.push(`${where} ${lvl}[${i}]: needs id, name and desc`);
+        checkMods(t.mods, `${where} ${lvl}[${i}]`, problems);
+      });
+    }
+  };
+  checkTempers(ENHANCE.tempers, 'ENHANCE.tempers');
+  for (const lvl of [5, 10]) if (!ENHANCE.tempers[lvl]) problems.push(`ENHANCE.tempers needs a ${lvl} entry`);
+  for (const [id, w] of Object.entries(WEAPONS)) if (w.forge && w.forge.tempers) checkTempers(w.forge.tempers, `weapon ${id} tempers`);
   for (const [id, w] of Object.entries(WEAPONS)) {
     const bps = (w.forge && w.forge.breakpoints) || {};
     for (const [lvl, mods] of Object.entries(bps)) checkMods(mods, `weapon ${id} forge breakpoint ${lvl}`, problems);
@@ -181,6 +193,7 @@ export function validateData() {
     if (!RARITIES[a.rarity]) problems.push(`${at}: unknown rarity "${a.rarity}"`);
     if (!a.mods && !a.triggers) problems.push(`${at}: needs mods or triggers`);
     if (a.mods) checkMods(a.mods, `${at} mods`, problems);
+    if (a.infusion && !(a.addTags && a.addTags.length)) problems.push(`${at}: an infusion needs addTags`);
     for (const t of a.triggers || []) {
       if (!EFFECTS[t.effect]) problems.push(`${at}: unknown effect "${t.effect}"`);
       if (t.on === 'interval') problems.push(`${at}: affix triggers can't be interval (no timer is kept)`);

@@ -15,6 +15,18 @@ export const WEAPONS = {
     rarity: 'common',
     tags: ['projectile', 'ranged', 'fire'],
     baseMods: [{ stat: 'burnChance', op: 'flat', value: 0.35 }],
+    forge: {
+      tempers: {
+        5: [
+          { id: 'longbow', name: 'Longbow', desc: 'One heavy, piercing arrow: -1 arrow, +2 pierce, +40% speed, 60% more damage', mods: [{ stat: 'projectiles', op: 'flat', value: -1 }, { stat: 'pierce', op: 'flat', value: 2 }, { stat: 'projSpeed', op: 'inc', value: 0.4 }, { stat: 'damage', op: 'more', value: 0.6 }] },
+          { id: 'shortbow', name: 'Shortbow', desc: 'A hail of arrows: +1 arrow, -25% cooldown', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }, { stat: 'cooldown', op: 'inc', value: -0.25 }] },
+        ],
+        10: [
+          { id: 'flamebow', name: 'Flamebow', desc: 'Becomes a fire weapon: +50% burn chance, burns +30% harder', mods: [{ stat: 'burnChance', op: 'flat', value: 0.5 }, { stat: 'burnPower', op: 'flat', value: 0.3 }], addTags: ['fire'] },
+          { id: 'stormbow', name: 'Stormbow', desc: 'Becomes a storm weapon: +40% shock chance, +1 chain', mods: [{ stat: 'shockChance', op: 'flat', value: 0.4 }, { stat: 'chains', op: 'flat', value: 1 }], addTags: ['storm'] },
+        ],
+      },
+    },
     behavior: 'projectile',
     base: {
       damage: 14, cooldown: 0.9, speed: 520, count: 1, pierce: 1,
@@ -46,6 +58,18 @@ export const WEAPONS = {
     tags: ['melee', 'arc', 'physical', 'close'],
     behavior: 'arc',
     base: { damage: 24, cooldown: 1.0, count: 1, range: 82, arcWidth: 1.9 },
+    forge: {
+      tempers: {
+        5: [
+          { id: 'maul_grip', name: 'Maul grip', desc: '40% more damage, +15% cooldown', mods: [{ stat: 'damage', op: 'more', value: 0.4 }, { stat: 'cooldown', op: 'inc', value: 0.15 }] },
+          { id: 'twin_hammers', name: 'Twin hammers', desc: 'Swings again behind you', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }] },
+        ],
+        10: [
+          { id: 'molten', name: 'Molten', desc: 'Becomes a fire weapon: +60% burn chance', mods: [{ stat: 'burnChance', op: 'flat', value: 0.6 }], addTags: ['fire'] },
+          { id: 'quake', name: 'Quake', desc: '40% more area, +50% knockback', mods: [{ stat: 'area', op: 'more', value: 0.4 }, { stat: 'knockback', op: 'inc', value: 0.5 }] },
+        ],
+      },
+    },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -95,7 +119,6 @@ export const WEAPONS = {
     rarity: 'uncommon',
     tags: ['aura', 'fire', 'magic', 'close'],
     baseMods: [{ stat: 'burnChance', op: 'flat', value: 0.25 }],
-    forge: { breakpoints: { 5: [{ stat: 'area', op: 'inc', value: 0.25 }] } },   // aura has no projectiles
     behavior: 'aura',
     base: { damage: 6, cooldown: 0.6, range: 80 },
     maxLevel: 8,
@@ -121,6 +144,18 @@ export const WEAPONS = {
     rarity: 'uncommon',
     tags: ['projectile', 'ranged', 'storm'],
     baseMods: [{ stat: 'shockChance', op: 'flat', value: 0.5 }],
+    forge: {
+      tempers: {
+        5: [
+          { id: 'harpoon', name: 'Harpoon', desc: '+3 pierce, 25% more damage', mods: [{ stat: 'pierce', op: 'flat', value: 3 }, { stat: 'damage', op: 'more', value: 0.25 }] },
+          { id: 'bundle', name: 'Bundle', desc: '+2 javelins', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }] },
+        ],
+        10: [
+          { id: 'thunderhead', name: 'Thunderhead', desc: '+2 chains', mods: [{ stat: 'chains', op: 'flat', value: 2 }] },
+          { id: 'ice_lance', name: 'Ice lance', desc: 'Becomes a frost weapon: +70% chill chance, +1 chill stack', mods: [{ stat: 'chillChance', op: 'flat', value: 0.7 }, { stat: 'chillStacks', op: 'flat', value: 1 }], addTags: ['frost'] },
+        ],
+      },
+    },
     behavior: 'projectile',
     base: { damage: 22, cooldown: 1.7, speed: 440, count: 1, pierce: 3, spread: 0.02, gap: 9, ttl: 1.3, radius: 7, range: 420 },
     maxLevel: 8,
@@ -172,6 +207,18 @@ export const WEAPONS = {
     tags: ['melee', 'arc', 'physical', 'close'],
     behavior: 'arc',
     base: { damage: 24, cooldown: 0.9, count: 1, range: 74, arcWidth: 2.3 },
+    forge: {
+      tempers: {
+        5: [
+          { id: 'cleaver', name: 'Cleaver', desc: '+0.5 crit multiplier', mods: [{ stat: 'critMult', op: 'flat', value: 0.5 }] },
+          { id: 'whirl', name: 'Whirl', desc: 'Swings again behind you, +20% area', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }, { stat: 'area', op: 'inc', value: 0.2 }] },
+        ],
+        10: [
+          { id: 'bloodaxe', name: 'Bloodaxe', desc: '+2% lifesteal, crits execute under 10% HP', mods: [{ stat: 'lifesteal', op: 'flat', value: 0.02 }, { stat: 'executeBelow', op: 'flat', value: 0.1 }] },
+          { id: 'frost_axe', name: 'Frostbite axe', desc: 'Becomes a frost weapon: +60% chill chance', mods: [{ stat: 'chillChance', op: 'flat', value: 0.6 }], addTags: ['frost'] },
+        ],
+      },
+    },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],

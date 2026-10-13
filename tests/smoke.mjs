@@ -93,7 +93,9 @@ if (flag('--forge')) {
   await page.waitForSelector('.overlay.forge', { timeout: 5000 });
   if (opt('--shot')) await page.screenshot({ path: opt('--shot').replace(/\.png$/, '-forge.png') });
   await page.tap('[data-act^="enh:"]');
-  await page.tap('[data-act^="ref:"]');
+  await page.tap('[data-act^="rfs:"]');
+  if (opt('--shot')) await page.screenshot({ path: opt('--shot').replace(/\.png$/, '-reforge.png') });
+  await page.tap('[data-act^="rfp:"]');
   const msg = await page.textContent('.fmsg');
   console.log('forge message:', msg);
   await page.tap('[data-act=done]');

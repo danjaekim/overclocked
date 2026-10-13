@@ -3,7 +3,7 @@
 import { EVOLUTIONS } from '../data/evolutions.js';
 import { WEAPONS } from '../data/weapons.js';
 import { BEHAVIORS } from '../behaviors/index.js';
-import { makeTags } from '../stats/stats.js';
+import { instanceTagSet } from './weapons.js';
 import { PASSIVES } from '../data/passives.js';
 import { TITLES } from '../data/titles.js';
 import { applyBaseMods } from './weapons.js';
@@ -57,7 +57,7 @@ export function evolve(run, inst, recipe) {
   inst.weaponId = recipe.into;
   inst.def = def;
   inst.level = 1;
-  inst.tags = makeTags([...def.tags, inst.instanceTag]);
+  inst.tags = instanceTagSet(inst);
   inst.trigT = def.triggers.map(() => 0);
   applyBaseMods(run, inst);
   BEHAVIORS[def.behavior].init(inst, run);

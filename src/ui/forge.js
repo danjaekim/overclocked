@@ -7,7 +7,8 @@ import { WEAPONS } from '../data/weapons.js';
 import { recipesFor, checklist, canEvolve, evolve } from '../game/evolution.js';
 import {
   enhance, enhanceCost, enhanceChance, canEnhance, downgradeChance,
-  reforge, reforgeCost, canReforge, salvage, salvageValue, canSalvage,
+  rollReforge, applyReforge, keepCurrent, reforgeCost, reforgeSlots, canReforge,
+  temperOptions, chooseTemper, salvage, salvageValue, canSalvage,
 } from '../game/forge.js';
 
 function outcomeText(r) {
@@ -25,10 +26,31 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
   function weaponCard(inst) {
     const def = inst.def;
     const color = RARITIES[def.rarity].color;
-    const affixes = inst.affixes.length
-      ? inst.affixes.map((id) => `<span title="${AFFIXES[id].desc}">${AFFIXES[id].name}</span>`).join(' · ')
-      : 'No affixes';
-    const affixDesc = inst.affixes.map((id) => AFFIXES[id].desc).join(', ');
+    const pending = inst.pendingReforge;
+    const rcost = reforgeCost(inst);
+    const slots = reforgeSlots(inst).map((sl) => {
+      const a = sl.affixId ? AFFIXES[sl.affixId] : null;
+      const busy = pending && pending.slot === sl.index;
+      const reachable = sl.index <= inst.affixes.length;       // fill slots in order
+      return `<div class="fslot${busy ? ' busy' : ''}">
+        <span class="fslot-text">${a ? `<b style="color:${RARITIES[a.rarity].color}">${a.name}</b> ${a.desc}` : '<i>Empty slot</i>'}</span>
+        <button class="fbtn small" data-act="rfs:${inst.instanceId}:${sl.index}" ${canReforge(run, inst) && reachable ? '' : 'disabled'}>${a ? 'Reforge' : 'Forge'}<small>${rcost} ore</small></button>
+      </div>`;
+    }).join('');
+    const options = pending ? `<div class="fpick">
+        <div class="fpick-top"><b>Choose an effect</b></div>
+        ${pending.options.map((id, i) => {
+          const a = AFFIXES[id];
+          return `<button class="fopt" style="--c:${RARITIES[a.rarity].color}" data-act="rfp:${inst.instanceId}:${i}"><b>${a.name}</b><span>${a.desc}</span></button>`;
+        }).join('')}
+        <button class="fbtn" data-act="rfk:${inst.instanceId}">Keep current</button>
+      </div>` : '';
+    const tempers = inst.pendingTemper ? `<div class="fpick temper">
+        <div class="fpick-top"><b>Temper at +${inst.pendingTemper}</b> choose one</div>
+        ${temperOptions(inst, inst.pendingTemper).map((t, i) => `<button class="fopt" style="--c:#ffb45e" data-act="tmp:${inst.instanceId}:${i}"><b>${t.name}</b><span>${t.desc}</span></button>`).join('')}
+      </div>` : '';
+    const chosen = Object.entries(inst.tempers).map(([lvl, t]) => `+${lvl} ${t.name}`).join(' · ');
+    const tags = inst.addTags.length ? ` · ${inst.addTags.join(' + ')}` : '';
 
     const maxed = inst.enhance >= ENHANCE.maxLevel;
     const risk = downgradeChance(run, inst) > 0 ? ' <i>risk</i>' : '';
@@ -51,11 +73,12 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
 
     return `<div class="fcard" style="--c:${color}">
       <div class="ftop"><b>${def.name}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
-      <div class="faff">${affixes}</div>
-      ${affixDesc ? `<div class="fdesc">${affixDesc}</div>` : ''}
+      ${chosen || tags ? `<div class="faff">${chosen}${tags}</div>` : ''}
+      ${tempers}
+      ${slots}
+      ${options}
       <div class="frow">
-        <button class="fbtn" data-act="enh:${inst.instanceId}" ${canEnhance(run, inst) ? '' : 'disabled'}>${enhLabel}</button>
-        <button class="fbtn" data-act="ref:${inst.instanceId}" ${canReforge(run, inst) ? '' : 'disabled'}>Reforge<small>${reforgeCost(inst)} ore</small></button>
+        <button class="fbtn" data-act="enh:${inst.instanceId}" ${canEnhance(run, inst) ? '' : 'disabled'}>${inst.pendingTemper ? 'Choose a temper' : enhLabel}</button>
         <button class="fbtn${confirming === inst.instanceId ? ' warn' : ''}" data-act="sal:${inst.instanceId}" ${canSalvage(run) ? '' : 'disabled'}>${salLabel}</button>
       </div>
       ${evo}
@@ -91,12 +114,27 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
     if (kind === 'enh') {
       const r = enhance(run, inst);
       message = outcomeText(r);
+      if (r.ok && r.outcome === 'success' && inst.pendingTemper) message = `Enhanced to +${r.level}! Choose a temper.`;
       tone = r.outcome === 'success' ? 'good' : 'bad';
       if (r.ok) sfx(r.outcome === 'success' ? 'forge' : 'fail');
-    } else if (kind === 'ref') {
-      const r = reforge(run, inst);
+    } else if (kind === 'rfs') {
+      const r = rollReforge(run, inst, Number(extra));
       if (r.ok) sfx('forge');
-      message = r.ok ? `Reforged: ${r.affixes.map((a) => AFFIXES[a].name).join(', ') || 'nothing'}` : '';
+      message = r.ok ? 'Pick one of the three, or keep what you have.' : '';
+      tone = 'good';
+    } else if (kind === 'rfp') {
+      const r = applyReforge(run, inst, Number(extra));
+      if (r.ok) sfx('forge');
+      message = r.ok ? `${AFFIXES[r.affix].name}: ${AFFIXES[r.affix].desc}` : '';
+      tone = 'good';
+    } else if (kind === 'rfk') {
+      keepCurrent(inst);
+      message = 'Kept the current effect.';
+      tone = '';
+    } else if (kind === 'tmp') {
+      const r = chooseTemper(run, inst, Number(extra));
+      if (r.ok) sfx('evolve');
+      message = r.ok ? `${r.temper.name}: ${r.temper.desc}` : '';
       tone = 'good';
     } else if (kind === 'evo') {
       const recipe = recipesFor(inst).find((r) => r.id === extra);

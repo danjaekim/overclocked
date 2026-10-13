@@ -13,7 +13,7 @@ import { killEnemy } from '../src/systems/damage.js';
 import { spawnShrine, updateShrines } from '../src/systems/shrines.js';
 import { spawnOre, updatePickups } from '../src/systems/pickups.js';
 import {
-  enhance, enhanceCost, downgradeChance, reforge, reforgeCost, eligibleAffixes, salvage, salvageValue, canSalvage,
+  enhance, enhanceCost, downgradeChance, chooseTemper, salvage, salvageValue, canSalvage,
 } from '../src/game/forge.js';
 
 const VIEW = { w: 480, h: 1040 };
@@ -54,36 +54,6 @@ test('enhance: not enough ore does nothing', () => {
   assert.equal(r.ok, false);
   assert.equal(run.ore, 1);
   assert.equal(bow.enhance, 0);
-});
-
-test('enhance: breakpoint at +5 grants its bonus, and a weapon override replaces it', () => {
-  const run = newRun();
-  const bow = run.player.weapons[0];
-  run.ore = 1e6;
-  bow.enhance = 4;
-  const proj0 = run.player.stats.getFor('projectiles', bow.tags);
-  const run2 = newRun();
-  const b2 = run2.player.weapons[0];
-  run2.ore = 1e6;
-  b2.enhance = 4;
-  const restore = scripted(run2, [0]);                  // roll 0 < success chance: success
-  enhance(run2, b2);
-  restore();
-  assert.equal(b2.enhance, 5);
-  assert.equal(run2.player.stats.getFor('projectiles', b2.tags), proj0 + 1);
-
-  const run3 = newRun();
-  addWeapon(run3, 'cinder_ward');
-  const ward = run3.player.weapons[1];
-  run3.ore = 1e6;
-  ward.enhance = 4;
-  grantTitle(run3, 'forgemaster', false);               // reaching +5 grants it; take it out of the comparison
-  const area0 = run3.player.stats.getFor('area', ward.tags);
-  const restore3 = scripted(run3, [0]);
-  enhance(run3, ward);
-  restore3();
-  assert.equal(run3.player.stats.getFor('projectiles', ward.tags), 0, 'override: no projectile bonus');
-  approx(run3.player.stats.getFor('area', ward.tags), area0 + 0.25, 1e-6);   // inc stacks additively
 });
 
 test('enhance failure never removes the weapon, whatever the roll or level', () => {
@@ -136,7 +106,10 @@ test('downgrade removes exactly that level\'s modifiers (+1 and +10 stay separat
   const base = dmg(run, bow);
   // climb to +10 with forced successes
   const restore = scripted(run, new Array(10).fill(0));
-  for (let i = 0; i < 10; i++) enhance(run, bow);
+  for (let i = 0; i < 10; i++) {
+    enhance(run, bow);
+    if (bow.pendingTemper) chooseTemper(run, bow, bow.pendingTemper === 5 ? 1 : 0);   // Shortbow, then Flamebow (neither changes damage)
+  }
   restore();
   assert.equal(bow.enhance, 10);
   const at10 = dmg(run, bow);
@@ -163,45 +136,6 @@ test('smith pays 20% less ore to enhance', () => {
   const s = newRun('smith');
   assert.equal(enhanceCost(a, a.player.weapons[0]), ENHANCE.cost[0]);
   assert.equal(enhanceCost(s, s.player.weapons[0]), Math.ceil(ENHANCE.cost[0] * 0.8));
-});
-
-test('reforge: rerolls affixes (count by rarity), removes the old ones, costs more each time', () => {
-  const run = newRun();
-  addWeapon(run, 'spirit_blades');                      // uncommon: 2 affixes
-  const blades = run.player.weapons[1];
-  run.ore = 1e6;
-  const c0 = reforgeCost(blades);
-  reforge(run, blades);
-  assert.equal(blades.affixes.length, REFORGE.affixCount.uncommon);
-  assert.equal(new Set(blades.affixes).size, blades.affixes.length, 'affixes are distinct');
-  assert.equal(reforgeCost(blades), c0 + REFORGE.costPerReforge);
-  const first = blades.affixes.slice();
-  for (let i = 0; i < 20; i++) reforge(run, blades);
-  // whatever it rolled last, only its mods remain: count forge affix modifiers in the stat block
-  const sources = new Set();
-  for (const list of Object.values(run.player.stats.mods)) for (const m of list) if (m.source.startsWith(`forge:${blades.instanceId}:affix:`)) sources.add(m.source.split(':')[3]);
-  for (const id of sources) assert.ok(blades.affixes.includes(id), `stale affix ${id} left behind`);
-  assert.ok(first.length === 2);
-});
-
-test('reforge only rolls affixes the weapon is allowed to have', () => {
-  const run = newRun();
-  addWeapon(run, 'cinder_ward');
-  const ward = run.player.weapons[1];
-  const ok = eligibleAffixes(ward);
-  assert.ok(!ok.includes('piercing'), 'an aura has no pierce');
-  run.ore = 1e6;
-  for (let i = 0; i < 60; i++) { reforge(run, ward); for (const a of ward.affixes) assert.ok(ok.includes(a)); }
-});
-
-test('the volatile affix adds a working trigger and reforging removes it', () => {
-  const run = newRun();
-  const bow = run.player.weapons[0];
-  run.ore = 1e6;
-  bow.extraTriggers.push(...AFFIXES.volatile.triggers);   // as if volatile had been rolled
-  bow.affixes = ['volatile'];
-  reforge(run, bow);                                       // any reroll clears the old triggers first
-  assert.equal(bow.extraTriggers.length, bow.affixes.includes('volatile') ? 1 : 0);
 });
 
 test('salvage: removes the weapon and its modifiers, refunds ore, never the last weapon', () => {

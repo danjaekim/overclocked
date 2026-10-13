@@ -7,11 +7,21 @@ export const ENHANCE = {
   cost:    [3, 4, 5, 6, 8, 10, 12, 15, 18, 22, 26, 30, 35, 40, 50],
   success: [1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15],
   perLevel: [{ stat: 'damage', op: 'inc', value: 0.08 }],
-  // gained when reaching that level; a weapon's `forge.breakpoints` replaces an entry
+  // gained automatically when reaching that level (+5 and +10 are a CHOICE of tempers instead)
   breakpoints: {
-    5:  [{ stat: 'projectiles', op: 'flat', value: 1 }],
-    10: [{ stat: 'damage', op: 'more', value: 0.3 }],
     15: [{ stat: 'damage', op: 'more', value: 0.5 }, { stat: 'area', op: 'inc', value: 0.25 }],
+  },
+  // Reaching +5 and +10 offers two tempers; the player picks one (docs/design-m10-m13.md section 7.3).
+  // A weapon's own `forge.tempers` replaces an entry. `addTags` gives the weapon an element tag.
+  tempers: {
+    5: [
+      { id: 'honed',  name: 'Honed',  desc: '20% more damage',          mods: [{ stat: 'damage', op: 'more', value: 0.2 }] },
+      { id: 'hasted', name: 'Hasted', desc: '-20% cooldown',            mods: [{ stat: 'cooldown', op: 'inc', value: -0.2 }] },
+    ],
+    10: [
+      { id: 'mighty', name: 'Mighty', desc: '30% more damage',          mods: [{ stat: 'damage', op: 'more', value: 0.3 }] },
+      { id: 'vast',   name: 'Vast',   desc: '30% more area, +1 projectile / swing / blade', mods: [{ stat: 'area', op: 'more', value: 0.3 }, { stat: 'projectiles', op: 'flat', value: 1 }] },
+    ],
   },
   // On a failed enhance above this level there is a chance to lose ONE enhance level. A failure
   // never removes the weapon (tested invariant). downgradeChance 0 disables downgrades.
@@ -20,7 +30,10 @@ export const ENHANCE = {
   luckProtect: 0.05,       // each point of luck cuts the downgrade chance by 5% (max 50%)
 };
 
+// One reforge fills or replaces ONE affix slot: you see `options` random affixes and pick one (or keep
+// what you have; the ore is spent either way). At least one option is uncommon or better when one exists.
 export const REFORGE = {
+  options: 3,
   cost: 6,                 // iron
   costPerReforge: 2,       // extra iron per earlier reforge of the same weapon
   affixCount: { common: 1, uncommon: 2, rare: 2, epic: 3, evolved: 3 },
@@ -40,8 +53,10 @@ export const SHRINE = {
   placement: { candidates: 6, edgeMin: 20, edgeMax: 120, maxDy: 300 },
 };
 
-// Affixes rolled by Reforge. `requires`: the weapon must have at least one of these tags.
-// `mods` apply to that weapon only; `triggers` are extra weapon triggers (no interval ones).
+// Affixes rolled by Reforge (pick one of three, one slot at a time).
+//   requires  the weapon must carry at least one of these tags (its own, or ones it gained)
+//   addTags   the weapon gains these tags while it has the affix (infusions: it joins that element's perks and sets)
+//   infusion  a weapon can hold only one infusion at a time
 export const AFFIXES = {
   keen:     { name: 'Keen',     rarity: 'common',   desc: '+5% crit chance',      mods: [{ stat: 'critChance', op: 'flat', value: 0.05 }] },
   swift:    { name: 'Swift',    rarity: 'common',   desc: '-8% cooldown',         mods: [{ stat: 'cooldown', op: 'inc', value: -0.08 }] },
@@ -50,7 +65,20 @@ export const AFFIXES = {
   shoving:  { name: 'Shoving',  rarity: 'common',   desc: '+50% knockback',       mods: [{ stat: 'knockback', op: 'inc', value: 0.5 }] },
   piercing: { name: 'Piercing', rarity: 'uncommon', desc: '+1 pierce',            mods: [{ stat: 'pierce', op: 'flat', value: 1 }], requires: ['projectile'] },
   brutal:   { name: 'Brutal',   rarity: 'uncommon', desc: '+0.3 crit multiplier', mods: [{ stat: 'critMult', op: 'flat', value: 0.3 }] },
+  ember_touched: { name: 'Ember-touched', rarity: 'uncommon', infusion: true, addTags: ['fire'],
+                   desc: 'Becomes a fire weapon: +25% burn chance', mods: [{ stat: 'burnChance', op: 'flat', value: 0.25 }] },
+  rime_touched:  { name: 'Rime-touched',  rarity: 'uncommon', infusion: true, addTags: ['frost'],
+                   desc: 'Becomes a frost weapon: +25% chill chance', mods: [{ stat: 'chillChance', op: 'flat', value: 0.25 }] },
+  storm_touched: { name: 'Storm-touched', rarity: 'uncommon', infusion: true, addTags: ['storm'],
+                   desc: 'Becomes a storm weapon: +20% shock chance', mods: [{ stat: 'shockChance', op: 'flat', value: 0.20 }] },
   twin:     { name: 'Twin',     rarity: 'rare',     desc: '+1 projectile/blade/swing', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }], requires: ['projectile', 'orbit', 'arc'] },
   volatile: { name: 'Volatile', rarity: 'rare',     desc: '10% of kills explode',
               triggers: [{ on: 'kill', chance: 0.1, effect: 'explode', params: { radius: 50, damageFrac: 0.4 } }] },
+  ricocheting: { name: 'Ricocheting', rarity: 'rare', desc: '+2 bounces', mods: [{ stat: 'ricochet', op: 'flat', value: 2 }], requires: ['projectile'] },
+  splitting:   { name: 'Splitting',   rarity: 'rare', desc: 'Splits into 2 shots on first hit', mods: [{ stat: 'split', op: 'flat', value: 2 }], requires: ['projectile'] },
+  conductive:  { name: 'Conductive',  rarity: 'rare', desc: '+1 chain, chains +15% damage', mods: [{ stat: 'chains', op: 'flat', value: 1 }, { stat: 'chainDamage', op: 'flat', value: 0.15 }], requires: ['storm'] },
+  searing:     { name: 'Searing',     rarity: 'rare', desc: '+40% damage to burning enemies', mods: [{ stat: 'vsBurning', op: 'inc', value: 0.4 }], requires: ['fire'] },
+  vampiric:    { name: 'Vampiric',    rarity: 'rare', desc: '+2% lifesteal', mods: [{ stat: 'lifesteal', op: 'flat', value: 0.02 }] },
+  executioner: { name: 'Executioner', rarity: 'epic', desc: 'Crits execute non-bosses under 15% HP', mods: [{ stat: 'executeBelow', op: 'flat', value: 0.15 }] },
+  colossal:    { name: 'Colossal',    rarity: 'epic', desc: '30% more area', mods: [{ stat: 'area', op: 'more', value: 0.3 }] },
 };
