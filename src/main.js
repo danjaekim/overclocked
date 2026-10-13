@@ -42,7 +42,7 @@ document.getElementById('ui').addEventListener('click', (e) => {
 
 // Offline support / installability (needs https or localhost; failure is harmless)
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
 }
 
 const loop = createLoop({

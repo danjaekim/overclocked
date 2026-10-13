@@ -2,7 +2,7 @@
 // Strategy: network-first for everything same-origin (so a new deploy shows up right away when
 // online), falling back to the cache when the network fails. Bump CACHE to drop old entries.
 
-const CACHE = 'overforged-v1';
+const CACHE = 'overforged-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })   // always revalidate: Safari's HTTP cache can otherwise serve a mix of old and new modules
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
