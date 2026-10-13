@@ -19,12 +19,15 @@ import { drawGems, drawOre, drawEnemies, drawProjectiles } from '../render/entit
 import { drawShrines } from '../render/shrines.js';
 import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
+import { LEVELUP } from '../data/progression.js';
 
-export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
+export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = () => {} }) {
   const run = {
     seed,
     view,
     debug,
+    sfx,                    // sound hook: sfx(name); a no-op in tests so the sim stays silent
+    bossKilled: false,
     rng: createRng(seed),
     fxRng: createRng((seed ^ 0x9e3779b9) >>> 0),   // visual-only randomness
     time: 0,
@@ -34,6 +37,9 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
     lastKillTime: -1e9,
     bossAlive: false,
     pendingLevelUps: 0,
+    rerolls: LEVELUP.rerolls,
+    banishes: LEVELUP.banishes,
+    banished: [],           // item ids removed from the offer pool for this run
     ore: 0,                 // iron-equivalents, spent at the forge
     starsteel: 0,           // rare ore from the boss, spent on evolutions
     titles: [],             // earned titles { id, def, level: '' }
@@ -143,7 +149,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
 
     summary() {
       return {
-        time: run.time, kills: run.kills, seed: run.seed, won: run.won,
+        time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, classId: run.player.classId,
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
         weapons: run.player.weapons.map((w) => w.def.name),
       };

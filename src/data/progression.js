@@ -11,6 +11,8 @@ export const LEVELUP = {
   iframesAfter: 1.0,        // seconds of invulnerability when the run resumes
   healFraction: 0.3,        // the fallback "Rest" offer
   offers: 3,
+  rerolls: 2,               // per run: redraw all the offers
+  banishes: 1,              // per run: remove one offered item from the rest of the run
 };
 
 export const GEM = {

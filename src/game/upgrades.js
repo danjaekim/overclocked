@@ -7,6 +7,7 @@
 //   weapons:  [{ weaponId, level, instanceId }],
 //   passives: [{ id, level }],
 //   titles:   [id],                (optional)
+//   banished: [id],                (optional) never offered
 // }
 //
 // An offer is { kind, id, name, rarity, toLevel, isNew, desc, instanceId? } with kind one of
@@ -88,7 +89,8 @@ export function offerWeight(candidate, luck) {
 
 export function generateOffers(state, rng, count = LEVELUP.offers) {
   const luck = state.luck || 0;
-  const pool = buildCandidates(state).filter((c) => offerWeight(c, luck) > 0);
+  const banished = state.banished || [];
+  const pool = buildCandidates(state).filter((c) => offerWeight(c, luck) > 0 && !banished.includes(c.id));
   const picked = [];
   while (picked.length < count && pool.length) {
     const c = rng.weighted(pool, (x) => offerWeight(x, luck));

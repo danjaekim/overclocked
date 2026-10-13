@@ -14,6 +14,7 @@ export function offerState(run) {
     weapons: p.weapons.map((w) => ({ weaponId: w.weaponId, level: w.level, instanceId: w.instanceId })),
     passives: p.passives.map((x) => ({ id: x.id, level: x.level })),
     titles: run.titles.map((t) => t.id),
+    banished: run.banished,
   };
 }
 

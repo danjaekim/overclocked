@@ -132,6 +132,30 @@ export const WEAPONS = {
     evolvesInto: null,
   },
 
+  rending_axe: {
+    name: 'Rending Axe',
+    desc: 'A wide, brutal swing at the nearest enemy. Hits everything in the arc.',
+    class: 'berserker',
+    glyph: 'X',
+    rarity: 'common',
+    tags: ['melee', 'arc', 'physical'],
+    behavior: 'arc',
+    base: { damage: 30, cooldown: 0.85, count: 1, range: 74, arcWidth: 2.3 },
+    maxLevel: 8,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'critChance', op: 'flat', value: 0.1 }],
+      [{ stat: 'damage', op: 'inc', value: 0.3 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '-15% cooldown', '+20% area', '+10% crit chance', '+30% damage', 'swings again behind you', '30% more damage'],
+    triggers: [],
+    evolvesInto: null,
+  },
+
   // ---- evolved weapons (pool: false; reached only through the forge's Combine, data/evolutions.js)
 
   storm_volley: {

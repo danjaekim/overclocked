@@ -99,8 +99,8 @@ export function updatePickups(run, dt) {
 
     const rr = p.r + g.r;
     if (d2 <= rr * rr) {
-      if (g.kind === KIND_ORE) bankOre(run, g.ore, g.value);
-      else gainXp(run, g.value * xpGain);
+      if (g.kind === KIND_ORE) { bankOre(run, g.ore, g.value); run.sfx('ore'); }
+      else { gainXp(run, g.value * xpGain); run.sfx('gem'); }
       store.release(g);
     }
   }

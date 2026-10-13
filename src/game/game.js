@@ -18,36 +18,52 @@ import { offerState, applyOffer } from './apply-offer.js';
 import { xpToNext, gainXp } from './xp.js';
 import { LEVELUP } from '../data/progression.js';
 
-export function createGame({ view, input, overlays, rotate, debug, params }) {
+export function createGame({ view, input, overlays, rotate, debug, params, save, audio }) {
   const game = { state: 'title', run: null };
   let nextSeed = params.seed;
+  const sfx = (name) => audio && audio.play(name);
 
-  // The last class played is remembered on this device (storage can be unavailable: ignore).
-  let lastClass = DEFAULT_CLASS;
-  try {
-    const saved = localStorage.getItem('overforged.class');
-    if (saved && CLASSES[saved] && CLASSES[saved].unlocked) lastClass = saved;
-  } catch (e) { /* no storage */ }
-  if (params.classId && CLASSES[params.classId]) lastClass = params.classId;
+  // The last class played is remembered in the save (which may be a no-op without storage).
+  const open = (id) => CLASSES[id] && (params.unlockAll || save.isUnlocked(id, CLASSES[id]));
+  let lastClass = open(save.data.lastClass) ? save.data.lastClass : DEFAULT_CLASS;
+  if (params.classId && open(params.classId)) lastClass = params.classId;
+
+  function toggleSound(redraw) {
+    const on = !save.data.sound;
+    save.setSound(on);
+    if (audio) audio.setEnabled(on);
+    redraw();
+  }
 
   function toTitle() {
     game.state = 'title';
     game.run = null;
-    showTitle(overlays, { onPlay: params.classId ? () => startRun() : toClassSelect });
+    showTitle(overlays, {
+      onPlay: params.classId ? () => startRun() : toClassSelect,
+      onToggleSound: () => toggleSound(toTitle),
+      sound: save.data.sound,
+      bests: save.data.bests,
+      runs: save.data.runs,
+    });
   }
 
   function toClassSelect() {
-    showClassSelect(overlays, { last: lastClass, onPick: (id) => startRun(id), onBack: toTitle });
+    showClassSelect(overlays, {
+      last: lastClass,
+      isUnlocked: open,
+      onPick: (id) => startRun(id),
+      onBack: toTitle,
+    });
   }
 
   function startRun(classId = lastClass) {
     lastClass = classId;
-    try { localStorage.setItem('overforged.class', classId); } catch (e) { /* no storage */ }
+    save.setLastClass(classId);
     const seed = nextSeed != null ? nextSeed : randomSeed();
     nextSeed = null;                       // a ?seed= applies to the first run only
     input.reset();
     overlays.hide();
-    game.run = createRun({ seed, view, debug, classId });
+    game.run = createRun({ seed, view, debug, classId, sfx });
     game.state = 'run';
   }
 
@@ -55,7 +71,13 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     if (game.state !== 'run') return;
     game.state = 'paused';
     input.reset();
-    showPause(overlays, { onResume: resume, onQuit: toTitle });
+    const show = () => showPause(overlays, {
+      onResume: resume,
+      onQuit: toTitle,
+      onToggleSound: () => toggleSound(show),
+      sound: save.data.sound,
+    });
+    show();
   }
 
   function resume() {
@@ -67,7 +89,16 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
   function finishRun() {
     game.state = 'results';
     input.reset();
-    showResults(overlays, game.run.summary(), { onAgain: () => startRun(), onTitle: toTitle });
+    const summary = game.run.summary();
+    sfx(summary.won ? 'win' : 'lose');
+    // god-mode (debug) runs never touch the save
+    const { newBests } = debug.god ? { newBests: [] } : save.recordRun(summary);
+    // class unlocks: a class whose unlock event happened this run
+    const unlocked = [];
+    for (const [id, c] of Object.entries(CLASSES)) {
+      if (!debug.god && c.unlock && c.unlock.event === 'boss' && summary.bossKilled && save.unlock(id)) unlocked.push(c.name);
+    }
+    showResults(overlays, summary, { onAgain: () => startRun(), onTitle: toTitle, newBests, unlocked });
   }
 
   // Opens the level-up screen for one pending level. The run is frozen while it is open;
@@ -76,10 +107,14 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     const run = game.run;
     game.state = 'levelup';
     input.reset();
-    const offers = generateOffers(offerState(run), run.rng);
-    showLevelUp(overlays, {
-      level: run.player.level - (run.pendingLevelUps - 1),
+    sfx('levelup');
+    let offers = generateOffers(offerState(run), run.rng);
+    const level = run.player.level - (run.pendingLevelUps - 1);
+    const show = () => showLevelUp(overlays, {
+      level,
       offers,
+      rerolls: run.rerolls,
+      banishes: run.banishes,
       onPick(offer) {
         applyOffer(run, offer);
         run.pendingLevelUps--;
@@ -90,7 +125,21 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
           game.state = 'run';
         }
       },
+      onReroll() {
+        if (run.rerolls <= 0) return;
+        run.rerolls--;
+        offers = generateOffers(offerState(run), run.rng);
+        show();
+      },
+      onBanish(offer) {
+        if (run.banishes <= 0) return;
+        run.banishes--;
+        run.banished.push(offer.id);
+        offers = generateOffers(offerState(run), run.rng);
+        show();
+      },
     });
+    show();
   }
 
   // Opens the forge (run frozen) after a shrine was channelled. Level-ups always go first.
@@ -100,6 +149,7 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     game.state = 'forge';
     input.reset();
     showForge(overlays, run, {
+      sfx,
       onDone() {
         overlays.hide();
         run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);

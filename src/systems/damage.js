@@ -13,6 +13,7 @@ const HIT_FLASH = 0.08;
 
 export function killEnemy(run, e) {
   run.kills++;
+  run.sfx('kill');
   run.lastKillTime = run.time;
   addPuff(run, e.x, e.y, e.r, e.def.color);
   spawnGem(run, e.x, e.y, e.def.xp);
@@ -22,6 +23,7 @@ export function killEnemy(run, e) {
   }
   if (e.def.boss) {
     run.bossAlive = false;
+    run.bossKilled = true;
     run.boss = null;
     spawnShrine(run, SHRINE.bossShrineTtl, { x: e.x, y: e.y }, true);
     run.toast = { text: `${e.def.name} slain!`, ttl: 3 };
@@ -34,6 +36,7 @@ export function killEnemy(run, e) {
 // Step 8 of the tick: apply every queued hit.
 export function flushDamage(run) {
   const q = run.world.dmg;
+  const lifesteal = run.player.stats.get('lifesteal');   // global value first: most runs have none
   for (let i = 0; i < q.n; i++) {
     const e = q.enemy[i];
     q.enemy[i] = null;
@@ -48,6 +51,10 @@ export function flushDamage(run) {
     e.kx += q.kx[i];
     e.ky += q.ky[i];
     addDamageNumber(run, e.x, e.y - e.r, q.amount[i], q.crit[i] === 1);
+    if (src && lifesteal > 0) {                       // heal a share of damage dealt (per weapon scope)
+      const p = run.player;
+      p.hp = Math.min(p.maxHp, p.hp + q.amount[i] * p.stats.getFor('lifesteal', src.tags));
+    }
     if (src) {
       if (q.crit[i] === 1) fireTriggers(run, 'crit', src, ex, ey, depth);
       fireTriggers(run, 'hit', src, ex, ey, depth);
@@ -63,6 +70,7 @@ export function flushDamage(run) {
 export function damagePlayer(run, amount) {
   const p = run.player;
   if (p.iframes > 0 || run.over) return;
+  run.sfx('hurt');
   p.iframes = IFRAMES;
   p.hurtFlash = HURT_FLASH;
   run.cam.shake = 7;

@@ -1,13 +1,19 @@
-// Class select: one big card per unlocked class (thumb-friendly), plus a back button.
+// Class select: one big card per class. Locked classes are shown dimmed with how to unlock
+// them (the first Warlord kill unlocks the Berserker).
 
 import { CLASSES } from '../data/classes.js';
 import { WEAPONS } from '../data/weapons.js';
 
-export function showClassSelect(overlays, { last, onPick, onBack }) {
-  const ids = Object.keys(CLASSES).filter((id) => CLASSES[id].unlocked);
-  const cards = ids.map((id) => {
+export function showClassSelect(overlays, { last, isUnlocked, onPick, onBack }) {
+  const cards = Object.keys(CLASSES).map((id) => {
     const c = CLASSES[id];
     const w = WEAPONS[c.startWeapon];
+    if (!isUnlocked(id)) {
+      return `<div class="card locked-class" style="--c:#555a6e">
+        <span class="card-top"><b>${c.name}</b><em>Locked</em></span>
+        <span class="card-desc">${c.unlock ? c.unlock.hint : 'Coming soon'}</span>
+      </div>`;
+    }
     return `<button class="card" data-act="class:${id}" style="--c:#e8a33d">
       <span class="card-top"><b>${c.name}${id === last ? ' ·' : ''}</b><em>${w.name}</em></span>
       <span class="card-desc">${c.blurb}</span>

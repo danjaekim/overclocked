@@ -17,7 +17,7 @@ function outcomeText(r) {
   return `Failed. ${r.cost} ore lost.`;
 }
 
-export function showForge(overlays, run, { onDone }) {
+export function showForge(overlays, run, { onDone, sfx = () => {} }) {
   let message = '';
   let tone = '';
   let confirming = null;                       // instanceId awaiting a second tap to salvage
@@ -92,13 +92,16 @@ export function showForge(overlays, run, { onDone }) {
       const r = enhance(run, inst);
       message = outcomeText(r);
       tone = r.outcome === 'success' ? 'good' : 'bad';
+      if (r.ok) sfx(r.outcome === 'success' ? 'forge' : 'fail');
     } else if (kind === 'ref') {
       const r = reforge(run, inst);
+      if (r.ok) sfx('forge');
       message = r.ok ? `Reforged: ${r.affixes.map((a) => AFFIXES[a].name).join(', ') || 'nothing'}` : '';
       tone = 'good';
     } else if (kind === 'evo') {
       const recipe = recipesFor(inst).find((r) => r.id === extra);
       const r = recipe ? evolve(run, inst, recipe) : { ok: false };
+      if (r.ok) sfx('evolve');
       message = r.ok ? `${r.into.name} forged!` : '';
       tone = 'good';
     } else if (kind === 'sal') {

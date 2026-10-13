@@ -28,7 +28,10 @@ const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
 const opt = (n, d) => (args.includes(n) ? args[args.indexOf(n) + 1] : d);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
+const types = {
+  '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json', '.png': 'image/png',
+};
 
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
@@ -48,7 +51,33 @@ page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
 await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1')}`);
 await page.tap('[data-act=play]');
+if (flag('--ui') && opt('--shot')) {
+  const shot = (name) => page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${name}.png`) });
+  await shot('classes');
+}
 await page.tap(`[data-act="class:${opt('--class', 'archer')}"]`);       // class select
+if (flag('--ui') && opt('--shot')) {
+  const shot = (name) => page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${name}.png`) });
+  await page.keyboard.press('l');                                 // debug: level up
+  await page.waitForSelector('.overlay.levelup');
+  await page.waitForTimeout(500);
+  await shot('levelup');
+  await page.tap('[data-act=banish]');
+  await shot('banish');
+  await page.tap('[data-act^="pick:"]');                          // banish the first offer
+  await page.waitForTimeout(500);
+  const info = await page.evaluate(() => ({ b: window.__overforged.game.run.banished, bl: window.__overforged.game.run.banishes }));
+  console.log('banished:', JSON.stringify(info));
+  await page.tap('[data-act=reroll]');
+  await page.waitForTimeout(500);
+  await page.tap('[data-act^="pick:"]');                          // take whatever is offered
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  await shot('pause');
+  await page.tap('[data-act=sound]');
+  console.log('sound saved:', await page.evaluate(() => window.__overforged.save.data.sound));
+  await page.tap('[data-act=resume]');
+}
 if (flag('--loadout')) await page.evaluate(() => window.__overforged.game.run.debugLoadout());
 if (flag('--boss')) await page.evaluate(() => { const o = window.__overforged; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
 if (flag('--forge')) {

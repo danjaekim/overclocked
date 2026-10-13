@@ -7,6 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0e0f14">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>Overforged</title>
   <style>
     :root {
@@ -88,6 +90,13 @@
     .fbtn.warn { background: #4a2420; border-color: #ff8a7a; }
     .fbtn:disabled { opacity: 0.4; }
     .fbtn:active:not(:disabled) { transform: scale(0.97); }
+    .card.locked-class { opacity: 0.45; cursor: default; }
+    .card.banish { border-color: #ff8a7a; background: #2a1c1f; }
+    .lu-tools { display: flex; gap: 10px; margin-top: 6px; }
+    .btn.small { min-width: 130px; min-height: 46px; font-size: 15px; }
+    .btn.small.on { background: #4a2420; border-color: #ff8a7a; }
+    .btn:disabled { opacity: 0.4; }
+    .unlock { margin: 0 0 6px; color: #ffd34d; font-weight: 700; }
     .overlay.locked .card { pointer-events: none; opacity: 0.55; }
     .cards { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 380px; }
     .card {

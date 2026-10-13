@@ -17,6 +17,7 @@ export const RUN_EVENTS = {
     if (!e) return;
     run.boss = e;
     run.bossAlive = true;
+    run.sfx('boss');
     run.toast = { text: `${e.def.name} approaches!`, ttl: 3 };
   },
 };

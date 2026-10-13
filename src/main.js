@@ -9,6 +9,8 @@ import { createRotatePrompt } from './ui/rotate-prompt.js';
 import { createGame } from './game/game.js';
 import { createDebug, readParams } from './debug/debug.js';
 import { validateData } from './data/validate.js';
+import { createSave, browserStorage } from './save/save.js';
+import { createAudio } from './audio/audio.js';
 
 const dataProblems = validateData();
 if (dataProblems.length) {
@@ -28,7 +30,19 @@ const renderer = createRenderer(canvas, view);
 
 let game;
 const input = createInput(canvas, { onPause: () => game && game.togglePause() });
-game = createGame({ view, input, overlays, rotate, debug, params });
+const save = createSave(browserStorage());
+const audio = createAudio({ enabled: save.data.sound });
+game = createGame({ view, input, overlays, rotate, debug, params, save, audio });
+
+// a soft tick on every menu button
+document.getElementById('ui').addEventListener('click', (e) => {
+  if (e.target.closest('[data-act]')) audio.play('tap');
+});
+
+// Offline support / installability (needs https or localhost; failure is harmless)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 
 const loop = createLoop({
   update: (dt) => game.update(dt),
@@ -39,4 +53,4 @@ const loop = createLoop({
 loop.start();
 
 // Handy for poking around in a desktop console or automated tests.
-window.__overforged = { game, view, debug, input };
+window.__overforged = { game, view, debug, input, save, audio };

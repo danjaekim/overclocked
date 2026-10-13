@@ -28,6 +28,7 @@ export function spawnShrine(run, ttl = SHRINE.ttl, at = null, force = false) {
   }
   const s = { x: best.x, y: best.y, ttl, maxTtl: ttl, progress: 0 };
   run.shrines.push(s);
+  run.sfx('shrine');
   return s;
 }
 
