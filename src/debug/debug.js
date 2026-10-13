@@ -48,6 +48,7 @@ export function createDebug(params) {
         `fps ${dbg.fps.toFixed(0)}  sim ${dbg.simMs.toFixed(1)}ms  draw ${dbg.renderMs.toFixed(1)}ms`,
         `spikes ${dbg.spikes} (last ${dbg.lastSpikeMs.toFixed(0)}ms)  work ${dbg.worstFrameMs.toFixed(1)}ms  view ${view.w}x${view.h.toFixed(0)}`,
       ];
+      if (dbg.audioState) lines.push(`audio ${dbg.audioState()}  (silent switch? check ringer)`);
       if (run && run.debugLines) lines.push(...run.debugLines());
       if (extraLines) lines.push(...extraLines);
       ctx.font = '11px monospace';

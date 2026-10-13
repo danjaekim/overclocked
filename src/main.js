@@ -32,6 +32,7 @@ let game;
 const input = createInput(canvas, { onPause: () => game && game.togglePause() });
 const save = createSave(browserStorage());
 const audio = createAudio({ enabled: save.data.sound });
+debug.audioState = () => audio.state;
 game = createGame({ view, input, overlays, rotate, debug, params, save, audio });
 
 // a soft tick on every menu button

@@ -102,6 +102,8 @@ if (flag('--forge')) {
 if (flag('--stress')) await page.evaluate(() => window.__overforged.game.run.stress());
 await page.waitForTimeout(4000);
 
+const audioState = await page.evaluate(() => window.__overforged.audio.state);
+console.log('audio state:', audioState);
 const info = await page.evaluate(() => {
   const o = window.__overforged;
   const r = o.game.run;
