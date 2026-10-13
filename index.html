@@ -205,7 +205,32 @@
       el.style.display = 'block';
       el.textContent += 'Unhandled: ' + (e.reason && e.reason.stack || e.reason) + '\n';
     });
+    // Startup watchdog: main.js sets window.__overforged when it has booted. If it has not within a
+    // few seconds (a module failed to load or parse, a stale cache), say so and offer a clean reload.
+    function bootReport(msg) {
+      var el = document.getElementById('boot-error');
+      el.style.display = 'block';
+      el.textContent += msg + '\n';
+      {
+        var old = document.getElementById('boot-reset');
+        if (old) old.remove();
+        var b = document.createElement('button');
+        b.id = 'boot-reset';
+        b.textContent = 'Clear cache and reload';
+        b.style.cssText = 'display:block;margin:12px auto;padding:12px 20px;font:inherit;font-size:16px;font-weight:600;border-radius:10px;border:0;background:#e8a33d;color:#1a1205;pointer-events:auto';
+        b.onclick = function () {
+          var jobs = [];
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+          }
+          if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+          Promise.all(jobs).catch(function () {}).then(function () { location.replace(location.pathname + '?r=' + Date.now()); });
+        };
+        el.appendChild(b);
+      }
+    }
+    setTimeout(function () { if (!window.__overforged) bootReport('Overforged did not start (no error was reported).'); }, 3000);
   </script>
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/main.js" onerror="bootReport('Could not load src/main.js')"></script>
 </body>
 </html>
