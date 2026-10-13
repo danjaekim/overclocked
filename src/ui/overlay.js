@@ -13,6 +13,7 @@ export function createOverlays(uiEl) {
     show(html, handler, className = '') {
       onAct = handler;
       uiEl.innerHTML = `<div class="overlay ${className}">${html}</div>`;
+      return uiEl.firstChild;
     },
     hide() {
       onAct = null;

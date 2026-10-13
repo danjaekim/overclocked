@@ -1,6 +1,7 @@
 // Applying damage: the queued enemy damage flush, enemy deaths, and damage to the player.
 
 import { addDamageNumber, addPuff } from '../render/fx.js';
+import { spawnGem } from './pickups.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -10,7 +11,8 @@ export function killEnemy(run, e) {
   run.kills++;
   run.lastKillTime = run.time;
   addPuff(run, e.x, e.y, e.r, e.def.color);
-  // drops (xp gems M4, ore M6) and on-kill triggers hook in here
+  spawnGem(run, e.x, e.y, e.def.xp);
+  // ore drops (M6) and on-kill triggers hook in here
   run.world.enemies.release(e);
 }
 

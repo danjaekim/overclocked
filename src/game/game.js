@@ -7,6 +7,10 @@ import { randomSeed } from '../core/rng.js';
 import { showTitle } from '../ui/title.js';
 import { showPause } from '../ui/pause.js';
 import { showResults } from '../ui/results.js';
+import { showLevelUp } from '../ui/levelup.js';
+import { generateOffers } from './upgrades.js';
+import { offerState, applyOffer } from './apply-offer.js';
+import { xpToNext, gainXp } from './xp.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params }) {
   const game = { state: 'title', run: null };
@@ -46,6 +50,29 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     showResults(overlays, game.run.summary(), { onAgain: startRun, onTitle: toTitle });
   }
 
+  // Opens the level-up screen for one pending level. The run is frozen while it is open;
+  // further pending levels (from a big gem pickup) are shown back to back.
+  function openLevelUp() {
+    const run = game.run;
+    game.state = 'levelup';
+    input.reset();
+    const offers = generateOffers(offerState(run), run.rng);
+    showLevelUp(overlays, {
+      level: run.player.level - (run.pendingLevelUps - 1),
+      offers,
+      onPick(offer) {
+        applyOffer(run, offer);
+        run.pendingLevelUps--;
+        if (run.pendingLevelUps > 0) {
+          openLevelUp();
+        } else {
+          overlays.hide();
+          game.state = 'run';
+        }
+      },
+    });
+  }
+
   game.togglePause = () => (game.state === 'run' ? pause() : game.state === 'paused' ? resume() : undefined);
   game.isSimulating = () => game.state === 'run' && !rotate.blocked;
 
@@ -54,6 +81,7 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     if (!run) return;
     run.update(dt, input.getMove());
     if (run.over) finishRun();
+    else if (run.pendingLevelUps > 0) openLevelUp();
   };
 
   document.addEventListener('visibilitychange', () => {
@@ -63,6 +91,7 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
   if (debug.enabled) {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'r' && game.state === 'run') finishRun();   // debug: end the run now
+      if (e.key === 'l' && game.state === 'run') gainXp(game.run, xpToNext(game.run.player.level));   // debug: level up
     });
   }
 

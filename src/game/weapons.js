@@ -4,8 +4,9 @@
 import { WEAPONS } from '../data/weapons.js';
 import { BEHAVIORS } from '../behaviors/index.js';
 import { makeTags } from '../stats/stats.js';
+import { SLOTS } from '../data/progression.js';
 
-export const MAX_WEAPONS = 6;
+export const MAX_WEAPONS = SLOTS.weapons;
 
 let nextInstance = 1;
 

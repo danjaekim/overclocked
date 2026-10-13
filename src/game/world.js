@@ -5,7 +5,7 @@ import { createPool } from '../core/pool.js';
 import { createSpatialHash } from '../core/spatial-hash.js';
 import { createDamageQueue } from '../systems/damage-queue.js';
 
-export const CAPS = { enemies: 600, projectiles: 800, fx: 400 };
+export const CAPS = { enemies: 600, projectiles: 800, pickups: 600, fx: 400 };
 
 function makeEnemy() {
   return {
@@ -27,6 +27,10 @@ function makeProjectile() {
   };
 }
 
+function makePickup() {
+  return { x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };
+}
+
 function makeFx() {
   return { kind: 0, x: 0, y: 0, vx: 0, vy: 0, ttl: 0, maxTtl: 1, r: 0, text: '', crit: false };
 }
@@ -35,6 +39,7 @@ export function createWorld() {
   return {
     enemies: createPool(makeEnemy, CAPS.enemies),
     projectiles: createPool(makeProjectile, CAPS.projectiles),
+    pickups: createPool(makePickup, CAPS.pickups),
     fx: createPool(makeFx, CAPS.fx),
     hash: createSpatialHash({ cellSize: 64, tableSize: 4096, capacity: CAPS.enemies }),
     dmg: createDamageQueue(),

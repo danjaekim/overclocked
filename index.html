@@ -59,6 +59,25 @@
     .stats span { color: var(--dim); font-size: 13px; }
     .stats b { font-size: 22px; }
 
+
+    .overlay.levelup { justify-content: center; gap: 10px; }
+    .overlay.levelup h2 { margin: 0; color: var(--ember); }
+    .overlay.levelup .sub { margin: 0 0 8px; }
+    .overlay.locked .card { pointer-events: none; opacity: 0.55; }
+    .cards { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 380px; }
+    .card {
+      display: grid; gap: 4px; text-align: left; min-height: 84px; padding: 12px 14px;
+      font: inherit; color: var(--ink); background: var(--panel);
+      border: 1px solid #2c2f3d; border-left: 5px solid var(--c, #9aa0b0); border-radius: 12px;
+      cursor: pointer; touch-action: manipulation; transition: opacity 0.15s;
+    }
+    .card:active { transform: scale(0.985); background: #1f2230; }
+    .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .card-top b { font-size: 18px; }
+    .card-top em { font-style: normal; font-size: 13px; color: var(--c, #9aa0b0); font-weight: 600; white-space: nowrap; }
+    .card-kind { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+    .card-desc { font-size: 14px; color: #cfd0d8; line-height: 1.3; }
+
     #rotate {
       position: fixed; inset: 0; z-index: 10; display: none;
       align-items: center; justify-content: center; text-align: center;

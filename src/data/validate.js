@@ -6,6 +6,8 @@ import { STATS } from '../stats/stat-defs.js';
 import { CONDITIONS } from '../stats/conditions.js';
 import { BEHAVIORS } from '../behaviors/index.js';
 import { WEAPONS } from './weapons.js';
+import { PASSIVES } from './passives.js';
+import { RARITIES } from './rarities.js';
 import { CLASSES } from './classes.js';
 import { ENEMIES } from './enemies.js';
 import { RUN, WAVES } from './waves.js';
@@ -43,6 +45,23 @@ export function validateData() {
       problems.push(`${at}: levelText.length (${w.levelText.length}) must equal levels.length (${w.levels.length})`);
     }
     w.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 2}`, problems));
+  }
+
+  for (const [id, w] of Object.entries(WEAPONS)) {
+    if (!RARITIES[w.rarity]) problems.push(`weapon ${id}: unknown rarity "${w.rarity}"`);
+  }
+
+  for (const [id, p] of Object.entries(PASSIVES)) {
+    const at = `passive ${id}`;
+    if (!RARITIES[p.rarity]) problems.push(`${at}: unknown rarity "${p.rarity}"`);
+    if (!(p.maxLevel >= 1)) problems.push(`${at}: maxLevel must be >= 1`);
+    if (p.levels.length !== p.maxLevel) {
+      problems.push(`${at}: levels.length (${p.levels.length}) must equal maxLevel (${p.maxLevel})`);
+    }
+    if (p.levelText.length !== p.levels.length) {
+      problems.push(`${at}: levelText.length (${p.levelText.length}) must equal levels.length (${p.levels.length})`);
+    }
+    p.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 1}`, problems));
   }
 
   for (const [id, c] of Object.entries(CLASSES)) {

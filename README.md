@@ -8,7 +8,7 @@ Inspired by the genre of 20 Minutes Till Dawn, Vampire Survivors, and Magic Surv
 
 - **On your phone:** open https://danjaekim.github.io/overforged/ in Safari (needs GitHub Pages enabled: Settings → Pages → Deploy from branch → `main` / root). Use Share → Add to Home Screen for a fullscreen app-like launch. Pages can take a minute or two to update after a push, and Safari may cache the old build; if a change doesn't show up, reload or add `?v=2` to the URL.
 - **Controls:** drag anywhere on the lower part of the screen to move (a floating joystick appears under your thumb). Weapons fire automatically. Desktop: WASD or arrow keys, Esc to pause.
-- **Debug URL flags:** `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run). Combine them: `?debug=1&god=1&seed=7`.
+- **Debug URL flags:** `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run). Combine them: `?debug=1&god=1&seed=7`.
 
 Portrait-only, 10-minute runs. A native wrapper (e.g. Capacitor) is a possible later step.
 
@@ -40,7 +40,7 @@ index.html        portrait stage, DOM overlay layer, mobile meta tags
 src/main.js       boot: wires view, input, game, renderer, loop
 src/core/         loop, rng, pool, spatial hash, events, math (pure, no DOM)
 src/stats/        StatBlock, stat definitions, conditions (pure)
-src/game/         run, world, player, director, weapons, projectiles, state machine
+src/game/         run, world, player, director, weapons, passives, upgrades, xp, state machine
 src/behaviors/    weapon behaviors (projectile so far)
 src/systems/      per-tick systems: enemy AI, movement, collision, damage
 src/render/       view, renderer, entities, fx, HUD
@@ -60,4 +60,4 @@ docs/             architecture.md
 
 ## Status
 
-M0–M3 done: portrait view, state machine, enemies and spawn director, spatial hash, stat/modifier system, the Archer with the Ember Bow, damage numbers and hit feedback. You can play a run and die or survive 10 minutes, but there is no progression yet. Next: M4 (XP gems, level-up choices, passives).
+M0–M4 done: portrait view, state machine, enemies and spawn director, spatial hash, stat/modifier system, the Archer with the Ember Bow, hit feedback, XP gems, levelling, a 3-choice level-up screen and six passives. This is the core loop: you can build a character over a 10-minute run. Next: M5 (more weapon behaviors, the Smith class, class select).

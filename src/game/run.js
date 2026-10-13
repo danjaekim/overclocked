@@ -9,9 +9,10 @@ import { addWeapon, updateWeapons } from './weapons.js';
 import { updateEnemies } from '../systems/enemy-ai.js';
 import { updateProjectiles } from '../systems/movement.js';
 import { updateCollision } from '../systems/collision.js';
+import { updatePickups } from '../systems/pickups.js';
 import { flushDamage } from '../systems/damage.js';
 import { updateFx, drawFx } from '../render/fx.js';
-import { drawEnemies, drawProjectiles } from '../render/entities.js';
+import { drawGems, drawEnemies, drawProjectiles } from '../render/entities.js';
 import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 
@@ -28,6 +29,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
     kills: 0,
     lastKillTime: -1e9,
     bossAlive: false,
+    pendingLevelUps: 0,
     player: null,
     cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
     world: createWorld(),
@@ -46,6 +48,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
       updateProjectiles(run, dt);                               // 5 projectile movement
       w.hash.rebuild(w.enemies.active, w.enemies.count);        // 6 spatial hash
       updateCollision(run);                                     // 7 collisions (queue damage)
+      updatePickups(run, dt);                                   // 7b gems: magnet and collect
       flushDamage(run);                                         // 8 apply damage, deaths
       // 9 status effects (later)
       updateFx(run, dt);
@@ -68,6 +71,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
     },
 
     drawWorld(ctx, view) {
+      drawGems(ctx, view, run);
       drawEnemies(ctx, view, run);
       drawProjectiles(ctx, view, run);
     },
@@ -92,11 +96,13 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
     debugLines() {
       const w = run.world;
       const ws = run.player.weapons.map((i) => `${i.weaponId} L${i.level}`).join(', ');
+      const ps = run.player.passives.map((i) => `${i.id} L${i.level}`).join(', ');
       return [
-        `enemies ${w.enemies.count}  proj ${w.projectiles.count}  fx ${w.fx.count}`,
+        `enemies ${w.enemies.count}  proj ${w.projectiles.count}  gems ${w.pickups.count}  fx ${w.fx.count}`,
         `hash max bucket ${w.hash.stats.maxBucket}  dmg dropped ${w.dmg.dropped}`,
         `hpScale ${run.director.hpScale.toFixed(2)}  seed ${run.seed}`,
         `weapons: ${ws}`,
+        `passives: ${ps || '-'}`,
       ];
     },
 

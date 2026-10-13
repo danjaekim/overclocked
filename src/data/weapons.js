@@ -6,6 +6,7 @@
 export const WEAPONS = {
   ember_bow: {
     name: 'Ember Bow',
+    desc: 'Fires burning arrows at the nearest enemy.',
     class: 'archer',
     rarity: 'common',
     tags: ['projectile', 'ranged', 'fire'],

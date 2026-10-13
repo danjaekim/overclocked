@@ -2,9 +2,38 @@
 // hit-flashing ones. Everything is culled to the camera rect.
 
 import { ENEMIES } from '../data/enemies.js';
+import { GEM } from '../data/progression.js';
+import { gemTier } from '../systems/pickups.js';
 
 const TAU = Math.PI * 2;
 const DEF_IDS = Object.keys(ENEMIES);
+
+// XP gems: one batched fill per tier colour, drawn as small diamonds.
+export function drawGems(ctx, view, run) {
+  const list = run.world.pickups.active;
+  if (list.length === 0) return;
+  const cam = run.cam;
+  const x0 = cam.x - view.w / 2 - 10;
+  const x1 = cam.x + view.w / 2 + 10;
+  const y0 = cam.y - view.h / 2 - 10;
+  const y1 = cam.y + view.h / 2 + 10;
+  for (let t = 0; t < GEM.tiers.length; t++) {
+    ctx.fillStyle = GEM.tiers[t][2];
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const g = list[i];
+      if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+      if (gemTier(g.value) !== t) continue;
+      const r = g.r;
+      ctx.moveTo(g.x, g.y - r);
+      ctx.lineTo(g.x + r, g.y);
+      ctx.lineTo(g.x, g.y + r);
+      ctx.lineTo(g.x - r, g.y);
+      ctx.closePath();
+    }
+    ctx.fill();
+  }
+}
 
 // Arrows: one stroked path for the whole batch.
 export function drawProjectiles(ctx, view, run) {

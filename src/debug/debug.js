@@ -48,7 +48,7 @@ export function createDebug(params) {
       ctx.font = '11px monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      const y0 = view.insetTop + 54;
+      const y0 = view.insetTop + 114;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillRect(6, y0 - 3, 300, lines.length * 13 + 6);
       ctx.fillStyle = '#9fe870';

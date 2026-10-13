@@ -46,12 +46,15 @@ src/
     game.js                    top-level state machine (§6.1)
     run.js                     one run: owns world, player, director, timers
     world.js                   entity stores (pools), spatial hash, damage queue, scratch buffers
-    player.js                  player entity, StatBlock, weapon list (xp/level arrive in M4)
+    player.js                  player entity, StatBlock, weapon and passive lists, xp/level
     weapons.js                 weapon instances: add, level up (as modifiers), per-tick update
     weapon-params.js          how a weapon's base params combine with stats: param(), weaponStat()
     projectiles.js             spawnProjectile + hit-set helpers
     director.js                spawn director: reads waves data, spawns enemies and forge shrines
-    upgrades.js                level-up offer generation (§5.6)
+    upgrades.js                level-up offer generation (§5.6); pure, no run access
+    apply-offer.js             applies a chosen offer to the run; offerState(run) snapshot for upgrades.js
+    xp.js                      xpToNext(level), gainXp(run, amount)
+    passives.js                owned passives: add, level up (as modifiers, source passive:<id>:<lvl>)
     forge.js                   forge actions; pure functions over inventory (§6)
     evolutions.js              recipe checks
     triggers.js                trigger dispatch for on-hit/on-kill/etc. effects (§4.6)
@@ -61,7 +64,7 @@ src/
   effects/                     effect handlers used by triggers (§4.6)
     index.js
   systems/                     per-tick systems over entity stores
-    movement.js  enemy-ai.js  collision.js  damage.js  damage-queue.js  pickups.js  status.js
+    movement.js  enemy-ai.js  collision.js  damage.js  damage-queue.js  pickups.js (xp gems)  status.js
   render/
     view.js                    portrait view: 480-unit width, desktop column, safe-area inset
     renderer.js                camera (with shake), layers, draw order
@@ -71,10 +74,10 @@ src/
   ui/                          DOM overlays (menus are DOM, gameplay is canvas)
     overlay.js                 mount/unmount helper, safe-area aware
     rotate-prompt.js           "rotate to portrait" cover shown (and run paused) in landscape on touch devices
-    levelup.js  forge-ui.js  pause.js  results.js  title.js  class-select.js
+    levelup.js  pause.js  results.js  title.js   (built)   forge-ui.js  class-select.js   (planned)
   data/                        ALL tunable content lives here
-    classes.js  weapons.js  passives.js  titles.js  evolutions.js
-    enemies.js  waves.js  forge.js  rarities.js  ores.js
+    classes.js  weapons.js  passives.js  enemies.js  waves.js  rarities.js  progression.js   (built)
+    titles.js  evolutions.js  forge.js  ores.js   (planned)
     validate.js                boot-time schema checks for everything above (§5)
   meta/
     save.js                    versioned localStorage persistence
@@ -336,7 +339,7 @@ export const PASSIVES = {
 };
 ```
 
-On level change: `removeBySource('passive:<id>')`, then add levels 0..n with `source: 'passive:<id>:<lvl>'`.
+On level change (as built): add only the new level's modifiers with `source: 'passive:<id>:<lvl>'`; they stack on the earlier levels. `removeBySource('passive:<id>')` removes the whole passive. A passive's own `tags` are for offer filtering and recipes; a *modifier's* `tags` scope it to weapons (Wind Sigil's effects only reach projectile weapons).
 
 Indexing differs on purpose, and `validate.js` enforces it: a **weapon** is already useful at level 1 from `base`, so `levels.length === maxLevel - 1`; a **passive** does nothing until taken, so `levels.length === maxLevel`. `levelText.length` must equal `levels.length` in both.
 
@@ -383,8 +386,8 @@ Evolved weapons are normal weapon entries flagged `pool: false`. Evolving replac
 1. Build candidates: new weapons (if a weapon slot is free, max 6), level-ups of owned weapons/passives below max, new passives (if passive slot free, max 6), offer-type titles not owned.
 2. Weight = `rarities[r].weight × (1 + luck × rarities[r].luckScale)` × modifiers (owned items ×1.5 to encourage depth; items that progress a recipe ×1.3).
 3. Weighted sample without replacement.
-4. If fewer than `count`, fill with fallbacks: heal 30%, +ore, +gold.
-5. Player has limited **rerolls** and **banishes** (meta-unlocked).
+4. If fewer than `count`, add the **Rest** fallback (heal 30%); +ore and +gold fallbacks join with the forge (M6). When nothing is left to improve, Rest is the only offer.
+5. Player has limited **rerolls** and **banishes** (meta-unlocked). *Not built yet; planned for M8.*
 
 Offer generation is pure: same seed + state → same offers. Tested in `tests/upgrades.test.mjs`.
 
@@ -591,7 +594,7 @@ Each milestone ends playable, is one or a few commits, and has a clear done-chec
 | **M1** *(done)* | Core runtime refactor | `core/` loop, rng, pool, events split out; `game.js` state machine with Title → Run → Results stubs; debug overlay with fps; **portrait view** (480-unit width, desktop column, rotate prompt, joystick top-zone ignore, §8). |
 | **M2** *(done)* | Enemies + spatial hash | `goblin` and `brute` spawn from `waves.js`, chase, separate; player takes contact damage and can die; `?debug=1` stress button shows 500 enemies at 60 fps. Measured in headless Chromium only (about 0.7 ms sim, worst case 1.9 ms with everything stacked on the player); **still to verify on a real iPhone.** |
 | **M3** *(done)* | Stats + first weapon | `StatBlock` with tests; `projectile` behavior; Archer's `ember_bow` kills enemies; damage numbers, hit flash, death puffs, knockback, screen shake on hit. |
-| **M4** | XP + level-up | Gems drop and magnet in; xp curve; level-up overlay with 3 offers from `upgrades.js`; weapon levels and 4 passives working through modifiers. |
+| **M4** *(done)* | XP + level-up | Gems drop and magnet in; xp curve; level-up overlay with 3 offers from `upgrades.js`; weapon levels and passives working through modifiers. **As built:** 6 passives, 3-card vertical level-up screen with a 0.35 s input lock and 1 s of i-frames on resume, gems that merge at the pool cap, XP bar / level / item chips in the HUD. Rerolls and banish are deferred to M8 with meta-progression. |
 | **M5** | Weapon variety | `arc`, `orbit`, `aura` behaviors; Smith class with `forge_hammer`; class select screen; 5–6 weapons total; triggers + 2 effects (`explode`, `shield`). Perf budget re-verified. |
 | **M6** | Forge + shrines | Ore drops; `shrine` events spawn shrines with edge arrow, channel and expiry (§6.3); enhance (with tables + breakpoints; failures never remove the weapon), reforge (affixes), salvage; forge bottom-sheet overlay; unit tests for `forge.js` and shrine rules. |
 | **M7** | Evolutions + boss + titles | 2 evolution recipes executed at the forge; a boss at 5:00 that drops starsteel and a shrine; 4 titles (milestone + offer). A full 10-minute run (`RUN.length = 600`) is winnable by surviving to the end and feels escalating. |
