@@ -3,10 +3,8 @@
 
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { damagePlayer } from './damage.js';
-import { queueDamage } from './damage-queue.js';
+import { resolveHit } from '../game/hit.js';
 import { hasHit, markHit } from '../game/projectiles.js';
-
-const KNOCKBACK_IMPULSE = 140;   // world units / second, scaled by the knockback stat and enemy size
 
 function playerContact(run) {
   const w = run.world;
@@ -27,7 +25,6 @@ function playerContact(run) {
 function projectileHits(run) {
   const w = run.world;
   const list = w.projectiles.active;
-  const stats = run.player.stats;
 
   for (let i = list.length - 1; i >= 0; i--) {
     const pr = list[i];
@@ -42,11 +39,7 @@ function projectileHits(run) {
       if (hasHit(pr, e.uid)) continue;
       markHit(pr, e.uid);
 
-      const tags = pr.inst.tags;
-      const crit = run.rng.next() < stats.getFor('critChance', tags);
-      const amount = pr.dmg * (crit ? stats.getFor('critMult', tags) : 1);
-      const kb = KNOCKBACK_IMPULSE * stats.getFor('knockback', tags) * (10 / e.r);
-      queueDamage(run, e, amount, crit, pr.dx * kb, pr.dy * kb, 0, pr.inst);
+      resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy);
 
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy
         w.projectiles.release(pr);

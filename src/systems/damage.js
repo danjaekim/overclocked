@@ -6,6 +6,9 @@ import { fireTriggers } from '../game/triggers.js';
 import { onMilestone } from '../game/titles.js';
 import { spawnShrine } from './shrines.js';
 import { SHRINE } from '../data/forge.js';
+import { KIND_HIT, KIND_DOT } from './damage-queue.js';
+import { ST } from '../data/statuses.js';
+import { applyBurn, applyChill, applyShock, chainArc } from './status.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -33,7 +36,38 @@ export function killEnemy(run, e) {
   onMilestone(run, 'kills', run.kills);
 }
 
-// Step 8 of the tick: apply every queued hit.
+// Damage multiplier from the target's statuses (vsBurning / vsChilled / vsShocked), read through
+// the source weapon's tag scope. Untouched enemies cost one integer test.
+function targetMult(run, e, src) {
+  const st = e.status;
+  if ((st & 15) === 0 || !src) return 1;
+  const stats = run.player.stats;
+  let m = 1;
+  if (st & ST.BURN) m *= stats.getFor('vsBurning', src.tags);
+  if (st & (ST.CHILL | ST.FROZEN)) m *= stats.getFor('vsChilled', src.tags);
+  if (st & ST.SHOCK) m *= stats.getFor('vsShocked', src.tags);
+  return m;
+}
+
+// Rolls the three status chances for one hit and applies what lands. A shock on a weapon hit
+// chains even if the hit killed its target, so overkill does not waste the arc.
+function rollStatuses(run, e, src, amount, depth, kind) {
+  const stats = run.player.stats;
+  const tags = src.tags;
+  const rng = run.rng;
+  const alive = e.hp > 0;
+  let c = stats.getFor('burnChance', tags);
+  if (c > 0 && rng.next() < c && alive) applyBurn(run, e, src, amount);
+  c = stats.getFor('chillChance', tags);
+  if (c > 0 && rng.next() < c && alive) applyChill(run, e, src);
+  c = stats.getFor('shockChance', tags);
+  if (c > 0 && rng.next() < c) {
+    if (alive) applyShock(run, e, src);
+    if (kind === KIND_HIT) chainArc(run, e, src, amount, depth);
+  }
+}
+
+// Step 8 of the tick: apply every queued hit (docs/design-m10-m13.md §3.6).
 export function flushDamage(run) {
   const q = run.world.dmg;
   const lifesteal = run.player.stats.get('lifesteal');   // global value first: most runs have none
@@ -44,24 +78,27 @@ export function flushDamage(run) {
     q.src[i] = null;
     if (!e.alive || e.uid !== q.uid[i]) continue;     // already dead (or slot reused) this tick
     const depth = q.depth[i];
+    const kind = q.kind[i];
     const ex = e.x;
     const ey = e.y;
-    e.hp -= q.amount[i];
+    const amount = q.amount[i] * targetMult(run, e, src);
+    e.hp -= amount;
     e.flash = HIT_FLASH;
     e.kx += q.kx[i];
     e.ky += q.ky[i];
-    addDamageNumber(run, e.x, e.y - e.r, q.amount[i], q.crit[i] === 1);
-    if (src && lifesteal > 0) {                       // heal a share of damage dealt (per weapon scope)
-      const p = run.player;
-      p.hp = Math.min(p.maxHp, p.hp + q.amount[i] * p.stats.getFor('lifesteal', src.tags));
-    }
-    if (src) {
+    if (kind !== KIND_DOT) addDamageNumber(run, e.x, e.y - e.r, amount, q.crit[i] === 1);
+    if (src && kind !== KIND_DOT) {
+      if (lifesteal > 0) {                            // heal a share of damage dealt (per weapon scope)
+        const p = run.player;
+        p.hp = Math.min(p.maxHp, p.hp + amount * p.stats.getFor('lifesteal', src.tags));
+      }
+      rollStatuses(run, e, src, amount, depth, kind);
       if (q.crit[i] === 1) fireTriggers(run, 'crit', src, ex, ey, depth);
       fireTriggers(run, 'hit', src, ex, ey, depth);
     }
     if (e.hp <= 0) {
       killEnemy(run, e);
-      if (src) fireTriggers(run, 'kill', src, ex, ey, depth);
+      if (src) fireTriggers(run, 'kill', src, ex, ey, depth);   // burn kills still count as the weapon's kills
     }
   }
   q.n = 0;

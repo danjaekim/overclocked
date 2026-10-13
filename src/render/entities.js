@@ -4,6 +4,7 @@
 import { ENEMIES } from '../data/enemies.js';
 import { GEM } from '../data/progression.js';
 import { ORES } from '../data/ores.js';
+import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { gemTier, KIND_GEM, KIND_ORE } from '../systems/pickups.js';
 
 const TAU = Math.PI * 2;
@@ -113,4 +114,47 @@ export function drawEnemies(ctx, view, run) {
     ctx.arc(e.x, e.y, e.r, 0, TAU);
   }
   ctx.fill();
+
+  drawStatusRings(ctx, list, x0, x1, y0, y1);
 }
+
+// Status rings on every enemy that has one: one stroked path per colour, plus a pale fill for
+// frozen ones. Enemies with no status cost a single integer test.
+const RING = [
+  [ST.BURN, BURN.color],
+  [ST.CHILL, CHILL.color],
+  [ST.SHOCK, SHOCK.color],
+];
+function drawStatusRings(ctx, list, x0, x1, y0, y1) {
+  let any = false;
+  for (let i = 0; i < list.length; i++) if (list[i].status & 15) { any = true; break; }
+  if (!any) return;
+
+  ctx.fillStyle = 'rgba(190, 235, 255, 0.55)';
+  ctx.beginPath();
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!(e.status & ST.FROZEN)) continue;
+    if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+    ctx.moveTo(e.x + e.r, e.y);
+    ctx.arc(e.x, e.y, e.r, 0, TAU);
+  }
+  ctx.fill();
+
+  ctx.lineWidth = 2;
+  for (let s = 0; s < RING.length; s++) {
+    const bit = s === 1 ? ST.CHILL | ST.FROZEN : RING[s][0];
+    ctx.strokeStyle = RING[s][1];
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i];
+      if (!(e.status & bit)) continue;
+      if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+      const r = e.r + 2 + s * 2;                  // stagger radii so overlapping statuses stay readable
+      ctx.moveTo(e.x + r, e.y);
+      ctx.arc(e.x, e.y, r, 0, TAU);
+    }
+    ctx.stroke();
+  }
+}
+

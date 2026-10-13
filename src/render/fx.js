@@ -6,6 +6,7 @@ const MAX_NUMBERS = 60;      // text is the expensive part, so cap how many are 
 const MAX_PUFFS_POOL = 300;  // keep room for numbers
 const KIND_NUMBER = 0;
 const KIND_PUFF = 1;
+const KIND_ARC = 2;
 
 const numStr = [];
 function numberText(n) {
@@ -42,6 +43,22 @@ export function addPuff(run, x, y, radius, color) {
   f.r = radius;
   f.ttl = f.maxTtl = 0.22;
   f.text = color;
+}
+
+// A short jagged bolt between two points (chain lightning).
+export function addArc(run, x1, y1, x2, y2) {
+  const w = run.world;
+  if (w.fx.count >= MAX_PUFFS_POOL) return;
+  const f = w.fx.acquire();
+  if (!f) return;
+  f.kind = KIND_ARC;
+  f.x = x1;
+  f.y = y1;
+  f.x2 = x2;
+  f.y2 = y2;
+  f.vx = f.vy = 0;
+  f.r = run.fxRng.next();                  // seeds the zig-zag
+  f.ttl = f.maxTtl = 0.14;
 }
 
 export function updateFx(run, dt) {
@@ -82,6 +99,28 @@ export function drawFx(ctx, view, run) {
     ctx.arc(f.x, f.y, f.r * (1 + 1.4 * u), 0, TAU);
     ctx.stroke();
   }
+
+  // chain bolts: one jagged path for all of them
+  ctx.strokeStyle = '#ffe066';
+  ctx.lineWidth = 2.5;
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i];
+    if (f.kind !== KIND_ARC) continue;
+    if ((f.x < x0 && f.x2 < x0) || (f.x > x1 && f.x2 > x1) || (f.y < y0 && f.y2 < y0) || (f.y > y1 && f.y2 > y1)) continue;
+    const dx = f.x2 - f.x;
+    const dy = f.y2 - f.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const j = (f.r - 0.5) * 18;
+    ctx.moveTo(f.x, f.y);
+    ctx.lineTo(f.x + dx * 0.35 + nx * j, f.y + dy * 0.35 + ny * j);
+    ctx.lineTo(f.x + dx * 0.65 - nx * j, f.y + dy * 0.65 - ny * j);
+    ctx.lineTo(f.x2, f.y2);
+  }
+  ctx.stroke();
 
   // numbers: normal first, then crits on top
   ctx.textAlign = 'center';

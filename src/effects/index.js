@@ -3,7 +3,7 @@
 // (x, y) where it happened. Anything that deals damage enqueues it with depth + 1.
 
 import { param } from '../game/weapon-params.js';
-import { queueDamage } from '../systems/damage-queue.js';
+import { queueDamage, KIND_PROC } from '../systems/damage-queue.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff } from '../render/fx.js';
 
@@ -26,7 +26,7 @@ export const EFFECTS = {
       const rr = radius + e.r;
       if (dx * dx + dy * dy > rr * rr) continue;
       const d = Math.hypot(dx, dy) || 1;
-      queueDamage(run, e, dmg, false, (dx / d) * 60, (dy / d) * 60, depth + 1, src);
+      queueDamage(run, e, dmg, false, (dx / d) * 60, (dy / d) * 60, depth + 1, src, KIND_PROC);
     }
     addPuff(run, x, y, radius / 2.4, '#ff9a3c');
   },

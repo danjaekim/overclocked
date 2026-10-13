@@ -83,8 +83,9 @@ export function updateEnemies(run, dt) {
     if (e.def.charge) bossStep(e, p, dt);
     const d = Math.sqrt(d2);
     const inv = d > 1e-3 ? 1 / d : 0;
-    let vx = dx * inv * e.speed;
-    let vy = dy * inv * e.speed;
+    const sp = e.speed * e.slowMul;                     // chill slows; frozen sets slowMul to 0
+    let vx = dx * inv * sp;
+    let vy = dy * inv * sp;
     if (e.def.charge) {
       if (e.ai === AI_WINDUP) { vx = 0; vy = 0; }
       else if (e.ai === AI_DASH) { vx = e.ax * e.def.charge.speed; vy = e.ay * e.def.charge.speed; }

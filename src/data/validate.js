@@ -18,6 +18,9 @@ import { ORES } from './ores.js';
 import { EVOLUTIONS } from './evolutions.js';
 import { TITLES } from './titles.js';
 
+// Read on every hit: a `when` modifier would bypass the stat cache for them.
+const NO_WHEN = new Set(['burnChance', 'chillChance', 'shockChance', 'burnPower', 'chillStacks', 'chains', 'chainDamage',
+  'statusDuration', 'vsBurning', 'vsChilled', 'vsShocked', 'ricochet', 'split', 'splitDamage', 'executeBelow']);
 const OPS = new Set(['flat', 'inc', 'more', 'set']);
 // Events the dispatcher fires so far; the rest of the §4.6 list arrives with the systems that raise them.
 const TRIGGER_EVENTS = new Set(['hit', 'crit', 'kill', 'interval']);
@@ -32,6 +35,7 @@ function checkMods(mods, where, problems) {
     if (!STATS[m.stat]) problems.push(`${at}: unknown stat "${m.stat}"`);
     if (!OPS.has(m.op)) problems.push(`${at}: unknown op "${m.op}"`);
     if (typeof m.value !== 'number' || Number.isNaN(m.value)) problems.push(`${at}: value must be a number`);
+    if (m.when && NO_WHEN.has(m.stat)) problems.push(`${at}: stat "${m.stat}" is read on every hit and cannot use \`when\``);
     if (m.when && !CONDITIONS[m.when]) problems.push(`${at}: unknown condition "${m.when}"`);
     if (m.tags !== undefined && !Array.isArray(m.tags)) problems.push(`${at}: tags must be an array`);
   });
@@ -53,6 +57,7 @@ export function validateData() {
       problems.push(`${at}: levelText.length (${w.levelText.length}) must equal levels.length (${w.levels.length})`);
     }
     w.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 2}`, problems));
+    if (w.baseMods) checkMods(w.baseMods, `${at} baseMods`, problems);
     if (!Array.isArray(w.triggers)) problems.push(`${at}: triggers must be an array`);
     else {
       w.triggers.forEach((t, i) => {

@@ -11,6 +11,13 @@ export const MAX_WEAPONS = SLOTS.weapons;
 
 let nextInstance = 1;
 
+// Applies a weapon definition's baseMods (its elemental identity) to the instance.
+export function applyBaseMods(run, inst) {
+  for (const m of inst.def.baseMods || []) {
+    run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `weapon:${inst.instanceId}:base:` });
+  }
+}
+
 export function addWeapon(run, weaponId) {
   const def = WEAPONS[weaponId];
   if (!def) throw new Error(`Unknown weapon "${weaponId}"`);
@@ -35,6 +42,7 @@ export function addWeapon(run, weaponId) {
     trigT: def.triggers.map(() => 0),     // interval-trigger timers
   };
   p.weapons.push(inst);
+  applyBaseMods(run, inst);
   BEHAVIORS[def.behavior].init(inst, run);
   return inst;
 }

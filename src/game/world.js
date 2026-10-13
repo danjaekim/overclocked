@@ -18,6 +18,12 @@ function makeEnemy() {
     ai: 0, aiT: 0,         // boss state machine: 0 chase, 1 windup, 2 dash; seconds left in it
     ax: 0, ay: 0,          // boss dash direction
     aiCd: 0,               // seconds until the next charge
+    // status effects (systems/status.js)
+    status: 0,             // bit flags, data/statuses.js ST (0 = untouched: skipped everywhere)
+    burnDps: 0, burnT: 0, burnAcc: 0, burnSrc: null,
+    chill: 0, chillT: 0, freezeT: 0, freezeImm: 0,
+    shockT: 0,
+    slowMul: 1,            // movement multiplier from chill
   };
 }
 
@@ -35,7 +41,7 @@ function makePickup() {
 }
 
 function makeFx() {
-  return { kind: 0, x: 0, y: 0, vx: 0, vy: 0, ttl: 0, maxTtl: 1, r: 0, text: '', crit: false };
+  return { kind: 0, x: 0, y: 0, vx: 0, vy: 0, x2: 0, y2: 0, ttl: 0, maxTtl: 1, r: 0, text: '', crit: false };
 }
 
 export function createWorld() {

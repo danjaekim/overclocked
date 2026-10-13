@@ -25,4 +25,22 @@ export const STATS = {
   critMult:     { base: 1.5,  min: 1,              fmt: 'mult' },
   knockback:    { base: 1,    min: 0,              fmt: 'pct' },
   lifesteal:    { base: 0,    min: 0,              fmt: 'pct' },
+
+  // status effects (M10, docs/design-m10-m13.md §3.3). All are read through a weapon's tag scope
+  // and must never carry a `when` condition: they are read on every hit and stay cached.
+  burnChance:     { base: 0,   min: 0, max: 1,     fmt: 'pct' },   // chance per hit to burn
+  chillChance:    { base: 0,   min: 0, max: 1,     fmt: 'pct' },
+  shockChance:    { base: 0,   min: 0, max: 1,     fmt: 'pct' },
+  burnPower:      { base: 0.5, min: 0,             fmt: 'pct' },   // share of the hit added to the burn pool
+  chillStacks:    { base: 1,   min: 0,             fmt: 'int' },   // chill stacks per application
+  chains:         { base: 1,   min: 0,             fmt: 'int' },   // hops per shock
+  chainDamage:    { base: 0.5, min: 0,             fmt: 'pct' },   // each hop, as a share of the hit
+  statusDuration: { base: 1,   min: 0.1,           fmt: 'pct' },
+  vsBurning:      { base: 1,   min: 0,             fmt: 'pct' },   // damage multiplier against a burning target
+  vsChilled:      { base: 1,   min: 0,             fmt: 'pct' },   // ... chilled or frozen
+  vsShocked:      { base: 1,   min: 0,             fmt: 'pct' },   // ... shocked
+  ricochet:       { base: 0,   min: 0,             fmt: 'int' },   // (M11a) bounces after pierce runs out
+  split:          { base: 0,   min: 0,             fmt: 'int' },   // (M11a) child projectiles on first hit
+  splitDamage:    { base: 0.4, min: 0,             fmt: 'pct' },   // (M11a) child damage, share of the parent's
+  executeBelow:   { base: 0,   min: 0, max: 0.5,   fmt: 'pct' },   // (M11b) crits kill non-bosses under this hp fraction
 };

@@ -2,6 +2,9 @@
 //   base    behavior params at level 1; combined with stats by game/weapons.js#param
 //   levels  modifiers gained at levels 2..maxLevel (index 0 = level 2); length === maxLevel - 1
 // Level modifiers are auto-tagged `weapon:<instanceId>` when applied.
+//   baseMods  optional modifiers applied when the weapon is gained (its elemental identity),
+//             source `weapon:<instanceId>:base:`; re-applied when the weapon evolves.
+// Element tags: fire, frost, storm. `close` marks melee/aura weapons for perks (docs/design-m10-m13.md).
 
 export const WEAPONS = {
   ember_bow: {
@@ -11,6 +14,7 @@ export const WEAPONS = {
     glyph: 'B',
     rarity: 'common',
     tags: ['projectile', 'ranged', 'fire'],
+    baseMods: [{ stat: 'burnChance', op: 'flat', value: 0.35 }],
     behavior: 'projectile',
     base: {
       damage: 14, cooldown: 0.9, speed: 520, count: 1, pierce: 1,
@@ -39,7 +43,7 @@ export const WEAPONS = {
     class: 'smith',
     glyph: 'H',
     rarity: 'common',
-    tags: ['melee', 'arc', 'physical'],
+    tags: ['melee', 'arc', 'physical', 'close'],
     behavior: 'arc',
     base: { damage: 24, cooldown: 1.0, count: 1, range: 82, arcWidth: 1.9 },
     maxLevel: 8,
@@ -65,7 +69,7 @@ export const WEAPONS = {
     class: null,
     glyph: 'S',
     rarity: 'uncommon',
-    tags: ['orbit', 'magic', 'light'],
+    tags: ['orbit', 'magic', 'light', 'close'],
     behavior: 'orbit',
     base: { damage: 9, cooldown: 1, tickEvery: 0.4, count: 2, range: 46, radius: 12, speed: 3.2 },
     maxLevel: 8,
@@ -89,10 +93,11 @@ export const WEAPONS = {
     class: null,
     glyph: 'C',
     rarity: 'uncommon',
-    tags: ['aura', 'fire', 'magic'],
+    tags: ['aura', 'fire', 'magic', 'close'],
+    baseMods: [{ stat: 'burnChance', op: 'flat', value: 0.25 }],
     forge: { breakpoints: { 5: [{ stat: 'area', op: 'inc', value: 0.25 }] } },   // aura has no projectiles
     behavior: 'aura',
-    base: { damage: 7, cooldown: 0.6, range: 80 },
+    base: { damage: 6, cooldown: 0.6, range: 80 },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.3 }],
@@ -114,7 +119,8 @@ export const WEAPONS = {
     class: null,
     glyph: 'J',
     rarity: 'uncommon',
-    tags: ['projectile', 'ranged', 'lightning'],
+    tags: ['projectile', 'ranged', 'storm'],
+    baseMods: [{ stat: 'shockChance', op: 'flat', value: 0.5 }],
     behavior: 'projectile',
     base: { damage: 22, cooldown: 1.7, speed: 440, count: 1, pierce: 3, spread: 0.02, gap: 9, ttl: 1.3, radius: 7, range: 420 },
     maxLevel: 8,
@@ -132,13 +138,38 @@ export const WEAPONS = {
     evolvesInto: null,
   },
 
+  rime_shards: {
+    name: 'Rime Shards',
+    desc: 'Bursts of ice shards in every direction. Chills what they hit; two chills freeze.',
+    class: null,
+    glyph: 'R',
+    rarity: 'uncommon',
+    tags: ['projectile', 'ranged', 'frost'],
+    baseMods: [{ stat: 'chillChance', op: 'flat', value: 1 }, { stat: 'chillStacks', op: 'flat', value: 1 }],
+    behavior: 'nova',
+    base: { damage: 8, cooldown: 1.4, speed: 300, count: 6, pierce: 0, ttl: 0.7, radius: 6, range: 220 },
+    maxLevel: 8,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'projectiles', op: 'flat', value: 2 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'pierce', op: 'flat', value: 1 }],
+      [{ stat: 'projectiles', op: 'flat', value: 2 }],
+      [{ stat: 'damage', op: 'inc', value: 0.35 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '+2 shards', '-15% cooldown', '+1 pierce', '+2 shards', '+35% damage', '30% more damage'],
+    triggers: [],
+    evolvesInto: null,
+  },
+
   rending_axe: {
     name: 'Rending Axe',
     desc: 'A wide, brutal swing at the nearest enemy. Hits everything in the arc.',
     class: 'berserker',
     glyph: 'X',
     rarity: 'common',
-    tags: ['melee', 'arc', 'physical'],
+    tags: ['melee', 'arc', 'physical', 'close'],
     behavior: 'arc',
     base: { damage: 24, cooldown: 0.9, count: 1, range: 74, arcWidth: 2.3 },
     maxLevel: 8,
@@ -165,7 +196,8 @@ export const WEAPONS = {
     pool: false,
     glyph: 'V',
     rarity: 'evolved',
-    tags: ['projectile', 'ranged', 'fire', 'lightning'],
+    tags: ['projectile', 'ranged', 'fire', 'storm'],
+    baseMods: [{ stat: 'burnChance', op: 'flat', value: 0.3 }, { stat: 'shockChance', op: 'flat', value: 0.3 }],
     behavior: 'projectile',
     base: { damage: 15, cooldown: 0.75, speed: 620, count: 4, pierce: 3, spread: 0.02, gap: 8, ttl: 1.3, radius: 6, range: 440 },
     maxLevel: 6,
@@ -190,7 +222,7 @@ export const WEAPONS = {
     pool: false,
     glyph: 'M',
     rarity: 'evolved',
-    tags: ['melee', 'arc', 'physical'],
+    tags: ['melee', 'arc', 'physical', 'close'],
     behavior: 'arc',
     base: { damage: 60, cooldown: 1.1, count: 1, range: 105, arcWidth: 2.4 },
     maxLevel: 6,

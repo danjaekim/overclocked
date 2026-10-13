@@ -4,6 +4,14 @@
 
 const CAP = 1024;
 
+// What produced an entry (docs/design-m10-m13.md §3.6):
+//   HIT  a weapon hit: statuses, chains, lifesteal and all triggers
+//   PROC triggered damage (explode, chain hops): statuses and triggers, but never chains
+//   DOT  burn ticks: no statuses, lifesteal or hit/crit triggers; kills still count
+export const KIND_HIT = 0;
+export const KIND_PROC = 1;
+export const KIND_DOT = 2;
+
 export function createDamageQueue() {
   return {
     n: 0,
@@ -15,11 +23,12 @@ export function createDamageQueue() {
     kx: new Float32Array(CAP),
     ky: new Float32Array(CAP),
     src: new Array(CAP).fill(null),   // weapon instance that caused the hit (drives triggers)
+    kind: new Uint8Array(CAP),
     depth: new Uint8Array(CAP),       // trigger recursion depth (capped at 3 once triggers exist)
   };
 }
 
-export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0, src = null) {
+export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0, src = null, kind = KIND_HIT) {
   const q = run.world.dmg;
   if (q.n >= CAP) {
     q.dropped++;
@@ -34,4 +43,5 @@ export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0,
   q.ky[i] = ky;
   q.depth[i] = depth;
   q.src[i] = src;
+  q.kind[i] = kind;
 }

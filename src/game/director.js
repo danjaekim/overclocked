@@ -29,6 +29,12 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1) {
   e.ai = 0;
   e.aiT = 0;
   e.aiCd = def.charge ? def.charge.every : 0;
+  e.status = 0;
+  e.burnDps = e.burnT = e.burnAcc = 0;
+  e.burnSrc = null;
+  e.chill = 0;
+  e.chillT = e.freezeT = e.freezeImm = e.shockT = 0;
+  e.slowMul = 1;
   return e;
 }
 

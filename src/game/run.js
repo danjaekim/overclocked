@@ -13,6 +13,7 @@ import { updateProjectiles } from '../systems/movement.js';
 import { updateCollision } from '../systems/collision.js';
 import { updatePickups } from '../systems/pickups.js';
 import { flushDamage } from '../systems/damage.js';
+import { updateStatuses } from '../systems/status.js';
 import { updateShrines } from '../systems/shrines.js';
 import { updateFx, drawFx } from '../render/fx.js';
 import { drawGems, drawOre, drawEnemies, drawProjectiles } from '../render/entities.js';
@@ -66,9 +67,9 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       w.hash.rebuild(w.enemies.active, w.enemies.count);        // 6 spatial hash
       updateCollision(run);                                     // 7 collisions (queue damage)
       updatePickups(run, dt);                                   // 7b gems: magnet and collect
+      updateStatuses(run, dt);                                  // 7d status timers, burn ticks (queue damage)
       flushDamage(run);                                         // 8 apply damage, deaths
       updateShrines(run, dt);                                   // 7c shrine channel / expiry
-      // 9 status effects (later)
       updateFx(run, dt);
       if (run.toast && (run.toast.ttl -= dt) <= 0) run.toast = null;
 

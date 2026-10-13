@@ -6,10 +6,12 @@ import projectile from './projectile.js';
 import arc from './arc.js';
 import orbit from './orbit.js';
 import aura from './aura.js';
+import nova from './nova.js';
 
 export const BEHAVIORS = {
   projectile,
   arc,
   orbit,
   aura,
+  nova,
 };
