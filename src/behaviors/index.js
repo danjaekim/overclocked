@@ -7,6 +7,9 @@ import arc from './arc.js';
 import orbit from './orbit.js';
 import aura from './aura.js';
 import nova from './nova.js';
+import bolt from './bolt.js';
+import boomerang from './boomerang.js';
+import mortar from './mortar.js';
 
 export const BEHAVIORS = {
   projectile,
@@ -14,4 +17,7 @@ export const BEHAVIORS = {
   orbit,
   aura,
   nova,
+  bolt,
+  boomerang,
+  mortar,
 };

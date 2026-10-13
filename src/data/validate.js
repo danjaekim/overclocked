@@ -213,10 +213,14 @@ export function validateData() {
   for (const r of EVOLUTIONS) {
     const at = `evolution ${r.id}`;
     if (!WEAPONS[r.from]) problems.push(`${at}: unknown from weapon "${r.from}"`);
+    if (r.with && !WEAPONS[r.with]) problems.push(`${at}: unknown fusion partner "${r.with}"`);
+    if (r.with && r.with === r.from) problems.push(`${at}: a fusion needs two different weapons`);
     if (!WEAPONS[r.into]) problems.push(`${at}: unknown into weapon "${r.into}"`);
     else if (WEAPONS[r.into].pool !== false) problems.push(`${at}: the evolved weapon must set pool: false`);
     for (const q of r.requires) {
       if (q.passive && !PASSIVES[q.passive]) problems.push(`${at}: unknown passive "${q.passive}"`);
+      if (q.perk && !PERKS[q.perk]) problems.push(`${at}: unknown perk "${q.perk}"`);
+      if (q.perk && q.minLevel > PERKS[q.perk].maxLevel) problems.push(`${at}: minLevel above the perk's maxLevel`);
       if (q.title && !TITLES[q.title]) problems.push(`${at}: unknown title "${q.title}"`);
       if (q.passive && q.minLevel > PASSIVES[q.passive].maxLevel) problems.push(`${at}: minLevel above the passive's maxLevel`);
       if (q.weaponLevel > WEAPONS[r.from].maxLevel) problems.push(`${at}: weaponLevel above the weapon's maxLevel`);

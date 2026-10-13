@@ -7,8 +7,9 @@ import { WEAPONS } from '../data/weapons.js';
 import { SLOTS } from '../data/progression.js';
 import { buildCandidates, offerWeight } from './upgrades.js';
 import { offerState, applyOffer } from './apply-offer.js';
-import { recipesFor, canEvolve, evolve } from './evolution.js';
+import { recipesFor, canEvolve, evolve, pair } from './evolution.js';
 import { findPassive } from './passives.js';
+import { findPerk } from './perks.js';
 
 // How many rolls this chest gives: one of 1 / 3 / 5, weighted by tier; luck favours the bigger ones.
 export function chestCount(rng, tier, luck) {
@@ -25,11 +26,16 @@ export function evolutionBlockers(run) {
   const keys = new Set();
   for (const inst of run.player.weapons) {
     for (const recipe of recipesFor(inst)) {
+      if (recipe.with) { const { a, b } = pair(run, recipe); if (!a || !b) continue; }   // a fusion needs both parts in hand
       for (const req of recipe.requires) {
         if (req.weaponLevel !== undefined && inst.level < req.weaponLevel) keys.add(`weapon_up:${inst.instanceId}`);
         if (req.passive) {
           const p = findPassive(run.player, req.passive);
           if (p && p.level < (req.minLevel || 1)) keys.add(`passive_up:${req.passive}`);
+        }
+        if (req.perk) {
+          const k = findPerk(run.player, req.perk);
+          if (k && k.level < (req.minLevel || 1)) keys.add(`perk_up:${req.perk}`);
         }
       }
     }
@@ -66,7 +72,10 @@ export function pickChestItem(state, rng, blockers, wantNew) {
 // A ready evolution (every requirement met, starsteel included), if any weapon has one.
 function findJackpot(run) {
   for (const inst of run.player.weapons) {
-    for (const recipe of recipesFor(inst)) if (canEvolve(run, inst, recipe)) return { inst, recipe };
+    for (const recipe of recipesFor(inst)) {
+      if (recipe.with) continue;                  // fusions consume a weapon, so they stay a choice at the forge
+      if (canEvolve(run, inst, recipe)) return { inst, recipe };
+    }
   }
   return null;
 }

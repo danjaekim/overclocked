@@ -65,7 +65,7 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
       const list = checklist(run, inst, r);
       const ready = canEvolve(run, inst, r);
       return `<div class="fevo${ready ? ' ready' : ''}">
-        <div class="fevo-top"><b>Evolve: ${WEAPONS[r.into].name}</b></div>
+        <div class="fevo-top"><b>${r.with ? `Fuse with ${WEAPONS[r.with === inst.weaponId ? r.from : r.with].name}` : 'Evolve'}: ${WEAPONS[r.into].name}</b></div>
         <ul>${list.map((c) => `<li class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'} ${c.text}</li>`).join('')}</ul>
         <button class="fbtn evo" data-act="evo:${inst.instanceId}:${r.id}" ${ready ? '' : 'disabled'}>Combine</button>
       </div>`;
