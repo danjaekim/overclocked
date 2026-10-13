@@ -7,6 +7,7 @@ import { makeTags } from '../stats/stats.js';
 import { PASSIVES } from '../data/passives.js';
 import { TITLES } from '../data/titles.js';
 import { applyBaseMods } from './weapons.js';
+import { refreshResonance } from './resonance.js';
 import { findPassive } from './passives.js';
 import { hasTitle } from './titles.js';
 
@@ -60,6 +61,7 @@ export function evolve(run, inst, recipe) {
   inst.trigT = def.triggers.map(() => 0);
   applyBaseMods(run, inst);
   BEHAVIORS[def.behavior].init(inst, run);
+  refreshResonance(run);
   run.toast = { text: `${def.name} forged!`, ttl: 3.5 };
   return { ok: true, into: def };
 }

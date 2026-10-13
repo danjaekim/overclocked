@@ -6,6 +6,7 @@ import { BEHAVIORS } from '../behaviors/index.js';
 import { makeTags } from '../stats/stats.js';
 import { updateIntervalTriggers } from './triggers.js';
 import { SLOTS } from '../data/progression.js';
+import { refreshResonance } from './resonance.js';
 
 export const MAX_WEAPONS = SLOTS.weapons;
 
@@ -44,6 +45,7 @@ export function addWeapon(run, weaponId) {
   p.weapons.push(inst);
   applyBaseMods(run, inst);
   BEHAVIORS[def.behavior].init(inst, run);
+  refreshResonance(run);
   return inst;
 }
 

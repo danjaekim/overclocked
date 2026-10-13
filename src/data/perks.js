@@ -162,3 +162,64 @@ export const PERKS = {
     levelText: ['+5% crit chance', '+5% crit chance', '+5% crit chance, +0.25 crit multiplier'],
   },
 };
+
+// ---- payoffs: cash in a status when its carrier dies (rules, engine in systems/status.js) -------
+Object.assign(PERKS, {
+  wildfire: {
+    name: 'Wildfire', glyph: 'W', rarity: 'rare', maxLevel: 3, requires: [FIRE], affinity: ['fire'],
+    desc: 'A burning enemy that dies passes its fire on to the enemies nearest it.',
+    levels: [[], [], []],
+    levelText: ['spreads 150% of its remaining burn to 2 enemies', 'spreads 175% to 3 enemies', 'spreads 200% to 4 enemies'],
+    rule: { id: 'wildfire', values: [{ n: 2, mult: 1.5 }, { n: 3, mult: 1.75 }, { n: 4, mult: 2.0 }] },
+  },
+  shatter: {
+    name: 'Shatter', glyph: 'S', rarity: 'rare', maxLevel: 3, requires: [FROST], affinity: ['frost'],
+    desc: 'A frozen enemy that dies bursts into ice, hurting everything around it.',
+    levels: [[], [], []],
+    levelText: ['bursts for 25% of its max HP', 'bursts for 35% of its max HP', 'bursts for 50% of its max HP'],
+    rule: { id: 'shatter', values: [{ frac: 0.25 }, { frac: 0.35 }, { frac: 0.5 }] },
+  },
+  thunderclap: {
+    name: 'Thunderclap', glyph: 'T', rarity: 'rare', maxLevel: 3, requires: [STORM], affinity: ['storm'],
+    desc: 'A shocked enemy that dies fires lightning at the enemies near it.',
+    levels: [[], [], []],
+    levelText: ['2 bolts at 60% of the killing blow', '3 bolts', '4 bolts'],
+    rule: { id: 'thunderclap', values: [{ hops: 2 }, { hops: 3 }, { hops: 4 }] },
+  },
+
+  // ---- alloys: two elements react (epic; need a source of BOTH) -----------------------------
+  quench: {
+    name: 'Quench', glyph: 'Q', rarity: 'epic', maxLevel: 2, requires: [FIRE, FROST], affinity: ['fire', 'frost'],
+    desc: 'Burning and chilled at once: the enemy flashes to steam, dealing the rest of its burn to everything around it.',
+    levels: [[], []],
+    levelText: ['steam deals 200% of the remaining burn', 'steam deals 300% of the remaining burn'],
+    rule: { id: 'quench', values: [{ mult: 2 }, { mult: 3 }] },
+  },
+  overload: {
+    name: 'Overload', glyph: 'O', rarity: 'epic', maxLevel: 2, requires: [FIRE, STORM], affinity: ['fire', 'storm'],
+    desc: 'A lightning chain that lands on a burning enemy explodes and sets its surroundings alight.',
+    levels: [[], []],
+    levelText: ['explosion for 50% of the chain damage', 'explosion for 80% of the chain damage'],
+    rule: { id: 'overload', values: [{ frac: 0.5 }, { frac: 0.8 }] },
+  },
+  superconduct: {
+    name: 'Superconduct', glyph: 'U', rarity: 'epic', maxLevel: 2, requires: [FROST, STORM], affinity: ['frost', 'storm'],
+    desc: 'Hits on enemies that are both chilled and shocked always crit.',
+    levels: [[], []],
+    levelText: ['always crit chilled + shocked enemies', '+0.5 crit multiplier against them'],
+    rule: { id: 'superconduct', values: [{ bonus: 0 }, { bonus: 0.5 }] },
+  },
+
+  // ---- execute --------------------------------------------------------------------------------
+  headsman: {
+    name: 'Headsman', glyph: 'X', rarity: 'rare', maxLevel: 2, requires: [['perk:keen_eye', 'class:berserker']], affinity: [],
+    desc: 'A crit that would leave a non-boss enemy low on health kills it outright.',
+    levels: [
+      [{ stat: 'executeBelow', op: 'flat', value: 0.12 }],
+      [{ stat: 'executeBelow', op: 'flat', value: 0.08 }],
+    ],
+    levelText: ['crits execute enemies under 12% HP', 'crits execute enemies under 20% HP'],
+  },
+});
+
+export const RULE_IDS = ['wildfire', 'shatter', 'thunderclap', 'quench', 'overload', 'superconduct'];

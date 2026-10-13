@@ -41,6 +41,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     rerolls: LEVELUP.rerolls,
     banishes: LEVELUP.banishes,
     banished: [],           // item ids removed from the offer pool for this run
+    resonance: [],          // active set bonuses [{ tag, tier, name }] (game/resonance.js)
     rules: {},              // perk rule values by rule id (null/undefined = not owned)
     ore: 0,                 // iron-equivalents, spent at the forge
     starsteel: 0,           // rare ore from the boss, spent on evolutions

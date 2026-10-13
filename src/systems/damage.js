@@ -8,7 +8,7 @@ import { spawnShrine } from './shrines.js';
 import { SHRINE } from '../data/forge.js';
 import { KIND_HIT, KIND_DOT } from './damage-queue.js';
 import { ST } from '../data/statuses.js';
-import { applyBurn, applyChill, applyShock, chainArc } from './status.js';
+import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath } from './status.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -57,9 +57,9 @@ function rollStatuses(run, e, src, amount, depth, kind) {
   const rng = run.rng;
   const alive = e.hp > 0;
   let c = stats.getFor('burnChance', tags);
-  if (c > 0 && rng.next() < c && alive) applyBurn(run, e, src, amount);
+  if (c > 0 && rng.next() < c && alive) applyBurn(run, e, src, amount, depth);
   c = stats.getFor('chillChance', tags);
-  if (c > 0 && rng.next() < c && alive) applyChill(run, e, src);
+  if (c > 0 && rng.next() < c && alive) applyChill(run, e, src, depth);
   c = stats.getFor('shockChance', tags);
   if (c > 0 && rng.next() < c) {
     if (alive) applyShock(run, e, src);
@@ -81,7 +81,11 @@ export function flushDamage(run) {
     const kind = q.kind[i];
     const ex = e.x;
     const ey = e.y;
-    const amount = q.amount[i] * targetMult(run, e, src);
+    let amount = q.amount[i] * targetMult(run, e, src);
+    if (q.crit[i] === 1 && src && !e.def.boss) {          // Headsman: a crit that would leave it under the threshold kills it
+      const thr = run.player.stats.getFor('executeBelow', src.tags);
+      if (thr > 0 && (e.hp - amount) / e.maxHp < thr) amount = e.hp;
+    }
     e.hp -= amount;
     e.flash = HIT_FLASH;
     e.kx += q.kx[i];
@@ -97,7 +101,11 @@ export function flushDamage(run) {
       fireTriggers(run, 'hit', src, ex, ey, depth);
     }
     if (e.hp <= 0) {
+      const mask = e.status;
+      const maxHp = e.maxHp;
+      const burnLeft = e.burnT > 0 ? e.burnDps * e.burnT : 0;
       killEnemy(run, e);
+      if ((mask & 15) !== 0 && src) onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount);
       if (src) fireTriggers(run, 'kill', src, ex, ey, depth);   // burn kills still count as the weapon's kills
     }
   }

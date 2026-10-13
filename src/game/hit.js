@@ -2,6 +2,7 @@
 // resolve through resolveHit, so crit, knockback and the damage queue behave identically.
 
 import { queueDamage, KIND_HIT } from '../systems/damage-queue.js';
+import { ST } from '../data/statuses.js';
 
 export const KNOCKBACK_IMPULSE = 140;   // world units / second, scaled by the knockback stat and enemy size
 
@@ -9,8 +10,14 @@ export const KNOCKBACK_IMPULSE = 140;   // world units / second, scaled by the k
 export function resolveHit(run, inst, e, base, dx, dy) {
   const stats = run.player.stats;
   const tags = inst.tags;
-  const crit = run.rng.next() < stats.getFor('critChance', tags);
-  const amount = base * (crit ? stats.getFor('critMult', tags) : 1);
+  let crit = run.rng.next() < stats.getFor('critChance', tags);
+  let mult = 1;
+  // Superconduct (frost + storm alloy): a chilled AND shocked target is always crit
+  const sc = run.rules.superconduct;
+  const both = sc !== undefined && (e.status & ST.SHOCK) !== 0 && (e.status & (ST.CHILL | ST.FROZEN)) !== 0;
+  if (both) crit = true;
+  if (crit) mult = stats.getFor('critMult', tags) + (both ? sc.bonus : 0);
+  const amount = base * mult;
   const kb = KNOCKBACK_IMPULSE * stats.getFor('knockback', tags) * (10 / e.r);
   queueDamage(run, e, amount, crit, dx * kb, dy * kb, 0, inst, KIND_HIT);
 }

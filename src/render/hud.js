@@ -61,6 +61,18 @@ export function drawHud(ctx, view, run) {
   drawChips(ctx, run.player.passives, 12, y0 + bh + 52);
   drawChips(ctx, run.titles, 12, y0 + bh + 78);
   drawChips(ctx, run.player.perks, 12, y0 + bh + 104);
+  if (run.resonance.length) {                                  // set bonuses: small labels, e.g. "Fire II"
+    ctx.font = '700 11px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#ffd34d';
+    let rx = 12;
+    for (const r of run.resonance) {
+      const label = `${r.name} ${r.tier === 2 ? 'II' : 'I'}`;
+      ctx.fillText(label, rx, y0 + bh + 132);
+      rx += ctx.measureText(label).width + 12;
+    }
+  }
 
   // Boss bar (top-center, under the timer)
   const boss = run.boss;

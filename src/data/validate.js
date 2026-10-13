@@ -17,7 +17,7 @@ import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
 import { ORES } from './ores.js';
 import { EVOLUTIONS } from './evolutions.js';
 import { TITLES } from './titles.js';
-import { PERKS } from './perks.js';
+import { PERKS, RULE_IDS } from './perks.js';
 
 // Read on every hit: a `when` modifier would bypass the stat cache for them.
 const NO_WHEN = new Set(['burnChance', 'chillChance', 'shockChance', 'burnPower', 'chillStacks', 'chains', 'chainDamage',
@@ -98,6 +98,10 @@ export function validateData() {
     if (p.levelText.length !== p.levels.length) problems.push(`${at}: levelText.length must equal levels.length`);
     p.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 1}`, problems));
     if (!Array.isArray(p.affinity)) problems.push(`${at}: affinity must be an array`);
+    if (p.rule) {
+      if (!RULE_IDS.includes(p.rule.id)) problems.push(`${at}: unknown rule "${p.rule.id}"`);
+      if (p.rule.values.length !== p.maxLevel) problems.push(`${at}: rule.values.length must equal maxLevel`);
+    }
     if (PASSIVES[id] || WEAPONS[id]) problems.push(`${at}: id clashes with a passive or weapon (banish uses one id space)`);
     const known = new Set(Object.values(WEAPONS).flatMap((w) => w.tags));
     for (const any of p.requires) {

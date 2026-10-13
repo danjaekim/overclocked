@@ -3,6 +3,7 @@
 //   node tools/bench.mjs                 everything (a few minutes)
 //   node tools/bench.mjs --weapons       per-weapon damage tests only
 //   node tools/bench.mjs --bots          bot runs only
+//   node tools/bench.mjs --builds        the perk build table (docs/design-m10-m13.md section 5)
 //   node tools/bench.mjs --quick         fewer bot seeds
 //   node tools/bench.mjs --json          machine-readable output
 //
@@ -22,6 +23,8 @@ import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { enhance, canEnhance } from '../src/game/forge.js';
+import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
+import { PERKS } from '../src/data/perks.js';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -153,13 +156,73 @@ function playBot(classId, seed) {
   };
 }
 
+// ---- builds ----------------------------------------------------------------------------------
+// Each build row of docs/design-m10-m13.md section 5, set up directly at a mid-run power level
+// (weapons level 5, perks level 2 or max). Reports a crowd of 120 for 20 s and a stationary-boss
+// duel. Target: every build within 2x of the median; outliers show up here before playtests.
+
+const BUILDS = [
+  { id: 'baseline-archer', cls: 'archer', weapons: ['ember_bow'], perks: [] },
+  { id: 'wildfire', cls: 'archer', weapons: ['ember_bow', 'cinder_ward'], perks: ['kindling', 'fan_the_flames', 'wildfire', 'volley'] },
+  { id: 'storm chain', cls: 'archer', weapons: ['ember_bow', 'storm_javelin'], perks: ['static_charge', 'arc_conductor', 'thunderclap', 'ricochet'] },
+  { id: 'splinter volley', cls: 'archer', weapons: ['ember_bow'], perks: ['ricochet', 'splitting_tips', 'volley', 'heavy_fletching', 'keen_eye'] },
+  { id: 'superconductor', cls: 'archer', weapons: ['ember_bow', 'rime_shards', 'storm_javelin'], perks: ['frostbite', 'static_charge', 'superconduct', 'keen_eye', 'headsman'] },
+  { id: 'overload', cls: 'archer', weapons: ['ember_bow', 'storm_javelin', 'cinder_ward'], perks: ['kindling', 'arc_conductor', 'overload', 'fan_the_flames'] },
+  { id: 'baseline-smith', cls: 'smith', weapons: ['forge_hammer'], perks: [] },
+  { id: 'glacier', cls: 'smith', weapons: ['forge_hammer', 'rime_shards'], perks: ['frostbite', 'deep_freeze', 'shatter', 'long_reach'] },
+  { id: 'steam engine', cls: 'smith', weapons: ['forge_hammer', 'cinder_ward', 'rime_shards'], perks: ['kindling', 'frostbite', 'quench', 'long_reach'] },
+  { id: 'baseline-berserker', cls: 'berserker', weapons: ['rending_axe'], perks: [] },
+  { id: 'reaper', cls: 'berserker', weapons: ['rending_axe', 'spirit_blades'], perks: ['echo_strike', 'long_reach', 'bloodletting', 'keen_eye', 'headsman'] },
+];
+
+function buildRun(b, seed = 1) {
+  const run = createRun({ seed, view: VIEW, debug: { god: true }, classId: b.cls });
+  run.director.update = () => {};
+  for (const id of b.weapons) if (!run.player.weapons.some((w) => w.weaponId === id)) addWeapon(run, id);
+  for (const w of run.player.weapons) while (w.level < 5 && canLevelUp(w)) levelUpWeapon(run, w);
+  for (const id of b.perks) {
+    addPerk(run, id);
+    const e = findPerk(run.player, id);
+    while (e.level < Math.min(2, PERKS[id].maxLevel)) levelUpPerk(run, e);
+  }
+  return run;
+}
+
+function buildCrowd(b) {
+  const run = buildRun(b);
+  const N = 200;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 * 4;
+    const d = 120 + (i % 8) * 30;
+    const brute = i % 6 === 5;
+    spawnEnemy(run, brute ? 'brute' : 'goblin', Math.cos(a) * d, Math.sin(a) * d, brute ? 3 : 3);
+  }
+  for (let i = 0; i < 60 / STEP; i++) {
+    run.update(STEP, { x: 0, y: 0 });
+    if (run.world.enemies.count === 0) return run.time;
+  }
+  return null;
+}
+
+function buildBoss(b) {
+  const run = buildRun(b);
+  const boss = spawnEnemy(run, 'warlord', 110, 0);
+  boss.speed = 0;
+  for (let i = 0; i < 60 / STEP; i++) {
+    run.update(STEP, { x: 0, y: 0 });
+    boss.x = 110; boss.y = 0; boss.kx = boss.ky = 0; boss.ai = 0; boss.aiCd = 99;
+    if (!boss.alive) return run.time;
+  }
+  return null;
+}
+
 // ---- report ----------------------------------------------------------------------------------
 
 const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots')) {
+if (!flag('--bots') && !flag('--builds')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -180,7 +243,17 @@ if (!flag('--bots')) {
   }
 }
 
-if (!flag('--weapons')) {
+if (flag('--builds')) {
+  console.log('\nBUILDS  (mid-run power: weapons L5, perks L2; crowd = seconds to clear 200 enemies at 3x hp (cap 60); boss = seconds to kill the Warlord)');
+  console.log(pad('build', 22) + pad('crowd s', 10) + pad('boss s', 8));
+  const rows = BUILDS.map((b) => ({ b, kills: buildCrowd(b), boss: buildBoss(b) }));
+  for (const r of rows) console.log(pad(r.b.id, 22) + pad(r.kills === null ? '>60' : r.kills.toFixed(1), 10) + pad(r.boss === null ? '>60' : r.boss.toFixed(1), 8));
+  const k = rows.map((r) => r.kills === null ? 60 : r.kills).sort((a, b) => a - b);
+  const bs = rows.map((r) => r.boss === null ? 60 : r.boss).sort((a, b) => a - b);
+  console.log(`median crowd ${k[Math.floor(k.length / 2)].toFixed(1)} s, median boss ${bs[Math.floor(bs.length / 2)].toFixed(1)} s`);
+}
+
+if (!flag('--weapons') && !flag('--builds')) {
   const seeds = flag('--quick') ? [1, 2, 3] : [1, 2, 3, 4, 5, 6];
   const classes = Object.keys(CLASSES);
   if (!flag('--json')) {

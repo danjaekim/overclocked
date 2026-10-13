@@ -9,7 +9,8 @@
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { queueDamage, KIND_PROC, KIND_DOT } from './damage-queue.js';
 import { MAX_TRIGGER_DEPTH } from '../effects/index.js';
-import { addArc } from '../render/fx.js';
+import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { addArc, addPuff } from '../render/fx.js';
 
 const visited = new Int32Array(SHOCK.maxHops + 2);
 
@@ -24,10 +25,9 @@ function refreshMask(e) {
   e.status = m;
 }
 
-export function applyBurn(run, e, src, hitAmount) {
-  const stats = run.player.stats;
-  const power = stats.getFor('burnPower', src.tags);
-  const dur = BURN.duration * stats.getFor('statusDuration', src.tags);
+// Adds `pool` damage to the enemy's burn (dealt evenly over the burn duration).
+export function addBurnPool(run, e, src, pool) {
+  const dur = BURN.duration * run.player.stats.getFor('statusDuration', src.tags);
   let remaining = 0;
   if (e.burnT > 0) {
     remaining = e.burnDps * e.burnT;
@@ -39,32 +39,73 @@ export function applyBurn(run, e, src, hitAmount) {
     e.burnAcc = (e.uid % 15) / 60;                            // stagger tick phases so ticks don't all land together
   }
   e.burnT = dur;
-  e.burnDps = (remaining + power * hitAmount) / dur;
+  e.burnDps = (remaining + pool) / dur;
   e.burnSrc = src;
   refreshMask(e);
 }
 
-export function applyChill(run, e, src) {
+export function applyBurn(run, e, src, hitAmount, depth = 0) {
+  addBurnPool(run, e, src, run.player.stats.getFor('burnPower', src.tags) * hitAmount);
+  if (run.rules.quench && (e.status & ST.BURN) && (e.status & (ST.CHILL | ST.FROZEN))) quench(run, e, src, depth);
+}
+
+export function applyChill(run, e, src, depth = 0) {
   const stats = run.player.stats;
   const boss = e.def.boss === true;
   const add = Math.max(1, Math.round(stats.getFor('chillStacks', src.tags)));
   const dur = CHILL.duration * stats.getFor('statusDuration', src.tags);
-  if (e.freezeT > 0) { e.chillT = dur; return; }              // already frozen: just keep the timer fresh
-  let cap = boss ? CHILL.bossMaxStacks : CHILL.maxStacks;
-  if (e.freezeImm > 0 && cap > CHILL.maxStacks - 1) cap = CHILL.maxStacks - 1;   // immune: can't reach the freeze
-  e.chill = Math.min(cap, e.chill + add);
-  e.chillT = dur;
-  if (!boss && e.chill >= CHILL.maxStacks) {                 // freeze
-    const elite = e.elite ? CHILL.eliteFreezeMult : 1;
-    e.freezeT = CHILL.freezeTime * stats.getFor('statusDuration', src.tags) * elite;
-    e.freezeImm = e.freezeT + CHILL.freezeImmune;
-    e.chill = 0;
-    e.chillT = 0;
-    e.slowMul = 0;
+  if (e.freezeT > 0) {                                        // already frozen: just keep the timer fresh
+    e.chillT = dur;
   } else {
-    e.slowMul = 1 - CHILL.slowPerStack * e.chill;
+    let cap = boss ? CHILL.bossMaxStacks : CHILL.maxStacks;
+    if (e.freezeImm > 0 && cap > CHILL.maxStacks - 1) cap = CHILL.maxStacks - 1;   // immune: can't reach the freeze
+    e.chill = Math.min(cap, e.chill + add);
+    e.chillT = dur;
+    if (!boss && e.chill >= CHILL.maxStacks) {                 // freeze
+      const elite = e.elite ? CHILL.eliteFreezeMult : 1;
+      e.freezeT = CHILL.freezeTime * stats.getFor('statusDuration', src.tags) * elite;
+      e.freezeImm = e.freezeT + CHILL.freezeImmune;
+      e.chill = 0;
+      e.chillT = 0;
+      e.slowMul = 0;
+    } else {
+      e.slowMul = 1 - CHILL.slowPerStack * e.chill;
+    }
+    refreshMask(e);
   }
+  if (run.rules.quench && (e.status & ST.BURN) && (e.status & (ST.CHILL | ST.FROZEN))) quench(run, e, src, depth);
+}
+
+// Queues PROC damage to every living enemy within `radius` of (x, y).
+function burst(run, x, y, radius, dmg, src, depth) {
+  if (depth + 1 > MAX_TRIGGER_DEPTH) return;
+  const w = run.world;
+  const n = w.hash.queryRadius(x, y, radius + MAX_ENEMY_RADIUS, w.scratch);
+  for (let i = 0; i < n; i++) {
+    const o = w.scratch[i];
+    if (!o.alive) continue;
+    const dx = o.x - x;
+    const dy = o.y - y;
+    const rr = radius + o.r;
+    if (dx * dx + dy * dy > rr * rr) continue;
+    const d = Math.hypot(dx, dy) || 1;
+    queueDamage(run, o, dmg, false, (dx / d) * 50, (dy / d) * 50, depth + 1, src, KIND_PROC);
+  }
+}
+
+// Alloy (fire + frost): an enemy that is burning AND chilled flashes to steam. Both statuses are
+// consumed and the burn it had left is dealt instantly (x mult) to everything around it.
+const QUENCH_RADIUS = 60;
+function quench(run, e, src, depth) {
+  const pool = e.burnDps * e.burnT;
+  e.burnT = e.burnDps = e.burnAcc = 0;
+  e.chill = 0;
+  e.chillT = 0;
+  e.freezeT = 0;
+  e.slowMul = 1;
   refreshMask(e);
+  addPuff(run, e.x, e.y, QUENCH_RADIUS / 2.4, '#eaf6ff');
+  if (pool > 0) burst(run, e.x, e.y, QUENCH_RADIUS, pool * run.rules.quench.mult, src, depth);
 }
 
 export function applyShock(run, e, src) {
@@ -74,12 +115,13 @@ export function applyShock(run, e, src) {
 
 // Arc from `from` through up to `chains` nearest un-hit enemies. Each hop is PROC damage at
 // chainDamage x the original hit, shocks its target, and draws a short bolt.
-export function chainArc(run, from, src, hitAmount, depth) {
+// hopsOverride / dmgFrac (>= 0) replace the weapon's `chains` / `chainDamage` (Thunderclap).
+export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dmgFrac = -1) {
   if (depth + 1 > MAX_TRIGGER_DEPTH) return;
   const stats = run.player.stats;
-  const hops = Math.min(SHOCK.maxHops, Math.round(stats.getFor('chains', src.tags)));
+  const hops = Math.min(SHOCK.maxHops, hopsOverride >= 0 ? hopsOverride : Math.round(stats.getFor('chains', src.tags)));
   if (hops <= 0) return;
-  const dmg = hitAmount * stats.getFor('chainDamage', src.tags);
+  const dmg = hitAmount * (dmgFrac >= 0 ? dmgFrac : stats.getFor('chainDamage', src.tags));
   const w = run.world;
   let cx = from.x;
   let cy = from.y;
@@ -106,8 +148,70 @@ export function chainArc(run, from, src, hitAmount, depth) {
     applyShock(run, best, src);
     const d = Math.sqrt(bestD) || 1;
     queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC);
+    if (run.rules.overload && (best.status & ST.BURN)) overload(run, best, src, dmg, depth);
     cx = best.x;
     cy = best.y;
+  }
+}
+
+// Alloy (fire + storm): a chain hop that lands on a burning enemy explodes, igniting what it hits.
+const OVERLOAD_RADIUS = 60;
+function overload(run, e, src, hopDmg, depth) {
+  const dmg = hopDmg * run.rules.overload.frac;
+  const w = run.world;
+  const n = w.hash.queryRadius(e.x, e.y, OVERLOAD_RADIUS + MAX_ENEMY_RADIUS, w.scratch);
+  addPuff(run, e.x, e.y, OVERLOAD_RADIUS / 2.4, '#ffb347');
+  for (let i = 0; i < n; i++) {
+    const o = w.scratch[i];
+    if (!o.alive) continue;
+    const dx = o.x - e.x;
+    const dy = o.y - e.y;
+    const rr = OVERLOAD_RADIUS + o.r;
+    if (dx * dx + dy * dy > rr * rr) continue;
+    const d = Math.hypot(dx, dy) || 1;
+    queueDamage(run, o, dmg, false, (dx / d) * 50, (dy / d) * 50, depth + 1, src, KIND_PROC);
+    addBurnPool(run, o, src, run.player.stats.getFor('burnPower', src.tags) * dmg);
+  }
+}
+
+// What a dying enemy was carrying pays off here (Wildfire, Shatter, Thunderclap). Called by the
+// damage flush right after the kill with a snapshot taken before it.
+const WILDFIRE_RADIUS = 90;
+const SHATTER_RADIUS = 70;
+const THUNDERCLAP_FRAC = 0.6;
+export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount) {
+  const rules = run.rules;
+  if ((mask & ST.BURN) && rules.wildfire && burnLeft > 0) {
+    const r = rules.wildfire;
+    const w = run.world;
+    const n = w.hash.queryRadius(e.x, e.y, WILDFIRE_RADIUS + MAX_ENEMY_RADIUS, w.scratch);
+    const share = (burnLeft * r.mult) / r.n;
+    // the r.n nearest living enemies in range, found by repeated selection over the candidate list
+    for (let pick = 0; pick < r.n; pick++) {
+      let best = null;
+      let bestD = WILDFIRE_RADIUS * WILDFIRE_RADIUS;
+      for (let i = 0; i < n; i++) {
+        const o = w.scratch[i];
+        if (!o.alive || o === e) continue;
+        let taken = false;
+        for (let k = 0; k < pick; k++) if (visited[k] === o.uid) { taken = true; break; }
+        if (taken) continue;
+        const dx = o.x - e.x;
+        const dy = o.y - e.y;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) { bestD = d; best = o; }
+      }
+      if (!best) break;
+      visited[pick] = best.uid;
+      addBurnPool(run, best, src, share);
+    }
+  }
+  if ((mask & ST.FROZEN) && rules.shatter) {
+    addPuff(run, e.x, e.y, SHATTER_RADIUS / 2.4, '#bfeaff');
+    burst(run, e.x, e.y, SHATTER_RADIUS, maxHp * rules.shatter.frac, src, depth);
+  }
+  if ((mask & ST.SHOCK) && rules.thunderclap) {
+    chainArc(run, e, src, amount, depth, rules.thunderclap.hops, THUNDERCLAP_FRAC);
   }
 }
 
