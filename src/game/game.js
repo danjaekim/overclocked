@@ -23,6 +23,9 @@ import { generateOffers } from './upgrades.js';
 import { offerState, applyOffer } from './apply-offer.js';
 import { xpToNext, gainXp } from './xp.js';
 import { LEVELUP } from '../data/progression.js';
+import { showHistory } from '../ui/history.js';
+import { showBackup } from '../ui/backup.js';
+import { encodeSave, decodeSave, describeSave } from '../save/transfer.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params, save, audio }) {
   const game = { state: 'title', run: null };
@@ -47,10 +50,36 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     showTitle(overlays, {
       onPlay: params.classId ? () => startRun() : toClassSelect,
       onCompendium: () => showCompendium(overlays, { onClose: toTitle }),
+      onHistory: openHistory,
       onToggleSound: () => toggleSound(toTitle),
       sound: save.data.sound,
       bests: save.data.bests,
       runs: save.data.runs,
+    });
+  }
+
+  function openHistory() {
+    showHistory(overlays, {
+      history: save.data.history,
+      totals: { runs: save.data.runs, wins: save.data.wins, bests: save.data.bests },
+      isUnlocked: open,
+      onReplay: (e) => { nextSeed = e.seed; startRun(e.cls); },
+      onBackup: openBackup,
+      onClose: toTitle,
+    });
+  }
+
+  function openBackup() {
+    showBackup(overlays, {
+      getCode: () => encodeSave(save.data),
+      preview: async (code) => { const data = await decodeSave(code); return { data, info: describeSave(data) }; },
+      current: () => describeSave(save.data),
+      apply: (data) => {
+        save.replaceAll(data);
+        lastClass = open(save.data.lastClass) ? save.data.lastClass : DEFAULT_CLASS;
+        if (audio) audio.setEnabled(save.data.sound);
+      },
+      onClose: openHistory,
     });
   }
 

@@ -50,6 +50,52 @@ page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) errors.
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
 await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1')}`);
+if (flag('--history')) {                                         // run history + export/import, from the title screen
+  const shotH = (n) => opt('--shot') && page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${n}.png`) });
+  await page.evaluate(() => {
+    const { save } = window.__overforged;
+    const mk = (i, cls, won) => ({
+      time: 200 + i * 60, kills: 100 + i * 40, seed: 100 + i, won, bossKilled: won, classId: cls, level: 8 + i, titleIds: [],
+      build: { weapons: [[cls === 'smith' ? 'forge_hammer' : 'ember_bow', 3 + i]], passives: [], perks: [['wildfire', 2]] },
+      stats: { total: 20000 * (i + 1), avgDps: 90 + i * 10 },
+    });
+    save.recordRun(mk(0, 'archer', false), Date.now() - 86400000);
+    save.recordRun(mk(1, 'smith', true), Date.now() - 3600000);
+    save.recordRun(mk(2, 'archer', true), Date.now() - 60000);
+  });
+  await page.reload();
+  await page.tap('[data-act=history]');
+  await page.waitForSelector('.overlay.history');
+  console.log('history rows:', await page.locator('.hrow').count());
+  await shotH('history');
+  await page.tap('.hrow >> nth=0');
+  await shotH('history-open');
+  await page.tap('[data-act="hc:smith"]');
+  console.log('smith rows:', await page.locator('.hrow').count());
+  await page.tap('[data-act=hw]');
+  console.log('smith wins rows:', await page.locator('.hrow').count());
+  await page.tap('[data-act=backup]');
+  await page.tap('[data-act=export]');
+  await page.waitForSelector('#export-code');
+  const code = await page.inputValue('#export-code');
+  console.log('code:', code.slice(0, 16) + '…', code.length, 'chars');
+  await shotH('backup-export');
+  await page.tap('[data-act=main]');
+  await page.fill('#import-code', code.slice(0, -5));
+  await page.tap('[data-act=check]');
+  console.log('bad code message:', await page.textContent('.bmsg'));
+  await page.fill('#import-code', code);
+  await page.tap('[data-act=check]');
+  await page.waitForSelector('[data-act=apply]');
+  await shotH('backup-confirm');
+  await page.tap('[data-act=apply]');
+  console.log('after import:', await page.textContent('.bmsg'));
+  await page.tap('[data-act=close]');
+  await page.waitForSelector('.hrow');
+  console.log('history rows after import:', await page.locator('.hrow').count());
+  await page.tap('[data-act=close]');
+  await page.waitForSelector('[data-act=play]');
+}
 if (flag('--guide')) {                                           // the compendium, from the title screen
   await page.tap('[data-act=guide]');
   await page.waitForSelector('.overlay.compendium');

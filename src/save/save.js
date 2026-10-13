@@ -7,7 +7,7 @@
 const KEY = 'overforged.save.v1';
 
 export const DEFAULTS = {
-  version: 1,
+  version: 2,
   lastClass: 'archer',
   unlocked: [],                       // class ids unlocked through play
   bests: { time: 0, kills: 0, level: 0 },
@@ -15,7 +15,46 @@ export const DEFAULTS = {
   wins: 0,
   bossKills: 0,
   sound: true,
+  history: [],                        // finished runs, oldest first (see entryFromSummary), capped
 };
+
+export const HISTORY_CAP = 100;
+
+// A finished run as stored in the history: ids and numbers only, so it stays small and survives data edits.
+export function entryFromSummary(summary, now = Date.now()) {
+  const b = summary.build || {};
+  const pairs = (l) => (Array.isArray(l) ? l.map((x) => [String(x[0]), Math.floor(x[1]) || 1]) : []);
+  return {
+    t: now,
+    cls: summary.classId,
+    won: !!summary.won,
+    time: Math.floor(summary.time),
+    kills: summary.kills,
+    level: summary.level,
+    seed: summary.seed,
+    boss: !!summary.bossKilled,
+    dmg: Math.round(summary.stats ? summary.stats.total : 0),
+    dps: Math.round(summary.stats ? summary.stats.avgDps : 0),
+    weapons: pairs(b.weapons),
+    passives: pairs(b.passives),
+    perks: pairs(b.perks),
+    titles: Array.isArray(summary.titleIds) ? summary.titleIds.map(String) : [],
+  };
+}
+
+// Keeps a stored history entry only if it has the right shape (a hand-edited or imported blob can be anything).
+function cleanEntry(e) {
+  if (!e || typeof e !== 'object' || typeof e.cls !== 'string') return null;
+  for (const k of ['t', 'time', 'kills', 'level']) if (!Number.isFinite(e[k]) || e[k] < 0) return null;
+  const pairs = (l) => (Array.isArray(l) ? l.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1])).slice(0, 12).map((x) => [x[0], x[1]]) : []);
+  return {
+    t: e.t, cls: e.cls, won: !!e.won, time: Math.floor(e.time), kills: Math.floor(e.kills), level: Math.floor(e.level),
+    seed: Number.isFinite(e.seed) ? e.seed : 0, boss: !!e.boss,
+    dmg: Number.isFinite(e.dmg) ? e.dmg : 0, dps: Number.isFinite(e.dps) ? e.dps : 0,
+    weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks),
+    titles: Array.isArray(e.titles) ? e.titles.filter((x) => typeof x === 'string').slice(0, 12) : [],
+  };
+}
 
 function clone(o) {
   return JSON.parse(JSON.stringify(o));
@@ -36,6 +75,7 @@ export function normalize(raw) {
     if (Number.isFinite(raw[k]) && raw[k] >= 0) out[k] = Math.floor(raw[k]);
   }
   if (typeof raw.sound === 'boolean') out.sound = raw.sound;
+  if (Array.isArray(raw.history)) out.history = raw.history.map(cleanEntry).filter(Boolean).slice(-HISTORY_CAP);
   return out;
 }
 
@@ -77,7 +117,7 @@ export function createSave(storage) {
     },
 
     // Records a finished run and returns { newBests: ['time', ...] }.
-    recordRun(summary) {
+    recordRun(summary, now = Date.now()) {
       data.runs++;
       if (summary.won) data.wins++;
       if (summary.bossKilled) data.bossKills++;
@@ -88,8 +128,17 @@ export function createSave(storage) {
           newBests.push(k);
         }
       }
+      data.history.push(entryFromSummary(summary, now));
+      if (data.history.length > HISTORY_CAP) data.history.splice(0, data.history.length - HISTORY_CAP);
       persist();
       return { newBests };
+    },
+
+    // Import: the whole save is replaced by a (re-validated) imported one.
+    replaceAll(raw) {
+      data = normalize(raw);
+      persist();
+      return data;
     },
 
     reset() {

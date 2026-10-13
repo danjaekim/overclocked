@@ -84,6 +84,18 @@
     .ccat { display: block; font-size: 11px; color: var(--dim); }
     .cbody p { margin: 4px 0 0; font-size: 13px; line-height: 1.35; color: #cfd0d8; }
     .cbody .cbuilds { color: var(--ember); }
+    .overlay.history .bstats { width: 100%; max-width: 400px; box-sizing: border-box; }
+    .hsum { margin: 0; max-width: 400px; }
+    .hrow { cursor: pointer; }
+    .hrow.won { --c: #6ec36e; } .hrow.lost { --c: #6a4a4a; }
+    .hlab { display: inline-block; min-width: 96px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .btn.small { min-width: 0; min-height: 44px; padding: 0 16px; font-size: 15px; margin-top: 8px; }
+    .lu-tools .btn.small { margin-top: 0; flex: 1; }
+    .clist.backup { gap: 10px; }
+    .clist.backup h3 { margin: 4px 0 0; font-size: 15px; color: var(--ember); }
+    .clist.backup .btn { width: 100%; }
+    .bcode { width: 100%; box-sizing: border-box; padding: 10px; font: 13px/1.35 ui-monospace, Menlo, monospace; color: var(--ink); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; resize: none; -webkit-user-select: text; user-select: text; word-break: break-all; }
+    .bmsg { margin: 0; font-size: 13px; color: var(--ember); text-align: left; }
     .overlay.build { background: rgba(10, 11, 16, 0.97); justify-content: flex-start; gap: 8px; padding-top: calc(env(safe-area-inset-top) + 24px); }
     .overlay.build h2 { margin: 0; color: var(--ember); }
     .build-wrap { flex: 1; width: 100%; max-width: 400px; overflow-y: auto; text-align: left; -webkit-overflow-scrolling: touch; }

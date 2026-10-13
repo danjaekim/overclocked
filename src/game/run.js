@@ -165,6 +165,12 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, classId: run.player.classId,
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
         weapons: run.player.weapons.map((w) => w.def.name),
+        titleIds: run.titles.map((t) => t.id),
+        build: {                                     // ids and levels, for the run history
+          weapons: run.player.weapons.map((w) => [w.weaponId, w.level]),
+          passives: run.player.passives.map((i) => [i.id, i.level]),
+          perks: run.player.perks.map((i) => [i.id, i.level]),
+        },
         stats: statsSnapshot(run),
       };
     },
