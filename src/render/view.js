@@ -34,9 +34,37 @@ export function createView(stage, canvas) {
     'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top)';
   document.body.appendChild(probe);
 
+  // The usable size. In an iOS home-screen app window.innerHeight can come up short of the screen
+  // (the strip down to the home indicator stays black), so there we also trust the visual viewport,
+  // a fixed full-screen probe and the screen height. A Safari tab keeps innerHeight: its toolbars
+  // move, and taking the larger number there would hide the bottom of the game behind them.
+  const fill = document.createElement('div');
+  fill.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;visibility:hidden;pointer-events:none';
+  document.body.appendChild(fill);
+  function isStandalone() {
+    try {
+      return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    } catch {
+      return false;
+    }
+  }
+  function usable() {
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+    if (isStandalone()) {
+      const r = fill.getBoundingClientRect();
+      const vv = window.visualViewport;
+      h = Math.max(h, r.height, vv ? vv.height : 0);
+      if (window.screen && window.screen.height > 0 && window.screen.width > 0 && window.screen.width <= w + 1) {
+        h = Math.max(h, Math.min(window.screen.height, window.screen.width * MAX_ASPECT));
+      }
+      w = Math.max(w, r.width);
+    }
+    return { w, h };
+  }
+
   function layout() {
-    const winW = window.innerWidth;
-    const winH = window.innerHeight;
+    const { w: winW, h: winH } = usable();
     const aspect = winH / winW;
 
     let cssW = winW;
@@ -68,11 +96,16 @@ export function createView(stage, canvas) {
     view.h = canvas.height / view.scale;
 
     const insetPx = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-    view.insetTop = Math.max(0, insetPx - top) / view.cssScale;
+    // Under a notch the status bar blurs what is beneath it, so the HUD starts a little lower.
+    view.insetTop = Math.max(0, insetPx - top) / view.cssScale + (insetPx > top ? 10 : 0);
   }
 
   window.addEventListener('resize', layout);
   window.addEventListener('orientationchange', layout);
+  window.addEventListener('pageshow', layout);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
   layout();
+  setTimeout(layout, 300);           // iOS reports the home-screen window size late
+  setTimeout(layout, 1200);
   return view;
 }
