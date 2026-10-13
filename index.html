@@ -238,8 +238,45 @@
         el.appendChild(b);
       }
     }
-    setTimeout(function () { if (!window.__overforged) bootReport('Overforged did not start (no error was reported).'); }, 3000);
+    // Walks the import graph from main.js with fetch and lists every file that cannot be loaded, so a
+    // failed start names the file (content blockers and flaky networks usually hit one specific URL).
+    function diagnose() {
+      if (window.__diagRan) return;
+      window.__diagRan = true;
+      var seen = {}, failed = [], queue = ['src/main.js'], active = 0, started = 0;
+      var el = document.getElementById('boot-error');
+      function next() {
+        while (queue.length && active < 6 && started < 200) {
+          var path = queue.shift();
+          if (seen[path]) continue;
+          seen[path] = true; active++; started++;
+          load(path);
+        }
+        if (!active && !queue.length) {
+          el.appendChild(document.createTextNode(failed.length ? 'Files that failed to load:\n' + failed.join('\n') + '\n' : 'All ' + started + ' files fetch fine (the problem is not a missing or blocked file).\n'));
+        }
+      }
+      function load(path) {
+        fetch(path, { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        }).then(function (t) {
+          var re = /(?:from|import)\s*\(?\s*['"](\.[^'"]+)['"]/g, m;
+          var dir = path.replace(/[^\/]*$/, '');
+          while ((m = re.exec(t))) queue.push(norm(dir + m[1]));
+        }).catch(function (e) {
+          failed.push('  ' + path + ' (' + (e && e.message || e) + ')');
+        }).then(function () { active--; next(); });
+      }
+      function norm(p) {
+        var out = [];
+        p.split('/').forEach(function (seg) { if (seg === '..') out.pop(); else if (seg !== '.' && seg !== '') out.push(seg); });
+        return out.join('/');
+      }
+      next();
+    }
+    setTimeout(function () { if (!window.__overforged) { bootReport('Overforged did not start (no error was reported).'); diagnose(); } }, 3000);
   </script>
-  <script type="module" src="./src/main.js" onerror="bootReport('Could not load src/main.js')"></script>
+  <script type="module" src="./src/main.js" onerror="bootReport('Could not load src/main.js (or a file it imports)'); diagnose()"></script>
 </body>
 </html>
