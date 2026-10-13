@@ -26,6 +26,6 @@ export function showClassSelect(overlays, { last, isUnlocked, onPick, onBack }) 
       if (act === 'back') onBack();
       else if (act.startsWith('class:')) onPick(act.slice(6));
     },
-    'levelup'
+    'classes'
   );
 }

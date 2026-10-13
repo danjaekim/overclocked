@@ -11,7 +11,9 @@ const SPAWN_MARGIN = 40;
 const CAP_BUFF_PER_SEC = 0.01;
 const tmp = { x: 0, y: 0 };
 
-export function spawnEnemy(run, defId, x, y, hpScale = 1) {
+// speedScale defaults to the director's current ramp (data/waves.js `speedScale`), so every spawn path
+// (waves, elites, the boss) gets the same time-based pressure.
+export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   const w = run.world;
   const e = w.enemies.acquire();
   if (!e) return null;
@@ -23,8 +25,8 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1) {
   e.y = y;
   e.r = def.radius;
   e.maxHp = e.hp = def.hp * hpScale;
-  e.speed = def.speed * run.rng.range(0.9, 1.1);
-  e.damage = def.damage;
+  e.speed = def.speed * run.rng.range(0.9, 1.1) * (speedScale !== undefined ? speedScale : (run.director ? run.director.speedScale : 1));
+  e.damage = def.damage * (run.director ? run.director.damageScale : 1);
   e.sx = e.sy = e.kx = e.ky = 0;
   e.flash = 0;
   e.ai = 0;
@@ -72,10 +74,14 @@ export function createDirector(run) {
   const acc = WAVES.map((seg) => seg.spawns.map(() => 0));
   let capBuff = 0;
   let hpScale = 1;
+  let speedScale = 1;
+  let damageScale = 1;
   let nextEvent = 0;                                // EVENTS is sorted by `at`
 
   return {
     get hpScale() { return hpScale * (1 + capBuff); },
+    get speedScale() { return speedScale; },
+    get damageScale() { return damageScale; },
     get capBuff() { return capBuff; },
 
     update(dt) {
@@ -92,6 +98,8 @@ export function createDirector(run) {
         const seg = WAVES[i];
         if (t < seg.from || t >= seg.to) continue;
         hpScale = seg.hpScale;
+        speedScale = seg.speedScale === undefined ? 1 : seg.speedScale;
+        damageScale = seg.damageScale === undefined ? 1 : seg.damageScale;
         const u = (t - seg.from) / (seg.to - seg.from);
         for (let j = 0; j < seg.spawns.length; j++) {
           const s = seg.spawns[j];

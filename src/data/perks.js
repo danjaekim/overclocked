@@ -169,15 +169,15 @@ Object.assign(PERKS, {
     name: 'Wildfire', glyph: 'W', rarity: 'rare', maxLevel: 3, requires: [FIRE], affinity: ['fire'],
     desc: 'A burning enemy that dies passes its fire on to the enemies nearest it.',
     levels: [[], [], []],
-    levelText: ['spreads 150% of its remaining burn to 2 enemies', 'spreads 175% to 3 enemies', 'spreads 200% to 4 enemies'],
-    rule: { id: 'wildfire', values: [{ n: 2, mult: 1.5 }, { n: 3, mult: 1.75 }, { n: 4, mult: 2.0 }] },
+    levelText: ['spreads 60% of its remaining burn to 2 enemies', 'spreads 60% to 3 enemies', 'spreads 75% to 3 enemies'],
+    rule: { id: 'wildfire', values: [{ n: 2, mult: 0.6 }, { n: 3, mult: 0.6 }, { n: 3, mult: 0.75 }] },
   },
   shatter: {
     name: 'Shatter', glyph: 'S', rarity: 'rare', maxLevel: 3, requires: [FROST], affinity: ['frost'],
     desc: 'A frozen enemy that dies bursts into ice, hurting everything around it.',
     levels: [[], [], []],
-    levelText: ['bursts for 25% of its max HP', 'bursts for 35% of its max HP', 'bursts for 50% of its max HP'],
-    rule: { id: 'shatter', values: [{ frac: 0.25 }, { frac: 0.35 }, { frac: 0.5 }] },
+    levelText: ['bursts for 30% of its max HP', 'bursts for 45% of its max HP', 'bursts for 60% of its max HP'],
+    rule: { id: 'shatter', values: [{ frac: 0.3 }, { frac: 0.45 }, { frac: 0.6 }] },
   },
   thunderclap: {
     name: 'Thunderclap', glyph: 'T', rarity: 'rare', maxLevel: 3, requires: [STORM], affinity: ['storm'],
@@ -215,10 +215,10 @@ Object.assign(PERKS, {
     name: 'Headsman', glyph: 'X', rarity: 'rare', maxLevel: 2, requires: [['perk:keen_eye', 'class:berserker']], affinity: [],
     desc: 'A crit that would leave a non-boss enemy low on health kills it outright.',
     levels: [
-      [{ stat: 'executeBelow', op: 'flat', value: 0.12 }],
-      [{ stat: 'executeBelow', op: 'flat', value: 0.08 }],
+      [{ stat: 'executeBelow', op: 'flat', value: 0.15 }],
+      [{ stat: 'executeBelow', op: 'flat', value: 0.10 }],
     ],
-    levelText: ['crits execute enemies under 12% HP', 'crits execute enemies under 20% HP'],
+    levelText: ['crits execute enemies under 15% HP', 'crits execute enemies under 25% HP'],
   },
 });
 

@@ -7,7 +7,7 @@ import { levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
 import { updateCollision } from '../src/systems/collision.js';
 import { flushDamage } from '../src/systems/damage.js';
 import { validateData } from '../src/data/validate.js';
-import { RUN } from '../src/data/waves.js';
+import { RUN, WAVES } from '../src/data/waves.js';
 import { CAPS } from '../src/game/world.js';
 
 const VIEW = { w: 480, h: 1040 };
@@ -144,7 +144,7 @@ test('timeline scales with RUN.length (a shorter run reaches later waves sooner)
     const short = newRun(1, { god: true });
     short.time = 30;                                           // = design time 60 -> second segment
     short.director.update(0);
-    approx(short.director.hpScale, 1.2);
+    approx(short.director.hpScale, WAVES[1].hpScale);
     RUN.length = 600;
     const full = newRun(1, { god: true });
     full.time = 30;

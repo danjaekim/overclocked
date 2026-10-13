@@ -123,7 +123,9 @@
     @keyframes reveal-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
     .chest-count { font-size: 34px; font-weight: 800; color: #ffd34d; margin: 2px 0 10px; }
     .btn:disabled { opacity: 0.5; }
-    .card.locked-class { opacity: 0.45; cursor: default; }
+    .card.locked-class { opacity: 0.45; cursor: default; min-height: 0; padding-top: 8px; padding-bottom: 8px; }
+    .overlay.classes { justify-content: flex-start; overflow-y: auto; padding-top: calc(env(safe-area-inset-top) + 20px); padding-bottom: 24px; gap: 10px; -webkit-overflow-scrolling: touch; }
+    .overlay.classes h2 { margin: 0; color: var(--ember); }
     .card.banish { border-color: #ff8a7a; background: #2a1c1f; }
     .lu-tools { display: flex; gap: 8px; margin-top: 6px; width: 100%; max-width: 380px; }
     .lu-tools .btn.small { min-width: 0; flex: 1; padding-left: 4px; padding-right: 4px; }

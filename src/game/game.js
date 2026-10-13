@@ -14,6 +14,7 @@ import { showLevelUp } from '../ui/levelup.js';
 import { showForge } from '../ui/forge.js';
 import { showTreasure } from '../ui/treasure.js';
 import { openChest } from './chests.js';
+import { unlockMet } from './unlocks.js';
 import { spawnChest } from '../systems/pickups.js';
 import { spawnShrine } from '../systems/shrines.js';
 import { RUN_EVENTS } from './run-events.js';
@@ -102,7 +103,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     // class unlocks: a class whose unlock event happened this run
     const unlocked = [];
     for (const [id, c] of Object.entries(CLASSES)) {
-      if (!debug.god && c.unlock && c.unlock.event === 'boss' && summary.bossKilled && save.unlock(id)) unlocked.push(c.name);
+      if (!debug.god && unlockMet(c.unlock, summary) && save.unlock(id)) unlocked.push(c.name);
     }
     showResults(overlays, summary, { onAgain: () => startRun(), onTitle: toTitle, newBests, unlocked });
   }

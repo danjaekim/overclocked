@@ -10,6 +10,7 @@ import nova from './nova.js';
 import bolt from './bolt.js';
 import boomerang from './boomerang.js';
 import mortar from './mortar.js';
+import summon from './summon.js';
 
 export const BEHAVIORS = {
   projectile,
@@ -20,4 +21,5 @@ export const BEHAVIORS = {
   bolt,
   boomerang,
   mortar,
+  summon,
 };

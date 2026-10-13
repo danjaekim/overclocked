@@ -37,6 +37,14 @@ export const EVOLUTIONS = [
   { id: 'glacial_bloom', from: 'rime_shards', into: 'glacial_bloom',
     requires: [{ weaponLevel: 8 }, { perk: 'deep_freeze', minLevel: 2 }, { starsteel: 1 }] },
 
+  // ---- the three newer classes' starting weapons ----
+  { id: 'prismatic_bolt', from: 'arc_bolt', into: 'prismatic_bolt',
+    requires: [{ weaponLevel: 8 }, { passive: 'scholars_lens', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'grave_legion', from: 'bone_call', into: 'grave_legion',
+    requires: [{ weaponLevel: 8 }, { passive: 'fleet_greaves', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'radiant_halo', from: 'halo', into: 'radiant_halo',
+    requires: [{ weaponLevel: 8 }, { passive: 'tempered_core', minLevel: 2 }, { starsteel: 1 }] },
+
   // ---- fusions: two element weapons become one that carries both ----
   { id: 'vapor_wheel', from: 'cinder_ward', with: 'rime_orbs', into: 'vapor_wheel',
     requires: [{ weaponLevel: 6 }, { starsteel: 1 }] },

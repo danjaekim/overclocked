@@ -42,7 +42,7 @@ test('m11b data validates', () => {
 
 test('Wildfire: a burning enemy that dies passes its remaining burn on to the nearest enemies', () => {
   const { run, w } = setup();
-  own(run, 'wildfire', 1);                              // 2 enemies, x1.5
+  own(run, 'wildfire', 1);                              // 2 enemies, x0.6
   const dying = dummy(run, 300, 0, 5);
   const near1 = dummy(run, 330, 0);
   const near2 = dummy(run, 300, 40);
@@ -55,7 +55,7 @@ test('Wildfire: a burning enemy that dies passes its remaining burn on to the ne
   assert.ok(!dying.alive);
   for (const e of [near1, near2]) {
     assert.ok(e.status & ST.BURN);
-    approx(e.burnDps * e.burnT, left * 1.5 / 2, 1e-6);
+    approx(e.burnDps * e.burnT, left * 0.6 / 2, 1e-6);
   }
   assert.equal(far.status, 0);
 });
@@ -73,7 +73,7 @@ test('Wildfire needs a burning carrier: a plain death spreads nothing', () => {
 
 test('Shatter: a frozen enemy that dies bursts for a share of its max hp', () => {
   const { run, w } = setup();
-  own(run, 'shatter', 2);                               // 35%
+  own(run, 'shatter', 2);                               // 45%
   const dying = dummy(run, 300, 0, 1000);
   const near = dummy(run, 340, 0);
   const far = dummy(run, 600, 0);
@@ -83,7 +83,7 @@ test('Shatter: a frozen enemy that dies bursts for a share of its max hp', () =>
   queueDamage(run, dying, 5000, false, 0, 0, 0, w, KIND_PROC);
   flushDamage(run);
   assert.ok(!dying.alive);
-  approx(dealt(near), 350, 1e-6);
+  approx(dealt(near), 450, 1e-6);
   assert.equal(dealt(far), 0);
 });
 

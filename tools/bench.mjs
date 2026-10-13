@@ -18,11 +18,12 @@ import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
 import { WEAPONS } from '../src/data/weapons.js';
+import { WAVES } from '../src/data/waves.js';
 import { CLASSES } from '../src/data/classes.js';
 import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
-import { enhance, canEnhance } from '../src/game/forge.js';
+import { enhance, canEnhance, chooseTemper } from '../src/game/forge.js';
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
@@ -99,7 +100,7 @@ function chestPickup(run) {
 }
 
 // Classes whose kit is short range: the bot engages instead of kiting (a fair fight for each role)
-const MELEE = new Set(['smith', 'berserker']);
+const MELEE = new Set(['smith', 'berserker', 'saint']);
 
 function playBot(classId, seed) {
   const run = createRun({ seed, view: VIEW, debug: { god: false }, classId });
@@ -158,7 +159,7 @@ function playBot(classId, seed) {
     if (run.forgeReady) {
       run.forgeReady = false;
       for (const w of p.weapons) for (const r of recipesFor(w)) if (canEvolve(run, w, r)) { evolve(run, w, r); evolved++; }
-      for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && canEnhance(run, w)) enhance(run, w); else break; }
+      for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (w && canEnhance(run, w)) enhance(run, w); else break; }
     }
   }
   return {
@@ -265,9 +266,23 @@ if (flag('--builds')) {
   console.log(`median crowd ${k[Math.floor(k.length / 2)].toFixed(1)} s, median boss ${bs[Math.floor(bs.length / 2)].toFixed(1)} s`);
 }
 
+// Difficulty experiments without editing data: --hp 1.3 scales enemy hp, --rate 1.2 spawn rates.
+const argv = process.argv;
+const numArg = (n, d) => (argv.includes(n) ? Number(argv[argv.indexOf(n) + 1]) : d);
+if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')) {
+  const hpK = numArg('--hp', 1);
+  const rateK = numArg('--rate', 1);
+  for (const seg of WAVES) {
+    seg.hpScale *= hpK;
+    if (argv.includes('--speed')) seg.speedScale = (seg.speedScale === undefined ? 1 : seg.speedScale) * Math.pow(numArg('--speed', 1), seg.from / 600 * 2);
+    for (const sp of seg.spawns) { sp.perSec *= rateK; if (sp.perSecEnd !== undefined) sp.perSecEnd *= rateK; }
+  }
+}
+
 if (!flag('--weapons') && !flag('--builds')) {
-  const seeds = flag('--quick') ? [1, 2, 3] : [1, 2, 3, 4, 5, 6];
-  const classes = Object.keys(CLASSES);
+  const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
+  const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
+  const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
   if (!flag('--json')) {
     console.log(`\nBOT RUNS  (${seeds.length} seeds per class; crude bot, compare classes against each other)`);
     console.log(pad('class', 11) + pad('won', 6) + pad('avg time', 10) + pad('avg lvl', 9) + pad('avg kills', 11) + pad('lvl@5:00', 10) + pad('boss kills', 11) + pad('chests', 8));

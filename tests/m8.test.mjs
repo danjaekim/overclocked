@@ -101,7 +101,7 @@ test('berserker: starts with the axe, hits harder when wounded, and heals from d
   const axe = run.player.weapons[0];
   const full = run.player.stats.getFor('damage', axe.tags);
   run.player.hp = run.player.maxHp * 0.3;
-  approx(run.player.stats.getFor('damage', axe.tags), full * 1.3, 1e-9);
+  approx(run.player.stats.getFor('damage', axe.tags), full * 1.25, 1e-9);
 
   // lifesteal: a queued hit heals the player by amount * lifesteal
   const e = spawnEnemy(run, 'brute', 200, 0);

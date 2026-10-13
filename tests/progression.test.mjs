@@ -171,7 +171,9 @@ test('maxed items are never offered; weapons of another class are never offered'
   const st = { classId: 'archer', luck: 0, weapons: [{ weaponId: 'ember_bow', level: 8, instanceId: 1 }], passives: [] };
   assert.ok(buildCandidates(st).every((c) => c.id !== 'ember_bow'));
   const other = { classId: 'mage', luck: 0, weapons: [], passives: [] };
-  assert.ok(buildCandidates(other).every((c) => c.kind !== 'weapon_new' || WEAPONS[c.id].class == null));
+  assert.ok(buildCandidates(other).every((c) => c.kind !== 'weapon_new' || WEAPONS[c.id].class == null || WEAPONS[c.id].class === 'mage'));
+  assert.ok(buildCandidates(other).some((c) => c.id === 'arc_bolt'), 'its own class weapon is offered');
+  assert.ok(buildCandidates(st).every((c) => c.id !== 'arc_bolt' && c.id !== 'halo' && c.id !== 'bone_call'));
 });
 
 test('slot caps: no new passives at the passive cap, no new weapons at the weapon cap', () => {
