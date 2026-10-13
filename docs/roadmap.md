@@ -27,7 +27,7 @@ combine) is not: it decides what content to build. So: measure first, build the 
 
 | # | Name | Contents |
 |---|---|---|
-| **M9** | Measure and fix the basics | Confirm sound on the phone. `tools/bench.mjs`: a headless benchmark that reports, per weapon at levels 1, 4 and 8, single-target DPS and time to clear a 20-enemy crowd, plus a simple bot run per class (level, kills, survival at 5:00 and 10:00). Archer starting kit buff (the bench decides how: base pierce 1, a 2-arrow fan, or faster fire). |
+| **M9** *(done)* | Measure and fix the basics | Confirm sound on the phone. `tools/bench.mjs`: a headless benchmark that reports, per weapon at levels 1, 4 and 8, single-target DPS and time to clear a 20-enemy crowd, plus a simple bot run per class (level, kills, survival at 5:00 and 10:00). Archer starting kit buff (the bench decides how: base pierce 1, a 2-arrow fan, or faster fire). |
 | **M10** | Status effects | A status layer on enemies: **burn** (damage over time), **slow**, **freeze** (a hard stop that can shatter), **shock** (chains to nearby enemies). Fixed-size, allocation-free, ticked in the reserved step 9 of the tick. Hit effects: weapons and upgrades can apply a status on hit. Conditions and tags that read statuses (`targetBurning`, `targetFrozen`), so upgrades like "30% more damage to burning enemies" are plain data. Visual tints per status. Elemental identity for existing weapons (Ember Bow burns, Storm Javelin shocks) and one new ice weapon. |
 | **M11** | Perks (the modifier pool) | A new upgrade category: many small stackable **perks** (3 to 5 levels each, no slot cap), scoped by weapon tag. First set of about 20: projectile size, ricochet/bounce, chain, split on hit, explode on kill, +pierce, burn/slow/freeze/shock chance, status duration, crit variants, lifesteal, extra blade/swing, and **synergy payoffs** that need two parts: *Shatter* (frozen enemies explode), *Wildfire* (burning enemies spread burn when they die), *Conductive* (shock jumps further and prefers burning targets). Offers lean toward perks that match your owned weapon tags (about 1.5x), which guides a build without forcing it. Target: at least 6 distinct builds that can carry a run (for example fire bomb, freeze and shatter, chain lightning crit, crowd-control aura, glass cannon). |
 | **M12** | Elites and chests | Elite enemies on the timeline (roughly every 75 s from 1:30): glowing, bigger, tougher, with one affix (fast, shielded, volatile, regenerating). They drop a **chest**. A chest opens a treasure screen with **1, 3 or 5 rolls** (weighted, luck helps); each roll levels a random owned weapon, passive or perk. Rolls are biased toward items that block an available evolution (low weapon level or passive level), so combines stop feeling like a grind. The boss drops a guaranteed 5-roll chest. |
@@ -67,3 +67,13 @@ choices are rolled.
 **Archer.** The bench will say which lever is right, but the candidates are: base pierce 1, a 2-arrow
 starting fan, and a class-wide small chain chance. M11 gives every class real ways to scale single-target
 damage (chain, ricochet, split), which matters more than the starting buff.
+
+## M9 as built
+
+`node tools/bench.mjs [--weapons|--bots] [--quick] [--json]` reports single-target DPS (L1/L4/L8), 20-enemy crowd clear (10 s / 20 s) and a role-aware bot run per class. Findings and fixes:
+
+- Projectile fans made "+N arrows" nearly useless against one target at range. Projectile weapons now fire a tight volley (`spread` 0.02 rad plus a sideways `gap`), so extra arrows all land. Ember Bow: damage 14, cooldown 0.9, pierce 1; its level-8 bonus is 10% more damage.
+- Spirit Blades orbit radius 74 -> 46 (the ring was too wide to touch enemies at contact range).
+- Rending Axe damage 30 -> 24, cooldown 0.85 -> 0.9; Berserker lifesteal 3% -> 2%.
+- Bot result (3 seeds, quick): Archer 2/3 wins, Smith 3/3, Berserker 3/3; avg level 14 / 12 / 17. Classes are within about 2x of each other, which is the bar until M15.
+- Sound is still unconfirmed on iPhone (check the `audio` line under `?debug=1`, and the ringer switch).

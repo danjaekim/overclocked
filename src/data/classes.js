@@ -27,7 +27,7 @@ export const CLASSES = {
     blurb: 'Reckless. Heals as it hits and hits much harder when wounded.',
     startWeapon: 'rending_axe',
     mods: [
-      { stat: 'lifesteal', op: 'flat', value: 0.03 },
+      { stat: 'lifesteal', op: 'flat', value: 0.02 },
       { stat: 'damage', op: 'more', value: 0.3, when: 'hpBelow50' },
       { stat: 'moveSpeed', op: 'inc', value: 0.1 },
     ],

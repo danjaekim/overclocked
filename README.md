@@ -65,3 +65,5 @@ docs/             architecture.md
 ## Status
 
 M0–M8 done: the core loop (move, auto-attack, gems, level-up choices, six passives) plus two classes (Archer, Smith), class select, five weapons across four behaviors (projectile, arc, orbit, aura), the trigger system (explode, shield), and the forge: ore drops, anvil shrines you channel to open it, and enhance / reforge / salvage on your weapons. Evolve two weapons at the forge with starsteel from the Warlord boss (5:00), and earn titles. Plus install-to-home-screen, sound, a local save with bests, rerolls and banishes, and the Berserker (unlocked by killing the Warlord). The prototype milestones are complete; the plan after that is in [`docs/roadmap.md`](docs/roadmap.md) (M9 onward).
+
+Balance benchmark: `node tools/bench.mjs` (see docs/roadmap.md, M9).

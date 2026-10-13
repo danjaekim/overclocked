@@ -255,8 +255,8 @@ export const WEAPONS = {
     tags: ['projectile', 'ranged', 'fire'],
     behavior: 'projectile',        // behaviors/index.js key
     base: {                        // behavior-specific base params at level 1
-      damage: 12, cooldown: 1.1, speed: 520, count: 1, pierce: 0,
-      spread: 0.15, ttl: 1.2, radius: 5, targeting: 'nearest',
+      damage: 14, cooldown: 0.9, speed: 520, count: 1, pierce: 1,
+      spread: 0.02, gap: 7, ttl: 1.2, radius: 5, range: 380,   // tight volley: small spread + sideways gap
     },
     maxLevel: 8,
     levels: [                      // index 0 = level 2, etc. Each is a list of modifiers

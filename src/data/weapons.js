@@ -13,8 +13,8 @@ export const WEAPONS = {
     tags: ['projectile', 'ranged', 'fire'],
     behavior: 'projectile',
     base: {
-      damage: 12, cooldown: 1.1, speed: 520, count: 1, pierce: 0,
-      spread: 0.15, ttl: 1.2, radius: 5, range: 380,
+      damage: 14, cooldown: 0.9, speed: 520, count: 1, pierce: 1,
+      spread: 0.02, gap: 7, ttl: 1.2, radius: 5, range: 380,
     },
     maxLevel: 8,
     levels: [
@@ -24,9 +24,9 @@ export const WEAPONS = {
       [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
       [{ stat: 'projectiles', op: 'flat', value: 1 }],
       [{ stat: 'damage', op: 'inc', value: 0.3 }],
-      [{ stat: 'damage', op: 'more', value: 0.25 }],
+      [{ stat: 'damage', op: 'more', value: 0.1 }],
     ],
-    levelText: ['+20% damage', '+1 arrow', '+1 pierce', '-15% cooldown; 15% of kills explode', '+1 arrow', '+30% damage', '25% more damage'],   // lv5 also: 15% chance to explode on kill
+    levelText: ['+20% damage', '+1 arrow', '+1 pierce', '-15% cooldown; 15% of kills explode', '+1 arrow', '+30% damage', '10% more damage'],   // lv5 also: 15% chance to explode on kill
     triggers: [
       { on: 'kill', chance: 0.15, effect: 'explode', params: { radius: 55, damageFrac: 0.5 }, minLevel: 5 },
     ],
@@ -67,7 +67,7 @@ export const WEAPONS = {
     rarity: 'uncommon',
     tags: ['orbit', 'magic', 'light'],
     behavior: 'orbit',
-    base: { damage: 9, cooldown: 1, tickEvery: 0.4, count: 2, range: 74, radius: 11, speed: 3.2 },
+    base: { damage: 9, cooldown: 1, tickEvery: 0.4, count: 2, range: 46, radius: 12, speed: 3.2 },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -116,7 +116,7 @@ export const WEAPONS = {
     rarity: 'uncommon',
     tags: ['projectile', 'ranged', 'lightning'],
     behavior: 'projectile',
-    base: { damage: 22, cooldown: 1.7, speed: 440, count: 1, pierce: 3, spread: 0.2, ttl: 1.3, radius: 7, range: 420 },
+    base: { damage: 22, cooldown: 1.7, speed: 440, count: 1, pierce: 3, spread: 0.02, gap: 9, ttl: 1.3, radius: 7, range: 420 },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -140,7 +140,7 @@ export const WEAPONS = {
     rarity: 'common',
     tags: ['melee', 'arc', 'physical'],
     behavior: 'arc',
-    base: { damage: 30, cooldown: 0.85, count: 1, range: 74, arcWidth: 2.3 },
+    base: { damage: 24, cooldown: 0.9, count: 1, range: 74, arcWidth: 2.3 },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -167,7 +167,7 @@ export const WEAPONS = {
     rarity: 'evolved',
     tags: ['projectile', 'ranged', 'fire', 'lightning'],
     behavior: 'projectile',
-    base: { damage: 15, cooldown: 0.75, speed: 620, count: 4, pierce: 3, spread: 0.16, ttl: 1.3, radius: 6, range: 440 },
+    base: { damage: 15, cooldown: 0.75, speed: 620, count: 4, pierce: 3, spread: 0.02, gap: 8, ttl: 1.3, radius: 6, range: 440 },
     maxLevel: 6,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],

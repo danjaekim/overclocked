@@ -74,11 +74,12 @@ test('surviving to RUN.length wins', () => {
 test('weapon level-ups apply their modifiers through the stat block', () => {
   const run = newRun();
   const inst = run.player.weapons[0];
-  const dmg = () => 12 * run.player.stats.getFor('damage', inst.tags);
-  approx(dmg(), 12);
+  const base = inst.def.base.damage;
+  const dmg = () => base * run.player.stats.getFor('damage', inst.tags);
+  approx(dmg(), base);
   while (canLevelUp(inst)) assert.ok(levelUpWeapon(run, inst));
   assert.equal(inst.level, inst.def.maxLevel);
-  approx(dmg(), 22.5);
+  approx(dmg(), base * (1 + 0.2 + 0.3) * 1.1);          // two additive bonuses, then 10% more
   assert.equal(run.player.stats.getFor('projectiles', inst.tags), 2);
   assert.equal(levelUpWeapon(run, inst), false);
 });
@@ -306,4 +307,18 @@ test('a full minute with every weapon equipped stays finite and within caps', ()
   }
   assert.ok(run.kills > 50);
   assert.equal(run.world.dmg.dropped, 0);
+});
+
+test('volley: extra projectiles keep hitting a lone target at range (they do not fan past it)', () => {
+  const run = createRun({ seed: 1, view: VIEW, debug: { god: true }, classId: 'archer' });
+  const bow = run.player.weapons[0];
+  for (let i = 0; i < 4; i++) run.player.stats.add({ stat: 'projectiles', op: 'flat', value: 1, tags: [bow.instanceTag], source: 't' });
+  const e = spawnEnemy(run, 'brute', 170, 0);
+  e.speed = 0; e.hp = e.maxHp = 1e9;
+  bow.cd = 0;
+  const before = e.hp;
+  run.director.update = () => {};
+  for (let i = 0; i < 40; i++) { run.update(1 / 60, { x: 0, y: 0 }); e.x = 170; e.y = 0; e.kx = e.ky = 0; }
+  const hits = (before - e.hp) / (bow.def.base.damage * run.player.stats.getFor('damage', bow.tags));
+  assert.ok(hits >= 4.5, `5 arrows should mostly connect at range, got ${hits.toFixed(1)} hits`);
 });

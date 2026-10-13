@@ -258,7 +258,7 @@ test('a 5-minute run with random level-up picks stays consistent and the build g
   const run = newRun(21, { god: true });
   const pick = createRng(99);
   let picks = 0;
-  let heals = 0;
+  let heals = 0;   // picks that raise no item level (heals, titles)
   for (let i = 0; i < 60 * 300; i++) {
     run.update(STEP, STILL);
     while (run.pendingLevelUps > 0) {
@@ -267,7 +267,7 @@ test('a 5-minute run with random level-up picks stays consistent and the build g
       const chosen = pick.pick(offers);
       applyOffer(run, chosen);
       picks++;
-      if (chosen.kind === 'heal') heals++;
+      if (chosen.kind === 'heal' || chosen.kind === 'title_new') heals++;
       run.pendingLevelUps--;
     }
     if (i % 600 === 0) {
@@ -281,5 +281,5 @@ test('a 5-minute run with random level-up picks stays consistent and the build g
   const passiveLevels = run.player.passives.reduce((a, x) => a + x.level, 0);
   assert.ok(run.player.level >= 8, `level ${run.player.level}`);
   assert.equal(picks, run.player.level - 1, 'one pick per level gained');
-  assert.equal(weaponLevels + passiveLevels - 1, picks - heals, 'every non-heal pick raised exactly one item level');
+  assert.equal(weaponLevels + passiveLevels - 1, picks - heals, 'every item pick raised exactly one item level');
 });
