@@ -1,7 +1,7 @@
 // Applying damage: the queued enemy damage flush, enemy deaths, and damage to the player.
 
 import { addDamageNumber, addPuff } from '../render/fx.js';
-import { spawnGem } from './pickups.js';
+import { spawnGem, spawnOre } from './pickups.js';
 import { fireTriggers } from '../game/triggers.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
@@ -13,7 +13,10 @@ export function killEnemy(run, e) {
   run.lastKillTime = run.time;
   addPuff(run, e.x, e.y, e.r, e.def.color);
   spawnGem(run, e.x, e.y, e.def.xp);
-  // ore drops (M6) and on-kill triggers hook in here
+  const ore = e.def.ore;
+  if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
+    spawnOre(run, e.x + 6, e.y - 4, ore.type, ore.count || 1);
+  }
   run.world.enemies.release(e);
 }
 

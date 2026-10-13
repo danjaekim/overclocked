@@ -8,7 +8,7 @@ Inspired by the genre of 20 Minutes Till Dawn, Vampire Survivors, and Magic Surv
 
 - **On your phone:** open https://danjaekim.github.io/overforged/ in Safari (needs GitHub Pages enabled: Settings → Pages → Deploy from branch → `main` / root). Use Share → Add to Home Screen for a fullscreen app-like launch. Pages can take a minute or two to update after a push, and Safari may cache the old build; if a change doesn't show up, reload or add `?v=2` to the URL.
 - **Controls:** drag anywhere on the lower part of the screen to move (a floating joystick appears under your thumb). Weapons fire automatically. Desktop: WASD or arrow keys, Esc to pause.
-- **Debug URL flags:** `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run), `?class=smith` (skip class select). Combine them: `?debug=1&god=1&seed=7&class=smith`.
+- **Debug URL flags:** `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `F` spawns a shrine, `O` gives 20 ore, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run), `?class=smith` (skip class select). Combine them: `?debug=1&god=1&seed=7&class=smith`.
 
 Portrait-only, 10-minute runs. A native wrapper (e.g. Capacitor) is a possible later step.
 
@@ -45,7 +45,7 @@ src/behaviors/    weapon behaviors (projectile, arc, orbit, aura)
 src/effects/      trigger effects (explode, shield)
 src/systems/      per-tick systems: enemy AI, movement, collision, damage
 src/render/       view, renderer, entities, fx, HUD
-src/ui/           DOM overlays: title, pause, results, rotate prompt
+src/ui/           DOM overlays: title, class select, level-up, forge, pause, results, rotate prompt
 src/input/        joystick + keyboard
 src/data/         ALL content as data: weapons, classes, enemies, waves, validation
 tests/            unit tests, headless sim tests, browser smoke test
@@ -61,4 +61,4 @@ docs/             architecture.md
 
 ## Status
 
-M0–M5 done: the core loop (move, auto-attack, gems, level-up choices, six passives) plus two classes (Archer, Smith), class select, five weapons across four behaviors (projectile, arc, orbit, aura), and the trigger system (explode, shield). Next: M6 (forge and shrines).
+M0–M6 done: the core loop (move, auto-attack, gems, level-up choices, six passives) plus two classes (Archer, Smith), class select, five weapons across four behaviors (projectile, arc, orbit, aura), the trigger system (explode, shield), and the forge: ore drops, anvil shrines you channel to open it, and enhance / reforge / salvage on your weapons. Next: M7 (evolutions, boss, titles).

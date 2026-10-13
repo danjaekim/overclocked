@@ -11,7 +11,10 @@ import { RARITIES } from './rarities.js';
 import { CLASSES } from './classes.js';
 import { ENEMIES } from './enemies.js';
 import { EFFECTS } from '../effects/index.js';
-import { RUN, WAVES } from './waves.js';
+import { RUN, WAVES, EVENTS } from './waves.js';
+import { RUN_EVENTS } from '../game/run-events.js';
+import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
+import { ORES } from './ores.js';
 
 const OPS = new Set(['flat', 'inc', 'more', 'set']);
 // Events the dispatcher fires so far; the rest of the §4.6 list arrives with the systems that raise them.
@@ -91,6 +94,8 @@ export function validateData() {
       if (!(e[k] > 0)) problems.push(`${at}: ${k} must be > 0`);
     }
     if (!e.color) problems.push(`${at}: missing color`);
+    if (e.ore && !ORES[e.ore.type]) problems.push(`${at}: unknown ore "${e.ore.type}"`);
+    if (e.ore && !(e.ore.chance >= 0 && e.ore.chance <= 1)) problems.push(`${at}: ore chance must be 0..1`);
   }
 
   if (!(RUN.length > 0 && RUN.designLength > 0)) problems.push('RUN: length and designLength must be > 0');
@@ -105,6 +110,38 @@ export function validateData() {
     t = seg.to;
   });
   if (t < RUN.designLength) problems.push(`WAVES end at ${t}, before RUN.designLength (${RUN.designLength})`);
+
+  let prev = -Infinity;
+  EVENTS.forEach((ev, i) => {
+    const at = `event ${i}`;
+    if (!RUN_EVENTS[ev.event]) problems.push(`${at}: unknown event "${ev.event}"`);
+    if (!(ev.at >= prev)) problems.push(`${at}: EVENTS must be sorted by "at"`);
+    if (!(ev.at >= 0 && ev.at < RUN.designLength)) problems.push(`${at}: "at" must be within the run`);
+    prev = ev.at;
+  });
+
+  const n = ENHANCE.maxLevel;
+  if (ENHANCE.cost.length !== n) problems.push(`ENHANCE.cost must have ${n} entries`);
+  if (ENHANCE.success.length !== n) problems.push(`ENHANCE.success must have ${n} entries`);
+  if (!ENHANCE.success.every((c) => c > 0 && c <= 1)) problems.push('ENHANCE.success entries must be in (0, 1]');
+  checkMods(ENHANCE.perLevel, 'ENHANCE.perLevel', problems);
+  for (const [lvl, mods] of Object.entries(ENHANCE.breakpoints)) checkMods(mods, `ENHANCE breakpoint ${lvl}`, problems);
+  for (const [id, w] of Object.entries(WEAPONS)) {
+    const bps = (w.forge && w.forge.breakpoints) || {};
+    for (const [lvl, mods] of Object.entries(bps)) checkMods(mods, `weapon ${id} forge breakpoint ${lvl}`, problems);
+  }
+  if (!(REFORGE.cost > 0)) problems.push('REFORGE.cost must be > 0');
+  if (!(SHRINE.radius > 0 && SHRINE.channel > 0 && SHRINE.ttl > 0)) problems.push('SHRINE radius, channel and ttl must be > 0');
+  for (const [id, a] of Object.entries(AFFIXES)) {
+    const at = `affix ${id}`;
+    if (!RARITIES[a.rarity]) problems.push(`${at}: unknown rarity "${a.rarity}"`);
+    if (!a.mods && !a.triggers) problems.push(`${at}: needs mods or triggers`);
+    if (a.mods) checkMods(a.mods, `${at} mods`, problems);
+    for (const t of a.triggers || []) {
+      if (!EFFECTS[t.effect]) problems.push(`${at}: unknown effect "${t.effect}"`);
+      if (t.on === 'interval') problems.push(`${at}: affix triggers can't be interval (no timer is kept)`);
+    }
+  }
 
   return problems;
 }

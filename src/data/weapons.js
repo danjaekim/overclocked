@@ -90,6 +90,7 @@ export const WEAPONS = {
     glyph: 'C',
     rarity: 'uncommon',
     tags: ['aura', 'fire', 'magic'],
+    forge: { breakpoints: { 5: [{ stat: 'area', op: 'inc', value: 0.25 }] } },   // aura has no projectiles
     behavior: 'aura',
     base: { damage: 7, cooldown: 0.6, range: 80 },
     maxLevel: 8,

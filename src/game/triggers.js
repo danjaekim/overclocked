@@ -7,7 +7,11 @@ import { EFFECTS } from '../effects/index.js';
 // Event-driven triggers: src is the weapon instance whose hit caused the event.
 export function fireTriggers(run, on, src, x, y, depth) {
   if (!src) return;
-  const list = src.def.triggers;
+  fireList(run, src.def.triggers, on, src, x, y, depth);
+  if (src.extraTriggers.length) fireList(run, src.extraTriggers, on, src, x, y, depth);   // forge affixes
+}
+
+function fireList(run, list, on, src, x, y, depth) {
   for (let i = 0; i < list.length; i++) {
     const t = list[i];
     if (t.on !== on || src.level < (t.minLevel || 1)) continue;

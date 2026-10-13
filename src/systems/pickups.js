@@ -1,9 +1,13 @@
-// Pickups: XP gems for now (ore and shrines join later). Gems drop where enemies die, are
+// Pickups: XP gems (kind 0) and ore (kind 1). Gems drop where enemies die, are
 // pulled to the player once inside the pickup radius, and are collected on contact.
 // When the pool is full a new gem merges into the gem farthest from the player, so no XP is lost.
 
 import { GEM } from '../data/progression.js';
 import { gainXp } from '../game/xp.js';
+import { ORES } from '../data/ores.js';
+
+export const KIND_GEM = 0;
+export const KIND_ORE = 1;
 
 export function gemTier(value) {
   let t = 0;
@@ -21,6 +25,7 @@ export function spawnGem(run, x, y, value) {
     const list = store.active;
     for (let i = 0; i < list.length; i++) {
       const c = list[i];
+      if (c.kind !== KIND_GEM) continue;          // only gems merge
       const d2 = (c.x - p.x) * (c.x - p.x) + (c.y - p.y) * (c.y - p.y);
       if (d2 > farD2) { farD2 = d2; far = c; }
     }
@@ -30,10 +35,29 @@ export function spawnGem(run, x, y, value) {
     }
     return far;
   }
+  g.kind = KIND_GEM;
   g.x = x;
   g.y = y;
   g.value = value;
   g.r = GEM.tiers[gemTier(value)][1];
+  g.magnet = false;
+  g.speed = GEM.baseMagnet;
+  return g;
+}
+
+// Ore never merges: if the pool is full it is banked directly so nothing is lost.
+export function spawnOre(run, x, y, type, amount = 1) {
+  const o = ORES[type];
+  const g = run.world.pickups.acquire();
+  if (!g) {
+    run.ore += o.value * amount;
+    return null;
+  }
+  g.kind = KIND_ORE;
+  g.x = x;
+  g.y = y;
+  g.value = o.value * amount;
+  g.r = o.r;
   g.magnet = false;
   g.speed = GEM.baseMagnet;
   return g;
@@ -69,7 +93,8 @@ export function updatePickups(run, dt) {
 
     const rr = p.r + g.r;
     if (d2 <= rr * rr) {
-      gainXp(run, g.value * xpGain);
+      if (g.kind === KIND_ORE) run.ore += g.value;
+      else gainXp(run, g.value * xpGain);
       store.release(g);
     }
   }

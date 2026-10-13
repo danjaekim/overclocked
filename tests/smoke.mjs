@@ -50,6 +50,25 @@ await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'de
 await page.tap('[data-act=play]');
 await page.tap(`[data-act="class:${opt('--class', 'archer')}"]`);       // class select
 if (flag('--loadout')) await page.evaluate(() => window.__overforged.game.run.debugLoadout());
+if (flag('--forge')) {
+  // drive the shrine -> forge -> back-to-battle flow
+  await page.evaluate(() => {
+    const r = window.__overforged.game.run;
+    r.ore = 40;
+    const sh = window.__overforged.game.run.shrines;
+    const w = r.world; w.enemies.releaseAll();
+    r.debug.god = true;
+    import('/src/systems/shrines.js').then((m) => { const s = m.spawnShrine(r); r.player.x = s.x; r.player.y = s.y; });
+  });
+  await page.waitForSelector('.overlay.forge', { timeout: 5000 });
+  if (opt('--shot')) await page.screenshot({ path: opt('--shot').replace(/\.png$/, '-forge.png') });
+  await page.tap('[data-act^="enh:"]');
+  await page.tap('[data-act^="ref:"]');
+  const msg = await page.textContent('.fmsg');
+  console.log('forge message:', msg);
+  await page.tap('[data-act=done]');
+  await page.waitForTimeout(500);
+}
 if (flag('--stress')) await page.evaluate(() => window.__overforged.game.run.stress());
 await page.waitForTimeout(4000);
 

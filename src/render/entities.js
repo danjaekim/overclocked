@@ -3,7 +3,8 @@
 
 import { ENEMIES } from '../data/enemies.js';
 import { GEM } from '../data/progression.js';
-import { gemTier } from '../systems/pickups.js';
+import { ORES } from '../data/ores.js';
+import { gemTier, KIND_GEM, KIND_ORE } from '../systems/pickups.js';
 
 const TAU = Math.PI * 2;
 const DEF_IDS = Object.keys(ENEMIES);
@@ -23,7 +24,7 @@ export function drawGems(ctx, view, run) {
     for (let i = 0; i < list.length; i++) {
       const g = list[i];
       if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
-      if (gemTier(g.value) !== t) continue;
+      if (g.kind !== KIND_GEM || gemTier(g.value) !== t) continue;
       const r = g.r;
       ctx.moveTo(g.x, g.y - r);
       ctx.lineTo(g.x + r, g.y);
@@ -33,6 +34,25 @@ export function drawGems(ctx, view, run) {
     }
     ctx.fill();
   }
+}
+
+// Ore: small squares, one fill.
+export function drawOre(ctx, view, run) {
+  const list = run.world.pickups.active;
+  const cam = run.cam;
+  const x0 = cam.x - view.w / 2 - 10;
+  const x1 = cam.x + view.w / 2 + 10;
+  const y0 = cam.y - view.h / 2 - 10;
+  const y1 = cam.y + view.h / 2 + 10;
+  ctx.fillStyle = ORES.iron.color;
+  ctx.beginPath();
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.kind !== KIND_ORE) continue;
+    if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+    ctx.rect(g.x - g.r, g.y - g.r, g.r * 2, g.r * 2);
+  }
+  ctx.fill();
 }
 
 // Arrows: one stroked path for the whole batch.

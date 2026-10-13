@@ -10,9 +10,12 @@ import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { showPause } from '../ui/pause.js';
 import { showResults } from '../ui/results.js';
 import { showLevelUp } from '../ui/levelup.js';
+import { showForge } from '../ui/forge.js';
+import { spawnShrine } from '../systems/shrines.js';
 import { generateOffers } from './upgrades.js';
 import { offerState, applyOffer } from './apply-offer.js';
 import { xpToNext, gainXp } from './xp.js';
+import { LEVELUP } from '../data/progression.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params }) {
   const game = { state: 'title', run: null };
@@ -89,6 +92,21 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     });
   }
 
+  // Opens the forge (run frozen) after a shrine was channelled. Level-ups always go first.
+  function openForge() {
+    const run = game.run;
+    run.forgeReady = false;
+    game.state = 'forge';
+    input.reset();
+    showForge(overlays, run, {
+      onDone() {
+        overlays.hide();
+        run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);
+        game.state = 'run';
+      },
+    });
+  }
+
   game.togglePause = () => (game.state === 'run' ? pause() : game.state === 'paused' ? resume() : undefined);
   game.isSimulating = () => game.state === 'run' && !rotate.blocked;
 
@@ -98,6 +116,7 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     run.update(dt, input.getMove());
     if (run.over) finishRun();
     else if (run.pendingLevelUps > 0) openLevelUp();
+    else if (run.forgeReady) openForge();
   };
 
   document.addEventListener('visibilitychange', () => {
@@ -108,6 +127,8 @@ export function createGame({ view, input, overlays, rotate, debug, params }) {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'r' && game.state === 'run') finishRun();   // debug: end the run now
       if (e.key === 'l' && game.state === 'run') gainXp(game.run, xpToNext(game.run.player.level));   // debug: level up
+      if (e.key === 'o' && game.state === 'run') game.run.ore += 20;                                  // debug: +20 ore
+      if (e.key === 'f' && game.state === 'run') spawnShrine(game.run);                               // debug: a shrine now
     });
   }
 

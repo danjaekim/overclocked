@@ -63,6 +63,25 @@
     .overlay.levelup { justify-content: center; gap: 10px; }
     .overlay.levelup h2 { margin: 0; color: var(--ember); }
     .overlay.levelup .sub { margin: 0 0 8px; }
+    .overlay.forge { justify-content: flex-start; gap: 8px; padding-top: calc(env(safe-area-inset-top) + 24px); }
+    .overlay.forge h2 { margin: 0; color: var(--ember); }
+    .overlay.forge .sub { margin: 0; }
+    .overlay.forge .ore { color: #ffb45e; }
+    .fmsg { margin: 0; min-height: 20px; font-size: 15px; font-weight: 600; }
+    .fmsg.good { color: #6bf0a0; } .fmsg.bad { color: #ff8a7a; }
+    .forge-list { flex: 1; width: 100%; max-width: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+    .fcard { background: var(--panel); border: 1px solid var(--c, #2c2f3d); border-radius: 12px; padding: 10px 12px; text-align: left; }
+    .ftop { display: flex; justify-content: space-between; align-items: baseline; }
+    .ftop b { font-size: 17px; } .ftop em { font-style: normal; color: var(--c); font-weight: 600; font-size: 13px; }
+    .faff { font-size: 12px; color: var(--dim); margin: 2px 0 0; }
+    .fdesc { font-size: 12px; color: #cfd0d8; }
+    .frow { display: flex; gap: 6px; margin-top: 8px; }
+    .fbtn { flex: 1; min-height: 52px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: #20232f; border: 1px solid #343848; border-radius: 10px; touch-action: manipulation; }
+    .fbtn small { display: block; font-size: 11px; font-weight: 500; color: var(--dim); }
+    .fbtn small i { color: #ff8a7a; font-style: normal; }
+    .fbtn.warn { background: #4a2420; border-color: #ff8a7a; }
+    .fbtn:disabled { opacity: 0.4; }
+    .fbtn:active:not(:disabled) { transform: scale(0.97); }
     .overlay.locked .card { pointer-events: none; opacity: 0.55; }
     .cards { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 380px; }
     .card {

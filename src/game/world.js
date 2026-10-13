@@ -28,7 +28,7 @@ function makeProjectile() {
 }
 
 function makePickup() {
-  return { x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };
+  return { kind: 0, x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore
 }
 
 function makeFx() {

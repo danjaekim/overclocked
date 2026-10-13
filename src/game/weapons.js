@@ -24,7 +24,9 @@ export function addWeapon(run, weaponId) {
     def,
     level: 1,
     enhance: 0,
-    affixes: [],
+    affixes: [],            // affix ids rolled by the forge
+    extraTriggers: [],      // triggers granted by affixes
+    reforges: 0,
     // read scope: the weapon's own tags plus a tag unique to this instance, so weapon-local
     // upgrades (levels, forge) and global ones flow through the same stat math
     tags: makeTags([...def.tags, `weapon:${instanceId}`]),

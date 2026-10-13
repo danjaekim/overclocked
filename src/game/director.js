@@ -2,7 +2,8 @@
 // the view. At the soft cap it stops spawning and buffs enemy hp so pressure keeps rising.
 
 import { ENEMIES } from '../data/enemies.js';
-import { RUN, WAVES, ENEMY_SOFT_CAP } from '../data/waves.js';
+import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP } from '../data/waves.js';
+import { RUN_EVENTS } from './run-events.js';
 import { perimeterPoint, lerp } from '../core/math.js';
 
 const SPAWN_MARGIN = 40;
@@ -44,6 +45,7 @@ export function createDirector(run) {
   const acc = WAVES.map((seg) => seg.spawns.map(() => 0));
   let capBuff = 0;
   let hpScale = 1;
+  let nextEvent = 0;                                // EVENTS is sorted by `at`
 
   return {
     get hpScale() { return hpScale * (1 + capBuff); },
@@ -53,6 +55,11 @@ export function createDirector(run) {
       const t = run.time / timeScale;                 // time on the authored timeline
       const atCap = run.world.enemies.count >= ENEMY_SOFT_CAP;
       if (atCap) capBuff += CAP_BUFF_PER_SEC * dt;
+
+      while (nextEvent < EVENTS.length && t >= EVENTS[nextEvent].at) {
+        RUN_EVENTS[EVENTS[nextEvent].event](run, EVENTS[nextEvent]);
+        nextEvent++;
+      }
 
       for (let i = 0; i < WAVES.length; i++) {
         const seg = WAVES[i];

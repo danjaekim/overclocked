@@ -423,12 +423,15 @@ export const RUN = {
 export const WAVES = [
   { from: 0,   to: 60,  spawns: [{ enemy: 'goblin', perSec: 1.5 }], hpScale: 1.0 },
   { from: 60,  to: 180, spawns: [{ enemy: 'goblin', perSec: 4 }, { enemy: 'brute', perSec: 0.2 }], hpScale: 1.2 },
+  // ...
+];
+// As built (M6) one-off events are a separate sorted list, not mixed into WAVES:
+export const EVENTS = [
   { at: 120, event: 'shrine' },    // forge shrines, see §6.3
   { at: 240, event: 'shrine' },
-  { at: 300, event: 'boss', enemy: 'warlord' },   // boss death also drops a shrine
   { at: 390, event: 'shrine' },
   { at: 510, event: 'shrine' },
-  // ...
+  // { at: 300, event: 'boss', enemy: 'warlord' } arrives with M7; boss death also drops a shrine
 ];
 ```
 
@@ -464,7 +467,7 @@ Sources of shrines:
 - The `forge` event type (opens the forge immediately, no shrine) still exists for debug, tests and scripted moments, but is **not used in the default timeline**. Auto-opening on top of shrines would mean 6+ interruptions in 10 minutes.
 
 Shrine behavior (all numbers in `data/forge.js#SHRINE`):
-- **Placement:** 220–360 units from the player (just beyond the screen edge), choosing the least crowded of 6 random candidate spots via the spatial hash, and never inside the current view.
+- **Placement (as built):** just past the left or right edge of the view (the view is tall and narrow, so a 220–360 unit ring would land on screen), choosing the least crowded of 6 random candidate spots via the spatial hash.
 - **Finding it:** a glowing anvil, plus a **HUD edge arrow** pointing at it with a ring showing remaining time, and a sound cue on spawn.
 - **Activating:** stand within `radius` for `channel` seconds (progress ring fills; leaving the radius drains it at 2× speed). Standing still in danger is the cost. When full, state → `Forge`.
 - **Expiry:** `ttl` seconds after spawning it fades (the boss-drop shrine lasts longer). A missed shrine is simply a missed forge; nothing carries over.
@@ -596,7 +599,7 @@ Each milestone ends playable, is one or a few commits, and has a clear done-chec
 | **M3** *(done)* | Stats + first weapon | `StatBlock` with tests; `projectile` behavior; Archer's `ember_bow` kills enemies; damage numbers, hit flash, death puffs, knockback, screen shake on hit. |
 | **M4** *(done)* | XP + level-up | Gems drop and magnet in; xp curve; level-up overlay with 3 offers from `upgrades.js`; weapon levels and passives working through modifiers. **As built:** 6 passives, 3-card vertical level-up screen with a 0.35 s input lock and 1 s of i-frames on resume, gems that merge at the pool cap, XP bar / level / item chips in the HUD. Rerolls and banish are deferred to M8 with meta-progression. |
 | **M5** *(done)* | Weapon variety | `arc`, `orbit`, `aura` behaviors; Smith class with `forge_hammer`; class select screen; 5 weapons total; triggers + 2 effects (`explode`, `shield`). Perf budget re-verified. **As built:** weapons `ember_bow` (archer), `forge_hammer` (smith, arc), `spirit_blades` (orbit), `cinder_ward` (aura), `storm_javelin` (projectile); the last three are class-neutral and offered to every class. Direct hits go through `game/hit.js#strike`, which queues damage exactly like projectile hits; the damage queue now carries `src` (the weapon instance) so `game/triggers.js` can fire `hit`/`crit`/`kill` triggers from `flushDamage`, and `interval` triggers tick per weapon. Triggers are per weapon with an optional `minLevel` (Ember Bow lv5: 15% of kills explode; Forge Hammer lv3: shield every 12 s); the `chance` roll uses the sim rng. Trigger damage carries `depth + 1`, capped at 3. `player.shield` soaks damage before hp (capped at max hp). Behaviors may define `draw(inst, ctx, run)`. Orbit and aura deal damage on a tick (`tickEvery` x cooldown stat, or the cooldown itself) rather than per frame. Class select remembers the last class in localStorage; `?class=smith` skips it; `?debug=1` runs get `run.debugLoadout()` (smoke test `--loadout`). |
-| **M6** | Forge + shrines | Ore drops; `shrine` events spawn shrines with edge arrow, channel and expiry (§6.3); enhance (with tables + breakpoints; failures never remove the weapon), reforge (affixes), salvage; forge bottom-sheet overlay; unit tests for `forge.js` and shrine rules. |
+| **M6** *(done)* | Forge + shrines | Ore drops; `shrine` events spawn shrines with edge arrow, channel and expiry (§6.3); enhance (with tables + breakpoints; failures never remove the weapon), reforge (affixes), salvage; forge overlay; unit tests for `forge.js` and shrine rules. **As built:** ore is one currency in iron-equivalents (`data/ores.js`, iron only until M7) dropped as pickups (`kind` 1 in the pickup pool; never merged, banked directly if the pool is full; `oreGain` scales the drop chance). Timeline one-offs live in `EVENTS` in `data/waves.js` (separate from `WAVES` segments) and run through `game/run-events.js`; shrines at 2:00, 4:00, 6:30 and 8:30. Shrines (`systems/shrines.js`) spawn just past the left or right view edge, because the view is tall and narrow (radius 40, channel 0.8 s, ttl 45 s, maxActive 1); `run.forgeReady` makes `game.js` open the forge after any pending level-ups. Forge modifiers use sources `forge:<id>:enh:<n>:*` and `forge:<id>:affix:<affix>` so a downgrade or reforge is a prefix removal. Smith pays 20% less ore (`CLASSES.smith.forge.costMult`); luck cuts the downgrade chance. Affix triggers live on `inst.extraTriggers`. Salvage is refused for the last weapon. **Deferred:** Combine (M7 evolutions), gold, reforge locks, mithril/starsteel. Debug keys: `F` spawns a shrine, `O` gives 20 ore; smoke test `--forge`. |
 | **M7** | Evolutions + boss + titles | 2 evolution recipes executed at the forge; a boss at 5:00 that drops starsteel and a shrine; 4 titles (milestone + offer). A full 10-minute run (`RUN.length = 600`) is winnable by surviving to the end and feels escalating. |
 | **M8** | Polish for phone | PWA manifest + icons, pause menu, results screen with seed and stats, simple meta unlock (Berserker after first boss kill), save/load, audio blips, GitHub Pages deploy. |
 

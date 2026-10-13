@@ -18,6 +18,7 @@ export const CLASSES = {
       { stat: 'armor', op: 'flat', value: 1 },
       { stat: 'knockback', op: 'inc', value: 0.25 },
     ],
+    forge: { costMult: 0.8 },        // Smiths enhance for 20% less ore
     unlocked: true,
   },
 };

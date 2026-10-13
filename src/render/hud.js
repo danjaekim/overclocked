@@ -2,6 +2,7 @@
 import { fmtTime } from '../ui/overlay.js';
 import { xpToNext } from '../game/xp.js';
 import { RARITIES } from '../data/rarities.js';
+import { drawShrineArrows } from './shrines.js';
 
 export function drawHud(ctx, view, run) {
   const p = run.player;
@@ -44,6 +45,12 @@ export function drawHud(ctx, view, run) {
   ctx.font = '13px system-ui, sans-serif';
   ctx.fillStyle = '#b9bbc6';
   ctx.fillText('Kills ' + run.kills, 12, y0 + bh + 6);
+
+  // Ore (under the kills line)
+  ctx.fillStyle = '#ffb45e';
+  ctx.fillText('Ore ' + run.ore, 12 + 70, y0 + bh + 6);
+
+  drawShrineArrows(ctx, view, run);
 
   // Owned items: one row of weapon chips, one of passive chips (placeholders until art)
   drawChips(ctx, run.player.weapons, 12, y0 + bh + 26);
