@@ -41,6 +41,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     rerolls: LEVELUP.rerolls,
     banishes: LEVELUP.banishes,
     banished: [],           // item ids removed from the offer pool for this run
+    rules: {},              // perk rule values by rule id (null/undefined = not owned)
     ore: 0,                 // iron-equivalents, spent at the forge
     starsteel: 0,           // rare ore from the boss, spent on evolutions
     titles: [],             // earned titles { id, def, level: '' }
@@ -145,6 +146,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         `ore ${run.ore}  starsteel ${run.starsteel}  titles ${run.titles.map((t) => t.id).join(',') || '-'}`,
         `weapons: ${ws}`,
         `passives: ${ps || '-'}`,
+        `perks: ${run.player.perks.map((i) => `${i.id} L${i.level}`).join(', ') || '-'}`,
       ];
     },
 

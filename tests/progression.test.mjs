@@ -1,3 +1,4 @@
+import { PERKS } from '../src/data/perks.js';
 import { TITLES } from '../src/data/titles.js';
 import { test, assert, approx } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
@@ -193,6 +194,8 @@ test('when everything is maxed the offer falls back to Rest', () => {
       .map(([id, d], i) => ({ weaponId: id, level: d.maxLevel, instanceId: i + 1 })),
     titles: Object.keys(TITLES),
     passives: Object.entries(PASSIVES).map(([id, d]) => ({ id, level: d.maxLevel })),
+    perks: Object.entries(PERKS).map(([id, d]) => ({ id, level: d.maxLevel })),
+    ownedTags: ['fire', 'frost', 'storm', 'projectile', 'close', 'arc', 'orbit'],
   };
   const offers = generateOffers(st, createRng(1));
   assert.deepEqual(offers.map((o) => o.kind), ['heal']);
@@ -278,8 +281,8 @@ test('a 5-minute run with random level-up picks stays consistent and the build g
     }
   }
   const weaponLevels = run.player.weapons.reduce((a, w) => a + w.level, 0);
-  const passiveLevels = run.player.passives.reduce((a, x) => a + x.level, 0);
+  const passiveLevels = run.player.passives.reduce((a, x) => a + x.level, 0) + run.player.perks.reduce((a, x) => a + x.level, 0);
   assert.ok(run.player.level >= 8, `level ${run.player.level}`);
   assert.equal(picks, run.player.level - 1, 'one pick per level gained');
-  assert.equal(weaponLevels + passiveLevels - 1, picks - heals, 'every item pick raised exactly one item level');
+  assert.equal(weaponLevels + passiveLevels - 1, picks - heals, 'every item pick (weapon, passive or perk) raised exactly one item level');
 });

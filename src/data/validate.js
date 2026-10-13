@@ -17,6 +17,7 @@ import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
 import { ORES } from './ores.js';
 import { EVOLUTIONS } from './evolutions.js';
 import { TITLES } from './titles.js';
+import { PERKS } from './perks.js';
 
 // Read on every hit: a `when` modifier would bypass the stat cache for them.
 const NO_WHEN = new Set(['burnChance', 'chillChance', 'shockChance', 'burnPower', 'chillStacks', 'chains', 'chainDamage',
@@ -87,6 +88,29 @@ export function validateData() {
       problems.push(`${at}: levelText.length (${p.levelText.length}) must equal levels.length (${p.levels.length})`);
     }
     p.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 1}`, problems));
+  }
+
+  for (const [id, p] of Object.entries(PERKS)) {
+    const at = `perk ${id}`;
+    if (!RARITIES[p.rarity]) problems.push(`${at}: unknown rarity "${p.rarity}"`);
+    if (!(p.maxLevel >= 1)) problems.push(`${at}: maxLevel must be >= 1`);
+    if (p.levels.length !== p.maxLevel) problems.push(`${at}: levels.length must equal maxLevel`);
+    if (p.levelText.length !== p.levels.length) problems.push(`${at}: levelText.length must equal levels.length`);
+    p.levels.forEach((mods, i) => checkMods(mods, `${at} level ${i + 1}`, problems));
+    if (!Array.isArray(p.affinity)) problems.push(`${at}: affinity must be an array`);
+    if (PASSIVES[id] || WEAPONS[id]) problems.push(`${at}: id clashes with a passive or weapon (banish uses one id space)`);
+    const known = new Set(Object.values(WEAPONS).flatMap((w) => w.tags));
+    for (const any of p.requires) {
+      for (const r of any) {
+        const [kind, ref, extra] = r.split(':');
+        if (kind === 'tag' && !known.has(ref)) problems.push(`${at}: requires unknown tag "${ref}"`);
+        else if (kind === 'perk' && !PERKS[ref]) problems.push(`${at}: requires unknown perk "${ref}"`);
+        else if (kind === 'perk' && extra !== undefined && !(Number(extra) >= 1 && Number(extra) <= PERKS[ref].maxLevel)) problems.push(`${at}: bad perk level in "${r}"`);
+        else if (kind === 'class' && !CLASSES[ref]) problems.push(`${at}: requires unknown class "${ref}"`);
+        else if (!['tag', 'perk', 'class'].includes(kind)) problems.push(`${at}: bad requirement "${r}"`);
+      }
+    }
+    for (const t of p.affinity) if (!known.has(t)) problems.push(`${at}: affinity references unknown tag "${t}"`);
   }
 
   for (const [id, c] of Object.entries(CLASSES)) {

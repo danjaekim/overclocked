@@ -6,15 +6,19 @@
 //   luck,
 //   weapons:  [{ weaponId, level, instanceId }],
 //   passives: [{ id, level }],
+//   perks:    [{ id, level }],     (optional)
+//   ownedTags:[tag],               (optional) tags on owned weapon instances, for perk requirements/affinity
 //   titles:   [id],                (optional)
 //   banished: [id],                (optional) never offered
 // }
 //
 // An offer is { kind, id, name, rarity, toLevel, isNew, desc, instanceId? } with kind one of
-// 'weapon_new' | 'weapon_up' | 'passive_new' | 'passive_up' | 'title_new' | 'heal'.
+// 'weapon_new' | 'weapon_up' | 'passive_new' | 'passive_up' | 'perk_new' | 'perk_up' | 'title_new' | 'heal'.
 
 import { WEAPONS } from '../data/weapons.js';
 import { PASSIVES } from '../data/passives.js';
+import { PERKS } from '../data/perks.js';
+import { meetsRequires } from './perks.js';
 import { TITLES } from '../data/titles.js';
 import { RARITIES } from '../data/rarities.js';
 import { SLOTS, LEVELUP } from '../data/progression.js';
@@ -70,6 +74,27 @@ export function buildCandidates(state) {
       });
     }
   }
+  // perks: no slot cap. A new perk is offered only once its requirements hold; affinity (an owned
+  // weapon shares one of its tags) makes it 1.5x as likely.
+  const ownedTagSet = new Set(state.ownedTags || []);
+  const perkLevels = new Map((state.perks || []).map((p) => [p.id, p.level]));
+  const ctx = { ownedTags: ownedTagSet, perks: perkLevels, classId: state.classId };
+  for (const [id, def] of Object.entries(PERKS)) {
+    const have = perkLevels.get(id) || 0;
+    const boost = def.affinity.some((t) => ownedTagSet.has(t)) ? 1.5 : 1;
+    if (have > 0) {
+      if (have >= def.maxLevel) continue;
+      out.push({
+        kind: 'perk_up', id, name: def.name, rarity: def.rarity, toLevel: have + 1,
+        isNew: false, owned: true, boost, desc: def.levelText[have],
+      });
+    } else if (meetsRequires(def.requires, ctx)) {
+      out.push({
+        kind: 'perk_new', id, name: def.name, rarity: def.rarity, toLevel: 1,
+        isNew: true, owned: false, boost, desc: `${def.desc} ${def.levelText[0]}.`,
+      });
+    }
+  }
   const ownedTitles = new Set(state.titles || []);
   for (const [id, def] of Object.entries(TITLES)) {
     if (def.grant.type !== 'offer' || ownedTitles.has(id)) continue;
@@ -83,7 +108,7 @@ export function buildCandidates(state) {
 
 export function offerWeight(candidate, luck) {
   const r = RARITIES[candidate.rarity];
-  const w = r.weight * (1 + luck * r.luckScale) * (candidate.owned ? 1.5 : 1);
+  const w = r.weight * (1 + luck * r.luckScale) * (candidate.owned ? 1.5 : 1) * (candidate.boost || 1);
   return w > 0 ? w : 0;
 }
 
@@ -92,6 +117,18 @@ export function generateOffers(state, rng, count = LEVELUP.offers) {
   const banished = state.banished || [];
   const pool = buildCandidates(state).filter((c) => offerWeight(c, luck) > 0 && !banished.includes(c.id));
   const picked = [];
+  // First card: when any weapon or passive can be upgraded, one of them leads, so perks never crowd
+  // out the levels that evolutions need.
+  if (count >= 1) {
+    const upgrades = pool.filter((c) => c.kind === 'weapon_up' || c.kind === 'passive_up');
+    if (upgrades.length) {
+      const c = rng.weighted(upgrades, (x) => offerWeight(x, luck));
+      if (c) {
+        picked.push(c);
+        pool.splice(pool.indexOf(c), 1);
+      }
+    }
+  }
   while (picked.length < count && pool.length) {
     const c = rng.weighted(pool, (x) => offerWeight(x, luck));
     if (!c) break;

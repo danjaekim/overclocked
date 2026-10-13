@@ -10,6 +10,8 @@ const KIND_LABEL = {
   weapon_up: 'Weapon',
   passive_new: 'New passive',
   passive_up: 'Passive',
+  perk_new: 'New technique',
+  perk_up: 'Technique',
   title_new: 'Title',
   heal: 'Recover',
 };

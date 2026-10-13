@@ -2,10 +2,19 @@
 
 import { addWeapon, levelUpWeapon } from './weapons.js';
 import { addPassive, findPassive, levelUpPassive } from './passives.js';
+import { addPerk, findPerk, levelUpPerk } from './perks.js';
 import { grantTitle } from './titles.js';
 import { LEVELUP } from '../data/progression.js';
 
 // Snapshot of the player in the shape generateOffers() expects.
+// Every tag on every owned weapon INSTANCE (so forge infusions count), minus the per-instance
+// `weapon:N` tags. Used for perk requirements and offer affinity.
+function ownedTags(p) {
+  const out = [];
+  for (const w of p.weapons) for (const t of w.tags.set) if (!t.startsWith('weapon:') && !out.includes(t)) out.push(t);
+  return out;
+}
+
 export function offerState(run) {
   const p = run.player;
   return {
@@ -13,6 +22,8 @@ export function offerState(run) {
     luck: p.stats.get('luck'),
     weapons: p.weapons.map((w) => ({ weaponId: w.weaponId, level: w.level, instanceId: w.instanceId })),
     passives: p.passives.map((x) => ({ id: x.id, level: x.level })),
+    perks: p.perks.map((x) => ({ id: x.id, level: x.level })),
+    ownedTags: ownedTags(p),
     titles: run.titles.map((t) => t.id),
     banished: run.banished,
   };
@@ -32,6 +43,12 @@ export function applyOffer(run, offer) {
       break;
     case 'passive_up':
       levelUpPassive(run, findPassive(p, offer.id));
+      break;
+    case 'perk_new':
+      addPerk(run, offer.id);
+      break;
+    case 'perk_up':
+      levelUpPerk(run, findPerk(p, offer.id));
       break;
     case 'title_new':
       grantTitle(run, offer.id);

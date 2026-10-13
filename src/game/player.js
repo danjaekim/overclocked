@@ -14,6 +14,7 @@ export function createPlayer(run, classId) {
     stats,
     weapons: [],
     passives: [],
+    perks: [],          // owned techniques { id, def, level } (game/perks.js); no slot cap
     level: 1,
     xp: 0,
     x: 0,

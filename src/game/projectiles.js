@@ -15,7 +15,33 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.dmg = dmg;
   pr.pierce = pierce;
   pr.nh = 0;
+  const stats = run.player.stats;
+  pr.bounce = Math.round(stats.getFor('ricochet', inst.tags));
+  pr.split = Math.round(stats.getFor('split', inst.tags));
+  pr.splitFrac = stats.getFor('splitDamage', inst.tags);
   return pr;
+}
+
+const SPLIT_STEP = 0.44;       // radians between split shots
+
+// Children of a split: weaker, short-lived, never split or bounce themselves, and they skip the
+// enemy the parent just hit.
+export function spawnSplit(run, parent, hitEnemy) {
+  const n = parent.split;
+  parent.split = 0;
+  const base = Math.atan2(parent.dy, parent.dx);
+  const speed = Math.hypot(parent.vx, parent.vy);
+  for (let i = 0; i < n; i++) {
+    const a = base + (i - (n - 1) / 2) * SPLIT_STEP;
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    const c = spawnProjectile(run, parent.inst, hitEnemy.x, hitEnemy.y, dx, dy, speed, parent.dmg * parent.splitFrac,
+      0.5, parent.r * 0.8, 0);
+    if (!c) return;
+    c.bounce = 0;
+    c.split = 0;
+    markHit(c, hitEnemy.uid);
+  }
 }
 
 // Hit-set: a small fixed ring of enemy uids this projectile has already damaged.

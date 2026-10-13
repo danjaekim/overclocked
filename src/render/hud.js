@@ -60,6 +60,7 @@ export function drawHud(ctx, view, run) {
   drawChips(ctx, run.player.weapons, 12, y0 + bh + 26);
   drawChips(ctx, run.player.passives, 12, y0 + bh + 52);
   drawChips(ctx, run.titles, 12, y0 + bh + 78);
+  drawChips(ctx, run.player.perks, 12, y0 + bh + 104);
 
   // Boss bar (top-center, under the timer)
   const boss = run.boss;

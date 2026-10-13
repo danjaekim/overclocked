@@ -4,7 +4,10 @@
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { damagePlayer } from './damage.js';
 import { resolveHit } from '../game/hit.js';
-import { hasHit, markHit } from '../game/projectiles.js';
+import { hasHit, markHit, spawnSplit } from '../game/projectiles.js';
+
+const RICOCHET_RANGE = 180;
+const RICOCHET_TTL = 0.5;
 
 function playerContact(run) {
   const w = run.world;
@@ -20,6 +23,33 @@ function playerContact(run) {
     if (dx * dx + dy * dy <= rr * rr && e.damage > worst) worst = e.damage;
   }
   if (worst > 0) damagePlayer(run, worst);
+}
+
+// A spent projectile turns toward the nearest enemy it has not hit yet instead of dying.
+function ricochet(run, pr) {
+  const w = run.world;
+  const n = w.hash.queryRadius(pr.x, pr.y, RICOCHET_RANGE + MAX_ENEMY_RADIUS, w.scratch);
+  let best = null;
+  let bestD = RICOCHET_RANGE * RICOCHET_RANGE;
+  for (let i = 0; i < n; i++) {
+    const o = w.scratch[i];
+    if (!o.alive || hasHit(pr, o.uid)) continue;
+    const dx = o.x - pr.x;
+    const dy = o.y - pr.y;
+    const d = dx * dx + dy * dy;
+    if (d < bestD) { bestD = d; best = o; }
+  }
+  if (!best) return false;
+  const d = Math.sqrt(bestD) || 1;
+  const speed = Math.hypot(pr.vx, pr.vy);
+  pr.dx = (best.x - pr.x) / d;
+  pr.dy = (best.y - pr.y) / d;
+  pr.vx = pr.dx * speed;
+  pr.vy = pr.dy * speed;
+  pr.bounce--;
+  pr.pierce = 0;
+  if (pr.ttl < RICOCHET_TTL) pr.ttl = RICOCHET_TTL;
+  return true;
 }
 
 function projectileHits(run) {
@@ -41,7 +71,9 @@ function projectileHits(run) {
 
       resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy);
 
+      if (pr.split > 0) spawnSplit(run, pr, e);
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy
+        if (pr.bounce > 0 && ricochet(run, pr)) break;
         w.projectiles.release(pr);
         break;
       }

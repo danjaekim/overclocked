@@ -70,7 +70,7 @@ function rollStatuses(run, e, src, amount, depth, kind) {
 // Step 8 of the tick: apply every queued hit (docs/design-m10-m13.md §3.6).
 export function flushDamage(run) {
   const q = run.world.dmg;
-  const lifesteal = run.player.stats.get('lifesteal');   // global value first: most runs have none
+  const lifesteal = run.player.stats.mods.lifesteal.length;   // any lifesteal modifier at all (global or tag-scoped)? most runs have none
   for (let i = 0; i < q.n; i++) {
     const e = q.enemy[i];
     q.enemy[i] = null;

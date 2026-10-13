@@ -83,6 +83,8 @@ function scoreOffer(o, run) {
   if (o.kind === 'passive_up') return 60 + o.toLevel;
   if (o.kind === 'passive_new') return o.id === 'wind_sigil' || o.id === 'tempered_core' ? 70 : 40;
   if (o.kind === 'weapon_new') return 50;
+  if (o.kind === 'perk_up') return 55 + o.toLevel + (o.boost > 1 ? 10 : 0);
+  if (o.kind === 'perk_new') return 45 + (o.boost > 1 ? 15 : 0);
   if (o.kind === 'title_new') return 80;
   return 0;
 }
