@@ -10,6 +10,19 @@ export function readParams() {
 }
 
 export function createDebug(params) {
+  if (params.enabled) {
+    // On-screen button so the stress test works on a phone, where there is no console.
+    const btn = document.createElement('button');
+    btn.textContent = 'stress';
+    btn.style.cssText =
+      'position:fixed;left:8px;bottom:8px;z-index:5;padding:10px 14px;font:12px monospace;' +
+      'background:#222;color:#9fe870;border:1px solid #9fe870;border-radius:6px;opacity:.85';
+    btn.addEventListener('click', () => {
+      const o = window.__overforged;
+      if (o && o.game.run) o.game.run.stress();
+    });
+    document.body.appendChild(btn);
+  }
   const dbg = {
     enabled: params.enabled,
     god: params.god,
