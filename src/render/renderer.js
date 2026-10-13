@@ -48,7 +48,9 @@ export function createRenderer(canvas, view) {
 
     const cam = run ? run.cam : cam0;
     // world pass
-    ctx.setTransform(s, 0, 0, s, (view.w / 2 - cam.x) * s, (view.h / 2 - cam.y) * s);
+    const ox = run ? run.cam.ox : 0;     // screen shake offset
+    const oy = run ? run.cam.oy : 0;
+    ctx.setTransform(s, 0, 0, s, (view.w / 2 - cam.x + ox) * s, (view.h / 2 - cam.y + oy) * s);
     drawGrid(cam);
     if (run) {
       if (run.drawWorld) run.drawWorld(ctx, view);

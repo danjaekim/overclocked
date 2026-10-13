@@ -37,7 +37,7 @@ src/
     events.js                  tiny synchronous event bus
     math.js                    vec helpers that write into out-params (no allocs)
   input/
-    input.js                   joystick + keyboard → normalized move vector
+    input.js                   joystick + keyboard → normalized move vector; ignores the HUD top zone
   stats/
     stats.js                   StatBlock: modifiers in, cached final values out
     stat-defs.js               every stat id, its base value, clamps, display info
@@ -45,8 +45,11 @@ src/
   game/
     game.js                    top-level state machine (§6.1)
     run.js                     one run: owns world, player, director, timers
-    world.js                   entity stores + system update order
-    player.js                  player entity, StatBlock, inventory, xp/level
+    world.js                   entity stores (pools), spatial hash, damage queue, scratch buffers
+    player.js                  player entity, StatBlock, weapon list (xp/level arrive in M4)
+    weapons.js                 weapon instances: add, level up (as modifiers), per-tick update
+    weapon-params.js          how a weapon's base params combine with stats: param(), weaponStat()
+    projectiles.js             spawnProjectile + hit-set helpers
     director.js                spawn director: reads waves data, spawns enemies and forge shrines
     upgrades.js                level-up offer generation (§5.6)
     forge.js                   forge actions; pure functions over inventory (§6)
@@ -58,11 +61,12 @@ src/
   effects/                     effect handlers used by triggers (§4.6)
     index.js
   systems/                     per-tick systems over entity stores
-    movement.js  enemy-ai.js  collision.js  damage.js  pickups.js  status.js
+    movement.js  enemy-ai.js  collision.js  damage.js  damage-queue.js  pickups.js  status.js
   render/
-    renderer.js                camera, layers, culling, draw order
-    shapes.js                  placeholder primitives (circle, ring, tri, bar)
-    fx.js                      damage numbers, hit flash, screen shake, particles
+    view.js                    portrait view: 480-unit width, desktop column, safe-area inset
+    renderer.js                camera (with shake), layers, draw order
+    entities.js                batched enemy and projectile drawing, culled to the camera
+    fx.js                      pooled damage numbers and death puffs (hit flash is in entities.js)
     hud.js                     canvas HUD: hp, xp bar, timer, level, ore, off-screen shrine arrow
   ui/                          DOM overlays (menus are DOM, gameplay is canvas)
     overlay.js                 mount/unmount helper, safe-area aware
@@ -136,7 +140,7 @@ Everything that makes the player stronger — level-up passives, weapon levels, 
 ```js
 export const STATS = {
   maxHp:        { base: 100, min: 1,               fmt: 'int' },
-  moveSpeed:    { base: 200, min: 40,  max: 600,   fmt: 'int' },
+  moveSpeed:    { base: 150, min: 40,  max: 600,   fmt: 'int' },   // 200 made the horde trivial to outrun at M3
   pickupRadius: { base: 60,  min: 20,              fmt: 'int' },
   armor:        { base: 0,                         fmt: 'int' },   // flat damage reduction
   regen:        { base: 0,                         fmt: 'dec' },   // hp per second
@@ -191,7 +195,10 @@ const sb = new StatBlock(STATS);
 sb.add(mod);                    // or addMany(mods)
 sb.removeBySource(prefix);      // e.g. 'passive:ember_core' on level change
 sb.get('maxHp');                // global final value, cached
-sb.getFor('damage', tagsSet);   // value including tag-scoped modifiers, cached per (stat, tagKey)
+sb.getFor('damage', tags);      // value including tag-scoped modifiers, cached per (stat, tags.key)
+// `tags` comes from makeTags(['projectile', 'fire', 'weapon:3']) -> { set, key }, built once per
+// weapon instance so hot paths never allocate. get(stat) = getFor(stat, NO_TAGS).
+// Cache invalidation is per stat; a stat with any `when` modifier bypasses the cache entirely.
 ```
 
 Caching: each `add/remove` marks the touched stat dirty; `get` recomputes only dirty stats. Tag-scoped reads cache by `stat + '|' + sortedTags`. Condition-gated modifiers are excluded from the cache and evaluated on read (they're few).
@@ -279,7 +286,7 @@ export default {
 };
 ```
 
-`ctx` gives access to `world`, `player`, `rng`, `stat(inst, id)` (reads `getFor` with the instance's tags), `queueDamage`, `spawnProjectile`, `queryRadius`.
+**As built (M3):** there is no separate `ctx` object. Behaviors receive the `run` (which holds `world`, `player`, `rng`) and import helpers directly: `param(run, inst, key)` and `weaponStat(run, inst, id)` from `game/weapon-params.js`, `spawnProjectile` from `game/projectiles.js`, `queueDamage` from `systems/damage-queue.js`, and `run.world.hash.queryRadius / queryNearest` for targeting. Keep behaviors reading stats only through these helpers.
 
 How `base` params combine with stats (one place: `ctx.param(inst, key)`, so behaviors never re-derive this):
 
@@ -538,7 +545,7 @@ Level-ups give **breadth** (which weapons/passives); the forge gives **depth** (
 
 ### 7.2 Techniques
 - **Object pools** (`core/pool.js`) for every store in §3.2. `acquire()` returns a reset object; `release()` returns it. Projectile hit-sets use a small fixed array + generation counter, not a `Set`.
-- **Spatial hash** (`core/spatial-hash.js`): uniform grid, cell size 64 px (≈ 2–3× typical enemy diameter). Rebuilt once per tick from enemies (cheap: clear counts, insert indexes into preallocated `Int32Array` buckets with a linked-list `next` array). Queries: `queryRadius(x, y, r, outArray) → count`. Used for projectile hits, aura/nova AoE, chain targeting, enemy separation, nearest-enemy targeting.
+- **Spatial hash** (`core/spatial-hash.js`): uniform grid, cell size 64 px (≈ 2–3× typical enemy diameter). Rebuilt once per tick from enemies (cheap: clear heads, insert into preallocated `Int32Array` buckets with a linked-list `next` array). Cells are hashed into a fixed 4096-slot table, so the world is unbounded; every candidate is distance-checked and de-duplicated. Items are stored **by reference**, so objects released after the rebuild are still safe to read (callers skip `alive === false`). Queries: `queryRadius(x, y, r, outArray) → count` and `queryNearest(x, y, r, pred) → object | null`. Used for projectile hits, aura/nova AoE, chain targeting, enemy separation, nearest-enemy targeting.
 - **Enemy separation**: each enemy pushes away from at most 4 neighbours found via the hash, every other tick (alternate halves by index parity).
 - **Nearest target**: query expanding rings in the hash; fall back to a cached nearest that refreshes every 6 ticks per weapon.
 - **No per-frame allocation**: math helpers write into out-params; no closures, spreads or array literals inside systems. Damage queue is a preallocated ring buffer.
@@ -581,9 +588,9 @@ Each milestone ends playable, is one or a few commits, and has a clear done-chec
 | # | Milestone | Done when |
 |---|---|---|
 | **M0** | Scaffold *(done)* | Canvas, loop, joystick, player moves. |
-| **M1** | Core runtime refactor | `core/` loop, rng, pool, events split out; `game.js` state machine with Title → Run → Results stubs; debug overlay with fps; **portrait view** (480-unit width, desktop column, rotate prompt, joystick top-zone ignore, §8). |
-| **M2** | Enemies + spatial hash | `goblin` spawns from `waves.js`, chases, separates; player takes contact damage and can die; stress test shows 500 enemies at 60 fps on phone. |
-| **M3** | Stats + first weapon | `StatBlock` with tests; `projectile` behavior; Archer's `ember_bow` kills enemies; damage numbers, hit flash. |
+| **M1** *(done)* | Core runtime refactor | `core/` loop, rng, pool, events split out; `game.js` state machine with Title → Run → Results stubs; debug overlay with fps; **portrait view** (480-unit width, desktop column, rotate prompt, joystick top-zone ignore, §8). |
+| **M2** *(done)* | Enemies + spatial hash | `goblin` and `brute` spawn from `waves.js`, chase, separate; player takes contact damage and can die; `?debug=1` stress button shows 500 enemies at 60 fps. Measured in headless Chromium only (about 0.7 ms sim, worst case 1.9 ms with everything stacked on the player); **still to verify on a real iPhone.** |
+| **M3** *(done)* | Stats + first weapon | `StatBlock` with tests; `projectile` behavior; Archer's `ember_bow` kills enemies; damage numbers, hit flash, death puffs, knockback, screen shake on hit. |
 | **M4** | XP + level-up | Gems drop and magnet in; xp curve; level-up overlay with 3 offers from `upgrades.js`; weapon levels and 4 passives working through modifiers. |
 | **M5** | Weapon variety | `arc`, `orbit`, `aura` behaviors; Smith class with `forge_hammer`; class select screen; 5–6 weapons total; triggers + 2 effects (`explode`, `shield`). Perf budget re-verified. |
 | **M6** | Forge + shrines | Ore drops; `shrine` events spawn shrines with edge arrow, channel and expiry (§6.3); enhance (with tables + breakpoints; failures never remove the weapon), reforge (affixes), salvage; forge bottom-sheet overlay; unit tests for `forge.js` and shrine rules. |

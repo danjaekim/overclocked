@@ -5,12 +5,17 @@ import { createRng } from '../core/rng.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createWorld } from './world.js';
 import { createDirector, spawnEnemy } from './director.js';
+import { addWeapon, updateWeapons } from './weapons.js';
 import { updateEnemies } from '../systems/enemy-ai.js';
+import { updateProjectiles } from '../systems/movement.js';
 import { updateCollision } from '../systems/collision.js';
-import { drawEnemies } from '../render/entities.js';
+import { flushDamage } from '../systems/damage.js';
+import { updateFx, drawFx } from '../render/fx.js';
+import { drawEnemies, drawProjectiles } from '../render/entities.js';
 import { RUN } from '../data/waves.js';
+import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 
-export function createRun({ seed, view, debug }) {
+export function createRun({ seed, view, debug, classId = DEFAULT_CLASS }) {
   const run = {
     seed,
     view,
@@ -21,8 +26,10 @@ export function createRun({ seed, view, debug }) {
     over: false,
     won: false,
     kills: 0,
-    player: createPlayer(),
-    cam: { x: 0, y: 0 },
+    lastKillTime: -1e9,
+    bossAlive: false,
+    player: null,
+    cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
     world: createWorld(),
     director: null,
 
@@ -34,15 +41,25 @@ export function createRun({ seed, view, debug }) {
 
       run.director.update(dt);                                  // 1 spawns
       updatePlayer(run.player, dt, move);                       // 2 player
-      // 3 weapons (M3)
+      updateWeapons(run, dt);                                   // 3 weapons
       updateEnemies(run, dt);                                   // 4 enemy AI
-      // 5 projectile movement (M3)
+      updateProjectiles(run, dt);                               // 5 projectile movement
       w.hash.rebuild(w.enemies.active, w.enemies.count);        // 6 spatial hash
-      updateCollision(run);                                     // 7 collisions
-      // 8 damage flush (M3), 9 status effects (later)
+      updateCollision(run);                                     // 7 collisions (queue damage)
+      flushDamage(run);                                         // 8 apply damage, deaths
+      // 9 status effects (later)
+      updateFx(run, dt);
 
-      run.cam.x = run.player.x;
-      run.cam.y = run.player.y;
+      const cam = run.cam;
+      cam.x = run.player.x;
+      cam.y = run.player.y;
+      if (cam.shake > 0.2) {
+        cam.ox = (run.fxRng.next() - 0.5) * 2 * cam.shake;
+        cam.oy = (run.fxRng.next() - 0.5) * 2 * cam.shake;
+        cam.shake *= 0.88;
+      } else {
+        cam.shake = cam.ox = cam.oy = 0;
+      }
 
       if (!run.over && run.time >= RUN.length) {                // 10 run events
         run.over = true;
@@ -52,6 +69,11 @@ export function createRun({ seed, view, debug }) {
 
     drawWorld(ctx, view) {
       drawEnemies(ctx, view, run);
+      drawProjectiles(ctx, view, run);
+    },
+
+    drawFx(ctx, view) {
+      drawFx(ctx, view, run);
     },
 
     // Debug: fill the screen with enemies to check the performance budget.
@@ -69,9 +91,12 @@ export function createRun({ seed, view, debug }) {
 
     debugLines() {
       const w = run.world;
+      const ws = run.player.weapons.map((i) => `${i.weaponId} L${i.level}`).join(', ');
       return [
-        `enemies ${w.enemies.count}  hash max bucket ${w.hash.stats.maxBucket}`,
+        `enemies ${w.enemies.count}  proj ${w.projectiles.count}  fx ${w.fx.count}`,
+        `hash max bucket ${w.hash.stats.maxBucket}  dmg dropped ${w.dmg.dropped}`,
         `hpScale ${run.director.hpScale.toFixed(2)}  seed ${run.seed}`,
+        `weapons: ${ws}`,
       ];
     },
 
@@ -79,6 +104,9 @@ export function createRun({ seed, view, debug }) {
       return { time: run.time, kills: run.kills, seed: run.seed, won: run.won };
     },
   };
+
+  run.player = createPlayer(run, classId);
   run.director = createDirector(run);
+  addWeapon(run, CLASSES[classId].startWeapon);
   return run;
 }

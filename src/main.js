@@ -8,7 +8,14 @@ import { createOverlays } from './ui/overlay.js';
 import { createRotatePrompt } from './ui/rotate-prompt.js';
 import { createGame } from './game/game.js';
 import { createDebug, readParams } from './debug/debug.js';
+import { validateData } from './data/validate.js';
 
+const dataProblems = validateData();
+if (dataProblems.length) {
+  const msg = 'Data problems:\n' + dataProblems.join('\n');
+  if (new URLSearchParams(location.search).get('debug') === '1') throw new Error(msg);
+  console.error(msg);
+}
 const stage = document.getElementById('stage');
 const canvas = document.getElementById('game');
 const params = readParams();

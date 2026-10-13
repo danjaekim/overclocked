@@ -1,0 +1,67 @@
+// Browser smoke test (optional; needs Playwright installed): boots the game in headless
+// Chromium at phone size, starts a run, plays for a few seconds, and fails on any console
+// error. Usage:  node tests/smoke.mjs [--stress] [--shot out.png] [--query "debug=1&seed=3"]
+
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { createRequire } from 'node:module';
+import { execSync } from 'node:child_process';
+
+// ESM ignores NODE_PATH, so fall back to the global npm root when Playwright is installed globally.
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch {
+  try {
+    const globalRoot = execSync('npm root -g', { encoding: 'utf8' }).trim();
+    ({ chromium } = createRequire(globalRoot + '/')('playwright'));
+  } catch {
+    console.log('Playwright is not installed; skipping the browser smoke test.');
+    process.exit(0);
+  }
+}
+
+const args = process.argv.slice(2);
+const flag = (n) => args.includes(n);
+const opt = (n, d) => (args.includes(n) ? args[args.indexOf(n) + 1] : d);
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
+
+const server = http.createServer((req, res) => {
+  let p = decodeURIComponent(req.url.split('?')[0]);
+  if (p === '/') p = '/index.html';
+  const f = path.join(root, p);
+  if (!f.startsWith(root) || !fs.existsSync(f)) { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { 'content-type': types[path.extname(f)] || 'text/plain' });
+  fs.createReadStream(f).pipe(res);
+}).listen(0);
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+const page = await ctx.newPage();
+const errors = [];
+page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) errors.push(m.text()); });
+page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+
+await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1')}`);
+await page.tap('[data-act=play]');
+if (flag('--stress')) await page.evaluate(() => window.__overforged.game.run.stress());
+await page.waitForTimeout(4000);
+
+const info = await page.evaluate(() => {
+  const o = window.__overforged;
+  const r = o.game.run;
+  return { state: o.game.state, time: +r.time.toFixed(1), kills: r.kills, enemies: r.world.enemies.count,
+    fps: +o.debug.fps.toFixed(0), simMs: +o.debug.simMs.toFixed(2) };
+});
+console.log(JSON.stringify(info));
+if (opt('--shot')) await page.screenshot({ path: opt('--shot') });
+await browser.close();
+server.close();
+
+if (errors.length) { console.log('console errors:\n' + errors.join('\n')); process.exit(1); }
+if (info.state !== 'run' || info.time < 2) { console.log('run did not progress'); process.exit(1); }
+console.log('smoke ok');

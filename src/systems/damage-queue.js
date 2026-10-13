@@ -1,0 +1,35 @@
+// Preallocated ring of pending damage entries. Collisions enqueue; damage.flush applies them
+// in one place so crits, knockback, numbers, kills and (later) triggers are handled
+// consistently and can't recurse (docs/architecture.md §3.3).
+
+const CAP = 1024;
+
+export function createDamageQueue() {
+  return {
+    n: 0,
+    dropped: 0,                       // entries lost to overflow (shown in debug)
+    enemy: new Array(CAP).fill(null),
+    uid: new Int32Array(CAP),         // guards against the enemy slot being reused before the flush
+    amount: new Float32Array(CAP),
+    crit: new Uint8Array(CAP),
+    kx: new Float32Array(CAP),
+    ky: new Float32Array(CAP),
+    depth: new Uint8Array(CAP),       // trigger recursion depth (capped at 3 once triggers exist)
+  };
+}
+
+export function queueDamage(run, enemy, amount, crit, kx = 0, ky = 0, depth = 0) {
+  const q = run.world.dmg;
+  if (q.n >= CAP) {
+    q.dropped++;
+    return;
+  }
+  const i = q.n++;
+  q.enemy[i] = enemy;
+  q.uid[i] = enemy.uid;
+  q.amount[i] = amount;
+  q.crit[i] = crit ? 1 : 0;
+  q.kx[i] = kx;
+  q.ky[i] = ky;
+  q.depth[i] = depth;
+}

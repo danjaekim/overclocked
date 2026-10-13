@@ -23,6 +23,7 @@ export function createSpatialHash({ cellSize = 64, tableSize = 4096, capacity = 
   const items = new Array(capacity).fill(null);
   let count = 0;
   let stamp = 0;
+  head.fill(-1);        // empty until the first rebuild (0 would mean "item 0")
 
   const stats = { maxBucket: 0, items: 0 };
 

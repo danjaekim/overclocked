@@ -62,6 +62,14 @@ test('queryNearest returns the closest match and honours the filter', () => {
   assert.equal(hash.queryNearest(5000, 5000, 10), null);
 });
 
+test('a hash that has never been rebuilt is empty (no crash, no phantom item 0)', () => {
+  const hash = createSpatialHash({ capacity: 16 });
+  const out = [];
+  assert.equal(hash.queryRadius(0, 0, 100, out), 0);
+  assert.equal(hash.queryNearest(0, 0, 100), null);
+  assert.equal(hash.queryRadius(0, 0, 100000, out), 0);
+});
+
 test('rebuild replaces previous contents and respects capacity', () => {
   const hash = createSpatialHash({ capacity: 10 });
   hash.rebuild(scatter(10, 100), 10);
