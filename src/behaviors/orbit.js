@@ -21,6 +21,7 @@ export default {
     inst.launchPhase = 0;   // 0 orbiting, 1 flying out, 2 flying back
     inst.launchU = 0;       // 0..1 how far out the blades are
     inst.launchHit = new Set();
+    inst.hitAt = new Map(); // blade x enemy -> run.time of the last hit
   },
 
   update(inst, dt, run) {
@@ -33,14 +34,20 @@ export default {
     const launch = inst.graft && inst.graft.hooks.launch;
     if (launch) launchStep(inst, dt, run, launch, count);
 
+    // Attack triggers (graft echoes) keep the old once-per-tick rhythm.
+    const every = inst.def.base.tickEvery * param(run, inst, 'cooldown');
     inst.tick -= dt;
-    if (inst.tick > 0) return;
-    inst.tick += inst.def.base.tickEvery * param(run, inst, 'cooldown');
+    if (inst.tick <= 0) {
+      inst.tick += every;
+      attackTriggers(run, inst, p.x, p.y, inst.angle);
+    }
 
+    // Hits are swept every frame: a blade moving ~200 units/s would skip past enemies if it only
+    // looked at its position once per tick. Each blade hits each enemy at most once per `every`.
     const dmg = param(run, inst, 'damage');
     const w = run.world;
-    attackTriggers(run, inst, p.x, p.y, inst.angle);
     const out = launchRadius(inst);
+    const hits = inst.hitAt;
     for (let b = 0; b < count; b++) {
       const a = inst.angle + (b * TAU) / count;
       const bx = p.x + Math.cos(a) * out;
@@ -53,12 +60,17 @@ export default {
         const dy = e.y - by;
         const rr = inst.bladeR + e.r;
         if (dx * dx + dy * dy > rr * rr) continue;
+        const key = e.uid * 16 + b;
+        const last = hits.get(key);
+        if (last !== undefined && run.time - last < every) continue;
+        hits.set(key, run.time);
         const ox = e.x - p.x;
         const oy = e.y - p.y;
         const od = Math.hypot(ox, oy) || 1;
         strike(run, inst, e, dmg, ox / od, oy / od);    // pushed away from the player
       }
     }
+    if (hits.size > 300) for (const [k, t] of hits) if (run.time - t > every * 2) hits.delete(k);
   },
 
   draw(inst, ctx, run) {

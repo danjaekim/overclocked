@@ -116,6 +116,7 @@ async function toggleLab() {
     last: () => { const r = run(); const w = r.player.weapons.pop(); if (w) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); } },
     star: () => { run().starsteel += 3; },
   };
+  const baseIds = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false);
   const branchIds = EVOLUTIONS.filter((r) => !r.with).map((r) => r.into);
   const row = (title, items) => `<div style="margin:4px 0"><div style="opacity:.7">${title}</div>${items.map(([k, label]) =>
     `<button data-k="${k}" style="margin:2px;padding:6px 8px;font:11px monospace;background:#222;color:#9fe870;border:1px solid #4a6;border-radius:5px">${label}</button>`).join('')}</div>`;
@@ -123,6 +124,7 @@ async function toggleLab() {
   labEl.style.cssText = 'position:fixed;left:6px;right:6px;bottom:52px;max-height:52vh;overflow:auto;z-index:6;background:rgba(0,0,0,.88);color:#9fe870;font:11px monospace;padding:8px;border:1px solid #4a6;border-radius:8px';
   labEl.innerHTML =
     row('Weapons', [['a:clear', 'REMOVE ALL WEAPONS'], ['a:last', 'remove last']]) +
+    row('Normal weapons (added at max level)', baseIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
     row('Branches and evolutions (added at max level, nothing removed)', branchIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
     row('Masterworks (adds host + donor at max level, then grafts)', MASTERWORKS.map((m) => [`m:${m.id}`, m.name])) +
     row('Generic graft: pick two evolved weapons', [['gen', 'graft last two']]) +

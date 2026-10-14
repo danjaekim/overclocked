@@ -215,3 +215,14 @@ test('discovery: the save keeps found masterworks and the compendium reveals the
   assert.ok(entries.some((e) => /\+ \?\?\?$/.test(e.name)), 'unfound ones are hidden');
   assert.ok(entries[0].name.includes('1 / 6'));
 });
+
+test('orbiting blades hit an enemy sitting on their path, not only at tick instants', () => {
+  const run = newRun(3);
+  const inst = addWeapon(run, 'seraph_blades');
+  run.update(STEP, { x: 0, y: 0 });
+  const e = spawnEnemy(run, 'brute', inst.orbitR, 0);     // exactly on the blade circle, off to the side
+  e.speed = 0;
+  e.maxHp = e.hp = 1e6;
+  tick(run, 0.7);                                          // five blades pass any point on the circle within ~0.35 s
+  assert.ok(e.hp < e.maxHp, 'a blade passed through and hit it');
+});
