@@ -137,3 +137,19 @@ test('every sound effect plays on a fake context, is rate limited, and gems clim
   for (let i = 0; i < 10; i++) { ctx.currentTime += 0.05; if (sfx.play('gem')) ok++; }
   assert.ok(ok >= 8);
 });
+
+test('every class has sprite art, well-formed, with no baked-in hounds', async () => {
+  const { SPRITE_ART } = await import('../src/render/sprite-art.js');
+  const { CLASSES } = await import('../src/data/classes.js');
+  for (const id of Object.keys(CLASSES)) {
+    const svg = SPRITE_ART[id];
+    assert.ok(svg && svg.startsWith('<svg') && svg.endsWith('</svg>'), id + ' has art');
+    assert.ok(!svg.includes('<use'), id + ' has no <use> leftovers');
+    for (const tag of ['g', 'defs', 'filter']) {
+      assert.equal((svg.match(new RegExp('<' + tag + '[ >]', 'g')) || []).length, (svg.match(new RegExp('</' + tag + '>', 'g')) || []).length, id + ' balanced <' + tag + '>');
+    }
+  }
+  const { getSprite, spriteUrl } = await import('../src/render/sprites.js');
+  assert.equal(getSprite('smith'), null);                       // no DOM here: the renderer falls back to the disc
+  assert.ok(spriteUrl('smith').startsWith('data:image/svg+xml'));
+});

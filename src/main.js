@@ -11,6 +11,7 @@ import { createDebug, readParams } from './debug/debug.js';
 import { validateData } from './data/validate.js';
 import { createSave, browserStorage } from './save/save.js';
 import { createAudio } from './audio/audio.js';
+import { preloadSprites } from './render/sprites.js';
 
 const dataProblems = validateData();
 if (dataProblems.length) {
@@ -27,6 +28,8 @@ const view = createView(stage, canvas);
 const rotate = createRotatePrompt(view);
 const overlays = createOverlays(document.getElementById('ui'));
 const renderer = createRenderer(canvas, view);
+
+preloadSprites();
 
 let game;
 const input = createInput(canvas, { onPause: () => game && game.togglePause(), onBuild: () => game && game.openBuild() });

@@ -2,8 +2,11 @@
 // World pass uses a camera transform; the HUD pass uses plain view coordinates.
 
 import { drawHud, drawStick } from './hud.js';
+import { getSprite } from './sprites.js';
 
 const GRID = 64;
+const SPRITE_W = 68;                     // world units; the hitbox stays the player's r
+const SPRITE_LIFT = 8;                   // the feet sit near the hit circle's bottom
 
 export function createRenderer(canvas, view) {
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -27,10 +30,21 @@ export function createRenderer(canvas, view) {
   }
 
   function drawPlayer(p) {
-    ctx.fillStyle = p.hurtFlash > 0 ? '#ffffff' : '#e8a33d';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fill();
+    const spr = getSprite(p.classId, p.hurtFlash > 0);
+    if (spr) {
+      const h = SPRITE_W * 76 / 76;
+      if (p.facingX < -0.2) p.flip = true; else if (p.facingX > 0.2) p.flip = false;
+      ctx.save();
+      ctx.translate(p.x, p.y - SPRITE_LIFT);
+      if (p.flip) ctx.scale(-1, 1);
+      ctx.drawImage(spr, -SPRITE_W / 2, -h / 2 - 2, SPRITE_W, h);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = p.hurtFlash > 0 ? '#ffffff' : '#e8a33d';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
     if (p.shield > 0) {
       ctx.strokeStyle = '#6ec5ff';
       ctx.lineWidth = 3;
@@ -40,13 +54,14 @@ export function createRenderer(canvas, view) {
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    // facing tick
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    ctx.lineTo(p.x + p.facingX * p.r, p.y + p.facingY * p.r);
-    ctx.stroke();
+    if (!spr) {                                  // facing tick (the sprites show it themselves)
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + p.facingX * p.r, p.y + p.facingY * p.r);
+      ctx.stroke();
+    }
   }
 
   function draw(run, input, debug) {

@@ -178,6 +178,10 @@
       cursor: pointer; touch-action: manipulation; transition: opacity 0.15s;
     }
     .card:active { transform: scale(0.985); background: #1f2230; }
+    .overlay.classes .card { display: flex; flex-direction: row; align-items: center; gap: 12px; }
+    .portrait { flex: none; width: 64px; height: 64px; }
+    .portrait.dim { filter: brightness(0) opacity(0.5); }
+    .card-body { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; text-align: left; }
     .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     .card-top b { font-size: 18px; }
     .card-top em { font-style: normal; font-size: 13px; color: var(--c, #9aa0b0); font-weight: 600; white-space: nowrap; }
