@@ -138,10 +138,11 @@ test('every sound effect plays on a fake context, is rate limited, and gems clim
   assert.ok(ok >= 8);
 });
 
-test('every class has sprite art, well-formed, with no baked-in hounds', async () => {
+test('every class and enemy has sprite art, well-formed, with no baked-in hounds', async () => {
   const { SPRITE_ART } = await import('../src/render/sprite-art.js');
   const { CLASSES } = await import('../src/data/classes.js');
-  for (const id of Object.keys(CLASSES)) {
+  const { ENEMIES } = await import('../src/data/enemies.js');
+  for (const id of [...Object.keys(CLASSES), ...Object.keys(ENEMIES)]) {
     const svg = SPRITE_ART[id];
     assert.ok(svg && svg.startsWith('<svg') && svg.endsWith('</svg>'), id + ' has art');
     assert.ok(!svg.includes('<use'), id + ' has no <use> leftovers');

@@ -1,5 +1,5 @@
-// Entity drawing. Enemies are batched: one path per colour, a final white pass for
-// hit-flashing ones. Everything is culled to the camera rect.
+// Entity drawing. Enemies are sprites (discs batched per colour until the art loads), with a
+// white silhouette for hit-flashing ones. Everything is culled to the camera rect.
 
 import { ENEMIES } from '../data/enemies.js';
 import { GEM } from '../data/progression.js';
@@ -7,9 +7,12 @@ import { ORES } from '../data/ores.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST } from '../systems/pickups.js';
 import { ELITE } from '../data/elites.js';
+import { getSprite } from './sprites.js';
 
 const TAU = Math.PI * 2;
 const DEF_IDS = Object.keys(ENEMIES);
+const SPRITE_K = 3.5;                  // sprite width = radius * this (the hit circle stays the radius)
+const LIFT_K = 0.3;                    // feet sit near the circle's bottom
 
 // XP gems: one batched fill per tier colour, drawn as small diamonds.
 export function drawGems(ctx, view, run) {
@@ -118,30 +121,52 @@ export function drawEnemies(ctx, view, run) {
   const y0 = cam.y - view.h / 2 - 40;
   const y1 = cam.y + view.h / 2 + 40;
 
-  for (let d = 0; d < DEF_IDS.length; d++) {
-    const id = DEF_IDS[d];
-    ctx.fillStyle = ENEMIES[id].color;
+  // Sprites where the art has loaded; the old discs otherwise (tests, or while loading).
+  const px = run.player.x;
+  let discs = false;
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+    const spr = getSprite(e.defId, e.flash > 0);
+    if (!spr) { discs = true; continue; }
+    const w = e.r * SPRITE_K;
+    const cy = e.y - e.r * LIFT_K;
+    if (px < e.x) {                               // they all walk at the player, so face that way
+      ctx.save();
+      ctx.translate(e.x, cy);
+      ctx.scale(-1, 1);
+      ctx.drawImage(spr, -w / 2, -w / 2, w, w);
+      ctx.restore();
+    } else {
+      ctx.drawImage(spr, e.x - w / 2, cy - w / 2, w, w);
+    }
+  }
+  if (discs) {
+    for (let d = 0; d < DEF_IDS.length; d++) {
+      const id = DEF_IDS[d];
+      if (getSprite(id)) continue;
+      ctx.fillStyle = ENEMIES[id].color;
+      ctx.beginPath();
+      for (let i = 0; i < list.length; i++) {
+        const e = list[i];
+        if (e.defId !== id || e.flash > 0) continue;
+        if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+        ctx.moveTo(e.x + e.r, e.y);
+        ctx.arc(e.x, e.y, e.r, 0, TAU);
+      }
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
-      if (e.defId !== id || e.flash > 0) continue;
+      if (e.flash <= 0 || getSprite(e.defId)) continue;
       if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
       ctx.moveTo(e.x + e.r, e.y);
       ctx.arc(e.x, e.y, e.r, 0, TAU);
     }
     ctx.fill();
   }
-
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  for (let i = 0; i < list.length; i++) {
-    const e = list[i];
-    if (e.flash <= 0) continue;
-    if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
-    ctx.moveTo(e.x + e.r, e.y);
-    ctx.arc(e.x, e.y, e.r, 0, TAU);
-  }
-  ctx.fill();
 
   drawStatusRings(ctx, list, x0, x1, y0, y1);
   drawEliteMarks(ctx, list, x0, x1, y0, y1, run.time);
