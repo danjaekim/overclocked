@@ -1,5 +1,5 @@
 // Enemy definitions. Data only. `xp` and `ore` are used from M4/M6.
-// ai: 'chase' = walk straight at the player; 'boss_charge' = chase, then telegraph and dash.
+// ai: 'chase' = walk straight at the player; 'ranged' = close to `ranged.range`, then shoot; 'boss_charge' = chase, then telegraph and dash.
 // boss: true marks the single big enemy tracked by run.boss (HUD bar, drops, titles).
 
 export const ENEMIES = {
@@ -18,6 +18,27 @@ export const ENEMIES = {
     ore: { chance: 0.3, type: 'iron' },
     ai: 'chase',
     color: '#a64d79',
+  },
+  // Armoured goblin: every hit loses `armor` damage (never more than 75% of it), so many small hits
+  // barely scratch it and heavy hits, burns and shocks do. Damage over time ignores armor.
+  shieldbearer: {
+    name: 'Shieldbearer',
+    hp: 30, speed: 50, damage: 7, radius: 12,
+    xp: 2,
+    ore: { chance: 0.12, type: 'iron' },
+    ai: 'chase',
+    armor: 5,
+    color: '#8fa3b8',
+  },
+  // Ranged goblin: walks into `range`, stops, flashes, then throws a slow shot at where you stand.
+  slinger: {
+    name: 'Slinger',
+    hp: 14, speed: 46, damage: 4, radius: 10,
+    xp: 2,
+    ore: { chance: 0.08, type: 'iron' },
+    ai: 'ranged',
+    ranged: { range: 230, cooldown: 2.4, windup: 0.4, shotSpeed: 150, shotDamage: 7, shotTtl: 2.6, shotR: 5 },
+    color: '#b06ad0',
   },
   warlord: {
     name: 'Warlord',

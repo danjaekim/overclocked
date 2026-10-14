@@ -15,8 +15,9 @@ import { updatePickups } from '../systems/pickups.js';
 import { flushDamage } from '../systems/damage.js';
 import { updateStatuses } from '../systems/status.js';
 import { updateShrines } from '../systems/shrines.js';
+import { updateEnemyShots } from '../systems/enemy-shots.js';
 import { updateFx, drawFx } from '../render/fx.js';
-import { drawGems, drawOre, drawChests, drawEnemies, drawProjectiles } from '../render/entities.js';
+import { drawGems, drawOre, drawChests, drawEnemies, drawProjectiles, drawEnemyShots } from '../render/entities.js';
 import { drawShrines } from '../render/shrines.js';
 import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
@@ -52,6 +53,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     shrines: [],            // active anvil shrines { x, y, ttl, maxTtl, progress }
     pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
     chestsOpened: 0,
+    eliteKills: 0,          // elites killed so far (the first always drops starsteel)
+    enemyShots: [],         // slinger shots in flight (systems/enemy-shots.js)
     stats: createStats(),   // damage by weapon and cause, per-second timeline (game/run-stats.js)
     forgeReady: false,      // a shrine was channelled: game.js opens the forge next
     player: null,
@@ -70,6 +73,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       updateWeapons(run, dt);                                   // 3 weapons
       updateEnemies(run, dt);                                   // 4 enemy AI
       updateProjectiles(run, dt);                               // 5 projectile movement
+      updateEnemyShots(run, dt);                                // 5b slinger shots
       w.hash.rebuild(w.enemies.active, w.enemies.count);        // 6 spatial hash
       updateCollision(run);                                     // 7 collisions (queue damage)
       updatePickups(run, dt);                                   // 7b gems: magnet and collect
@@ -102,6 +106,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       drawOre(ctx, view, run);
       drawChests(ctx, view, run);
       drawEnemies(ctx, view, run);
+      drawEnemyShots(ctx, run);
       drawProjectiles(ctx, view, run);
     },
 

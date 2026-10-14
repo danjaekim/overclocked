@@ -201,6 +201,10 @@ export function validateData() {
   }
 
   for (const [id, e] of Object.entries(ENEMIES)) {
+    if (e.ai === 'ranged' && !(e.ranged && e.ranged.range > 0 && e.ranged.cooldown > 0 && e.ranged.windup >= 0 && e.ranged.shotSpeed > 0 && e.ranged.shotDamage > 0 && e.ranged.shotTtl > 0)) {
+      problems.push(`enemy ${id}: ranged needs ranged { range, cooldown, windup, shotSpeed, shotDamage, shotTtl }`);
+    }
+    if (e.armor !== undefined && !(e.armor >= 0)) problems.push(`enemy ${id}: armor must be >= 0`);
     if (e.ai === 'boss_charge' && !(e.charge && e.charge.every > 0 && e.charge.windup > 0 && e.charge.speed > 0 && e.charge.time > 0)) {
       problems.push(`enemy ${id}: boss_charge needs charge { every, windup, speed, time }`);
     }

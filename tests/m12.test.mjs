@@ -90,7 +90,7 @@ test('an elite drops a chest and 8x xp; the boss credits starsteel at once and d
   const boss = spawnEnemy(run, 'warlord', 400, 0);
   run.boss = boss;
   killEnemy(run, boss);
-  assert.equal(run.starsteel, 2);
+  assert.equal(run.starsteel, 3);          // 1 from the first elite (always), 2 from the boss
   assert.ok(run.world.pickups.active.some((g) => g.kind === KIND_CHEST && g.value === 1));
 });
 

@@ -270,3 +270,25 @@ function drawStatusRings(ctx, list, x0, x1, y0, y1) {
   }
 }
 
+
+// Slinger shots: a small ember bolt with a bright core.
+export function drawEnemyShots(ctx, run) {
+  const list = run.enemyShots;
+  if (list.length === 0) return;
+  ctx.fillStyle = '#e8531e';
+  ctx.beginPath();
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i];
+    ctx.moveTo(s.x + s.r + 1.5, s.y);
+    ctx.arc(s.x, s.y, s.r + 1.5, 0, TAU);
+  }
+  ctx.fill();
+  ctx.fillStyle = '#ffe3a3';
+  ctx.beginPath();
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i];
+    ctx.moveTo(s.x + s.r * 0.55, s.y);
+    ctx.arc(s.x, s.y, s.r * 0.55, 0, TAU);
+  }
+  ctx.fill();
+}

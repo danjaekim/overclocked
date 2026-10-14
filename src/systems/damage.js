@@ -16,6 +16,7 @@ import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath } from './st
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
 const HIT_FLASH = 0.08;
+const ARMOR_FLOOR = 0.25;  // armor never takes more than 75% off a hit
 
 export function killEnemy(run, e) {
   run.kills++;
@@ -29,7 +30,14 @@ export function killEnemy(run, e) {
   } else if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
     spawnOre(run, e.x + 6, e.y - 4, ore.type, ore.count || 1);
   }
-  if (e.elite) spawnChest(run, e.x, e.y, 0);
+  if (e.elite) {
+    spawnChest(run, e.x, e.y, 0);
+    // starsteel for evolutions: the first elite always drops one, later ones with a chance
+    if (run.eliteKills++ === 0 || run.rng.next() < ELITE.starsteelChance) {
+      run.starsteel += 1;
+      run.toast = { text: '+1 starsteel', ttl: 2 };
+    }
+  }
   if (e.def.boss) {
     run.bossAlive = false;
     run.bossKilled = true;
@@ -89,6 +97,10 @@ export function flushDamage(run) {
     const ex = e.x;
     const ey = e.y;
     let amount = q.amount[i] * targetMult(run, e, src);
+    if (e.armor > 0 && kind !== KIND_DOT) {                  // armour: flat loss per hit, so heavy hits and burns beat it
+      const left = amount - e.armor;
+      amount = left > amount * ARMOR_FLOOR ? left : amount * ARMOR_FLOOR;
+    }
     if (e.elite && ELITE.affixes[e.affix].untilHpFrac !== undefined && e.hp > e.maxHp * ELITE.affixes[e.affix].untilHpFrac) {
       amount *= ELITE.affixes[e.affix].damageTaken;           // Warded: half damage until it is wounded
     }

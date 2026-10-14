@@ -26,6 +26,7 @@ function makeEnemy() {
     chill: 0, chillT: 0, freezeT: 0, freezeImm: 0,
     shockT: 0,
     slowMul: 1,            // movement multiplier from chill
+    armor: 0,              // flat damage taken off every non-DoT hit (data/enemies.js armor, scaled with hp)
   };
 }
 

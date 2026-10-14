@@ -7,6 +7,7 @@ export const ELITE = {
   damageMult: 1.5,
   xpMult: 8,
   color: '#ffd34d',
+  starsteelChance: 0.5,      // chance an elite (after the first, which always does) drops 1 starsteel
   affixes: {
     swift:        { name: 'Swift',        speedMult: 1.45 },
     warded:       { name: 'Warded',       damageTaken: 0.5, untilHpFrac: 0.5 },   // takes half damage while above 50% hp

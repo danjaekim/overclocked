@@ -3,6 +3,7 @@
 
 import { randomPerimeterPoint } from '../game/director.js';
 import { ELITE } from '../data/elites.js';
+import { spawnEnemyShot } from './enemy-shots.js';
 
 const SEP_RADIUS = 2.2;       // x enemy radius
 const SEP_MAX_NEIGHBOURS = 4;
@@ -34,6 +35,23 @@ function bossStep(e, p, dt) {
     e.aiT -= dt;
     if (e.aiT <= 0) { e.ai = AI_CHASE; e.aiCd = c.every; }
   }
+}
+
+// Ranged: once inside `range` it stops, counts down, flashes through the windup and throws.
+// Returns true while it should stand still. A frozen enemy (slowMul 0) neither counts down nor shoots.
+function rangedStep(run, e, d, dt) {
+  const r = e.def.ranged;
+  if (e.slowMul > 0 && d < r.range * 1.15) {
+    if (e.ai === AI_CHASE) {
+      e.aiCd -= dt;
+      if (e.aiCd <= 0) { e.ai = AI_WINDUP; e.aiT = r.windup; }
+    } else {
+      e.aiT -= dt;
+      e.flash = 0.04;
+      if (e.aiT <= 0) { spawnEnemyShot(run, e); e.ai = AI_CHASE; e.aiCd = r.cooldown; }
+    }
+  }
+  return e.ai === AI_WINDUP || d < r.range;
 }
 
 export function updateEnemies(run, dt) {
@@ -87,6 +105,7 @@ export function updateEnemies(run, dt) {
     const sp = e.speed * e.slowMul;                     // chill slows; frozen sets slowMul to 0
     let vx = dx * inv * sp;
     let vy = dy * inv * sp;
+    if (e.def.ranged && rangedStep(run, e, d, dt)) { vx = 0; vy = 0; }
     if (e.def.charge) {
       if (e.ai === AI_WINDUP) { vx = 0; vy = 0; }
       else if (e.ai === AI_DASH) { vx = e.ax * e.def.charge.speed; vy = e.ay * e.def.charge.speed; }
