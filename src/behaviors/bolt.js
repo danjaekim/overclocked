@@ -5,6 +5,7 @@
 import { param } from '../game/weapon-params.js';
 import { strike } from '../game/hit.js';
 import { addArc } from '../render/fx.js';
+import { attackTriggers } from '../game/triggers.js';
 
 export default {
   uses: ['damage', 'cooldown', 'area', 'projectiles', 'critChance', 'critMult', 'knockback'],
@@ -25,6 +26,7 @@ export default {
     const count = Math.min(12, Math.max(1, Math.round(param(run, inst, 'count'))));
     const dmg = param(run, inst, 'damage');
     let any = false;
+    let first = null;
     for (let k = 0; k < count; k++) {
       let best = null;
       let bestD = range * range;
@@ -38,6 +40,7 @@ export default {
       }
       if (!best) break;
       any = true;
+      if (!first) first = best;
       inst.picked[k] = best.uid;
       inst.nPicked = k + 1;
       const d = Math.sqrt(bestD) || 1;
@@ -45,7 +48,10 @@ export default {
       strike(run, inst, best, dmg, (best.x - p.x) / d, (best.y - p.y) / d);
     }
     inst.nPicked = 0;
-    if (any) inst.cd += param(run, inst, 'cooldown');
+    if (any) {
+      inst.cd += param(run, inst, 'cooldown');
+      attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
+    }
     else inst.cd = 0;
   },
 };

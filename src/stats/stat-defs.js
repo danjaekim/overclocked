@@ -42,5 +42,6 @@ export const STATS = {
   ricochet:       { base: 0,   min: 0,             fmt: 'int' },   // (M11a) bounces after pierce runs out
   split:          { base: 0,   min: 0,             fmt: 'int' },   // (M11a) child projectiles on first hit
   splitDamage:    { base: 0.4, min: 0,             fmt: 'pct' },   // (M11a) child damage, share of the parent's
+  lowHpDamage:    { base: 0,   min: 0,             fmt: 'pct' },   // (M26) extra damage multiplier that grows as your hp falls (full at 25% hp)
   executeBelow:   { base: 0,   min: 0, max: 0.5,   fmt: 'pct' },   // (M11b) crits kill non-bosses under this hp fraction
 };

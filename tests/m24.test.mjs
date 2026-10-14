@@ -12,15 +12,15 @@ test('evoNeeds lists the passive an in-reach evolution still needs, and not far-
   // Ember Bow level 4 is within 3 levels of the 6 the recipe asks for; it needs Wind Sigil
   const near = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 4, instanceId: 1 }] });
   assert.equal(near.get('passive:wind_sigil'), 'Storm Volley');
-  assert.equal(near.get('weapon:ember_bow'), 'Storm Volley');
+  assert.equal(near.get('weapon:ember_bow'), 'Storm Volley or Sunpiercer');
   const far = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 2, instanceId: 1 }] });   // 2 < 6 - 3
   assert.equal(far.size, 0);
 });
 
 test('a satisfied requirement is not listed, and an already-evolved weapon is skipped', () => {
-  const have = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 8, instanceId: 1 }], passives: [{ id: 'wind_sigil', level: 1 }] });
+  const have = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 8, instanceId: 1 }], passives: [{ id: 'wind_sigil', level: 1 }], perks: [{ id: 'keen_eye', level: 2 }] });   // both branches met
   assert.equal(have.size, 0);
-  const done = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 4, instanceId: 1 }, { weaponId: 'storm_volley', level: 1, instanceId: 2 }] });
+  const done = evoNeeds({ ...base, weapons: [{ weaponId: 'storm_volley', level: 1, instanceId: 2 }] });
   assert.equal(done.size, 0);
 });
 
@@ -29,7 +29,7 @@ test('generateOffers marks needed offers and favours them without forcing them',
   let marked = 0, withMark = 0, runs = 400;
   for (let s = 1; s <= runs; s++) {
     const offers = generateOffers(state, createRng(s));
-    for (const o of offers) if (o.evo) { assert.equal(o.evo, 'Storm Volley'); marked++; }
+    for (const o of offers) if (o.evo) { assert.ok(['Storm Volley', 'Sunpiercer', 'Storm Volley or Sunpiercer'].includes(o.evo)); marked++; }
     if (offers.some((o) => o.id === 'wind_sigil')) withMark++;
   }
   assert.ok(marked > 0);

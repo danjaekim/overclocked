@@ -128,12 +128,13 @@ export function evoNeeds(state) {
     const lvlReq = r.requires.find((q) => q.weaponLevel !== undefined);
     if (lvlReq && Math.min(a.level, b ? b.level : a.level) < lvlReq.weaponLevel - EVO_CLOSE) continue;
     const name = WEAPONS[r.into].name;
+    const mark = (key) => need.set(key, need.has(key) && !need.get(key).split(' or ').includes(name) ? `${need.get(key)} or ${name}` : (need.get(key) || name));   // a branch pair names both
     for (const q of r.requires) {
       if (q.weaponLevel !== undefined) {
-        if (a.level < q.weaponLevel) need.set('weapon:' + r.from, name);
-        if (b && b.level < q.weaponLevel) need.set('weapon:' + r.with, name);
-      } else if (q.passive && (passives.get(q.passive) || 0) < (q.minLevel || 1)) need.set('passive:' + q.passive, name);
-      else if (q.perk && (perks.get(q.perk) || 0) < (q.minLevel || 1)) need.set('perk:' + q.perk, name);
+        if (a.level < q.weaponLevel) mark('weapon:' + r.from);
+        if (b && b.level < q.weaponLevel) mark('weapon:' + r.with);
+      } else if (q.passive && (passives.get(q.passive) || 0) < (q.minLevel || 1)) mark('passive:' + q.passive);
+      else if (q.perk && (perks.get(q.perk) || 0) < (q.minLevel || 1)) mark('perk:' + q.perk);
     }
   }
   return need;

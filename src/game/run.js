@@ -15,6 +15,7 @@ import { updatePickups } from '../systems/pickups.js';
 import { flushDamage } from '../systems/damage.js';
 import { updateStatuses } from '../systems/status.js';
 import { updateShrines } from '../systems/shrines.js';
+import { updateHazards, drawHazards } from '../systems/hazards.js';
 import { updateEnemyShots } from '../systems/enemy-shots.js';
 import { updateFx, drawFx } from '../render/fx.js';
 import { drawGems, drawOre, drawChests, drawEnemies, drawProjectiles, drawEnemyShots } from '../render/entities.js';
@@ -54,6 +55,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
     chestsOpened: 0,
     eliteKills: 0,          // elites killed so far (the first always drops starsteel)
+    hazards: [],            // fire patches, vortices, pillars, shockwaves (systems/hazards.js)
     enemyShots: [],         // slinger shots in flight (systems/enemy-shots.js)
     stats: createStats(),   // damage by weapon and cause, per-second timeline (game/run-stats.js)
     forgeReady: false,      // a shrine was channelled: game.js opens the forge next
@@ -78,6 +80,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       updateCollision(run);                                     // 7 collisions (queue damage)
       updatePickups(run, dt);                                   // 7b gems: magnet and collect
       updateStatuses(run, dt);                                  // 7d status timers, burn ticks (queue damage)
+      updateHazards(run, dt);                                   // 7e hazards tick (queue damage)
       flushDamage(run);                                         // 8 apply damage, deaths
       updateShrines(run, dt);                                   // 7c shrine channel / expiry
       updateFx(run, dt);
@@ -105,6 +108,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       drawGems(ctx, view, run);
       drawOre(ctx, view, run);
       drawChests(ctx, view, run);
+      drawHazards(ctx, run);
       drawEnemies(ctx, view, run);
       drawEnemyShots(ctx, run);
       drawProjectiles(ctx, view, run);

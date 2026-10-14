@@ -528,7 +528,9 @@ export const WEAPONS = {
       [{ stat: 'damage', op: 'more', value: 0.3 }],
     ],
     levelText: ['+25% damage', '+20% burn chance', '-15% cooldown', '+20% area', '30% more damage'],
-    triggers: [],
+    triggers: [
+      { on: 'kill', chance: 0.3, effect: 'fire_patch', params: { radius: 38, ttl: 3, tick: 0.5, damageFrac: 0.5 } },   // embers where it kills
+    ],
     evolvesInto: null,
   },
 
@@ -695,7 +697,9 @@ export const WEAPONS = {
       [{ stat: 'damage', op: 'more', value: 0.3 }],
     ],
     levelText: ['+25% damage', '+2 hounds', 'calls hounds 15% faster', '+20% size and leash', '30% more damage'],
-    triggers: [],
+    triggers: [
+      { on: 'kill', effect: 'frenzy', params: { dur: 2 } },          // a kill sends the pack 30% faster for 2 s
+    ],
     evolvesInto: null,
   },
 
@@ -721,6 +725,164 @@ export const WEAPONS = {
     levelText: ['+25% damage', '+1% lifesteal', '-15% cooldown', '+20% area', '30% more damage'],
     triggers: [
       { on: 'interval', every: 8, effect: 'shield', params: { amount: 30 } },
+      { on: 'hit', effect: 'bless', params: { dur: 3 } },            // marked foes take +10% damage from everything
+    ],
+    evolvesInto: null,
+  },
+
+  // ---- branch evolutions (docs/design-m26-m28.md §3): the second evolution of each starter weapon
+
+  sunpiercer: {
+    name: 'Sunpiercer',
+    desc: 'One heavy arrow that pierces everything and leaves a line of fire. Crits explode.',
+    class: null,
+    pool: false,
+    glyph: 'n',
+    rarity: 'evolved',
+    tags: ['projectile', 'ranged', 'fire'],
+    baseMods: [{ stat: 'burnChance', op: 'flat', value: 0.5 }, { stat: 'critChance', op: 'flat', value: 0.12 }],
+    behavior: 'projectile',
+    base: {
+      damage: 78, cooldown: 1.6, speed: 760, count: 1, pierce: 40, spread: 0, gap: 0, ttl: 1.0, radius: 9, range: 520,
+      trail: { every: 56, radius: 30, ttl: 2.6, tick: 0.5, damageFrac: 0.1 },
+    },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'critChance', op: 'flat', value: 0.12 }],
+      [{ stat: 'area', op: 'inc', value: 0.25 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '-15% cooldown', '+12% crit chance', '+25% size (wider fire line)', '30% more damage'],
+    triggers: [
+      { on: 'crit', effect: 'explode', params: { radius: 75, damageFrac: 0.7 } },
+    ],
+    evolvesInto: null,
+  },
+
+  quakebreaker: {
+    name: 'Quakebreaker',
+    desc: 'Every swing also sends a shockwave rolling far along the ground.',
+    class: null,
+    pool: false,
+    glyph: 'k',
+    rarity: 'evolved',
+    tags: ['melee', 'arc', 'physical', 'close'],
+    behavior: 'arc',
+    base: { damage: 62, cooldown: 1.0, count: 1, range: 100, arcWidth: 2.2 },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'knockback', op: 'inc', value: 0.5 }],
+      [{ stat: 'damage', op: 'more', value: 0.35 }],
+    ],
+    levelText: ['+25% damage', '+20% area (longer wave)', '-15% cooldown', '+50% knockback', '35% more damage'],
+    triggers: [
+      { on: 'attack', effect: 'shockwave', params: { speed: 420, range: 270, width: 34, damageFrac: 0.8 } },
+    ],
+    evolvesInto: null,
+  },
+
+  whirlwind_cleaver: {
+    name: 'Whirlwind Cleaver',
+    desc: 'A constant spin that hits harder the closer you are to death, and heals as it cuts.',
+    class: null,
+    pool: false,
+    glyph: 'w',
+    rarity: 'evolved',
+    tags: ['aura', 'melee', 'physical', 'close'],
+    baseMods: [{ stat: 'lowHpDamage', op: 'flat', value: 1.5 }, { stat: 'lifesteal', op: 'flat', value: 0.015 }, { stat: 'critChance', op: 'flat', value: 0.08 }],
+    behavior: 'aura',
+    base: { damage: 26, cooldown: 0.42, range: 98, spin: true },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'lifesteal', op: 'flat', value: 0.01 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '+1% lifesteal', '-15% cooldown', '+20% area', '30% more damage'],
+    triggers: [],
+    evolvesInto: null,
+  },
+
+  singularity: {
+    name: 'Singularity',
+    desc: 'A bolt that opens a vortex. It drags the horde into one spot, then collapses.',
+    class: null,
+    pool: false,
+    glyph: 'o',
+    rarity: 'evolved',
+    tags: ['bolt', 'ranged', 'magic', 'arcane'],
+    baseMods: [{ stat: 'chillChance', op: 'flat', value: 0.15 }],
+    behavior: 'bolt',
+    base: { damage: 48, cooldown: 1.8, count: 1, range: 330 },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'duration', op: 'inc', value: 0.25 }],
+      [{ stat: 'damage', op: 'more', value: 0.35 }],
+    ],
+    levelText: ['+25% damage', '+20% area (bigger vortex)', '-15% cooldown', '+25% duration', '35% more damage'],
+    triggers: [
+      { on: 'attack', effect: 'vortex', params: { radius: 100, ttl: 1.5, pull: 150, damageFrac: 2.2 } },
+    ],
+    evolvesInto: null,
+  },
+
+  bone_colossus: {
+    name: 'Bone Colossus',
+    desc: 'One giant hound. Every bite stomps, flings the crowd and shatters armour.',
+    class: null,
+    pool: false,
+    glyph: 'c',
+    rarity: 'evolved',
+    tags: ['summon', 'magic', 'physical'],
+    behavior: 'summon',
+    base: { damage: 52, cooldown: 3.0, count: 1, range: 330, radius: 24, speed: 160, tickEvery: 0.55 },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'projSpeed', op: 'inc', value: 0.2 }],
+      [{ stat: 'damage', op: 'inc', value: 0.3 }],
+      [{ stat: 'damage', op: 'more', value: 0.35 }],
+    ],
+    levelText: ['+25% damage', '+20% size and stomp', '+20% speed', '+30% damage', '35% more damage'],
+    triggers: [
+      { on: 'attack', effect: 'explode', params: { radius: 90, damageFrac: 0.6, kb: 260, color: '#e8e2cf' } },
+      { on: 'attack', effect: 'sunder', params: { radius: 90, dur: 4 } },
+    ],
+    evolvesInto: null,
+  },
+
+  judgement: {
+    name: 'Judgement',
+    desc: 'Calls pillars of light on the toughest enemies near you. Kills from heaven mend you.',
+    class: null,
+    pool: false,
+    glyph: 'j',
+    rarity: 'evolved',
+    tags: ['light', 'magic', 'ranged'],
+    behavior: 'judge',
+    base: { damage: 92, cooldown: 1.2, count: 1, range: 300, radius: 58 },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'area', op: 'inc', value: 0.25 }],
+      [{ stat: 'damage', op: 'more', value: 0.35 }],
+    ],
+    levelText: ['+25% damage', '-15% cooldown', '+1 pillar', '+25% area', '35% more damage'],
+    triggers: [
+      { on: 'kill', effect: 'heal', params: { amount: 3 } },
     ],
     evolvesInto: null,
   },

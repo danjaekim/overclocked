@@ -15,6 +15,7 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.dmg = dmg;
   pr.pierce = pierce;
   pr.nh = 0;
+  pr.trailD = 0;
   const stats = run.player.stats;
   pr.bounce = Math.round(stats.getFor('ricochet', inst.tags));
   pr.split = Math.round(stats.getFor('split', inst.tags));

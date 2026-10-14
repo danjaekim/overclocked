@@ -115,6 +115,8 @@ export function updateEnemies(run, dt) {
     e.kx *= decay;
     e.ky *= decay;
     if (e.flash > 0) e.flash -= dt;
+    if (e.sunderT > 0) e.sunderT -= dt;
+    if (e.blessT > 0) e.blessT -= dt;
     if (e.elite === 1) {                                  // Regenerating: heals once it has gone unhit for a while
       const a = ELITE.affixes[e.affix];
       if (a.regenFrac && run.time - e.lastHitT > a.delay && e.hp < e.maxHp) {

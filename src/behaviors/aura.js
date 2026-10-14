@@ -41,6 +41,23 @@ export default {
 
   draw(inst, ctx, run) {
     const p = run.player;
+    if (inst.def.base.spin) {                              // Whirlwind Cleaver: a ring of blades turning around you
+      const a0 = run.time * 9;
+      ctx.strokeStyle = '#ffe3a3';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = inst.pulse > 0 ? 0.85 : 0.5;
+      ctx.beginPath();
+      for (let k = 0; k < 3; k++) {
+        const a = a0 + (k * Math.PI * 2) / 3;
+        ctx.moveTo(p.x + Math.cos(a) * inst.auraR * 0.55, p.y + Math.sin(a) * inst.auraR * 0.55);
+        ctx.arc(p.x, p.y, inst.auraR * 0.85, a, a + 0.9);
+      }
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.globalAlpha = 1;
+      return;
+    }
     ctx.strokeStyle = '#ff7a3c';
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.18;

@@ -17,6 +17,12 @@ export function resolveHit(run, inst, e, base, dx, dy) {
   const both = sc !== undefined && (e.status & ST.SHOCK) !== 0 && (e.status & (ST.CHILL | ST.FROZEN)) !== 0;
   if (both) crit = true;
   if (crit) mult = stats.getFor('critMult', tags) + (both ? sc.bonus : 0);
+  const lh = stats.getFor('lowHpDamage', tags);        // Whirlwind Cleaver: stronger the closer you are to death
+  if (lh > 0) {
+    const p = run.player;
+    const f = (1 - p.hp / p.maxHp) / 0.75;
+    mult *= 1 + lh * (f < 0 ? 0 : f > 1 ? 1 : f);
+  }
   const amount = base * mult;
   const kb = KNOCKBACK_IMPULSE * stats.getFor('knockback', tags) * (10 / e.r);
   queueDamage(run, e, amount, crit, dx * kb, dy * kb, 0, inst, KIND_HIT);

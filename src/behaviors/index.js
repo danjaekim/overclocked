@@ -11,6 +11,7 @@ import bolt from './bolt.js';
 import boomerang from './returning-disc.js';
 import mortar from './mortar.js';
 import summon from './summon.js';
+import judge from './judge.js';
 
 export const BEHAVIORS = {
   projectile,
@@ -22,4 +23,5 @@ export const BEHAVIORS = {
   boomerang,
   mortar,
   summon,
+  judge,
 };

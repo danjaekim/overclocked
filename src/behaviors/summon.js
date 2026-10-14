@@ -7,6 +7,7 @@
 import { param } from '../game/weapon-params.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { attackTriggers } from '../game/triggers.js';
 
 const MAX_MINIONS = 14;
 const TAU = Math.PI * 2;
@@ -16,6 +17,7 @@ export default {
 
   init(inst) {
     inst.cd = 0.5;
+    inst.frenzyT = 0;
     inst.minions = [];
     inst.t = 0;
   },
@@ -25,7 +27,8 @@ export default {
     const w = run.world;
     const list = inst.minions;
     const want = Math.min(MAX_MINIONS, Math.max(1, Math.round(param(run, inst, 'count'))));
-    const speed = param(run, inst, 'speed');
+    if (inst.frenzyT > 0) inst.frenzyT -= dt;
+    const speed = param(run, inst, 'speed') * (inst.frenzyT > 0 ? 1.3 : 1);   // Grave Legion's kill frenzy
     const leash = param(run, inst, 'range');
     const radius = param(run, inst, 'radius');
     const dmg = param(run, inst, 'damage');
@@ -35,7 +38,7 @@ export default {
     inst.cd -= dt;
     if (inst.cd <= 0 && list.length < want) {
       const a = run.rng.next() * TAU;
-      list.push({ x: p.x + Math.cos(a) * 24, y: p.y + Math.sin(a) * 24, slot: list.length, hit: new Map(), bob: a });
+      list.push({ x: p.x + Math.cos(a) * 24, y: p.y + Math.sin(a) * 24, slot: list.length, hit: new Map(), bob: a, stomp: 0 });
       inst.cd += param(run, inst, 'cooldown');
     } else if (list.length >= want) {
       inst.cd = Math.max(inst.cd, 0);
@@ -68,6 +71,8 @@ export default {
       m.x += (dx / d) * step;
       m.y += (dy / d) * step;
 
+      if (m.stomp > 0) m.stomp -= dt;
+      let bit = false;
       const n = w.hash.queryRadius(m.x, m.y, radius + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
         const e = w.scratch[k];
@@ -81,6 +86,11 @@ export default {
         m.hit.set(e.uid, run.time);
         const ed = Math.hypot(ex, ey) || 1;
         strike(run, inst, e, dmg, ex / ed, ey / ed);
+        bit = true;
+      }
+      if (bit && m.stomp <= 0 && inst.def.triggers.length) {   // Bone Colossus: each bite is a stomp (attack triggers)
+        m.stomp = 0.5;
+        attackTriggers(run, inst, m.x, m.y, 0);
       }
       if (m.hit.size > 24) {                               // forget stale entries
         for (const [uid, t] of m.hit) if (run.time - t > tickEvery * 2) m.hit.delete(uid);

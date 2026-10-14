@@ -72,10 +72,8 @@ export function pickChestItem(state, rng, blockers, wantNew) {
 // A ready evolution (every requirement met, starsteel included), if any weapon has one.
 function findJackpot(run) {
   for (const inst of run.player.weapons) {
-    for (const recipe of recipesFor(inst)) {
-      if (recipe.with) continue;                  // fusions consume a weapon, so they stay a choice at the forge
-      if (canEvolve(run, inst, recipe)) return { inst, recipe };
-    }
+    const ready = recipesFor(inst).filter((r) => !r.with && canEvolve(run, inst, r));   // fusions consume a weapon, so they stay a choice at the forge
+    if (ready.length === 1) return { inst, recipe: ready[0] };      // two ready branches are a choice, so the player makes it at the forge
   }
   return null;
 }

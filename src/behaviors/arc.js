@@ -4,6 +4,7 @@
 import { param } from '../game/weapon-params.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { attackTriggers } from '../game/triggers.js';
 
 const TAU = Math.PI * 2;
 const isAlive = (o) => o.alive;
@@ -66,6 +67,7 @@ export default {
     inst.swings = count;
     inst.swing = SWING_TIME;
     inst.cd += param(run, inst, 'cooldown');
+    attackTriggers(run, inst, target.x, target.y, base);
   },
 
   draw(inst, ctx, run) {

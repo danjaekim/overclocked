@@ -16,6 +16,7 @@ import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath } from './st
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
 const HIT_FLASH = 0.08;
+const BLESS_MULT = 1.1;    // damage taken by a blessed enemy
 const ARMOR_FLOOR = 0.25;  // armor never takes more than 75% off a hit
 
 export function killEnemy(run, e) {
@@ -97,7 +98,8 @@ export function flushDamage(run) {
     const ex = e.x;
     const ey = e.y;
     let amount = q.amount[i] * targetMult(run, e, src);
-    if (e.armor > 0 && kind !== KIND_DOT) {                  // armour: flat loss per hit, so heavy hits and burns beat it
+    if (e.blessT > 0) amount *= BLESS_MULT;                   // Radiant Halo's mark
+    if (e.armor > 0 && e.sunderT <= 0 && kind !== KIND_DOT) {                  // armour: flat loss per hit, so heavy hits and burns beat it
       const left = amount - e.armor;
       amount = left > amount * ARMOR_FLOOR ? left : amount * ARMOR_FLOOR;
     }
@@ -122,8 +124,8 @@ export function flushDamage(run) {
         p.hp = Math.min(p.maxHp, p.hp + amount * p.stats.getFor('lifesteal', src.tags));
       }
       rollStatuses(run, e, src, amount, depth, kind);
-      if (q.crit[i] === 1) fireTriggers(run, 'crit', src, ex, ey, depth);
-      fireTriggers(run, 'hit', src, ex, ey, depth);
+      if (q.crit[i] === 1) fireTriggers(run, 'crit', src, ex, ey, depth, e);
+      fireTriggers(run, 'hit', src, ex, ey, depth, e);
     }
     if (e.hp <= 0) {
       const mask = e.status;

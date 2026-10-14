@@ -49,12 +49,16 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
       ? 'Sure?'
       : `Salvage<small>+${salvageValue(inst)} ore</small>`;
 
-    const evo = recipesFor(inst).map((r) => {
+    const recipes = recipesFor(inst);
+    const branches = recipes.filter((r) => !r.with).length > 1;     // two evolutions to choose between
+    const evo = recipes.map((r) => {
       const list = checklist(run, inst, r);
       const ready = canEvolve(run, inst, r);
       return `<div class="fevo${ready ? ' ready' : ''}">
-        <div class="fevo-top"><b>${r.with ? `Fuse with ${WEAPONS[r.with === inst.weaponId ? r.from : r.with].name}` : 'Evolve'}: ${WEAPONS[r.into].name}</b></div>
+        <div class="fevo-top"><b>${r.with ? `Fuse with ${WEAPONS[r.with === inst.weaponId ? r.from : r.with].name}` : branches && !r.with ? 'Branch' : 'Evolve'}: ${WEAPONS[r.into].name}</b></div>
+        <div class="fevo-desc">${WEAPONS[r.into].desc}</div>
         <ul>${list.map((c) => `<li class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'} ${c.text}</li>`).join('')}</ul>
+        ${branches && !r.with ? '<div class="fevo-lock">Combining locks the other branch.</div>' : ''}
         <button class="fbtn evo" data-act="evo:${inst.instanceId}:${r.id}" ${ready ? '' : 'disabled'}>Combine</button>
       </div>`;
     }).join('');

@@ -25,7 +25,7 @@ const NO_WHEN = new Set(['burnChance', 'chillChance', 'shockChance', 'burnPower'
   'statusDuration', 'vsBurning', 'vsChilled', 'vsShocked', 'ricochet', 'split', 'splitDamage', 'executeBelow']);
 const OPS = new Set(['flat', 'inc', 'more', 'set']);
 // Events the dispatcher fires so far; the rest of the §4.6 list arrives with the systems that raise them.
-const TRIGGER_EVENTS = new Set(['hit', 'crit', 'kill', 'interval']);
+const TRIGGER_EVENTS = new Set(['hit', 'crit', 'kill', 'interval', 'attack']);
 
 function checkMods(mods, where, problems) {
   if (!Array.isArray(mods)) {
@@ -67,6 +67,7 @@ export function validateData() {
         if (!TRIGGER_EVENTS.has(t.on)) problems.push(`${ta}: unknown event "${t.on}"`);
         if (!EFFECTS[t.effect]) problems.push(`${ta}: unknown effect "${t.effect}"`);
         if (t.on === 'interval' && !(t.every > 0)) problems.push(`${ta}: interval needs every > 0`);
+        if (t.every !== undefined && t.on !== 'interval' && t.on !== 'attack') problems.push(`${ta}: every only applies to interval and attack`);
         if (t.chance !== undefined && !(t.chance >= 0 && t.chance <= 1)) problems.push(`${ta}: chance must be 0..1`);
         if (t.minLevel !== undefined && !(t.minLevel >= 1 && t.minLevel <= w.maxLevel)) problems.push(`${ta}: minLevel out of range`);
         if (!t.params) problems.push(`${ta}: missing params`);

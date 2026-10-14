@@ -45,6 +45,21 @@ export const EVOLUTIONS = [
   { id: 'radiant_halo', from: 'halo', into: 'radiant_halo',
     requires: [{ weaponLevel: 6 }, { passive: 'tempered_core', minLevel: 2 }, { starsteel: 1 }] },
 
+  // ---- branches (docs/design-m26-m28.md §3): a second evolution for each starter weapon. Combining
+  // into one removes the other; the requirement differs so level-up picks steer toward a branch ----
+  { id: 'sunpiercer', from: 'ember_bow', into: 'sunpiercer',
+    requires: [{ weaponLevel: 6 }, { perk: 'keen_eye', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'quakebreaker', from: 'forge_hammer', into: 'quakebreaker',
+    requires: [{ weaponLevel: 6 }, { perk: 'long_reach', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'whirlwind_cleaver', from: 'rending_axe', into: 'whirlwind_cleaver',
+    requires: [{ weaponLevel: 6 }, { perk: 'bloodletting', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'singularity', from: 'arc_bolt', into: 'singularity',
+    requires: [{ weaponLevel: 6 }, { passive: 'quickening_gear', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'bone_colossus', from: 'bone_call', into: 'bone_colossus',
+    requires: [{ weaponLevel: 6 }, { passive: 'tempered_core', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'judgement', from: 'halo', into: 'judgement',
+    requires: [{ weaponLevel: 6 }, { passive: 'keen_whetstone', minLevel: 2 }, { starsteel: 1 }] },
+
   // ---- fusions: two element weapons become one that carries both ----
   { id: 'vapor_wheel', from: 'cinder_ward', with: 'rime_orbs', into: 'vapor_wheel',
     requires: [{ weaponLevel: 6 }, { starsteel: 1 }] },
