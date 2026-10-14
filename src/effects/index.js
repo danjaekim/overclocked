@@ -131,6 +131,20 @@ export const EFFECTS = {
     EFFECTS.explode(run, { params: { ...t.params, color: '#bfeaff', kb: 90 } }, src, x, y, depth);
   },
 
+  // Bladestorm: blades thrown outward from the player, turning a little each time.
+  fling(run, t, src, x, y, depth) {
+    if (!src || depth + 1 > MAX_TRIGGER_DEPTH) return;
+    const p = t.params;
+    const pl = run.player;
+    src.flingA = (src.flingA || 0) + p.twist;
+    const dmg = param(run, src, 'damage') * p.damageFrac;
+    for (let i = 0; i < p.count; i++) {
+      const a = src.flingA + (i * Math.PI * 2) / p.count;
+      const pr = spawnProjectile(run, src, pl.x, pl.y, Math.cos(a), Math.sin(a), p.speed, dmg, p.ttl, p.radius, p.pierce);
+      if (pr) pr.sub = true;
+    }
+  },
+
   // The generic graft's echo: fires the donor weapon's own kind of attack once, at the host's
   // target, for a share of the donor's damage. Projectile-like donors throw projectiles, strike-
   // from-the-sky donors drop a pillar, everything else bursts around the target.

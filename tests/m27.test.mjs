@@ -33,9 +33,9 @@ const swarm = (run, n = 40) => {
 };
 const pair = (run, host, donor) => ({ h: addWeapon(run, host), d: addWeapon(run, donor) });
 
-test('m27 data validates and the six masterworks are distinct pairs', () => {
+test('m27 data validates and the twelve masterworks are distinct pairs', () => {
   assert.deepEqual(validateData(), []);
-  assert.equal(MASTERWORKS.length, 6);
+  assert.equal(MASTERWORKS.length, 12);
 });
 
 test('a masterwork pair works in either order and always has the same host', () => {
@@ -80,8 +80,8 @@ test('a pair without a masterwork gets a readable generic name and the echo', ()
   const pv = previewGraft(h, d);
   assert.equal(pv.name, 'Reaper Axe of Frost');
   assert.equal(pv.masterwork, null);
-  const { h: h2, d: d2 } = pair(run, 'grave_legion', 'prismatic_bolt');
-  assert.equal(previewGraft(h2, d2).name, 'Grave Legion of the Prismatic Bolt');
+  const { h: h2, d: d2 } = pair(run, 'grave_legion', 'judgement');
+  assert.equal(previewGraft(h2, d2).name, 'Grave Legion of the Judgement');
   const { h: h3, d: d3 } = pair(run, 'seraph_blades', 'vapor_wheel');
   assert.equal(previewGraft(h3, d3).name, 'Seraph Blades of Fire and Frost');
 });
@@ -213,7 +213,7 @@ test('discovery: the save keeps found masterworks and the compendium reveals the
   const entries = buildEntries(save.data.discovered).filter((e) => e.tab === 'grafts');
   assert.ok(entries.some((e) => e.name === 'Thunderscythe'));
   assert.ok(entries.some((e) => /\+ \?\?\?$/.test(e.name)), 'unfound ones are hidden');
-  assert.ok(entries[0].name.includes('1 / 6'));
+  assert.ok(entries[0].name.includes('1 / 12'));
 });
 
 test('orbiting blades hit an enemy sitting on their path, not only at tick instants', () => {

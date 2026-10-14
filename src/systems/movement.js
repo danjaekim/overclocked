@@ -2,6 +2,7 @@
 
 import { addPatch, nearestVortex } from './hazards.js';
 import { param } from '../game/weapon-params.js';
+import { spawnProjectile } from '../game/projectiles.js';
 
 export function updateProjectiles(run, dt) {
   const store = run.world.projectiles;
@@ -25,13 +26,24 @@ export function updateProjectiles(run, dt) {
     pr.y += pr.vy * dt;
     pr.ttl -= dt;
     const tr = pr.inst && pr.inst.def.base.trail;          // Sunpiercer: the arrow leaves burning ground behind it
-    if (tr) {
+    if (tr && !pr.sub) {
       pr.trailD += Math.hypot(pr.vx, pr.vy) * dt;
       while (pr.trailD >= tr.every) {
         pr.trailD -= tr.every;
         addPatch(run, pr.inst, pr.x, pr.y, tr.radius, tr.ttl, tr.tick, param(run, pr.inst, 'damage') * tr.damageFrac, 0);
       }
     }
-    if (pr.ttl <= 0) store.release(pr);
+    if (pr.ttl <= 0) {
+      const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards where it ends
+      if (eb) {
+        const dmg = pr.dmg * eb.damageFrac;
+        for (let k = 0; k < eb.count; k++) {
+          const a = (k * Math.PI * 2) / eb.count;
+          const c = spawnProjectile(run, pr.inst, pr.x, pr.y, Math.cos(a), Math.sin(a), eb.speed, dmg, eb.ttl, 7, eb.pierce);
+          if (c) c.sub = true;
+        }
+      }
+      store.release(pr);
+    }
   }
 }

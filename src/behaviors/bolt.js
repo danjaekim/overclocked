@@ -14,9 +14,29 @@ export default {
     inst.cd = 0.4;
     inst.picked = new Array(12).fill(0);   // uids already struck this volley
     inst.nPicked = 0;
+    inst.fam = null;                       // Familiars: the hounds (graft hook)
+  },
+
+  draw(inst, ctx, run) {
+    if (!inst.fam) return;
+    ctx.fillStyle = '#d9c9ff';
+    ctx.strokeStyle = '#7b6aa8';
+    ctx.lineWidth = 1.5;
+    for (const f of inst.fam) {
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#2b2a24';
+      ctx.fillRect(f.x - 3.5, f.y - 2, 2.2, 2.8);
+      ctx.fillRect(f.x + 1.3, f.y - 2, 2.2, 2.8);
+      ctx.fillStyle = '#d9c9ff';
+    }
   },
 
   update(inst, dt, run) {
+    const fam = inst.graft && inst.graft.hooks.familiars;
+    if (fam) familiarStep(inst, dt, run, fam);
     inst.cd -= dt;
     if (inst.cd > 0) return;
     const p = run.player;
@@ -59,4 +79,27 @@ export default {
 function picked(inst, e) {
   for (let k = 0; k < inst.nPicked; k++) if (inst.picked[k] === e.uid) return true;
   return false;
+}
+
+// Familiars (graft hook): hounds that hover around the player and each cast a small bolt on a timer.
+function familiarStep(inst, dt, run, fam) {
+  const p = run.player;
+  const w = run.world;
+  if (!inst.fam) inst.fam = [];
+  while (inst.fam.length < fam.count) inst.fam.push({ x: p.x, y: p.y, t: fam.every * (0.3 + 0.35 * inst.fam.length) });
+  const dmg = param(run, inst, 'damage') * fam.damageFrac;
+  for (let i = 0; i < inst.fam.length; i++) {
+    const f = inst.fam[i];
+    const a = run.time * 1.4 + (i * Math.PI * 2) / inst.fam.length;
+    f.x += (p.x + Math.cos(a) * 46 - f.x) * Math.min(1, 8 * dt);
+    f.y += (p.y + Math.sin(a) * 46 - f.y) * Math.min(1, 8 * dt);
+    f.t -= dt;
+    if (f.t > 0) continue;
+    const e = w.hash.queryNearest(f.x, f.y, fam.range, (o) => o.alive);
+    if (!e) { f.t = 0.2; continue; }
+    f.t += fam.every;
+    const d = Math.hypot(e.x - f.x, e.y - f.y) || 1;
+    addArc(run, f.x, f.y, e.x, e.y);
+    strike(run, inst, e, dmg, (e.x - f.x) / d, (e.y - f.y) / d);
+  }
 }

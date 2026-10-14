@@ -1,7 +1,7 @@
 // Grafts (docs/design-m26-m28.md §4): at the forge, one evolved weapon (the donor) is consumed into
 // another (the host). The host keeps its behaviour, level, enhance and affixes and gains the donor's
-// element tags plus a graft effect. Twelve named pairs are "masterworks" with their own effect (the
-// first six are here, the rest come in M28); every other pair gets the generic echo.
+// element tags plus a graft effect. Twelve named pairs are "masterworks" with their own effect (all
+// twelve are here); every other pair gets the generic echo.
 // Data only; rules in game/graft.js.
 //
 // A masterwork: { id, host, donor, name, desc, mods, triggers, hooks }
@@ -11,6 +11,11 @@
 //             minionAura { radius, tick, damageFrac, burn, color }  each summon minion burns what is near it
 //             launch { every, dist, speed }                         orbit blades shoot out and come back
 //             bend                                                  the host's projectiles curve toward vortices
+//             burnVortex { patchTtl }                               vortices burn what they pull and collapse into fire
+//             crack { every, radius, ttl, tick, damageFrac }        shockwaves leave burning, shocking cracks
+//             wrath { stay, linkFrac }                              pillars linger and are joined by lightning
+//             endBurst { count, speed, ttl, pierce, damageFrac }    a projectile that runs out bursts into a ring of shards
+//             familiars { count, every, damageFrac, range }         the host gains hounds that cast its attack
 
 export const GRAFT = {
   cost: 1,                        // starsteel
@@ -60,6 +65,48 @@ export const MASTERWORKS = [
     mods: [{ stat: 'lifesteal', op: 'flat', value: 0.015 }],
     triggers: [{ on: 'kill', effect: 'heal', params: { amount: 2 } }],
     hooks: { minionAura: { radius: 105, tick: 0.45, damageFrac: 0.5, burn: true, color: '#ffe9a0' } },
+  },
+  {
+    id: 'black_sun', host: 'singularity', donor: 'pyre_crown', name: 'Black Sun',
+    desc: 'The vortex is a burning star. Everything it pulls in catches fire, and the collapse is a fire explosion that leaves burning ground.',
+    mods: [{ stat: 'burnPower', op: 'flat', value: 0.3 }],
+    triggers: [],
+    hooks: { burnVortex: { patchTtl: 3.5 } },
+  },
+  {
+    id: 'bladestorm', host: 'whirlwind_cleaver', donor: 'seraph_blades', name: 'Bladestorm',
+    desc: 'The spin flings blades outward in a turning pattern. They cut everything on the way out.',
+    mods: [],
+    triggers: [{ on: 'attack', every: 2, effect: 'fling', params: { count: 3, speed: 330, ttl: 0.9, pierce: 4, radius: 10, twist: 0.7, damageFrac: 0.7 } }],
+    hooks: {},
+  },
+  {
+    id: 'comet', host: 'sunpiercer', donor: 'glacial_bloom', name: 'Comet',
+    desc: 'The arrow chills what it pierces and bursts into a ring of ice shards where it ends. Frozen enemies along its line shatter.',
+    mods: [{ stat: 'chillChance', op: 'flat', value: 0.5 }, { stat: 'chillStacks', op: 'flat', value: 1 }],
+    triggers: [{ on: 'hit', effect: 'shatter', params: { radius: 55, damageFrac: 0.4 } }],
+    hooks: { endBurst: { count: 10, speed: 380, ttl: 0.45, pierce: 2, damageFrac: 0.5 } },
+  },
+  {
+    id: 'fault_line', host: 'quakebreaker', donor: 'stormshell_mortar', name: 'Fault Line',
+    desc: 'Shockwaves leave a burning, shocking crack in the ground for 3 s. The horde walks into it.',
+    mods: [{ stat: 'shockChance', op: 'flat', value: 0.2 }],
+    triggers: [],
+    hooks: { crack: { every: 42, radius: 30, ttl: 3, tick: 0.5, damageFrac: 0.25 } },
+  },
+  {
+    id: 'wrath', host: 'judgement', donor: 'thunder_lance', name: 'Wrath',
+    desc: 'Pillars stay for 1.5 s more, and lightning runs between every live pillar. Anything on a link is shocked.',
+    mods: [{ stat: 'shockChance', op: 'flat', value: 0.3 }, { stat: 'chains', op: 'flat', value: 1 }],
+    triggers: [],
+    hooks: { wrath: { stay: 1.5, linkFrac: 0.25 } },
+  },
+  {
+    id: 'familiars', host: 'prismatic_bolt', donor: 'grave_legion', name: 'Familiars',
+    desc: 'Three spirit hounds hover beside you. Each casts a small prismatic bolt every 2 s.',
+    mods: [],
+    triggers: [],
+    hooks: { familiars: { count: 3, every: 2, damageFrac: 0.6, range: 260 } },
   },
 ];
 

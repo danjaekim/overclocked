@@ -28,14 +28,16 @@ function add(run, h) {
   return h;
 }
 
-export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth) {
-  return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth });
+export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth, shock = false) {
+  return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, shock });
 }
 export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
   return add(run, { kind: VORTEX, src, x, y, r: radius, ttl, life: ttl, pull, dmg, depth });
 }
 export function addPillar(run, src, x, y, radius, tele, dmg, depth) {
-  return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: tele + 0.3, tele, life: tele + 0.3, dmg, depth, done: false });
+  const wr = src && src.graft && src.graft.hooks.wrath;          // Wrath: the pillar stays and joins the lightning net
+  const life = tele + 0.3 + (wr ? wr.stay : 0);
+  return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: life, tele, life, dmg, depth, done: false, net: !!wr });
 }
 export function addWave(run, src, x, y, dx, dy, speed, range, width, dmg, depth) {
   return add(run, { kind: WAVE, src, x, y, dx, dy, speed, left: range, r: width, ttl: range / speed + 0.2, life: range / speed + 0.2, dmg, depth, hit: new Set() });
@@ -61,7 +63,7 @@ export function nearestVortex(run, x, y, range) {
   return best;
 }
 
-function hitCircle(run, h, x, y, r, dmg, kb) {
+function hitCircle(run, h, x, y, r, dmg, kb, burn = false) {
   const w = run.world;
   const n = w.hash.queryRadius(x, y, r + MAX_ENEMY_RADIUS, w.scratch);
   for (let i = 0; i < n; i++) {
@@ -73,6 +75,7 @@ function hitCircle(run, h, x, y, r, dmg, kb) {
     if (dx * dx + dy * dy > rr * rr) continue;
     const d = Math.hypot(dx, dy) || 1;
     queueDamage(run, e, dmg, false, (dx / d) * kb, (dy / d) * kb, h.depth + 1, h.src, KIND_PROC);
+    if (burn) applyBurn(run, e, h.src, dmg, h.depth + 1);
   }
 }
 
@@ -97,10 +100,14 @@ export function updateHazards(run, dt) {
           if (dx * dx + dy * dy > rr * rr) continue;
           queueDamage(run, e, h.dmg, false, 0, 0, h.depth + 1, h.src, KIND_PROC);
           applyBurn(run, e, h.src, h.dmg, h.depth + 1);
+          if (h.shock) applyShock(run, e, h.src);
         }
       }
     } else if (h.kind === VORTEX) {
       const reach = h.r * 1.4;
+      const star = h.src && h.src.graft && h.src.graft.hooks.burnVortex;     // Black Sun: a burning star
+      let burnNow = false;
+      if (star && (h.bt = (h.bt || 0) - dt) <= 0) { h.bt += 0.3; burnNow = true; }
       const n = w.hash.queryRadius(h.x, h.y, reach + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
         const e = w.scratch[k];
@@ -112,10 +119,12 @@ export function updateHazards(run, dt) {
         const step = Math.min(d, h.pull * (e.def.boss ? 0.15 : 1) * dt);
         e.x += (dx / d) * step;
         e.y += (dy / d) * step;
+        if (burnNow) applyBurn(run, e, h.src, h.dmg * 0.2, h.depth + 1);
       }
       if (h.ttl <= 0) {                                      // the collapse
-        hitCircle(run, h, h.x, h.y, h.r, h.dmg, 120);
-        addPuff(run, h.x, h.y, h.r / 2.2, '#c58bff');
+        hitCircle(run, h, h.x, h.y, h.r, h.dmg, 120, !!star);
+        addPuff(run, h.x, h.y, h.r / 2.2, star ? '#ff9a3c' : '#c58bff');
+        if (star) addPatch(run, h.src, h.x, h.y, h.r * 0.7, star.patchTtl, 0.5, h.dmg * 0.1, h.depth);
       }
     } else if (h.kind === BLAST) {
       if (!h.done && h.life - h.ttl >= h.tele) {
@@ -147,6 +156,14 @@ export function updateHazards(run, dt) {
       h.x += h.dx * step;
       h.y += h.dy * step;
       h.left -= step;
+      const ck = h.src && h.src.graft && h.src.graft.hooks.crack;           // Fault Line: the wave leaves a burning, shocking crack
+      if (ck) {
+        h.cd = (h.cd || 0) + step;
+        while (h.cd >= ck.every) {
+          h.cd -= ck.every;
+          addPatch(run, h.src, h.x - h.dx * h.cd, h.y - h.dy * h.cd, ck.radius, ck.ttl, ck.tick, h.dmg * ck.damageFrac, h.depth, true);
+        }
+      }
       const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
         const e = w.scratch[k];
@@ -163,6 +180,48 @@ export function updateHazards(run, dt) {
     if (h.ttl <= 0) {
       list[i] = list[list.length - 1];
       list.pop();
+    }
+  }
+  netStep(run, dt);
+}
+
+// Wrath: every live pillar of a Wrath weapon is joined to the next by lightning. Anything standing
+// on a link takes a share of the pillar's damage and is shocked, every 0.35 s.
+const NET_TICK = 0.35;
+function netStep(run, dt) {
+  const list = run.hazards;
+  const nodes = [];
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    if (h.kind === PILLAR && h.net && h.done) nodes.push(h);
+  }
+  if (nodes.length < 2) { run.netT = 0; run.netLinks = null; return; }
+  run.netLinks = nodes;
+  run.netT = (run.netT || 0) - dt;
+  if (run.netT > 0) return;
+  run.netT += NET_TICK;
+  const w = run.world;
+  const seen = new Set();
+  for (let a = 0; a < nodes.length - 1; a++) {
+    const p = nodes[a];
+    const q = nodes[a + 1];
+    const len = Math.hypot(q.x - p.x, q.y - p.y);
+    const steps = Math.max(1, Math.ceil(len / 36));
+    for (let s = 0; s <= steps; s++) {
+      const x = p.x + ((q.x - p.x) * s) / steps;
+      const y = p.y + ((q.y - p.y) * s) / steps;
+      const n = w.hash.queryRadius(x, y, 26 + MAX_ENEMY_RADIUS, w.scratch);
+      for (let k = 0; k < n; k++) {
+        const e = w.scratch[k];
+        if (!e.alive || seen.has(e.uid)) continue;
+        const dx = e.x - x;
+        const dy = e.y - y;
+        const rr = 26 + e.r;
+        if (dx * dx + dy * dy > rr * rr) continue;
+        seen.add(e.uid);
+        queueDamage(run, e, p.dmg * p.src.graft.hooks.wrath.linkFrac, false, 0, 0, p.depth + 1, p.src, KIND_PROC);
+        applyShock(run, e, p.src);
+      }
     }
   }
 }
@@ -187,7 +246,7 @@ export function drawHazards(ctx, run) {
       ctx.stroke();
     } else if (h.kind === VORTEX) {
       const spin = t * 5;
-      ctx.strokeStyle = '#c58bff';
+      ctx.strokeStyle = h.src && h.src.graft && h.src.graft.hooks.burnVortex ? '#ff8a3c' : '#c58bff';
       ctx.lineWidth = 2.5;
       for (let r = 0; r < 3; r++) {
         const rad = h.r * (0.35 + r * 0.3) * (1.05 - 0.25 * (1 - k));
@@ -225,7 +284,7 @@ export function drawHazards(ctx, run) {
         ctx.arc(h.x, h.y, h.r * (1.4 - 0.4 * (age / h.tele)), 0, TAU);
         ctx.stroke();
       } else {
-        const f = 1 - (age - h.tele) / 0.3;
+        const f = h.net ? Math.max(0.3, 1 - (age - h.tele) / 0.3) * Math.min(1, h.ttl * 2) : 1 - (age - h.tele) / 0.3;
         ctx.globalAlpha = 0.75 * f;
         ctx.fillStyle = '#fff3b0';
         ctx.fillRect(h.x - h.r * 0.5, h.y - 260, h.r, 260);
@@ -247,6 +306,23 @@ export function drawHazards(ctx, run) {
       ctx.stroke();
       ctx.lineCap = 'butt';
     }
+  }
+  const links = run.netLinks;
+  if (links && links.length > 1) {                           // Wrath's lightning between pillars
+    ctx.strokeStyle = '#ffe066';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    for (let i = 0; i < links.length - 1; i++) {
+      const a = links[i];
+      const b = links[i + 1];
+      ctx.moveTo(a.x, a.y);
+      const mx = (a.x + b.x) / 2 + Math.sin(t * 40 + i) * 8;
+      const my = (a.y + b.y) / 2 + Math.cos(t * 37 + i) * 8;
+      ctx.lineTo(mx, my);
+      ctx.lineTo(b.x, b.y);
+    }
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
 }

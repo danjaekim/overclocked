@@ -16,6 +16,7 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.pierce = pierce;
   pr.nh = 0;
   pr.trailD = 0;
+  pr.sub = false;                  // a secondary projectile: no trail, no end burst
   const stats = run.player.stats;
   pr.bounce = Math.round(stats.getFor('ricochet', inst.tags));
   pr.split = Math.round(stats.getFor('split', inst.tags));
