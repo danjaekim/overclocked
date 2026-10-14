@@ -114,6 +114,37 @@ if (flag('--guide')) {                                           // the compendi
   await page.tap('[data-act=close]');
   await page.waitForSelector('[data-act=play]');
 }
+if (flag('--music')) {                                           // music scenes, the settings row and the save
+  const mus = () => page.evaluate(() => window.__overforged.audio.music.playing);
+  const shotM = (n) => opt('--shot') && page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${n}.png`) });
+  await page.tap('[data-act=music]');                             // a tap is also the audio-unlock gesture
+  await page.tap('[data-act=music]');
+  await page.waitForTimeout(400);
+  console.log('title music:', await mus(), 'audio:', await page.evaluate(() => window.__overforged.audio.state));
+  await shotM('music-title');
+  await page.evaluate(() => { const r = document.querySelector('.mvol input'); r.value = 30; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); });
+  console.log('saved volume:', await page.evaluate(() => window.__overforged.save.data.musicVolume));
+  await page.tap('[data-act=play]');
+  await page.tap('[data-act="class:smith"]');
+  await page.waitForTimeout(1200);
+  console.log('run music:', await mus());
+  await page.keyboard.press('b');                                 // debug: the boss now
+  await page.waitForTimeout(500);
+  console.log('boss music:', await mus());
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.overlay');
+  await shotM('music-pause');
+  await page.tap('[data-act=music]');
+  console.log('music off:', await mus(), 'saved:', await page.evaluate(() => window.__overforged.save.data.music));
+  await page.tap('[data-act=music]');
+  console.log('music back on:', await mus());
+  await page.tap('[data-act=resume]');
+  await browser.close();
+  server.close();
+  if (errors.length) { console.log('console errors:\n' + errors.join('\n')); process.exit(1); }
+  console.log('music smoke ok');
+  process.exit(0);
+}
 await page.tap('[data-act=play]');
 if (flag('--ui') && opt('--shot')) {
   const shot = (name) => page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${name}.png`) });

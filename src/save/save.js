@@ -15,6 +15,8 @@ export const DEFAULTS = {
   wins: 0,
   bossKills: 0,
   sound: true,
+  music: true,                        // music on/off (the sound toggle mutes everything)
+  musicVolume: 0.6,                   // 0..1
   history: [],                        // finished runs, oldest first (see entryFromSummary), capped
 };
 
@@ -75,6 +77,8 @@ export function normalize(raw) {
     if (Number.isFinite(raw[k]) && raw[k] >= 0) out[k] = Math.floor(raw[k]);
   }
   if (typeof raw.sound === 'boolean') out.sound = raw.sound;
+  if (typeof raw.music === 'boolean') out.music = raw.music;
+  if (Number.isFinite(raw.musicVolume)) out.musicVolume = Math.min(1, Math.max(0, raw.musicVolume));
   if (Array.isArray(raw.history)) out.history = raw.history.map(cleanEntry).filter(Boolean).slice(-HISTORY_CAP);
   return out;
 }
@@ -113,6 +117,16 @@ export function createSave(storage) {
 
     setSound(on) {
       data.sound = !!on;
+      persist();
+    },
+
+    setMusic(on) {
+      data.music = !!on;
+      persist();
+    },
+
+    setMusicVolume(v) {
+      data.musicVolume = Math.min(1, Math.max(0, Number(v) || 0));
       persist();
     },
 

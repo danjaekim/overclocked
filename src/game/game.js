@@ -37,6 +37,19 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   let lastClass = open(save.data.lastClass) ? save.data.lastClass : DEFAULT_CLASS;
   if (params.classId && open(params.classId)) lastClass = params.classId;
 
+  // What the title and pause screens pass for the music row.
+  const musicUi = (redraw) => ({
+    music: { music: save.data.music, volume: save.data.musicVolume },
+    onToggleMusic() {
+      save.setMusic(!save.data.music);
+      if (audio) audio.setMusicEnabled(save.data.music);
+      redraw();
+    },
+    onMusicVolume: (v) => { if (audio) audio.setMusicVolume(v); },
+    onMusicCommit: (v) => save.setMusicVolume(v),
+  });
+  const scene = (id) => { if (audio) audio.music.play(id); };
+
   function toggleSound(redraw) {
     const on = !save.data.sound;
     save.setSound(on);
@@ -47,7 +60,10 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   function toTitle() {
     game.state = 'title';
     game.run = null;
+    scene('title');
+    if (audio) audio.music.duck(false);
     showTitle(overlays, {
+      ...musicUi(toTitle),
       onPlay: params.classId ? () => startRun() : toClassSelect,
       onCompendium: () => showCompendium(overlays, { onClose: toTitle }),
       onHistory: openHistory,
@@ -69,6 +85,13 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
+  function applyAudioSettings() {
+    if (!audio) return;
+    audio.setEnabled(save.data.sound);
+    audio.setMusicEnabled(save.data.music);
+    audio.setMusicVolume(save.data.musicVolume);
+  }
+
   function openBackup() {
     showBackup(overlays, {
       getCode: () => encodeSave(save.data),
@@ -77,7 +100,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       apply: (data) => {
         save.replaceAll(data);
         lastClass = open(save.data.lastClass) ? save.data.lastClass : DEFAULT_CLASS;
-        if (audio) audio.setEnabled(save.data.sound);
+        applyAudioSettings();
       },
       onClose: openHistory,
     });
@@ -100,6 +123,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     input.reset();
     overlays.hide();
     game.run = createRun({ seed, view, debug, classId, sfx });
+    scene('run');
+    if (audio) audio.music.duck(false);
     game.state = 'run';
   }
 
@@ -107,7 +132,9 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (game.state !== 'run') return;
     game.state = 'paused';
     input.reset();
+    if (audio) audio.music.duck(true);
     const show = () => showPause(overlays, {
+      ...musicUi(show),
       onResume: resume,
       onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
       onCompendium: () => showCompendium(overlays, { onClose: show }),
@@ -123,12 +150,14 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (game.state !== 'paused') return;
     overlays.hide();
     game.state = 'run';
+    if (audio) audio.music.duck(false);
   }
 
   function finishRun() {
     game.state = 'results';
     input.reset();
     const summary = game.run.summary();
+    if (audio) audio.music.stop();
     sfx(summary.won ? 'win' : 'lose');
     // god-mode (debug) runs never touch the save
     const { newBests } = debug.god ? { newBests: [] } : save.recordRun(summary);
@@ -226,6 +255,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const run = game.run;
     if (!run) return;
     run.update(dt, input.getMove());
+    scene(run.bossAlive ? 'boss' : 'run');
     if (run.over) finishRun();
     else if (run.pendingLevelUps > 0) openLevelUp();
     else if (run.pendingChests.length > 0) openTreasure();

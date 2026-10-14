@@ -31,7 +31,7 @@ const renderer = createRenderer(canvas, view);
 let game;
 const input = createInput(canvas, { onPause: () => game && game.togglePause(), onBuild: () => game && game.openBuild() });
 const save = createSave(browserStorage());
-const audio = createAudio({ enabled: save.data.sound });
+const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume });
 debug.audioState = () => audio.state;
 game = createGame({ view, input, overlays, rotate, debug, params, save, audio });
 

@@ -1,7 +1,9 @@
 // Sound: tiny synthesized blips (no audio files). Browsers only allow audio after a user
 // gesture, so the context is created lazily on the first tap/key. The simulation never calls
 // this directly: it calls run.sfx(name), which game.js points here, so headless tests and the
-// sim stay silent and deterministic.
+// sim stay silent and deterministic. Music (audio/music.js) shares this context; `audio.music`
+// is driven by game.js scenes, and `audio.setMusic*` apply the player's music settings.
+import { createMusic } from './music.js';
 
 // name: [wave, startHz, endHz, seconds, gain, minGapSeconds]
 const SOUNDS = {
@@ -36,10 +38,14 @@ function silentWavUrl() {
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
 
-export function createAudio({ enabled = true } = {}) {
+export function createAudio({ enabled = true, music: musicOn = true, musicVolume = 0.6 } = {}) {
   let ctx = null;
   let master = null;
   let on = enabled;
+  let mOn = musicOn;
+  const music = createMusic();
+  music.setVolume(musicVolume);
+  music.setEnabled(on && mOn);
   const lastPlayed = {};
   const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
 
@@ -50,6 +56,7 @@ export function createAudio({ enabled = true } = {}) {
       master = ctx.createGain();
       master.gain.value = 0.6;
       master.connect(ctx.destination);
+      music.attach(ctx, ctx.destination);
     } catch (e) {
       ctx = null;
     }
@@ -58,7 +65,12 @@ export function createAudio({ enabled = true } = {}) {
 
   const audio = {
     get enabled() { return on; },
-    setEnabled(v) { on = !!v; },
+    setEnabled(v) { on = !!v; music.setEnabled(on && mOn); },
+
+    music,
+    get musicEnabled() { return mOn; },
+    setMusicEnabled(v) { mOn = !!v; music.setEnabled(on && mOn); },
+    setMusicVolume(v) { music.setVolume(v); },
 
     // Call from a user gesture handler so iOS lets the context start.
     unlock() {
