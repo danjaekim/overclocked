@@ -23,6 +23,12 @@ export const DEFAULTS = {
 
 export const HISTORY_CAP = 100;
 
+// Grafts made in a run: [hostWeaponId, donorWeaponId, graftId, name] (strings only).
+function cleanGrafts(l) {
+  if (!Array.isArray(l)) return [];
+  return l.filter((x) => Array.isArray(x) && x.length >= 4 && x.slice(0, 4).every((v) => typeof v === 'string')).slice(0, 6).map((x) => [x[0], x[1], x[2], x[3].slice(0, 40)]);
+}
+
 // A finished run as stored in the history: ids and numbers only, so it stays small and survives data edits.
 export function entryFromSummary(summary, now = Date.now()) {
   const b = summary.build || {};
@@ -41,6 +47,7 @@ export function entryFromSummary(summary, now = Date.now()) {
     weapons: pairs(b.weapons),
     passives: pairs(b.passives),
     perks: pairs(b.perks),
+    grafts: cleanGrafts(b.grafts),
     titles: Array.isArray(summary.titleIds) ? summary.titleIds.map(String) : [],
   };
 }
@@ -54,7 +61,7 @@ function cleanEntry(e) {
     t: e.t, cls: e.cls, won: !!e.won, time: Math.floor(e.time), kills: Math.floor(e.kills), level: Math.floor(e.level),
     seed: Number.isFinite(e.seed) ? e.seed : 0, boss: !!e.boss,
     dmg: Number.isFinite(e.dmg) ? e.dmg : 0, dps: Number.isFinite(e.dps) ? e.dps : 0,
-    weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks),
+    weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks), grafts: cleanGrafts(e.grafts),
     titles: Array.isArray(e.titles) ? e.titles.filter((x) => typeof x === 'string').slice(0, 12) : [],
   };
 }

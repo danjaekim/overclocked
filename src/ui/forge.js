@@ -26,6 +26,8 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
   let tone = '';
   let confirming = null;                       // instanceId awaiting a second tap to salvage
   let confirmingGraft = null;                  // 'host:donor' awaiting a second tap to graft
+  let tab = 'weapons';                         // 'weapons' | 'graft': grafting has its own tab so it is never off-screen
+  let announced = false;
 
   function weaponCard(inst) {
     const def = inst.def;
@@ -100,10 +102,18 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     return '';
   }
 
-  // The graft section: every pair of evolved weapons you could combine, masterworks first.
-  function graftPanel() {
-    const opts = graftOptions(run).sort((a, b) => (b.preview.masterwork ? 1 : 0) - (a.preview.masterwork ? 1 : 0));
-    if (!opts.length) return '';
+  // The Graft tab: every pair of evolved weapons you could combine, masterworks first.
+  function graftOpts() {
+    return graftOptions(run).sort((a, b) => (b.preview.masterwork ? 1 : 0) - (a.preview.masterwork ? 1 : 0));
+  }
+
+  function graftPanel(opts) {
+    const evolved = run.player.weapons.filter((w) => w.def.rarity === 'evolved').length;
+    const head = `<p class="fghint">Merge two evolved weapons into one stronger weapon. The second is consumed, costs ${GRAFT.cost} starsteel, and a weapon can be grafted once. Starsteel ${run.starsteel}.</p>`;
+    if (!opts.length) {
+      const why = evolved < 2 ? `You have ${evolved} evolved weapon${evolved === 1 ? '' : 's'}; grafting needs two.` : run.starsteel < GRAFT.cost ? 'You need starsteel.' : 'Every evolved weapon has already been grafted, or no pair fits.';
+      return `<div class="fgraft-panel">${head}<p class="fgnone">${why}</p></div>`;
+    }
     const cards = opts.map((o) => {
       const key = `${o.host.instanceId}:${o.donor.instanceId}`;
       const m = o.preview.masterwork;
@@ -114,17 +124,29 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
         <button class="fbtn${confirmingGraft === key ? ' warn' : ''}" data-act="gft:${o.host.instanceId}:${o.donor.instanceId}" ${o.ok ? '' : 'disabled'}>${confirmingGraft === key ? 'Sure?' : 'Graft'}</button>
       </div>`;
     }).join('');
-    return `<div class="fgraft-panel"><h3>Graft</h3><p class="fghint">One graft per weapon. Starsteel ${run.starsteel}.</p>${cards}</div>`;
+    return `<div class="fgraft-panel">${head}${cards}</div>`;
   }
 
   function render() {
     const prev = document.querySelector('.forge-list');
     const scroll = prev ? prev.scrollTop : 0;
+    const opts = graftOpts();
+    const ready = opts.filter((o) => o.ok).length;                       // grafts you can make right now
+    const evoReady = run.player.weapons.some((w) => recipesFor(w).some((r) => canEvolve(run, w, r)));
+    if (!announced) {
+      announced = true;
+      if (ready && !message) { message = ready === 1 ? 'A graft is possible: see the Graft tab.' : `${ready} grafts are possible: see the Graft tab.`; tone = 'good'; }
+    }
+    const tabs = `<div class="ftabs">
+        <button class="ftab${tab === 'weapons' ? ' on' : ''}" data-act="tab:weapons">Weapons${evoReady ? ' <i class="fdot"></i>' : ''}</button>
+        <button class="ftab graft${tab === 'graft' ? ' on' : ''}${ready ? ' ready' : ''}" data-act="tab:graft">Graft${ready ? ` <i class="fbadge">${ready}</i>` : ''}</button>
+      </div>`;
     const el = overlays.show(
       `<h2>Forge</h2>
        <p class="sub">Ore <b class="ore">${run.ore}</b> · Starsteel <b class="ore">${run.starsteel}</b></p>
        <p class="fmsg ${tone}">${message || '&nbsp;'}</p>
-       <div class="forge-list">${run.player.weapons.map(weaponCard).join('')}${graftPanel()}</div>
+       ${tabs}
+       <div class="forge-list">${tab === 'graft' ? graftPanel(opts) : run.player.weapons.map(weaponCard).join('')}</div>
        <button class="btn primary" data-act="done">Return to battle</button>
        ${pickModal()}`,
       onAct,
@@ -141,6 +163,12 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
   function onAct(act) {
     if (act === 'done') return onDone();
     const [kind, id, extra] = act.split(':');
+    if (kind === 'tab') {
+      tab = id;
+      confirming = null;
+      confirmingGraft = null;
+      return render();
+    }
     const inst = find(id);
     if (!inst) return;
     if (kind !== 'sal') confirming = null;

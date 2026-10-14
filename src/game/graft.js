@@ -91,7 +91,7 @@ export function graft(run, host, donor) {
   }
   rebuildAffixes(run, host);                                            // gained tags and triggers
   refreshResonance(run);
-  run.grafts.push({ id: host.graft.id, name: host.graft.name, masterwork: !!m });
+  run.grafts.push({ id: host.graft.id, name: host.graft.name, masterwork: !!m, host: host.weaponId, donor: donor.weaponId });
   run.toast = { text: m ? `Masterwork: ${pv.name}!` : `${pv.name} grafted`, ttl: 3.5 };
   return { ok: true, host, masterwork: m, name: pv.name };
 }

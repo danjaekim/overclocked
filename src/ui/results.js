@@ -1,8 +1,18 @@
 import { resultsSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
 import { resultsDamageHtml } from './build.js';
+import { WEAPONS } from '../data/weapons.js';
 
 const BEST_LABEL = { time: 'time', kills: 'kills', level: 'level' };
+
+const wname = (id) => (WEAPONS[id] ? WEAPONS[id].name : id);
+
+// One line per graft: its name and the two weapons that went into it.
+function graftsHtml(summary) {
+  const list = summary.graftList || [];
+  if (!list.length) return '';
+  return `<div class="rgrafts">${list.map((g) => `<p class="unlock">${g.masterwork ? '✦ ' : ''}<b>${g.name}</b> <span class="rg-from">${wname(g.host)} + ${wname(g.donor)}</span></p>`).join('')}</div>`;
+}
 
 export function showResults(overlays, summary, { onAgain, onTitle, newBests = [], unlocked = [] }) {
   const title = summary.won ? 'You survived' : 'You fell';
@@ -18,7 +28,7 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
      </div>
      ${summary.bossKilled ? '<p class="sub">The Warlord is slain.</p>' : ''}
      ${unlocked.length ? `<p class="unlock">Unlocked: ${unlocked.join(', ')}!</p>` : ''}
-     ${summary.grafts && summary.grafts.length ? `<p class="unlock">Grafted: ${summary.grafts.join(', ')}</p>` : ''}
+     ${graftsHtml(summary)}
      ${summary.titles.length ? `<p class="sub">Titles: ${summary.titles.join(', ')}</p>` : ''}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>

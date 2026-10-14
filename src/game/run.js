@@ -177,11 +177,13 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
         weapons: run.player.weapons.map((w) => weaponName(w)),
         grafts: run.grafts.map((g) => g.name),
+        graftList: run.grafts.map((g) => ({ ...g })),          // with host and donor weapon ids, for results and history
         titleIds: run.titles.map((t) => t.id),
         build: {                                     // ids and levels, for the run history
           weapons: run.player.weapons.map((w) => [w.weaponId, w.level]),
           passives: run.player.passives.map((i) => [i.id, i.level]),
           perks: run.player.perks.map((i) => [i.id, i.level]),
+          grafts: run.grafts.map((g) => [g.host, g.donor, g.id, g.name]),
         },
         stats: statsSnapshot(run),
       };

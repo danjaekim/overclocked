@@ -43,8 +43,17 @@ export function className(id) {
 // An entry's build as { weapons, passives, perks, titles } of display strings ("Forge Hammer 5").
 export function buildNames(e) {
   const fmt = (table) => ([id, lvl]) => `${nameOf(table, id)} ${lvl}`;
+  const grafts = (e.grafts || []).map(([host, donor, , name]) => ({ host, donor, name, text: `${name}: ${nameOf(WEAPONS, host)} + ${nameOf(WEAPONS, donor)}` }));
+  const left = grafts.slice();
+  // a grafted weapon is listed under its graft name ("Black Sun 7"), and the grafts get their own line
+  const weapons = e.weapons.map(([id, lvl]) => {
+    const i = left.findIndex((g) => g.host === id);
+    if (i < 0) return `${nameOf(WEAPONS, id)} ${lvl}`;
+    return `${left.splice(i, 1)[0].name} ${lvl}`;
+  });
   return {
-    weapons: e.weapons.map(fmt(WEAPONS)),
+    grafts: grafts.map((g) => g.text),
+    weapons,
     passives: e.passives.map(fmt(PASSIVES)),
     perks: e.perks.map(fmt(PERKS)),
     titles: e.titles.map((id) => nameOf(TITLES, id)),
