@@ -89,7 +89,7 @@ export function createSfx(ctx, dest) {
       osc({ t, f, dur: 0.1, vol: 0.1 });
       osc({ t: t + 0.05, f: f * 1.5, dur: 0.14, vol: 0.09 });
     },
-    ore: (t, p) => { clink(t, 0.05 * p); },
+    ore: (t, p) => FX.gem(t, p),                    // same chime as an orb; the hammer clink was grating
     hurt: (t, p) => { osc({ t, type: 'sawtooth', f: 220 * p, to: 55, dur: 0.22, vol: 0.2, lp: { from: 1800, to: 200 } }); noise(t, 0.14, 0.2, 'lowpass', 800); },
     levelup: (t) => {
       [60, 64, 67, 72, 76, 79].forEach((n, i) => osc({ t: t + i * 0.075, type: 'square', f: hz(n), dur: 0.22, vol: 0.09 }));
