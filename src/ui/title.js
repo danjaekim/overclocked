@@ -1,5 +1,6 @@
 import { titleSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
+import { VERSION } from '../version.js';
 import { musicControlsHtml, bindMusicControls } from './music-controls.js';
 
 export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit, bests, runs }) {
@@ -15,7 +16,8 @@ export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleS
      <button class="btn" data-act="history">History</button>
      <button class="btn" data-act="sound">Sound: ${sound ? 'On' : 'Off'}</button>
      ${musicControlsHtml(music)}
-     ${best}`,
+     ${best}
+     <p class="ver">v${VERSION}</p>`,
     (act) => {
       if (act === 'play') onPlay();
       else if (act === 'guide') onCompendium();

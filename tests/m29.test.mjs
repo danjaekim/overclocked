@@ -126,3 +126,12 @@ test('a graft is recorded with its host and donor, in the summary, the history e
   assert.equal(back.history[0].grafts.length, 1);
   assert.deepEqual(back.history[1].grafts, []);
 });
+
+test('the version is x.y.z and appears on the title screen', async () => {
+  const { VERSION } = await import('../src/version.js');
+  assert.match(VERSION, /^\d+\.\d+\.\d+$/);
+  const { showTitle } = await import('../src/ui/title.js');
+  let html = '';
+  showTitle({ show: (h) => { html = h; return null; } }, { bests: { time: 0, kills: 0, level: 0 }, runs: 0, music: { on: true, volume: 0.6 } });
+  assert.ok(html.includes(`v${VERSION}`));
+});
