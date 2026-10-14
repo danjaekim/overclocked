@@ -27,7 +27,8 @@ export function createDebug(params) {
     document.body.appendChild(btn);
     const lab = document.createElement('button');
     lab.textContent = 'lab';
-    lab.style.cssText = btn.style.cssText.replace('left:8px', 'left:100px');
+    lab.style.cssText = btn.style.cssText;
+    lab.style.left = '86px';
     lab.addEventListener('click', () => toggleLab());
     document.body.appendChild(lab);
   }
