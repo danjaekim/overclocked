@@ -32,11 +32,14 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
      ${summary.titles.length ? `<p class="sub">Titles: ${summary.titles.join(', ')}</p>` : ''}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>
-     <button class="btn primary" data-act="again">Play again</button>
-     <button class="btn" data-act="title">Title</button>`,
+     <div class="rbar">
+       <button class="btn primary" data-act="again">Play again</button>
+       <button class="btn" data-act="title">Title</button>
+     </div>`,
     (act) => {
       if (act === 'again') onAgain();
       else if (act === 'title') onTitle();
-    }
+    },
+    'results'
   );
 }

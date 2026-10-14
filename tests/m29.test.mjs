@@ -135,3 +135,11 @@ test('the version is x.y.z and appears on the title screen', async () => {
   showTitle({ show: (h) => { html = h; return null; } }, { bests: { time: 0, kills: 0, level: 0 }, runs: 0, music: { on: true, volume: 0.6 } });
   assert.ok(html.includes(`v${VERSION}`));
 });
+
+test('the results screen scrolls and keeps its buttons in a pinned bar', async () => {
+  const { showResults } = await import('../src/ui/results.js');
+  let html = '', cls = '';
+  showResults({ show: (h, _f, c) => { html = h; cls = c; } }, { classId: 'smith', won: true, time: 600, kills: 1, level: 5, titles: [], seed: 1, stats: null, graftList: [] }, { onAgain() {}, onTitle() {} });
+  assert.equal(cls, 'results');
+  assert.ok(/class="rbar"[\s\S]*data-act="again"[\s\S]*data-act="title"/.test(html));
+});
