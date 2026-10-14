@@ -4,6 +4,7 @@
 
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
+import { attackTriggers } from '../game/triggers.js';
 
 const TAU = Math.PI * 2;
 const isAlive = (o) => o.alive;
@@ -35,5 +36,6 @@ export default {
       spawnProjectile(run, inst, p.x, p.y, Math.cos(a), Math.sin(a), speed, dmg, ttl, radius, pierce);
     }
     inst.cd += param(run, inst, 'cooldown');
+    attackTriggers(run, inst, p.x, p.y, off);
   },
 };

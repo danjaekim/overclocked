@@ -7,12 +7,12 @@
 // instance that made the hazard, so every perk, status and trigger applies as usual.
 
 import { queueDamage, KIND_PROC } from './damage-queue.js';
-import { applyBurn } from './status.js';
+import { applyBurn, applyChill, applyShock } from './status.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff } from '../render/fx.js';
 
 export const HAZARD_CAP = 90;
-const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3;
+const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4;
 const TAU = Math.PI * 2;
 
 function add(run, h) {
@@ -39,6 +39,26 @@ export function addPillar(run, src, x, y, radius, tele, dmg, depth) {
 }
 export function addWave(run, src, x, y, dx, dy, speed, range, width, dmg, depth) {
   return add(run, { kind: WAVE, src, x, y, dx, dy, speed, left: range, r: width, ttl: range / speed + 0.2, life: range / speed + 0.2, dmg, depth, hit: new Set() });
+}
+
+// A telegraphed burst that also lays statuses on everything it hits (Thunderscythe's storm shells).
+// flags: { burn, shock, chill }
+export function addBlast(run, src, x, y, radius, tele, dmg, depth, flags) {
+  return add(run, { kind: BLAST, src, x, y, r: radius, ttl: tele + 0.15, tele, life: tele + 0.15, dmg, depth, flags, done: false });
+}
+
+// The nearest vortex within `range` of a point, or null (Eventide Volley's arrows bend toward it).
+export function nearestVortex(run, x, y, range) {
+  let best = null;
+  let bd = range * range;
+  const list = run.hazards;
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    if (h.kind !== VORTEX) continue;
+    const d = (h.x - x) * (h.x - x) + (h.y - y) * (h.y - y);
+    if (d < bd) { bd = d; best = h; }
+  }
+  return best;
 }
 
 function hitCircle(run, h, x, y, r, dmg, kb) {
@@ -96,6 +116,25 @@ export function updateHazards(run, dt) {
       if (h.ttl <= 0) {                                      // the collapse
         hitCircle(run, h, h.x, h.y, h.r, h.dmg, 120);
         addPuff(run, h.x, h.y, h.r / 2.2, '#c58bff');
+      }
+    } else if (h.kind === BLAST) {
+      if (!h.done && h.life - h.ttl >= h.tele) {
+        h.done = true;
+        const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive) continue;
+          const dx = e.x - h.x;
+          const dy = e.y - h.y;
+          const rr = h.r + e.r;
+          if (dx * dx + dy * dy > rr * rr) continue;
+          const d = Math.hypot(dx, dy) || 1;
+          queueDamage(run, e, h.dmg, false, (dx / d) * 50, (dy / d) * 50, h.depth + 1, h.src, KIND_PROC);
+          if (h.flags.burn) applyBurn(run, e, h.src, h.dmg, h.depth + 1);
+          if (h.flags.shock) applyShock(run, e, h.src);
+          if (h.flags.chill) applyChill(run, e, h.src, h.depth + 1);
+        }
+        addPuff(run, h.x, h.y, h.r / 1.8, h.flags.shock ? '#ffe066' : '#ff9a3c');
       }
     } else if (h.kind === PILLAR) {
       if (!h.done && h.life - h.ttl >= h.tele) {
@@ -162,6 +201,20 @@ export function drawHazards(ctx, run) {
       ctx.beginPath();
       ctx.arc(h.x, h.y, h.r * 0.28, 0, TAU);
       ctx.fill();
+    } else if (h.kind === BLAST) {
+      const age = h.life - h.ttl;
+      if (age < h.tele) {                                    // a ring closing on the shell
+        ctx.globalAlpha = 0.3 + 0.5 * (age / h.tele);
+        ctx.strokeStyle = h.flags.shock ? '#ffe066' : '#ff9a3c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r * (1.2 - 0.2 * (age / h.tele)), 0, TAU);
+        ctx.stroke();
+        ctx.fillStyle = '#ffb347';
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, 4, 0, TAU);
+        ctx.fill();
+      }
     } else if (h.kind === PILLAR) {
       const age = h.life - h.ttl;
       if (age < h.tele) {                                    // telegraph: a ring closing in

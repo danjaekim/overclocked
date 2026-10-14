@@ -38,8 +38,8 @@ function listHtml() {
   return list.map(entryHtml).join('');
 }
 
-export function showCompendium(overlays, { onClose }) {
-  if (!entries) entries = buildEntries();
+export function showCompendium(overlays, { onClose, discovered }) {
+  entries = buildEntries(discovered);           // rebuilt on open so new discoveries show
 
   function render() {
     const facets = facetsFor(state.tab, entries);

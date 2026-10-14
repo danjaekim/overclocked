@@ -7,7 +7,7 @@
 const KEY = 'overforged.save.v1';
 
 export const DEFAULTS = {
-  version: 2,
+  version: 3,
   lastClass: 'archer',
   unlocked: [],                       // class ids unlocked through play
   bests: { time: 0, kills: 0, level: 0 },
@@ -18,6 +18,7 @@ export const DEFAULTS = {
   music: true,                        // music on/off (the sound toggle mutes everything)
   musicVolume: 0.6,                   // 0..1
   history: [],                        // finished runs, oldest first (see entryFromSummary), capped
+  discovered: { grafts: [] },         // masterwork ids found at the forge (v3)
 };
 
 export const HISTORY_CAP = 100;
@@ -80,6 +81,9 @@ export function normalize(raw) {
   if (typeof raw.music === 'boolean') out.music = raw.music;
   if (Number.isFinite(raw.musicVolume)) out.musicVolume = Math.min(1, Math.max(0, raw.musicVolume));
   if (Array.isArray(raw.history)) out.history = raw.history.map(cleanEntry).filter(Boolean).slice(-HISTORY_CAP);
+  if (raw.discovered && Array.isArray(raw.discovered.grafts)) {
+    out.discovered.grafts = [...new Set(raw.discovered.grafts.filter((x) => typeof x === 'string'))].slice(0, 100);
+  }
   return out;
 }
 
@@ -128,6 +132,14 @@ export function createSave(storage) {
     setMusicVolume(v) {
       data.musicVolume = Math.min(1, Math.max(0, Number(v) || 0));
       persist();
+    },
+
+    // Marks a masterwork as found. Returns true the first time.
+    discoverGraft(id) {
+      if (data.discovered.grafts.includes(id)) return false;
+      data.discovered.grafts.push(id);
+      persist();
+      return true;
     },
 
     // Records a finished run and returns { newBests: ['time', ...] }.

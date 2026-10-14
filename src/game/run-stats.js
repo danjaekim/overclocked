@@ -19,7 +19,7 @@ function rec(run, inst) {
     r = { name: inst.def.name, dmg: 0, kills: 0, crits: 0, byCause: new Array(CAUSE_NAMES.length).fill(0), gone: false, t0: run.time, t1: 0 };
     st.src.set(inst.instanceId, r);
   }
-  r.name = inst.def.name;             // follows evolution
+  r.name = inst.graft ? inst.graft.name : inst.def.name;   // follows evolution and grafts
   return r;
 }
 

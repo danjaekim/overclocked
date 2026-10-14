@@ -7,7 +7,9 @@ import { param } from '../game/weapon-params.js';
 import { queueDamage, KIND_PROC } from '../systems/damage-queue.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff } from '../render/fx.js';
-import { addPatch, addVortex, addPillar, addWave } from '../systems/hazards.js';
+import { addPatch, addVortex, addPillar, addWave, addBlast } from '../systems/hazards.js';
+import { spawnProjectile } from '../game/projectiles.js';
+import { WEAPONS } from '../data/weapons.js';
 
 export const MAX_TRIGGER_DEPTH = 3;
 
@@ -18,7 +20,7 @@ export const EFFECTS = {
     const w = run.world;
     const area = run.player.stats.getFor('area', src.tags);
     const radius = t.params.radius * area;
-    const dmg = param(run, src, 'damage') * t.params.damageFrac;
+    const dmg = t.params.dmg !== undefined ? t.params.dmg : param(run, src, 'damage') * t.params.damageFrac;   // dmg: absolute (the graft echo)
     const n = w.hash.queryRadius(x, y, radius + MAX_ENEMY_RADIUS, w.scratch);
     for (let i = 0; i < n; i++) {
       const e = w.scratch[i];
@@ -100,6 +102,61 @@ export const EFFECTS = {
   // The weapon works faster for a moment (hounds run at +30% speed).
   frenzy(run, t, src) {
     if (src) src.frenzyT = t.params.dur;
+  },
+
+  // ---- M27: graft effects ----
+
+  // Thunderscythe: `perSwing` storm shells along the edge of each swing's arc.
+  shells(run, t, src, x, y, depth, ang) {
+    if (!src || depth + 1 > MAX_TRIGGER_DEPTH) return;
+    const p = t.params;
+    const pl = run.player;
+    const reach = param(run, src, 'range') * p.dist;
+    const swings = Math.max(1, Math.round(param(run, src, 'count')));
+    const dmg = param(run, src, 'damage') * p.damageFrac;
+    const rad = p.radius * area(run, src);
+    for (let s = 0; s < swings; s++) {
+      const a0 = ang + (s * Math.PI * 2) / swings;
+      for (let k = 0; k < p.perSwing; k++) {
+        const a = a0 + (p.perSwing > 1 ? (k / (p.perSwing - 1) - 0.5) * p.spread * 2 : 0);
+        addBlast(run, src, pl.x + Math.cos(a) * reach, pl.y + Math.sin(a) * reach, rad, p.tele, dmg, depth, { burn: true, shock: true });
+      }
+    }
+  },
+
+  // Glacier Maul: a hit on an enemy that was already frozen shatters into a ring of ice shards.
+  // Only direct hits (depth 0) shatter, so a shatter never sets off more shatters.
+  shatter(run, t, src, x, y, depth) {
+    if (depth !== 0 || !run.hitFrozen) return;
+    EFFECTS.explode(run, { params: { ...t.params, color: '#bfeaff', kb: 90 } }, src, x, y, depth);
+  },
+
+  // The generic graft's echo: fires the donor weapon's own kind of attack once, at the host's
+  // target, for a share of the donor's damage. Projectile-like donors throw projectiles, strike-
+  // from-the-sky donors drop a pillar, everything else bursts around the target.
+  cast(run, t, src, x, y, depth) {
+    if (!src || !src.graft || depth + 1 > MAX_TRIGGER_DEPTH) return;
+    const donor = WEAPONS[src.graft.donorId];
+    const w = run.world;
+    const pl = run.player;
+    const target = w.hash.queryNearest(x, y, 420, (o) => o.alive);
+    if (!target) return;
+    const b = donor.base;
+    const dmg = (b.damage || 10) * run.player.stats.getFor('damage', src.tags) * t.params.frac;
+    const kind = donor.behavior;
+    if (kind === 'projectile' || kind === 'boomerang' || kind === 'nova') {
+      const n = kind === 'nova' ? 8 : 1;
+      const a0 = Math.atan2(target.y - pl.y, target.x - pl.x);
+      for (let i = 0; i < n; i++) {
+        const a = n === 1 ? a0 : a0 + (i * Math.PI * 2) / n;
+        spawnProjectile(run, src, pl.x, pl.y, Math.cos(a), Math.sin(a), b.speed || 520, dmg, b.ttl || 1.2, b.radius || 6, Math.max(1, b.pierce || 1));
+      }
+    } else if (kind === 'bolt' || kind === 'judge' || kind === 'mortar') {
+      addPillar(run, src, target.x, target.y, 55 * area(run, src), 0.3, dmg, depth);
+    } else {
+      const radius = Math.min(110, Math.max(55, b.radius > 30 ? b.radius : (b.range || 100) * 0.55));
+      EFFECTS.explode(run, { params: { radius, dmg, color: '#d9c9ff' } }, src, target.x, target.y, depth);
+    }
   },
 };
 

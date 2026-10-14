@@ -38,7 +38,7 @@ test('recordRun appends to the history and persists it', () => {
   assert.equal(save.data.runs, 2);
   const again = createSave(st);
   assert.equal(again.data.history.length, 2, 'survives a reload');
-  assert.equal(again.data.version, 2);
+  assert.equal(again.data.version, 3);
 });
 
 test('the history is capped at the newest HISTORY_CAP runs while the counters keep counting', () => {

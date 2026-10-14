@@ -6,7 +6,7 @@ import { createPlayer, updatePlayer } from './player.js';
 import { createWorld } from './world.js';
 import { createDirector, spawnEnemy } from './director.js';
 import { BEHAVIORS } from '../behaviors/index.js';
-import { addWeapon, updateWeapons, levelUpWeapon, canLevelUp } from './weapons.js';
+import { addWeapon, updateWeapons, levelUpWeapon, canLevelUp, weaponName } from './weapons.js';
 import { WEAPONS } from '../data/weapons.js';
 import { updateEnemies } from '../systems/enemy-ai.js';
 import { updateProjectiles } from '../systems/movement.js';
@@ -55,6 +55,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
     chestsOpened: 0,
     eliteKills: 0,          // elites killed so far (the first always drops starsteel)
+    grafts: [],             // grafts made this run { id, name, masterwork } (game/graft.js)
+    hitFrozen: false,       // set by flushDamage: the enemy being hit was already frozen
     hazards: [],            // fire patches, vortices, pillars, shockwaves (systems/hazards.js)
     enemyShots: [],         // slinger shots in flight (systems/enemy-shots.js)
     stats: createStats(),   // damage by weapon and cause, per-second timeline (game/run-stats.js)
@@ -173,7 +175,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       return {
         time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, classId: run.player.classId,
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
-        weapons: run.player.weapons.map((w) => w.def.name),
+        weapons: run.player.weapons.map((w) => weaponName(w)),
+        grafts: run.grafts.map((g) => g.name),
         titleIds: run.titles.map((t) => t.id),
         build: {                                     // ids and levels, for the run history
           weapons: run.player.weapons.map((w) => [w.weaponId, w.level]),

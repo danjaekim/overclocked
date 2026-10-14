@@ -16,6 +16,7 @@ import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
 import { RARITIES } from '../data/rarities.js';
 import { describe as describeReq } from './evolution.js';
+import { MASTERWORKS, GRAFT } from '../data/grafts.js';
 
 export const ELEMENTS = ['fire', 'frost', 'storm'];
 export const TABS = [
@@ -23,6 +24,7 @@ export const TABS = [
   { id: 'evolve', label: 'Evolve' },
   { id: 'techniques', label: 'Techniques' },
   { id: 'passives', label: 'Passives' },
+  { id: 'grafts', label: 'Grafts' },
   { id: 'forge', label: 'Forge' },
   { id: 'builds', label: 'Builds' },
 ];
@@ -99,7 +101,7 @@ function weaponEntry(id, def, buildsFor) {
   };
 }
 
-export function buildEntries() {
+export function buildEntries(discovered = { grafts: [] }) {
   const buildsFor = (kind, id) => BUILDS.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
   const out = [];
 
@@ -151,6 +153,28 @@ export function buildEntries() {
     });
   }
 
+  const found = new Set(discovered.grafts || []);
+  out.push({
+    tab: 'grafts', id: 'graft:rules', name: `Masterworks found ${MASTERWORKS.filter((m) => found.has(m.id)).length} / ${MASTERWORKS.length}`,
+    glyph: '✦', rarity: 'epic', elements: [], cat: 'Guide', classes: [],
+    summary: `At the forge, graft one evolved weapon into another for ${GRAFT.cost} starsteel.`,
+    lines: [`Graft one evolved weapon (the donor) into another (the host) for ${GRAFT.cost} starsteel. The donor is consumed and frees its slot.`,
+      'The host keeps its level, enhancement and effects, gains the donor\'s elements, and gets a graft effect. A weapon takes one graft.',
+      `Most pairs give the generic echo: every ${GRAFT.echoEvery}rd attack also casts the donor's attack at ${Math.round(GRAFT.echoFrac * 100)}% damage.`,
+      'Some pairs are masterworks with an effect of their own. Find them by trying.'], builds: [],
+  });
+  for (const m of MASTERWORKS) {
+    const ok = found.has(m.id);
+    out.push({
+      tab: 'grafts', id: `graft:${m.id}`, name: ok ? m.name : `${WEAPONS[m.host].name} + ???`, glyph: ok ? '✦' : '?', rarity: ok ? 'epic' : 'common',
+      elements: ok ? ELEMENTS.filter((e) => WEAPONS[m.host].tags.includes(e) || WEAPONS[m.donor].tags.includes(e)) : [],
+      cat: 'Masterwork', classes: [],
+      summary: ok ? m.desc : 'Not found yet. Graft the right weapon into this one.',
+      lines: ok ? [m.desc, `Host: ${WEAPONS[m.host].name}. Donor: ${WEAPONS[m.donor].name}. Either order works; the host is fixed.`]
+        : [`Something is waiting to be grafted into the ${WEAPONS[m.host].name}.`], builds: [],
+    });
+  }
+
   for (const b of BUILDS) {
     const parts = [...b.weapons.map((w) => WEAPONS[w].name), ...b.perks.map((p) => PERKS[p].name)];
     const els = new Set();
@@ -173,7 +197,7 @@ export function facetsFor(tab, entries) {
   const list = entries.filter((e) => e.tab === tab);
   const uniq = (f) => [...new Set(list.flatMap(f))];
   const facets = [];
-  if (['weapons', 'evolve', 'techniques', 'forge', 'builds'].includes(tab)) {
+  if (['weapons', 'evolve', 'techniques', 'forge', 'builds', 'grafts'].includes(tab)) {
     const els = uniq((e) => e.elements);
     if (els.length) facets.push({ key: 'element', label: 'Element', options: ELEMENTS.filter((e) => els.includes(e)) });
   }

@@ -65,7 +65,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     showTitle(overlays, {
       ...musicUi(toTitle),
       onPlay: params.classId ? () => startRun() : toClassSelect,
-      onCompendium: () => showCompendium(overlays, { onClose: toTitle }),
+      onCompendium: () => showCompendium(overlays, { onClose: toTitle, discovered: save.data.discovered }),
       onHistory: openHistory,
       onToggleSound: () => toggleSound(toTitle),
       sound: save.data.sound,
@@ -137,7 +137,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       ...musicUi(show),
       onResume: resume,
       onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
-      onCompendium: () => showCompendium(overlays, { onClose: show }),
+      onCompendium: () => showCompendium(overlays, { onClose: show, discovered: save.data.discovered }),
       onQuit: toTitle,
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
@@ -239,6 +239,12 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     input.reset();
     showForge(overlays, run, {
       sfx,
+      onGraft(res) {                                           // a masterwork found for the first time gets a banner
+        if (res.masterwork && save.discoverGraft(res.masterwork.id)) {
+          run.toast = { text: `Masterwork discovered: ${res.name}!`, ttl: 4.5 };
+          sfx('evolve');
+        }
+      },
       onDone() {
         overlays.hide();
         run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);

@@ -6,6 +6,7 @@ import { param } from '../game/weapon-params.js';
 import { strike } from '../game/hit.js';
 import { addPuff } from '../render/fx.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { attackTriggers } from '../game/triggers.js';
 
 const MAX_SHELLS = 12;
 
@@ -39,6 +40,7 @@ export default {
           shells.push({ x: e.x, y: e.y, t: fuse });
         }
         inst.cd += param(run, inst, 'cooldown');
+        attackTriggers(run, inst, p.x, p.y, 0);
       }
     }
 

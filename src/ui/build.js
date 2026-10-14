@@ -1,12 +1,12 @@
 // The build panel: everything you own and how it is performing. One renderer shared by the
 // pause menu, the level-up screen (so upgrades can be judged against the build) and the end
 // screen's damage breakdown. Pure HTML strings; the caller mounts them in an overlay.
-
 import { RARITIES } from '../data/rarities.js';
 import { AFFIXES } from '../data/forge.js';
 import { RESONANCE } from '../data/resonance.js';
 import { reforgeSlots } from '../game/forge.js';
 import { statsSnapshot } from '../game/run-stats.js';
+import { weaponName } from '../game/weapons.js';
 
 export function fmtNum(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
@@ -44,7 +44,7 @@ function weaponRow(inst, rec, time) {
     ? `<div class="bperf"><b>${fmtNum(rec.dmg)}</b> dmg · <b>${fmtNum(rec.dmg / Math.max(1, time))}</b>/s · ${rec.kills} kills</div>`
     : '<div class="bperf">no damage yet</div>';
   return `<div class="brow" style="--c:${color}">
-    <div class="btop"><b>${inst.def.name}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
+    <div class="btop"><b>${weaponName(inst)}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
     <div class="bsub">${tags.join(' · ')}${extra.length ? (tags.length ? ' · ' : '') + extra.join(', ') : ''}</div>
     ${perf}
   </div>`;

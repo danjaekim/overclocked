@@ -3,6 +3,7 @@
 import { param } from '../game/weapon-params.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { attackTriggers } from '../game/triggers.js';
 
 const PULSE_TIME = 0.25;
 
@@ -37,6 +38,7 @@ export default {
       const d = Math.hypot(dx, dy) || 1;
       strike(run, inst, e, dmg, dx / d, dy / d);
     }
+    attackTriggers(run, inst, p.x, p.y, 0);
   },
 
   draw(inst, ctx, run) {

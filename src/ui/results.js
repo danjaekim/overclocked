@@ -18,6 +18,7 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
      </div>
      ${summary.bossKilled ? '<p class="sub">The Warlord is slain.</p>' : ''}
      ${unlocked.length ? `<p class="unlock">Unlocked: ${unlocked.join(', ')}!</p>` : ''}
+     ${summary.grafts && summary.grafts.length ? `<p class="unlock">Grafted: ${summary.grafts.join(', ')}</p>` : ''}
      ${summary.titles.length ? `<p class="sub">Titles: ${summary.titles.join(', ')}</p>` : ''}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>

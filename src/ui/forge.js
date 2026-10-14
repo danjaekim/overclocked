@@ -5,6 +5,9 @@ import { ENHANCE, AFFIXES } from '../data/forge.js';
 import { RARITIES } from '../data/rarities.js';
 import { WEAPONS } from '../data/weapons.js';
 import { recipesFor, checklist, canEvolve, evolve } from '../game/evolution.js';
+import { graftOptions, graft } from '../game/graft.js';
+import { GRAFT } from '../data/grafts.js';
+import { weaponName } from '../game/weapons.js';
 import {
   enhance, enhanceCost, enhanceChance, canEnhance, downgradeChance,
   rollReforge, applyReforge, keepCurrent, reforgeCost, reforgeSlots, canReforge,
@@ -18,10 +21,11 @@ function outcomeText(r) {
   return `Failed. ${r.cost} ore lost.`;
 }
 
-export function showForge(overlays, run, { onDone, sfx = () => {} }) {
+export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () => {} }) {
   let message = '';
   let tone = '';
   let confirming = null;                       // instanceId awaiting a second tap to salvage
+  let confirmingGraft = null;                  // 'host:donor' awaiting a second tap to graft
 
   function weaponCard(inst) {
     const def = inst.def;
@@ -64,7 +68,8 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
     }).join('');
 
     return `<div class="fcard" style="--c:${color}">
-      <div class="ftop"><b>${def.name}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
+      <div class="ftop"><b>${weaponName(inst)}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
+      ${inst.graft ? `<div class="fgraft">Grafted: ${inst.graft.desc}</div>` : ''}
       ${chosen || tags ? `<div class="faff">${chosen}${tags}</div>` : ''}
       ${slots}
       <div class="frow">
@@ -79,7 +84,7 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
   // screen the moment they appear however far the weapon list is scrolled.
   function pickModal() {
     for (const inst of run.player.weapons) {
-      const name = `<b>${inst.def.name}</b>`;
+      const name = `<b>${weaponName(inst)}</b>`;
       if (inst.pendingReforge) {
         const opts = inst.pendingReforge.options.map((id, i) => {
           const a = AFFIXES[id];
@@ -95,14 +100,31 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
     return '';
   }
 
+  // The graft section: every pair of evolved weapons you could combine, masterworks first.
+  function graftPanel() {
+    const opts = graftOptions(run).sort((a, b) => (b.preview.masterwork ? 1 : 0) - (a.preview.masterwork ? 1 : 0));
+    if (!opts.length) return '';
+    const cards = opts.map((o) => {
+      const key = `${o.host.instanceId}:${o.donor.instanceId}`;
+      const m = o.preview.masterwork;
+      return `<div class="fgopt${m ? ' master' : ''}">
+        <div class="fgtop"><b>${m ? '✦ ' : ''}${o.preview.name}</b></div>
+        <div class="fgdesc">${o.preview.desc}</div>
+        <div class="fgnote">${o.host.def.name} takes in ${o.donor.def.name}, which is consumed. ${GRAFT.cost} starsteel.</div>
+        <button class="fbtn${confirmingGraft === key ? ' warn' : ''}" data-act="gft:${o.host.instanceId}:${o.donor.instanceId}" ${o.ok ? '' : 'disabled'}>${confirmingGraft === key ? 'Sure?' : 'Graft'}</button>
+      </div>`;
+    }).join('');
+    return `<div class="fgraft-panel"><h3>Graft</h3><p class="fghint">One graft per weapon. Starsteel ${run.starsteel}.</p>${cards}</div>`;
+  }
+
   function render() {
     const prev = document.querySelector('.forge-list');
     const scroll = prev ? prev.scrollTop : 0;
     const el = overlays.show(
       `<h2>Forge</h2>
-       <p class="sub">Ore <b class="ore">${run.ore}</b></p>
+       <p class="sub">Ore <b class="ore">${run.ore}</b> · Starsteel <b class="ore">${run.starsteel}</b></p>
        <p class="fmsg ${tone}">${message || '&nbsp;'}</p>
-       <div class="forge-list">${run.player.weapons.map(weaponCard).join('')}</div>
+       <div class="forge-list">${run.player.weapons.map(weaponCard).join('')}${graftPanel()}</div>
        <button class="btn primary" data-act="done">Return to battle</button>
        ${pickModal()}`,
       onAct,
@@ -122,6 +144,7 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
     const inst = find(id);
     if (!inst) return;
     if (kind !== 'sal') confirming = null;
+    if (kind !== 'gft') confirmingGraft = null;
     if (kind === 'enh') {
       const r = enhance(run, inst);
       message = outcomeText(r);
@@ -153,10 +176,24 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
       if (r.ok) sfx('evolve');
       message = r.ok ? `${r.into.name} forged!` : '';
       tone = 'good';
+    } else if (kind === 'gft') {
+      const donor = find(extra);
+      const key = `${id}:${extra}`;
+      if (confirmingGraft !== key) {
+        confirmingGraft = key;
+        message = `Tap again to graft. ${donor ? donor.def.name : 'The donor'} is consumed.`;
+        tone = 'bad';
+      } else {
+        confirmingGraft = null;
+        const r = donor ? graft(run, inst, donor) : { ok: false };
+        if (r.ok) { sfx('evolve'); onGraft(r); }
+        message = r.ok ? `${r.name}!` : '';
+        tone = 'good';
+      }
     } else if (kind === 'sal') {
       if (confirming !== inst.instanceId) {
         confirming = inst.instanceId;
-        message = `Tap again to salvage ${inst.def.name}`;
+        message = `Tap again to salvage ${weaponName(inst)}`;
         tone = 'bad';
       } else {
         const r = salvage(run, inst);

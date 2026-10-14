@@ -3,6 +3,7 @@
 // Discs are kept on the instance (a small fixed array), not in the projectile pool.
 
 import { param } from '../game/weapon-params.js';
+import { attackTriggers } from '../game/triggers.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 
@@ -42,6 +43,7 @@ export default {
           discs.push({ x: p.x, y: p.y, dx: Math.cos(a), dy: Math.sin(a), out: 0, back: false, spin: 0, hit: new Map() });
         }
         inst.cd += param(run, inst, 'cooldown');
+        attackTriggers(run, inst, target.x, target.y, base);
       }
     }
 

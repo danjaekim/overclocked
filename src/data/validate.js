@@ -11,6 +11,7 @@ import { RARITIES } from './rarities.js';
 import { CLASSES } from './classes.js';
 import { ENEMIES } from './enemies.js';
 import { EFFECTS } from '../effects/index.js';
+import { MASTERWORKS } from './grafts.js';
 import { RUN, WAVES, EVENTS } from './waves.js';
 import { RUN_EVENTS } from '../game/run-events.js';
 import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
@@ -240,6 +241,27 @@ export function validateData() {
       problems.push(`${at}: milestone needs an event (kills|enhance|boss) and a count`);
     }
   }
+
+  const seen = new Set();
+  for (const m of MASTERWORKS) {
+    const at = `masterwork ${m.id}`;
+    for (const k of ['host', 'donor']) {
+      if (!WEAPONS[m[k]]) problems.push(`${at}: unknown ${k} "${m[k]}"`);
+      else if (WEAPONS[m[k]].rarity !== 'evolved') problems.push(`${at}: the ${k} must be an evolved weapon`);
+    }
+    if (m.host === m.donor) problems.push(`${at}: host and donor must differ`);
+    const key = [m.host, m.donor].sort().join('+');
+    if (seen.has(key)) problems.push(`${at}: duplicate pair ${key}`);
+    seen.add(key);
+    if (!m.name || !m.desc) problems.push(`${at}: needs a name and desc`);
+    checkMods(m.mods || [], `${at} mods`, problems);
+    (m.triggers || []).forEach((t, i) => {
+      if (!EFFECTS[t.effect]) problems.push(`${at} trigger ${i}: unknown effect "${t.effect}"`);
+      if (!TRIGGER_EVENTS.has(t.on)) problems.push(`${at} trigger ${i}: unknown event "${t.on}"`);
+      if (!t.params) problems.push(`${at} trigger ${i}: missing params`);
+    });
+  }
+  if (new Set(MASTERWORKS.map((m) => m.id)).size !== MASTERWORKS.length) problems.push('masterwork ids must be unique');
 
   return problems;
 }
