@@ -111,9 +111,20 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
       window.addEventListener(ev, once, { passive: true });
     }
     window.addEventListener('keydown', once);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
-    });
+    // Out of view means silent: suspend the context (music and sfx freeze on its clock) and stop
+    // the silent keep-alive element, which would otherwise hold the audio session open.
+    const sync = () => {
+      if (document.hidden) {
+        if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
+        if (keepAlive) keepAlive.pause();
+      } else {
+        if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+        if (keepAlive) keepAlive.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('pagehide', () => { if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {}); });
+    window.addEventListener('pageshow', () => { if (!document.hidden) sync(); });
   }
   return audio;
 }
