@@ -174,6 +174,9 @@
     .fslot-text i { color: var(--dim); }
     .fbtn.small { flex: none; width: 92px; min-height: 40px; font-size: 13px; }
     .fpick { margin: 8px 0 4px; padding: 8px; border: 1px solid #ffb45e; border-radius: 10px; background: rgba(255, 180, 94, 0.07); display: flex; flex-direction: column; gap: 6px; }
+    .fmodal { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px); background: rgba(10, 11, 16, 0.94); overflow-y: auto; }
+    .fmodal .fpick { width: 100%; max-width: 400px; margin: auto; background: #14161f; }
+    .fwait { margin: 6px 0; font-size: 12px; color: #ffd9a8; font-style: italic; }
     .fpick-top { font-size: 13px; color: #ffd9a8; }
     .fopt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 52px; padding: 8px 10px; font: inherit; color: var(--ink); background: #1b1e29; border: 1px solid var(--c, #343848); border-left-width: 4px; border-radius: 10px; touch-action: manipulation; }
     .fopt b { font-size: 15px; color: var(--c, var(--ink)); }
@@ -212,6 +215,8 @@
     .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     .card-top b { font-size: 18px; }
     .card-top em { font-style: normal; font-size: 13px; color: var(--c, #9aa0b0); font-weight: 600; white-space: nowrap; }
+    .card.evo { box-shadow: 0 0 0 1px #ffd34d inset, 0 0 14px rgba(255, 211, 77, 0.22); }
+    .card-evo { font-size: 12px; font-weight: 700; color: #ffd34d; letter-spacing: 0.02em; }
     .card-kind { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
     .card-desc { font-size: 14px; color: #cfd0d8; line-height: 1.3; }
 

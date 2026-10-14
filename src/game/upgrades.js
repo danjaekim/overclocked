@@ -12,7 +12,8 @@
 //   banished: [id],                (optional) never offered
 // }
 //
-// An offer is { kind, id, name, rarity, toLevel, isNew, desc, instanceId? } with kind one of
+// An offer is { kind, id, name, rarity, toLevel, isNew, desc, instanceId?, evo? } (evo: the weapon an
+// evolution in reach would make, when this offer is something it still needs) with kind one of
 // 'weapon_new' | 'weapon_up' | 'passive_new' | 'passive_up' | 'perk_new' | 'perk_up' | 'title_new' | 'heal'.
 
 import { WEAPONS } from '../data/weapons.js';
@@ -22,6 +23,10 @@ import { meetsRequires } from './perks.js';
 import { TITLES } from '../data/titles.js';
 import { RARITIES } from '../data/rarities.js';
 import { SLOTS, LEVELUP } from '../data/progression.js';
+import { EVOLUTIONS } from '../data/evolutions.js';
+
+export const EVO_BOOST = 1.8;          // offer weight multiplier for something an evolution still needs
+const EVO_CLOSE = 3;                   // a recipe counts as in reach once its weapon is within this many levels
 
 export const HEAL_OFFER = {
   kind: 'heal',
@@ -106,6 +111,34 @@ export function buildCandidates(state) {
   return out;
 }
 
+// What the evolutions in reach still need from a level-up: a map of 'weapon:id' / 'passive:id' /
+// 'perk:id' to the name of the weapon it leads to. A recipe is in reach when you own its weapon (both
+// for a fusion) and it is within EVO_CLOSE levels of the level the recipe asks for. Enhance level,
+// starsteel and titles cannot come from a level-up, so they are not listed.
+export function evoNeeds(state) {
+  const need = new Map();
+  const owned = new Map(state.weapons.map((w) => [w.weaponId, w]));
+  const passives = new Map(state.passives.map((p) => [p.id, p.level]));
+  const perks = new Map((state.perks || []).map((p) => [p.id, p.level]));
+  for (const r of EVOLUTIONS) {
+    if (owned.has(r.into)) continue;
+    const a = owned.get(r.from);
+    const b = r.with ? owned.get(r.with) : null;
+    if (!a || (r.with && !b)) continue;
+    const lvlReq = r.requires.find((q) => q.weaponLevel !== undefined);
+    if (lvlReq && Math.min(a.level, b ? b.level : a.level) < lvlReq.weaponLevel - EVO_CLOSE) continue;
+    const name = WEAPONS[r.into].name;
+    for (const q of r.requires) {
+      if (q.weaponLevel !== undefined) {
+        if (a.level < q.weaponLevel) need.set('weapon:' + r.from, name);
+        if (b && b.level < q.weaponLevel) need.set('weapon:' + r.with, name);
+      } else if (q.passive && (passives.get(q.passive) || 0) < (q.minLevel || 1)) need.set('passive:' + q.passive, name);
+      else if (q.perk && (perks.get(q.perk) || 0) < (q.minLevel || 1)) need.set('perk:' + q.perk, name);
+    }
+  }
+  return need;
+}
+
 export function offerWeight(candidate, luck) {
   const r = RARITIES[candidate.rarity];
   const w = r.weight * (1 + luck * r.luckScale) * (candidate.owned ? 1.5 : 1) * (candidate.boost || 1);
@@ -115,7 +148,13 @@ export function offerWeight(candidate, luck) {
 export function generateOffers(state, rng, count = LEVELUP.offers) {
   const luck = state.luck || 0;
   const banished = state.banished || [];
+  const need = evoNeeds(state);
   const pool = buildCandidates(state).filter((c) => offerWeight(c, luck) > 0 && !banished.includes(c.id));
+  for (const c of pool) {                       // mark and favour what an evolution in reach still needs
+    const fam = c.kind.startsWith('weapon') ? 'weapon' : c.kind.startsWith('passive') ? 'passive' : c.kind.startsWith('perk') ? 'perk' : null;
+    const into = fam && need.get(fam + ':' + c.id);
+    if (into) { c.evo = into; c.boost = (c.boost || 1) * EVO_BOOST; }
+  }
   const picked = [];
   // First card: when any weapon or passive can be upgraded, one of them leads, so perks never crowd
   // out the levels that evolutions need.

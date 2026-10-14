@@ -45,6 +45,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M21** *(done)* | Loot and prop art | Gems, ore, chests and the shrine anvil as sprites (set C). See `architecture.md` M21. |
 | **M22** *(prototype)* | Evolved-weapon glow | A mote per evolved weapon orbits the hero in its element colour, plus a halo. Judge it on a phone before building art for it. |
 | **M23** *(done)* | Title and results art | Anvil title scene and win/lose results scenes. See `architecture.md` M23. |
+| **M24** *(done)* | Playtest fixes | Forge picks open as a panel, goblins slower with a steeper late spawn ramp, level-up offers favour and mark what an evolution still needs. See `architecture.md` M24. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
 ### Why this order

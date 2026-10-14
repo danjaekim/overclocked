@@ -5,7 +5,7 @@
 export const ENEMIES = {
   goblin: {
     name: 'Goblin',
-    hp: 10, speed: 70, damage: 5, radius: 10,
+    hp: 10, speed: 60, damage: 5, radius: 10,
     xp: 1,
     ore: { chance: 0.04, type: 'iron' },
     ai: 'chase',

@@ -37,18 +37,6 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
         <button class="fbtn small" data-act="rfs:${inst.instanceId}:${sl.index}" ${canReforge(run, inst) && reachable ? '' : 'disabled'}>${a ? 'Reforge' : 'Forge'}<small>${rcost} ore</small></button>
       </div>`;
     }).join('');
-    const options = pending ? `<div class="fpick">
-        <div class="fpick-top"><b>Choose an effect</b></div>
-        ${pending.options.map((id, i) => {
-          const a = AFFIXES[id];
-          return `<button class="fopt" style="--c:${RARITIES[a.rarity].color}" data-act="rfp:${inst.instanceId}:${i}"><b>${a.name}</b><span>${a.desc}</span></button>`;
-        }).join('')}
-        <button class="fbtn" data-act="rfk:${inst.instanceId}">Keep current</button>
-      </div>` : '';
-    const tempers = inst.pendingTemper ? `<div class="fpick temper">
-        <div class="fpick-top"><b>Temper at +${inst.pendingTemper}</b> choose one</div>
-        ${temperOptions(inst, inst.pendingTemper).map((t, i) => `<button class="fopt" style="--c:#ffb45e" data-act="tmp:${inst.instanceId}:${i}"><b>${t.name}</b><span>${t.desc}</span></button>`).join('')}
-      </div>` : '';
     const chosen = Object.entries(inst.tempers).map(([lvl, t]) => `+${lvl} ${t.name}`).join(' · ');
     const tags = inst.addTags.length ? ` · ${inst.addTags.join(' + ')}` : '';
 
@@ -74,15 +62,33 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
     return `<div class="fcard" style="--c:${color}">
       <div class="ftop"><b>${def.name}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
       ${chosen || tags ? `<div class="faff">${chosen}${tags}</div>` : ''}
-      ${tempers}
       ${slots}
-      ${options}
       <div class="frow">
         <button class="fbtn" data-act="enh:${inst.instanceId}" ${canEnhance(run, inst) ? '' : 'disabled'}>${inst.pendingTemper ? 'Choose a temper' : enhLabel}</button>
         <button class="fbtn${confirming === inst.instanceId ? ' warn' : ''}" data-act="sal:${inst.instanceId}" ${canSalvage(run) ? '' : 'disabled'}>${salLabel}</button>
       </div>
       ${evo}
     </div>`;
+  }
+
+  // The pick lists (reforge options, tempers) open as a panel over the whole forge, so they are on
+  // screen the moment they appear however far the weapon list is scrolled.
+  function pickModal() {
+    for (const inst of run.player.weapons) {
+      const name = `<b>${inst.def.name}</b>`;
+      if (inst.pendingReforge) {
+        const opts = inst.pendingReforge.options.map((id, i) => {
+          const a = AFFIXES[id];
+          return `<button class="fopt" style="--c:${RARITIES[a.rarity].color}" data-act="rfp:${inst.instanceId}:${i}"><b>${a.name}</b><span>${a.desc}</span></button>`;
+        }).join('');
+        return `<div class="fmodal"><div class="fpick"><div class="fpick-top">${name}: choose an effect</div>${opts}<button class="fbtn" data-act="rfk:${inst.instanceId}">Keep current</button></div></div>`;
+      }
+      if (inst.pendingTemper) {
+        const opts = temperOptions(inst, inst.pendingTemper).map((t, i) => `<button class="fopt" style="--c:#ffb45e" data-act="tmp:${inst.instanceId}:${i}"><b>${t.name}</b><span>${t.desc}</span></button>`).join('');
+        return `<div class="fmodal"><div class="fpick temper"><div class="fpick-top">${name}: temper at +${inst.pendingTemper}, choose one</div>${opts}</div></div>`;
+      }
+    }
+    return '';
   }
 
   function render() {
@@ -93,7 +99,8 @@ export function showForge(overlays, run, { onDone, sfx = () => {} }) {
        <p class="sub">Ore <b class="ore">${run.ore}</b></p>
        <p class="fmsg ${tone}">${message || '&nbsp;'}</p>
        <div class="forge-list">${run.player.weapons.map(weaponCard).join('')}</div>
-       <button class="btn primary" data-act="done">Return to battle</button>`,
+       <button class="btn primary" data-act="done">Return to battle</button>
+       ${pickModal()}`,
       onAct,
       'forge'
     );

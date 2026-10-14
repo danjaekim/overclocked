@@ -33,10 +33,12 @@ export function showLevelUp(overlays, { level, offers, rerolls = 0, banishes = 0
       const color = RARITIES[o.rarity].color;
       const badge = o.kind === 'heal' ? '' : o.isNew ? 'NEW' : `Lv ${o.toLevel - 1} → ${o.toLevel}`;
       const canBanish = banishMode && o.kind !== 'heal';
-      return `<button class="card${canBanish ? ' banish' : ''}" data-act="pick:${i}" style="--c:${color}">
+      const evo = o.evo && !canBanish ? `<span class="card-evo">★ Needed to evolve into ${o.evo}</span>` : '';
+      return `<button class="card${canBanish ? ' banish' : ''}${o.evo ? ' evo' : ''}" data-act="pick:${i}" style="--c:${color}">
         <span class="card-top"><b>${o.name}</b><em>${canBanish ? 'tap to banish' : badge}</em></span>
         <span class="card-kind">${KIND_LABEL[o.kind]}</span>
         <span class="card-desc">${o.desc}</span>
+        ${evo}
       </button>`;
     }).join('');
 
