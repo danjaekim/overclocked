@@ -104,14 +104,14 @@ import { validateData } from '../src/data/validate.js';
 
 test('M28b data validates; the last wave is tougher and a war party is scheduled', () => {
   assert.deepEqual(validateData(), []);
-  assert.equal(WAVES[WAVES.length - 1].hpScale, 3.6);
+  assert.equal(WAVES[WAVES.length - 1].hpScale, 2.6);
   assert.ok(EVENTS.some((e) => e.event === 'warparty' && e.at === 480));
 });
 
 test('an armoured elite has armour on top of its body; a second affix stacks', () => {
   const run = newRun();
   const e = spawnElite(run, 'brute', 300, 0, 1, 'armoured', 'swift');
-  assert.ok(e.armor >= 12);
+  assert.ok(e.armor >= 7);
   assert.equal(e.affix2, 'swift');
   const plain = spawnEnemy(run, 'brute', 300, 40);
   assert.ok(e.speed > plain.speed * 1.2, 'swift applied as the second affix');

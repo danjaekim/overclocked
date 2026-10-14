@@ -12,9 +12,9 @@ export const RUN = {
 // damageScale multiplies enemy contact damage, so armor and max hp stay relevant late.
 export const WAVES = [
   { from: 0,   to: 60,  spawns: [{ enemy: 'goblin', perSec: 1.2, perSecEnd: 2.2 }], hpScale: 1.0, speedScale: 1.0 },
-  { from: 60,  to: 180, spawns: [{ enemy: 'goblin', perSec: 2.2, perSecEnd: 3.5 }, { enemy: 'brute', perSec: 0.1, perSecEnd: 0.2 }, { enemy: 'shieldbearer', perSec: 0.08, perSecEnd: 0.2 }, { enemy: 'slinger', perSec: 0.04, perSecEnd: 0.12 }], hpScale: 1.3, speedScale: 1.08, damageScale: 1.05 },
-  { from: 180, to: 360, spawns: [{ enemy: 'goblin', perSec: 3.5, perSecEnd: 5.4 }, { enemy: 'brute', perSec: 0.2, perSecEnd: 0.4 }, { enemy: 'shieldbearer', perSec: 0.2, perSecEnd: 0.45 }, { enemy: 'slinger', perSec: 0.12, perSecEnd: 0.3 }, { enemy: 'splitter', perSec: 0.05, perSecEnd: 0.15 }, { enemy: 'shaman', perSec: 0.03, perSecEnd: 0.08 }], hpScale: 2.0, speedScale: 1.22, damageScale: 1.2 },
-  { from: 360, to: 600, spawns: [{ enemy: 'goblin', perSec: 5.4, perSecEnd: 7.8 }, { enemy: 'brute', perSec: 0.4, perSecEnd: 0.9 }, { enemy: 'shieldbearer', perSec: 0.45, perSecEnd: 0.9 }, { enemy: 'slinger', perSec: 0.3, perSecEnd: 0.7 }, { enemy: 'splitter', perSec: 0.15, perSecEnd: 0.35 }, { enemy: 'shaman', perSec: 0.08, perSecEnd: 0.2 }], hpScale: 3.6, speedScale: 1.4, damageScale: 1.45 },
+  { from: 60,  to: 180, spawns: [{ enemy: 'goblin', perSec: 2.2, perSecEnd: 3.5 }, { enemy: 'brute', perSec: 0.1, perSecEnd: 0.2 }, { enemy: 'shieldbearer', perSec: 0.08, perSecEnd: 0.2 }, { enemy: 'slinger', perSec: 0.04, perSecEnd: 0.12 }], hpScale: 1.2, speedScale: 1.08, damageScale: 1.05 },
+  { from: 180, to: 360, spawns: [{ enemy: 'goblin', perSec: 3.5, perSecEnd: 5.4 }, { enemy: 'brute', perSec: 0.2, perSecEnd: 0.4 }, { enemy: 'shieldbearer', perSec: 0.2, perSecEnd: 0.45 }, { enemy: 'slinger', perSec: 0.12, perSecEnd: 0.3 }, { enemy: 'splitter', perSec: 0.05, perSecEnd: 0.15 }, { enemy: 'shaman', perSec: 0.03, perSecEnd: 0.08 }], hpScale: 1.65, speedScale: 1.22, damageScale: 1.2 },
+  { from: 360, to: 600, spawns: [{ enemy: 'goblin', perSec: 5.4, perSecEnd: 7.8 }, { enemy: 'brute', perSec: 0.4, perSecEnd: 0.9 }, { enemy: 'shieldbearer', perSec: 0.45, perSecEnd: 0.9 }, { enemy: 'slinger', perSec: 0.3, perSecEnd: 0.7 }, { enemy: 'splitter', perSec: 0.15, perSecEnd: 0.35 }, { enemy: 'shaman', perSec: 0.08, perSecEnd: 0.2 }], hpScale: 2.6, speedScale: 1.4, damageScale: 1.45 },
 ];
 
 // One-off events. `at` is authored against RUN.designLength and

@@ -19,7 +19,7 @@ const HURT_FLASH = 0.15;
 const HIT_FLASH = 0.08;
 const WARD_MULT = 0.5;     // damage taken inside a Shaman's ward
 const BLESS_MULT = 1.1;    // damage taken by a blessed enemy
-const ARMOR_FLOOR = 0.25;  // armor never takes more than 75% off a hit
+const ARMOR_FLOOR = 0.4;   // armor never takes more than 60% off a hit
 
 export function killEnemy(run, e) {
   run.kills++;

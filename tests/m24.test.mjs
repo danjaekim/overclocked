@@ -60,7 +60,7 @@ test('per-weapon DPS counts from its first hit, and stops when it is salvaged', 
   assert.equal(by.Old, 100 / 60);           // 10 s to 70 s
 });
 
-test('armour takes a flat amount off each hit (never more than 75%), but not off burns', async () => {
+test('armour takes a flat amount off each hit (never more than 60%), but not off burns', async () => {
   const { spawnEnemy } = await import('../src/game/director.js');
   const { createRun } = await import('../src/game/run.js');
   const { flushDamage } = await import('../src/systems/damage.js');
@@ -75,7 +75,7 @@ test('armour takes a flat amount off each hit (never more than 75%), but not off
   const hp1 = e.hp;
   queueDamage(run, e, 4, 0, 0, 0, 0, null, KIND_HIT);
   flushDamage(run);
-  assert.equal(hp1 - e.hp, 1);                      // floor: 25% of 4
+  assert.ok(Math.abs(hp1 - e.hp - 1.6) < 1e-9);                    // floor: 40% of 4
   const hp2 = e.hp;
   queueDamage(run, e, 4, 0, 0, 0, 0, null, KIND_DOT);
   flushDamage(run);

@@ -19,7 +19,7 @@ export const ENEMIES = {
     ai: 'chase',
     color: '#a64d79',
   },
-  // Armoured goblin: every hit loses `armor` damage (never more than 75% of it), so many small hits
+  // Armoured goblin: every hit loses `armor` damage (never more than 60% of it), so many small hits
   // barely scratch it and heavy hits, burns and shocks do. Damage over time ignores armor.
   shieldbearer: {
     name: 'Shieldbearer',

@@ -47,14 +47,14 @@ test('an elite is bigger, tougher and hits harder than the base enemy', () => {
   assert.ok(swift.speed > 50 * 1.3);
 });
 
-test('Warded: half damage while above half hp, full damage once wounded', () => {
+test('Warded: 35% less damage while above half hp, full damage once wounded', () => {
   const run = newRun();
   const w = run.player.weapons[0];
   const el = spawnElite(run, 'brute', 300, 0, 1, 'warded');
   const hp = el.maxHp;
   queueDamage(run, el, 100, false, 0, 0, 0, w, KIND_PROC);
   flushDamage(run);
-  approx(hp - el.hp, 50);
+  approx(hp - el.hp, 65);
   el.hp = el.maxHp * 0.4;
   const before = el.hp;
   queueDamage(run, el, 100, false, 0, 0, 0, w, KIND_PROC);

@@ -2,7 +2,7 @@
 // body, more hp, one affix, and a chest on death. Elite events live in data/waves.js EVENTS.
 
 export const ELITE = {
-  hpMult: 8,
+  hpMult: 6,
   radiusMult: 1.35,
   damageMult: 1.5,
   xpMult: 8,
@@ -10,9 +10,9 @@ export const ELITE = {
   starsteelChance: 0.5,      // chance an elite (after the first, which always does) drops 1 starsteel
   affixes: {
     swift:        { name: 'Swift',        speedMult: 1.45 },
-    warded:       { name: 'Warded',       damageTaken: 0.5, untilHpFrac: 0.5 },   // takes half damage while above 50% hp
+    warded:       { name: 'Warded',       damageTaken: 0.65, untilHpFrac: 0.5 },  // takes 35% less damage while above 50% hp
     regenerating: { name: 'Regenerating', regenFrac: 0.03, delay: 2 },             // 3% max hp per second, 2 s after its last hit
-    armoured:     { name: 'Armoured',     armor: 12 },                               // counters many-small-hits builds (see armour in systems/damage.js)
+    armoured:     { name: 'Armoured',     armor: 7 },                               // counters many-small-hits builds (see armour in systems/damage.js)
     volatile:     { name: 'Volatile',     blastRadius: 95, blastMult: 1.3 },         // explodes when it dies: punishes standing in melee
   },
   secondAffixAfter: 420,     // seconds: elites spawned after this roll two affixes
