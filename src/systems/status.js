@@ -145,7 +145,7 @@ export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dm
     if (!best) break;
     visited[nv++] = best.uid;
     addArc(run, cx, cy, best.x, best.y);
-    applyShock(run, best, src);
+    if (cause !== CAUSE.FORK) applyShock(run, best, src);      // a fork is plain damage, not a shock
     const d = Math.sqrt(bestD) || 1;
     queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC, cause);
     if (run.rules.overload && (best.status & ST.BURN)) overload(run, best, src, dmg, depth);
@@ -245,4 +245,22 @@ export function updateStatuses(run, dt) {
     if (e.shockT > 0) e.shockT -= dt;
     refreshMask(e);
   }
+}
+
+// Chain Reaction (any build): a dying enemy bursts for a share of its own max HP. The burst's kills
+// burst in turn, down to MAX_TRIGGER_DEPTH, so a packed swarm goes off like a string of crackers.
+// Bosses do not burst (their max HP would flatten the room), and the burst is capped.
+const REACTION_CAP = 400;
+export function chainReaction(run, e, src, depth, maxHp) {
+  if (e.def.boss) return;
+  const r = run.rules.chainReaction;
+  addPuff(run, e.x, e.y, r.radius / 2.4, '#ffb347');
+  burst(run, e.x, e.y, r.radius, Math.min(maxHp * r.frac, REACTION_CAP), src, depth, CAUSE.REACTION);
+}
+
+// Forked Strikes (any build): a direct hit sometimes forks to the nearest other enemy.
+export function forkStrike(run, e, src, amount, depth) {
+  const r = run.rules.fork;
+  if (run.rng.next() >= r.chance) return;
+  chainArc(run, e, src, amount, depth, r.hops, r.frac, CAUSE.FORK);
 }

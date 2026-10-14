@@ -12,7 +12,7 @@ import { SHRINE } from '../data/forge.js';
 import { KIND_HIT, KIND_DOT } from './damage-queue.js';
 import { recordDamage, recordKill } from '../game/run-stats.js';
 import { ST } from '../data/statuses.js';
-import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath } from './status.js';
+import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike } from './status.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -144,6 +144,7 @@ export function flushDamage(run) {
         p.hp = Math.min(p.maxHp, p.hp + amount * p.stats.getFor('lifesteal', src.tags));
       }
       rollStatuses(run, e, src, amount, depth, kind);
+      if (run.rules.fork && kind === KIND_HIT && depth === 0 && e.hp > 0) forkStrike(run, e, src, amount, depth);
       if (q.crit[i] === 1) fireTriggers(run, 'crit', src, ex, ey, depth, e);
       fireTriggers(run, 'hit', src, ex, ey, depth, e);
     }
@@ -154,6 +155,7 @@ export function flushDamage(run) {
       killEnemy(run, e);
       recordKill(run, src);
       if ((mask & 15) !== 0 && src) onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount);
+      if (run.rules.chainReaction && src) chainReaction(run, e, src, depth, maxHp);
       if (src) fireTriggers(run, 'kill', src, ex, ey, depth);   // burn kills still count as the weapon's kills
     }
   }

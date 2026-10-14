@@ -173,10 +173,10 @@ Object.assign(PERKS, {
     rule: { id: 'wildfire', values: [{ n: 2, mult: 0.6 }, { n: 3, mult: 0.6 }, { n: 3, mult: 0.75 }] },
   },
   shatter: {
-    name: 'Shatter', glyph: 'S', rarity: 'rare', maxLevel: 3, requires: [FROST], affinity: ['frost'],
-    desc: 'A frozen enemy that dies bursts into ice, hurting everything around it.',
-    levels: [[], [], []],
-    levelText: ['bursts for 30% of its max HP', 'bursts for 45% of its max HP', 'bursts for 60% of its max HP'],
+    name: 'Shatter', glyph: 'S', rarity: 'rare', maxLevel: 3, requires: [], affinity: ['frost'],
+    desc: 'Your hits chill a little, and a frozen enemy that dies bursts into ice, hurting everything around it.',
+    levels: [[{ stat: 'chillChance', op: 'flat', value: 0.08 }], [{ stat: 'chillChance', op: 'flat', value: 0.08 }], [{ stat: 'chillChance', op: 'flat', value: 0.08 }]],
+    levelText: ['+8% chill chance, bursts for 30% of its max HP', '+8% chill chance, bursts for 45%', '+8% chill chance, bursts for 60%'],
     rule: { id: 'shatter', values: [{ frac: 0.3 }, { frac: 0.45 }, { frac: 0.6 }] },
   },
   thunderclap: {
@@ -222,4 +222,32 @@ Object.assign(PERKS, {
   },
 });
 
-export const RULE_IDS = ['wildfire', 'shatter', 'thunderclap', 'quench', 'overload', 'superconduct'];
+// ---- build-agnostic crowd control: no element needed ----------------------------------------------
+Object.assign(PERKS, {
+  chain_reaction: {
+    name: 'Chain Reaction', glyph: 'C', rarity: 'rare', maxLevel: 3, requires: [], affinity: [],
+    desc: 'Every enemy you kill bursts for a share of its max HP, and those kills burst too.',
+    levels: [[], [], []],
+    levelText: ['bursts for 20% of its max HP', 'bursts for 32%, wider', 'bursts for 45%, wider still'],
+    rule: { id: 'chainReaction', values: [{ frac: 0.2, radius: 55 }, { frac: 0.32, radius: 65 }, { frac: 0.45, radius: 75 }] },
+  },
+  forked_strikes: {
+    name: 'Forked Strikes', glyph: 'Y', rarity: 'uncommon', maxLevel: 3, requires: [], affinity: [],
+    desc: 'Direct hits sometimes fork to the nearest other enemy.',
+    levels: [[], [], []],
+    levelText: ['20% of hits fork once for 50% damage', '30% of hits fork', '40% of hits fork twice for 60% damage'],
+    rule: { id: 'fork', values: [{ chance: 0.2, hops: 1, frac: 0.5 }, { chance: 0.3, hops: 1, frac: 0.5 }, { chance: 0.4, hops: 2, frac: 0.6 }] },
+  },
+  broad_strokes: {
+    name: 'Broad Strokes', glyph: 'B', rarity: 'common', maxLevel: 3, requires: [], affinity: [],
+    desc: 'Every weapon reaches wider: bigger blasts, blades, bolts and swings.',
+    levels: [
+      [{ stat: 'area', op: 'inc', value: 0.12 }],
+      [{ stat: 'area', op: 'inc', value: 0.12 }],
+      [{ stat: 'area', op: 'inc', value: 0.12 }],
+    ],
+    levelText: ['+12% area', '+12% area', '+12% area'],
+  },
+});
+
+export const RULE_IDS = ['wildfire', 'shatter', 'thunderclap', 'quench', 'overload', 'superconduct', 'chainReaction', 'fork'];

@@ -50,6 +50,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M26** *(done)* | Branch evolutions | Shared effect vocabulary (attack trigger, patches, vortices, pillars, shockwaves, sunder, bless) and six new evolutions, one more per starter weapon. See `architecture.md` M26 and `design-m26-m28.md`. |
 | **M27** *(done)* | Grafts | Forge grafting (1 starsteel, donor consumed), generic echo, masterworks 1-6, discovery in the save and Compendium. See `architecture.md` M27.  |
 | **M28** *(done)* | Masterworks 7-12 and late-game difficulty | Black Sun, Bladestorm, Comet, Fault Line, Wrath, Familiars; Armoured and Volatile elites, second affixes, War Party, Splitter and Shaman, tougher last wave. See `architecture.md` M28a/M28b. M28c: first tuning pass after a mage playthrough (see architecture.md). Next: more playtest tuning; art rounds for Shieldbearer, Slinger, Splitter, Shaman and masterwork illustrations; Apex grafts. |
+| **M29** *(done)* | Crowd control perks | Chain Reaction, Forked Strikes, Broad Strokes; Shatter works without a frost weapon. See `architecture.md` M29. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
