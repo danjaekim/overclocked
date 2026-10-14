@@ -116,3 +116,24 @@ test('save keeps music settings and clamps bad values', () => {
   assert.equal(again.data.music, false);
   assert.equal(again.data.musicVolume, 0.3);
 });
+
+test('every sound effect plays on a fake context, is rate limited, and gems climb', async () => {
+  const { createSfx, SFX_NAMES } = await import('../src/audio/sfx.js');
+  const ctx = fakeCtx();
+  const sfx = createSfx(ctx, ctx.destination);
+  for (const n of SFX_NAMES) {
+    ctx.currentTime += 1;
+    const before = ctx.made.osc + ctx.made.noise;
+    assert.equal(sfx.play(n), true, n + ' starts');
+    assert.ok(ctx.made.osc + ctx.made.noise > before, n + ' makes sound');
+  }
+  assert.equal(sfx.play('nope'), false);
+  ctx.currentTime += 1;
+  assert.equal(sfx.play('kill'), true);
+  assert.equal(sfx.play('kill'), false, 'a second kill in the same instant is dropped');
+  // a run of gems within 0.45 s keeps working (the chain climbs), a gap resets it
+  ctx.currentTime += 1;
+  let ok = 0;
+  for (let i = 0; i < 10; i++) { ctx.currentTime += 0.05; if (sfx.play('gem')) ok++; }
+  assert.ok(ok >= 8);
+});

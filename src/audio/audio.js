@@ -4,25 +4,7 @@
 // sim stay silent and deterministic. Music (audio/music.js) shares this context; `audio.music`
 // is driven by game.js scenes, and `audio.setMusic*` apply the player's music settings.
 import { createMusic } from './music.js';
-
-// name: [wave, startHz, endHz, seconds, gain, minGapSeconds]
-const SOUNDS = {
-  hit:     ['square',   300, 180, 0.04, 0.05, 0.05],
-  kill:    ['triangle', 220, 120, 0.07, 0.07, 0.04],
-  gem:     ['sine',     700, 1100, 0.05, 0.05, 0.035],
-  ore:     ['square',   500, 800, 0.08, 0.05, 0.05],
-  hurt:    ['sawtooth', 160, 70,  0.18, 0.12, 0.15],
-  levelup: ['triangle', 440, 880, 0.3,  0.14, 0.3],
-  forge:   ['square',   200, 400, 0.12, 0.10, 0.08],
-  fail:    ['sawtooth', 220, 90,  0.25, 0.10, 0.1],
-  shrine:  ['sine',     520, 780, 0.35, 0.10, 0.3],
-  boss:    ['sawtooth', 90,  60,  0.7,  0.16, 0.5],
-  chest:   ['triangle', 520, 1040, 0.25, 0.14, 0.2],
-  evolve:  ['triangle', 330, 1320, 0.6, 0.16, 0.5],
-  win:     ['triangle', 520, 1040, 0.8, 0.14, 0.5],
-  lose:    ['sawtooth', 300, 60,  0.9,  0.14, 0.5],
-  tap:     ['sine',     600, 600, 0.03, 0.05, 0.02],
-};
+import { createSfx, SFX_NAMES } from './sfx.js';
 
 // One second of 8-bit mono silence as a WAV blob URL.
 function silentWavUrl() {
@@ -41,21 +23,22 @@ function silentWavUrl() {
 export function createAudio({ enabled = true, music: musicOn = true, musicVolume = 0.6 } = {}) {
   let ctx = null;
   let master = null;
+  let sfx = null;
   let on = enabled;
   let mOn = musicOn;
   const music = createMusic();
   music.setVolume(musicVolume);
   music.setEnabled(on && mOn);
-  const lastPlayed = {};
-  const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+    const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
 
   function ensure() {
     if (ctx || !AC) return ctx;
     try {
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.6;
+      master.gain.value = 0.7;
       master.connect(ctx.destination);
+      sfx = createSfx(ctx, master);
       music.attach(ctx, ctx.destination);
     } catch (e) {
       ctx = null;
@@ -96,22 +79,7 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
         ctx.resume().catch(() => {});
         return;
       }
-      const s = SOUNDS[name];
-      if (!s) return;
-      const t = ctx.currentTime;
-      if (t - (lastPlayed[name] || -1) < s[5]) return;     // rate limit: hundreds of kills per second
-      lastPlayed[name] = t;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = s[0];
-      osc.frequency.setValueAtTime(s[1], t);
-      osc.frequency.exponentialRampToValueAtTime(Math.max(1, s[2]), t + s[3]);
-      g.gain.setValueAtTime(s[4], t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + s[3]);
-      osc.connect(g);
-      g.connect(master);
-      osc.start(t);
-      osc.stop(t + s[3] + 0.02);
+      sfx.play(name);
     },
   };
 
@@ -150,4 +118,4 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
   return audio;
 }
 
-export const SOUND_NAMES = Object.keys(SOUNDS);
+export const SOUND_NAMES = SFX_NAMES;
