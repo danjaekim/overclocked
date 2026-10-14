@@ -89,6 +89,14 @@ async function toggleLab() {
     for (const w of r.player.weapons) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); }
     r.player.weapons.length = 0;
   };
+  // Adds a weapon at max level without touching the others (reuses one you already own). Null when the slots are full.
+  const give = (id) => {
+    const have = run().player.weapons.find((w) => w.weaponId === id);
+    if (have) return maxOut(have);
+    const inst = W.addWeapon(run(), id);
+    if (!inst) { run().toast = { text: 'Weapon slots full: remove some first', ttl: 2.5 }; return null; }
+    return maxOut(inst);
+  };
   const calm = () => { run().debug.god = true; run().player.level = 80; };     // no damage, no level-up screens
   const swarm = (n = 40) => {
     const r = run();
@@ -105,6 +113,7 @@ async function toggleLab() {
     heal: () => { run().player.hp = run().player.maxHp; },
     low: () => { run().player.hp = run().player.maxHp * 0.25; },
     clear,
+    last: () => { const r = run(); const w = r.player.weapons.pop(); if (w) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); } },
     star: () => { run().starsteel += 3; },
   };
   const branchIds = EVOLUTIONS.filter((r) => !r.with).map((r) => r.into);
@@ -113,20 +122,21 @@ async function toggleLab() {
   labEl = document.createElement('div');
   labEl.style.cssText = 'position:fixed;left:6px;right:6px;bottom:52px;max-height:52vh;overflow:auto;z-index:6;background:rgba(0,0,0,.88);color:#9fe870;font:11px monospace;padding:8px;border:1px solid #4a6;border-radius:8px';
   labEl.innerHTML =
-    row('Branches and evolutions (replaces your weapons, max level)', branchIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
-    row('Masterworks (host + donor, max level, grafted)', MASTERWORKS.map((m) => [`m:${m.id}`, m.name])) +
+    row('Weapons', [['a:clear', 'REMOVE ALL WEAPONS'], ['a:last', 'remove last']]) +
+    row('Branches and evolutions (added at max level, nothing removed)', branchIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
+    row('Masterworks (adds host + donor at max level, then grafts)', MASTERWORKS.map((m) => [`m:${m.id}`, m.name])) +
     row('Generic graft: pick two evolved weapons', [['gen', 'graft last two']]) +
-    row('World', Object.keys(actions).map((k) => [`a:${k}`, k]).concat([['calm', 'god + no level-ups']]));
+    row('World', Object.keys(actions).filter((k) => k !== 'clear' && k !== 'last').map((k) => [`a:${k}`, k]).concat([['calm', 'god + no level-ups']]));
   labEl.addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
     if (!b || !run()) return;
     const [kind, id] = b.dataset.k.split(':');
-    if (kind === 'w') { clear(); maxOut(W.addWeapon(run(), id)); calm(); swarm(); }
+    if (kind === 'w') { if (!give(id)) return; calm(); swarm(); }
     else if (kind === 'm') {
       const m = MASTERWORKS.find((x) => x.id === id);
-      clear();
-      const h = maxOut(W.addWeapon(run(), m.host));
-      const d = maxOut(W.addWeapon(run(), m.donor));
+      const h = give(m.host);
+      const d = give(m.donor);
+      if (!h || !d) return;
       run().starsteel += 1;
       G.graft(run(), h, d);
       calm(); swarm();
