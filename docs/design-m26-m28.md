@@ -14,7 +14,8 @@ Contents
 7. Changes to existing weapons and evolutions
 8. Fit with existing code, file by file
 9. Tests and bench additions
-10. Open questions for Dan
+10. Apex grafts (later)
+11. Decisions
 
 ---
 
@@ -112,7 +113,7 @@ Notes:
 
 At the forge, **graft** one evolved weapon (the *donor*) into another (the *host*):
 
-- **Cost:** 2 starsteel. **[bench]**
+- **Cost:** 1 starsteel (decided). The donor is consumed too. **[bench]**
 - **Result:** the host keeps its behaviour, level, enhance and affixes. It gains the donor's element tags,
   so cross-element perks (Overload, Quench, Superconduct) can start working, and it gains a graft effect
   (§4.2 or §4.3).
@@ -158,8 +159,9 @@ Any two evolved weapons without a masterwork still graft. The host gets:
 - an **echo**: `on: 'attack', every: 3` → `cast` the donor's behaviour once at 50% of its damage, aimed at
   the host's target. **[bench]**
 
-The name is "{Host} of {Donor's element}", for example "Reaper Axe of Frost". When a donor has no
-element, its name is used instead ("Grave Legion of Thunder Lance").
+The name is "{Host} of {Donor's element}", for example "Reaper Axe of Frost" (decided: always readable,
+where generated portmanteaus are sometimes ugly; easy to change later). A donor with no element uses
+its own name ("Grave Legion of the Thunder Lance").
 
 This is the Magic Survival / BALL x PIT feel: every pair *does something*, and the named ones are the
 jackpots.
@@ -183,11 +185,11 @@ each, so about 3 on average. The boss drops 2. That is about **6 per run** (at l
 |---|---|---|
 | 1st evolution | 1 | minute 2–3 (first elite at 1:30, weapon level 6) |
 | 2nd evolution | 1 | minute 4–6 |
-| Graft | 2 | minute 5–7 (the boss at 5:00 pays for it) |
-| 3rd evolution, or a 2nd graft late | 1–2 | minute 8+, if the rolls were kind |
+| Graft | 1 | minute 5–7 |
+| 3rd evolution, or a graft on a second weapon | 1–2 | minute 7+, usually affordable |
 
-So the target is **two evolutions and one graft in most runs**, with a second graft as a lucky late
-spike. **[bench]**: the bench should report the minute of the first evolution and the first graft over
+So the target is **two evolutions and one graft in most runs**. With grafts at 1 starsteel, a third evolution
+or a second graft on a different weapon is often in reach late; the bench decides whether that is too much. **[bench]**: the bench should report the minute of the first evolution and the first graft over
 200 seeded bot runs. The target medians are 3:00 and 6:30.
 
 Two more levers, only if the bench says the economy is too tight:
@@ -271,13 +273,26 @@ Staging:
 
 ---
 
-## 10. Open questions for Dan
+## 10. Apex grafts (later, after the M27 playtest)
 
-1. **Graft cost:** 2 starsteel, or 1 starsteel plus consuming the donor? (The donor is consumed either
-   way.)
-2. **Should a grafted weapon be able to take a second graft** late in a run, maybe gated by a title? It's
-   fun, but a balance risk.
-3. **Masterwork art:** the masterworks are procedural effects, not sprites, so no art round is needed.
-   Do you want the Compendium's masterwork entries to get small illustrations later?
-4. **Generic graft names:** "Reaper Axe of Frost", or a short combined word ("Frostreaper")? Generated
-   portmanteaus are fun but sometimes ugly.
+A grafted weapon cannot take a second graft. Separate grafts on **different** weapons are allowed, and
+they add more variety for the same starsteel. A small, named exception is worth trying once grafts have
+been played: an **Apex**, where one specific masterwork takes one specific third weapon. There are no
+generic triples, so balance stays in hand and each Apex is a rare jackpot. Candidates:
+
+| Masterwork + third | Apex | What happens |
+|---|---|---|
+| Black Sun + Thunder Lance | **Event Horizon** | The collapse fires lightning lances outward in every direction. |
+| Thunderscythe + Glacial Bloom | **Hailscythe** | The planted shells freeze; a shock on a frozen enemy shatters it. |
+| Hellhounds + Judgement | **Wild Hunt** | Every bite calls a pillar of light on what the hound bit. |
+| Spear Wheel + Stormshell Mortar | **Starfall Wheel** | Launched lances turn into shells where they land. |
+
+Gate: a title earned by making a masterwork, and 2 starsteel, so an Apex is a late-run reward.
+
+## 11. Decisions (Dan, 2026-10-14)
+
+1. Graft cost: **1 starsteel**.
+2. Second graft on one weapon: **not for now**. Separate grafts on different weapons are allowed. Apex
+   triples (§10) are revisited after the M27 playtest.
+3. Masterwork illustrations in the Compendium: **yes**, as an art round once masterworks #1–#6 are in.
+4. Generic graft names: **"{Host} of {Element}"**, changeable later.
