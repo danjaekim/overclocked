@@ -92,3 +92,87 @@ test('Familiars: three hounds each cast a bolt', () => {
   assert.equal(h.fam.length, 3);
   assert.ok(e.hp < e.maxHp);
 });
+
+// ---- M28b: difficulty ----
+import { spawnElite } from '../src/game/director.js';
+import { ELITE } from '../src/data/elites.js';
+import { RUN_EVENTS } from '../src/game/run-events.js';
+import { WAVES, EVENTS } from '../src/data/waves.js';
+import { flushDamage, killEnemy } from '../src/systems/damage.js';
+import { queueDamage, KIND_PROC } from '../src/systems/damage-queue.js';
+import { validateData } from '../src/data/validate.js';
+
+test('M28b data validates; the last wave is tougher and a war party is scheduled', () => {
+  assert.deepEqual(validateData(), []);
+  assert.equal(WAVES[WAVES.length - 1].hpScale, 3.6);
+  assert.ok(EVENTS.some((e) => e.event === 'warparty' && e.at === 480));
+});
+
+test('an armoured elite has armour on top of its body; a second affix stacks', () => {
+  const run = newRun();
+  const e = spawnElite(run, 'brute', 300, 0, 1, 'armoured', 'swift');
+  assert.ok(e.armor >= 12);
+  assert.equal(e.affix2, 'swift');
+  const plain = spawnEnemy(run, 'brute', 300, 40);
+  assert.ok(e.speed > plain.speed * 1.2, 'swift applied as the second affix');
+});
+
+test('late elites roll two different affixes, early ones one', () => {
+  const run = newRun();
+  run.time = 100;
+  RUN_EVENTS.elite(run, { enemy: 'brute' });
+  const early = run.world.enemies.active[run.world.enemies.active.length - 1];
+  assert.equal(early.affix2, '');
+  run.time = ELITE.secondAffixAfter + 1;
+  RUN_EVENTS.elite(run, { enemy: 'brute' });
+  const late = run.world.enemies.active[run.world.enemies.active.length - 1];
+  assert.ok(late.affix2 && late.affix2 !== late.affix);
+});
+
+test('a volatile elite hurts a player standing next to it when it dies', () => {
+  const run = newRun();
+  run.debug.god = false;
+  run.player.hp = run.player.maxHp = 100;
+  const e = spawnElite(run, 'brute', 30, 0, 1, 'volatile');
+  e.hp = 0;
+  killEnemy(run, e);
+  assert.ok(run.player.hp < 100);
+  run.player.iframes = 0;
+  run.player.hp = 100;
+  const far = spawnElite(run, 'brute', 400, 0, 1, 'volatile');
+  killEnemy(run, far);
+  assert.equal(run.player.hp, 100);
+});
+
+test('a splitter bursts into goblins when it dies', () => {
+  const run = newRun();
+  const e = spawnEnemy(run, 'splitter', 200, 0);
+  const before = run.world.enemies.count;
+  killEnemy(run, e);
+  assert.equal(run.world.enemies.count, before - 1 + 3);
+});
+
+test('a shaman wards the enemies near it: they take half damage', () => {
+  const run = newRun();
+  run.player.weapons.length = 0;
+  const sh = spawnEnemy(run, 'shaman', 400, 0);
+  const near = dummy(run, 440, 0);
+  const far = dummy(run, 400, 600);
+  sh.speed = 0;
+  tick(run, 0.5);
+  assert.ok(near.wardT > 0 && !(far.wardT > 0));
+  const dealt = (e) => { const h = e.hp; queueDamage(run, e, 100, false, 0, 0, 0, null, KIND_PROC); flushDamage(run); return h - e.hp; };
+  assert.equal(dealt(near), 50);
+  assert.equal(dealt(far), 100);
+  sh.hp = 0; killEnemy(run, sh);
+  tick(run, 1);
+  assert.ok(!(near.wardT > 0), 'the ward ends with its Shaman');
+});
+
+test('the war party brings two shieldbearer elites and slingers', () => {
+  const run = newRun();
+  RUN_EVENTS.warparty(run);
+  const l = run.world.enemies.active;
+  assert.equal(l.filter((e) => e.defId === 'shieldbearer' && e.elite).length, 2);
+  assert.equal(l.filter((e) => e.defId === 'slinger').length, 6);
+});

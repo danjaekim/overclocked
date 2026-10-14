@@ -1,7 +1,7 @@
 // Spawn director: reads data/waves.js and spawns enemies on the perimeter just outside
 // the view. At the soft cap it stops spawning and buffs enemy hp so pressure keeps rising.
 
-import { ELITE } from '../data/elites.js';
+import { ELITE, affixDefs } from '../data/elites.js';
 import { ENEMIES } from '../data/enemies.js';
 import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP } from '../data/waves.js';
 import { RUN_EVENTS } from './run-events.js';
@@ -35,6 +35,8 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   e.armor = def.armor ? def.armor * Math.sqrt(hpScale) : 0;
   e.elite = 0;
   e.affix = '';
+  e.affix2 = '';
+  e.wardT = 0;
   e.lastHitT = -1e9;
   e.status = 0;
   e.burnDps = e.burnT = e.burnAcc = 0;
@@ -47,16 +49,19 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
 }
 
 // An elite: the same def with a bigger body, more hp and damage, and one affix.
-export function spawnElite(run, defId, x, y, hpScale, affixId) {
+export function spawnElite(run, defId, x, y, hpScale, affixId, affix2Id = '') {
   const e = spawnEnemy(run, defId, x, y, hpScale);
   if (!e) return null;
   e.elite = 1;
   e.affix = affixId;
+  e.affix2 = affix2Id;
   e.maxHp = e.hp = e.maxHp * ELITE.hpMult;
   e.r *= ELITE.radiusMult;
   e.damage *= ELITE.damageMult;
-  const a = ELITE.affixes[affixId];
-  if (a.speedMult) e.speed *= a.speedMult;
+  for (const a of affixDefs(e)) {
+    if (a.speedMult) e.speed *= a.speedMult;
+    if (a.armor) e.armor += a.armor;
+  }
   return e;
 }
 

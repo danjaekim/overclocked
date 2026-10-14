@@ -6,7 +6,7 @@ import { GEM } from '../data/progression.js';
 import { ORES } from '../data/ores.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST } from '../systems/pickups.js';
-import { ELITE } from '../data/elites.js';
+import { ELITE, affixDefs } from '../data/elites.js';
 import { getSprite } from './sprites.js';
 
 const TAU = Math.PI * 2;
@@ -203,6 +203,25 @@ export function drawEnemies(ctx, view, run) {
 
   drawStatusRings(ctx, list, x0, x1, y0, y1);
   drawEliteMarks(ctx, list, x0, x1, y0, y1, run.time);
+  drawWards(ctx, list, x0, x1, y0, y1);
+}
+
+// A Shaman's ward: a faint teal circle on the ground, so the thing making the crowd tough is findable.
+function drawWards(ctx, list, x0, x1, y0, y1) {
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!e.def.ward || e.x < x0 - 140 || e.x > x1 + 140 || e.y < y0 - 140 || e.y > y1 + 140) continue;
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#5aa8b0';
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.def.ward.radius, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = '#8fe0e8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 }
 
 // Elites get a pulsing gold ring and their affix name above them (there are only a few at a time).
@@ -226,7 +245,7 @@ function drawEliteMarks(ctx, list, x0, x1, y0, y1, t) {
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.fillStyle = ELITE.color;
-    ctx.fillText(ELITE.affixes[e.affix].name, e.x, e.y - e.r - 8);
+    ctx.fillText(affixDefs(e).map((a) => a.name).join(' '), e.x, e.y - e.r - 8);
   }
 }
 

@@ -2,7 +2,7 @@
 // at most 4 neighbours), decay knockback, teleport stragglers back to the spawn perimeter.
 
 import { randomPerimeterPoint } from '../game/director.js';
-import { ELITE } from '../data/elites.js';
+import { affixDefs } from '../data/elites.js';
 import { spawnEnemyShot } from './enemy-shots.js';
 
 const SEP_RADIUS = 2.2;       // x enemy radius
@@ -117,10 +117,21 @@ export function updateEnemies(run, dt) {
     if (e.flash > 0) e.flash -= dt;
     if (e.sunderT > 0) e.sunderT -= dt;
     if (e.blessT > 0) e.blessT -= dt;
+    if (e.wardT > 0) e.wardT -= dt;
+    if (e.def.ward) {                                     // Shaman: everything near it takes half damage while it lives
+      e.aiCd -= dt;
+      if (e.aiCd <= 0) {
+        e.aiCd = 0.25;
+        const wr = e.def.ward.radius;
+        const n = hash.queryRadius(e.x, e.y, wr, scratch);
+        for (let k = 0; k < n; k++) if (scratch[k] !== e && scratch[k].alive) scratch[k].wardT = 0.5;
+      }
+    }
     if (e.elite === 1) {                                  // Regenerating: heals once it has gone unhit for a while
-      const a = ELITE.affixes[e.affix];
-      if (a.regenFrac && run.time - e.lastHitT > a.delay && e.hp < e.maxHp) {
-        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * a.regenFrac * dt);
+      for (const a of affixDefs(e)) {
+        if (a.regenFrac && run.time - e.lastHitT > a.delay && e.hp < e.maxHp) {
+          e.hp = Math.min(e.maxHp, e.hp + e.maxHp * a.regenFrac * dt);
+        }
       }
     }
   }

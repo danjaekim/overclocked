@@ -48,7 +48,8 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M24** *(done)* | Playtest fixes | Forge picks open as a panel, goblins slower with a steeper late spawn ramp, level-up offers favour and mark what an evolution still needs. See `architecture.md` M24. |
 | **M25** *(done)* | Evolution access and enemy variety | Elite starsteel, evolutions at weapon level 6, armoured Shieldbearers and ranged Slingers. See `architecture.md` M25. |
 | **M26** *(done)* | Branch evolutions | Shared effect vocabulary (attack trigger, patches, vortices, pillars, shockwaves, sunder, bless) and six new evolutions, one more per starter weapon. See `architecture.md` M26 and `design-m26-m28.md`. |
-| **M27** *(done)* | Grafts | Forge grafting (1 starsteel, donor consumed), generic echo, masterworks 1-6, discovery in the save and Compendium. See `architecture.md` M27. Next: playtest, then M28 (masterworks 7-12 and difficulty). |
+| **M27** *(done)* | Grafts | Forge grafting (1 starsteel, donor consumed), generic echo, masterworks 1-6, discovery in the save and Compendium. See `architecture.md` M27.  |
+| **M28** *(done)* | Masterworks 7-12 and late-game difficulty | Black Sun, Bladestorm, Comet, Fault Line, Wrath, Familiars; Armoured and Volatile elites, second affixes, War Party, Splitter and Shaman, tougher last wave. See `architecture.md` M28a/M28b. Next: playtest and tune; art rounds for Shieldbearer, Slinger, Splitter, Shaman and masterwork illustrations; Apex grafts. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 

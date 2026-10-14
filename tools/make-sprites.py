@@ -44,6 +44,18 @@ EXTRA = {
         '<path d="M10 20 L10 60" fill="none" stroke="#e9dcc0" stroke-width="1.200"/>'
         '<path d="M24 20 H40 V27 H24 Z" fill="#b06ad0" stroke-width="1.600"/>'
         '</g>' % STYLE),
+    'splitter': ('goblin', '<g %s>'
+        '<path d="M22 46 Q32 38 42 46 Q44 58 32 59 Q20 58 22 46 Z" fill="#d98cae"/>'
+        '<path d="M32 40 L29 48 L34 52 L31 59 M26 50 L21 54 M38 48 L44 52" fill="none" stroke="#1d1713" stroke-width="2"/>'
+        '<circle cx="32" cy="51" r="3.200" fill="#ffe3f0" stroke-width="1.200"/>'
+        '</g>' % STYLE),
+    'shaman': ('goblin', '<g %s>'
+        '<path d="M18 27 Q16 8 32 7 Q48 8 46 27 L40 20 H24 Z" fill="#3f7f86"/>'
+        '<path d="M8 62 L9 16" fill="none" stroke="#e9dcc0" stroke-width="5"/>'
+        '<path d="M8 62 L9 16" fill="none" stroke="#8c7b66" stroke-width="2.400"/>'
+        '<circle cx="9" cy="11" r="6" fill="#5aa8b0"/>'
+        '<circle cx="7.500" cy="9.500" r="1.800" fill="#e9dcc0" stroke-width="0"/>'
+        '</g>' % STYLE),
 }
 FILTER = ('<filter id="rough" x="-8%" y="-8%" width="116%" height="116%">'
           '<feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="4" result="n"/>'

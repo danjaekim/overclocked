@@ -162,6 +162,7 @@ export function validateData() {
 
   for (const [id, a] of Object.entries(ELITE.affixes)) {
     if (!a.name) problems.push(`elite affix ${id}: missing name`);
+    if (a.armor !== undefined && !(a.armor > 0)) problems.push(`elite affix ${id}: armor must be positive`);
   }
   if (CHEST.elite.length !== 3 || CHEST.boss.length !== 3) problems.push('CHEST weights need three entries (1, 3, 5 rolls)');
   if (!(CHEST.newWeaponChance >= 0 && CHEST.newWeaponChance <= 1)) problems.push('CHEST.newWeaponChance must be 0..1');

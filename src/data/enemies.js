@@ -40,6 +40,26 @@ export const ENEMIES = {
     ranged: { range: 230, cooldown: 2.4, windup: 0.4, shotSpeed: 150, shotDamage: 7, shotTtl: 2.6, shotR: 5 },
     color: '#b06ad0',
   },
+  // Bursts into three goblins when it dies, so a build that only kills one big thing at a time floods.
+  splitter: {
+    name: 'Splitter',
+    hp: 40, speed: 55, damage: 6, radius: 15,
+    xp: 4,
+    ore: { chance: 0.1, type: 'iron' },
+    ai: 'chase',
+    splits: 3,
+    color: '#d98cae',
+  },
+  // Wards everything near it (half damage) while it lives, so it has to be found and killed first.
+  shaman: {
+    name: 'Shaman',
+    hp: 36, speed: 48, damage: 4, radius: 11,
+    xp: 4,
+    ore: { chance: 0.1, type: 'iron' },
+    ai: 'chase',
+    ward: { radius: 130 },
+    color: '#5aa8b0',
+  },
   warlord: {
     name: 'Warlord',
     hp: 1800, speed: 52, damage: 25, radius: 34,

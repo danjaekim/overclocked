@@ -2,7 +2,8 @@
 
 import { addDamageNumber, addPuff } from '../render/fx.js';
 import { spawnGem, spawnOre, spawnChest } from './pickups.js';
-import { ELITE } from '../data/elites.js';
+import { ELITE, affixDefs } from '../data/elites.js';
+import { spawnEnemy } from '../game/director.js';
 import { ORES } from '../data/ores.js';
 import { fireTriggers } from '../game/triggers.js';
 import { onMilestone } from '../game/titles.js';
@@ -16,6 +17,7 @@ import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath } from './st
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
 const HIT_FLASH = 0.08;
+const WARD_MULT = 0.5;     // damage taken inside a Shaman's ward
 const BLESS_MULT = 1.1;    // damage taken by a blessed enemy
 const ARMOR_FLOOR = 0.25;  // armor never takes more than 75% off a hit
 
@@ -24,6 +26,20 @@ export function killEnemy(run, e) {
   run.sfx('kill');
   run.lastKillTime = run.time;
   addPuff(run, e.x, e.y, e.r, e.def.color);
+  if (e.elite) {
+    for (const a of affixDefs(e)) {
+      if (!a.blastRadius) continue;                           // Volatile: it explodes, hurting anyone standing close
+      addPuff(run, e.x, e.y, a.blastRadius / 2.2, '#ff5a3c');
+      const p = run.player;
+      if (Math.hypot(p.x - e.x, p.y - e.y) < a.blastRadius + p.r) damagePlayer(run, e.damage * a.blastMult);
+    }
+  }
+  if (e.def.splits && run.director) {                         // Splitter: three goblins burst out of it
+    for (let k = 0; k < e.def.splits; k++) {
+      const a = (k / e.def.splits) * Math.PI * 2 + run.rng.next();
+      spawnEnemy(run, 'goblin', e.x + Math.cos(a) * 14, e.y + Math.sin(a) * 14, run.director.hpScale * 0.7);
+    }
+  }
   spawnGem(run, e.x, e.y, e.def.xp * (e.elite ? ELITE.xpMult : 1));
   const ore = e.def.ore;
   if (ore && ORES[ore.type].bank === 'starsteel') {
@@ -103,9 +119,12 @@ export function flushDamage(run) {
       const left = amount - e.armor;
       amount = left > amount * ARMOR_FLOOR ? left : amount * ARMOR_FLOOR;
     }
-    if (e.elite && ELITE.affixes[e.affix].untilHpFrac !== undefined && e.hp > e.maxHp * ELITE.affixes[e.affix].untilHpFrac) {
-      amount *= ELITE.affixes[e.affix].damageTaken;           // Warded: half damage until it is wounded
+    if (e.elite) {
+      for (const a of affixDefs(e)) {
+        if (a.untilHpFrac !== undefined && e.hp > e.maxHp * a.untilHpFrac) amount *= a.damageTaken;   // Warded: half damage until it is wounded
+      }
     }
+    if (e.wardT > 0) amount *= WARD_MULT;                     // a Shaman's ward
     if (q.crit[i] === 1 && src && !e.def.boss) {          // Headsman: a crit that would leave it under the threshold kills it
       const thr = run.player.stats.getFor('executeBelow', src.tags);
       if (thr > 0 && (e.hp - amount) / e.maxHp < thr) amount = e.hp;

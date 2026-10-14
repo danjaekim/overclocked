@@ -12,8 +12,19 @@ export const ELITE = {
     swift:        { name: 'Swift',        speedMult: 1.45 },
     warded:       { name: 'Warded',       damageTaken: 0.5, untilHpFrac: 0.5 },   // takes half damage while above 50% hp
     regenerating: { name: 'Regenerating', regenFrac: 0.03, delay: 2 },             // 3% max hp per second, 2 s after its last hit
+    armoured:     { name: 'Armoured',     armor: 12 },                               // counters many-small-hits builds (see armour in systems/damage.js)
+    volatile:     { name: 'Volatile',     blastRadius: 95, blastMult: 1.3 },         // explodes when it dies: punishes standing in melee
   },
+  secondAffixAfter: 420,     // seconds: elites spawned after this roll two affixes
 };
+
+// The affix definitions an elite carries (one, or two late in the run).
+export function affixDefs(e) {
+  const out = [];
+  if (e.affix) out.push(ELITE.affixes[e.affix]);
+  if (e.affix2) out.push(ELITE.affixes[e.affix2]);
+  return out;
+}
 
 // Chest roll tuning (docs/design-m10-m13.md §6.2).
 export const CHEST = {
