@@ -1,4 +1,5 @@
-// Debug helpers, enabled with ?debug=1. Other URL flags: ?god=1 (no damage), ?seed=N.
+// Debug helpers, enabled with ?debug=1 (adds a `stress` button and a `lab` panel for trying any
+// weapon, branch or masterwork directly). Other URL flags: ?god=1 (no damage), ?seed=N.
 
 export function readParams() {
   const q = new URLSearchParams(window.location.search);
@@ -24,6 +25,11 @@ export function createDebug(params) {
       if (o && o.game.run) o.game.run.stress();
     });
     document.body.appendChild(btn);
+    const lab = document.createElement('button');
+    lab.textContent = 'lab';
+    lab.style.cssText = btn.style.cssText.replace('left:8px', 'left:100px');
+    lab.addEventListener('click', () => toggleLab());
+    document.body.appendChild(lab);
   }
   const dbg = {
     enabled: params.enabled,
@@ -62,4 +68,72 @@ export function createDebug(params) {
     },
   };
   return dbg;
+}
+
+// ---- the lab: a debug panel to put any weapon, branch or masterwork on the player in one tap ----
+
+let labEl = null;
+async function toggleLab() {
+  if (labEl) { labEl.remove(); labEl = null; return; }
+  const o = window.__overforged;
+  if (!o || !o.game.run) return;
+  const [{ WEAPONS }, W, G, D, { MASTERWORKS }, { EVOLUTIONS }] = await Promise.all([
+    import('../data/weapons.js'), import('../game/weapons.js'), import('../game/graft.js'),
+    import('../game/director.js'), import('../data/grafts.js'), import('../data/evolutions.js'),
+  ]);
+  const run = () => o.game.run;
+  const maxOut = (inst) => { while (W.canLevelUp(inst)) W.levelUpWeapon(run(), inst); return inst; };
+  const clear = () => {
+    const r = run();
+    for (const w of r.player.weapons) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); }
+    r.player.weapons.length = 0;
+  };
+  const calm = () => { run().debug.god = true; run().player.level = 80; };     // no damage, no level-up screens
+  const swarm = (n = 40) => {
+    const r = run();
+    for (let i = 0; i < n; i++) {
+      const a = r.rng.next() * Math.PI * 2;
+      const d = 80 + r.rng.next() * 220;
+      D.spawnEnemy(r, i % 10 === 0 ? 'brute' : i % 7 === 0 ? 'shieldbearer' : 'goblin', r.player.x + Math.cos(a) * d, r.player.y + Math.sin(a) * d);
+    }
+  };
+  const actions = {
+    swarm: () => swarm(60),
+    elite: () => D.spawnElite(run(), 'brute', run().player.x + 160, run().player.y, run().director.hpScale, 'warded'),
+    boss: () => D.spawnEnemy(run(), 'warlord', run().player.x, run().player.y - 260, run().director.hpScale),
+    heal: () => { run().player.hp = run().player.maxHp; },
+    low: () => { run().player.hp = run().player.maxHp * 0.25; },
+    clear,
+    star: () => { run().starsteel += 3; },
+  };
+  const branchIds = EVOLUTIONS.filter((r) => !r.with).map((r) => r.into);
+  const row = (title, items) => `<div style="margin:4px 0"><div style="opacity:.7">${title}</div>${items.map(([k, label]) =>
+    `<button data-k="${k}" style="margin:2px;padding:6px 8px;font:11px monospace;background:#222;color:#9fe870;border:1px solid #4a6;border-radius:5px">${label}</button>`).join('')}</div>`;
+  labEl = document.createElement('div');
+  labEl.style.cssText = 'position:fixed;left:6px;right:6px;bottom:52px;max-height:52vh;overflow:auto;z-index:6;background:rgba(0,0,0,.88);color:#9fe870;font:11px monospace;padding:8px;border:1px solid #4a6;border-radius:8px';
+  labEl.innerHTML =
+    row('Branches and evolutions (replaces your weapons, max level)', branchIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
+    row('Masterworks (host + donor, max level, grafted)', MASTERWORKS.map((m) => [`m:${m.id}`, m.name])) +
+    row('Generic graft: pick two evolved weapons', [['gen', 'graft last two']]) +
+    row('World', Object.keys(actions).map((k) => [`a:${k}`, k]).concat([['calm', 'god + no level-ups']]));
+  labEl.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b || !run()) return;
+    const [kind, id] = b.dataset.k.split(':');
+    if (kind === 'w') { clear(); maxOut(W.addWeapon(run(), id)); calm(); swarm(); }
+    else if (kind === 'm') {
+      const m = MASTERWORKS.find((x) => x.id === id);
+      clear();
+      const h = maxOut(W.addWeapon(run(), m.host));
+      const d = maxOut(W.addWeapon(run(), m.donor));
+      run().starsteel += 1;
+      G.graft(run(), h, d);
+      calm(); swarm();
+    } else if (kind === 'gen') {
+      const ws = run().player.weapons.filter((w) => w.def.rarity === 'evolved' && !w.graft);
+      if (ws.length >= 2) { run().starsteel += 1; G.graft(run(), ws[ws.length - 2], ws[ws.length - 1]); }
+    } else if (kind === 'a') actions[id]();
+    else if (kind === 'calm') calm();
+  });
+  document.body.appendChild(labEl);
 }
