@@ -29,7 +29,52 @@ export function createRenderer(canvas, view) {
     ctx.stroke();
   }
 
-  function drawPlayer(p) {
+  // Evolved weapons show on the hero: a soft halo in the weapon's element colour under the sprite,
+// and one orbiting mote per evolved weapon. Prototype (docs/architecture.md M22).
+const ELEMENT_GLOW = [['fire', '#ff7a2e'], ['storm', '#ffd34d'], ['frost', '#8fd8ff'], ['light', '#fff3b0'], ['arcane', '#c58bff']];
+function glowColor(def) {
+  for (const [tag, col] of ELEMENT_GLOW) if (def.tags.includes(tag)) return col;
+  return '#ffb45e';
+}
+function drawEvolvedGlow(p, t, front) {
+  const ws = p.weapons;
+  let n = 0;
+  for (let i = 0; i < ws.length; i++) if (ws[i].def.rarity === 'evolved') n++;
+  if (n === 0) return;
+  let k = 0;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+  for (let i = 0; i < ws.length; i++) {
+    if (ws[i].def.rarity !== 'evolved') continue;
+    const col = glowColor(ws[i].def);
+    if (!front) {
+      if (k > 0) { k++; continue; }              // one halo (the first evolved weapon's colour); motes show the rest
+      const r = 34 + 4 * pulse;
+      const g = ctx.createRadialGradient(p.x, p.y - SPRITE_LIFT, 6, p.x, p.y - SPRITE_LIFT, r);
+      g.addColorStop(0, col + '77');
+      g.addColorStop(1, col + '00');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - SPRITE_LIFT, r, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const a = t * 2.2 + (k * Math.PI * 2) / n;
+      const mx = p.x + Math.cos(a) * 30;
+      const my = p.y - SPRITE_LIFT + Math.sin(a) * 12 - 6;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(mx, my, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(mx - 0.8, my - 0.8, 1.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    k++;
+  }
+}
+
+  function drawPlayer(p, t) {
+    drawEvolvedGlow(p, t, false);
     const spr = getSprite(p.classId, p.hurtFlash > 0);
     if (spr) {
       const h = SPRITE_W * 76 / 76;
@@ -62,6 +107,7 @@ export function createRenderer(canvas, view) {
       ctx.lineTo(p.x + p.facingX * p.r, p.y + p.facingY * p.r);
       ctx.stroke();
     }
+    drawEvolvedGlow(p, t, true);
   }
 
   function draw(run, input, debug) {
@@ -78,7 +124,7 @@ export function createRenderer(canvas, view) {
     drawGrid(cam);
     if (run) {
       if (run.drawWorld) run.drawWorld(ctx, view);
-      drawPlayer(run.player);
+      drawPlayer(run.player, run.time);
       if (run.drawWeapons) run.drawWeapons(ctx);
       if (run.drawFx) run.drawFx(ctx, view);
     }
