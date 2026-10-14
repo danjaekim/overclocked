@@ -45,3 +45,17 @@ test('pacing: goblins are slower than before and late spawn rates ramp up', () =
   const last = WAVES[WAVES.length - 1].spawns.find((s) => s.enemy === 'goblin');
   assert.ok(last.perSecEnd >= 7);
 });
+
+test('per-weapon DPS counts from its first hit, and stops when it is salvaged', async () => {
+  const { createStats, recordDamage, markGone, statsSnapshot } = await import('../src/game/run-stats.js');
+  const run = { time: 100, stats: createStats() };
+  const late = { instanceId: 1, def: { name: 'Late' } }, old = { instanceId: 2, def: { name: 'Old' } };
+  run.time = 10; recordDamage(run, old, 0, 100, false);
+  run.time = 60; recordDamage(run, late, 0, 100, false);
+  run.time = 70; markGone(run, old);
+  run.time = 110;
+  const snap = statsSnapshot(run);
+  const by = Object.fromEntries(snap.weapons.map((w) => [w.name, w.dps]));
+  assert.equal(by.Late, 100 / 50);          // owned 50 s
+  assert.equal(by.Old, 100 / 60);           // 10 s to 70 s
+});

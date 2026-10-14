@@ -12,10 +12,11 @@ export function createStats() {
   };
 }
 
-function rec(st, inst) {
+function rec(run, inst) {
+  const st = run.stats;
   let r = st.src.get(inst.instanceId);
   if (!r) {
-    r = { name: inst.def.name, dmg: 0, kills: 0, crits: 0, byCause: new Array(CAUSE_NAMES.length).fill(0), gone: false };
+    r = { name: inst.def.name, dmg: 0, kills: 0, crits: 0, byCause: new Array(CAUSE_NAMES.length).fill(0), gone: false, t0: run.time, t1: 0 };
     st.src.set(inst.instanceId, r);
   }
   r.name = inst.def.name;             // follows evolution
@@ -30,7 +31,7 @@ export function recordDamage(run, src, cause, dealt, crit) {
   while (st.sec.length <= s) st.sec.push(0);
   st.sec[s] += dealt;
   if (src) {
-    const r = rec(st, src);
+    const r = rec(run, src);
     r.dmg += dealt;
     r.byCause[cause] += dealt;
     if (crit) r.crits++;
@@ -38,12 +39,12 @@ export function recordDamage(run, src, cause, dealt, crit) {
 }
 
 export function recordKill(run, src) {
-  if (src) rec(run.stats, src).kills++;
+  if (src) rec(run, src).kills++;
 }
 
 export function markGone(run, inst) {
   const r = run.stats.src.get(inst.instanceId);
-  if (r) r.gone = true;
+  if (r) { r.gone = true; r.t1 = run.time; }
 }
 
 // Damage per second over the last `window` whole seconds (the current second is partial, so skipped).
@@ -74,7 +75,8 @@ export function statsSnapshot(run) {
   const st = run.stats;
   const t = Math.max(1, run.time);
   const weapons = [...st.src.values()]
-    .map((r) => ({ name: r.name, dmg: r.dmg, kills: r.kills, crits: r.crits, gone: r.gone, byCause: r.byCause.slice() }))
+    .map((r) => ({ name: r.name, dmg: r.dmg, kills: r.kills, crits: r.crits, gone: r.gone, byCause: r.byCause.slice(),
+      dps: r.dmg / Math.max(1, (r.gone ? r.t1 : run.time) - r.t0) }))     // per second from its first hit until the run ends (or it was salvaged)
     .sort((a, b) => b.dmg - a.dmg);
   const causes = st.causes.map((dmg, i) => ({ name: CAUSE_NAMES[i], dmg })).filter((c) => c.dmg > 0).sort((a, b) => b.dmg - a.dmg);
   return { total: st.total, avgDps: st.total / t, recentDps: recentDps(run), peakDps: peakDps(run), weapons, causes, sec: st.sec.slice() };

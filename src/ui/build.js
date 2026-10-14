@@ -89,7 +89,7 @@ export function buildHtml(run, { withDamage = true } = {}) {
 // The end-of-run breakdown, from the summary snapshot (the run is gone by then).
 export function resultsDamageHtml(stats) {
   if (!stats || stats.total <= 0) return '';
-  const rows = stats.weapons.map((w) => `<div class="bbar wide"><span>${w.name}${w.gone ? ' (salvaged)' : ''}<small>${w.kills} kills</small></span><i style="--w:${Math.max(2, Math.round((w.dmg / stats.total) * 100))}%"></i><b>${fmtNum(w.dmg)}</b></div>`).join('');
+  const rows = stats.weapons.map((w) => `<div class="bbar wide"><span>${w.name}${w.gone ? ' (salvaged)' : ''}<small>${w.kills} kills · ${fmtNum(w.dps)} dps</small></span><i style="--w:${Math.max(2, Math.round((w.dmg / stats.total) * 100))}%"></i><b>${fmtNum(w.dmg)}</b></div>`).join('');
   return `<div class="build-wrap results">
     <h3>Damage</h3>
     <div class="bdps"><div><span>Average</span><b>${fmtNum(stats.avgDps)}</b></div><div><span>Peak</span><b>${fmtNum(stats.peakDps)}</b></div><div><span>Total</span><b>${fmtNum(stats.total)}</b></div></div>
