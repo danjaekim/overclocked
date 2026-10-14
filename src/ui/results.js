@@ -1,3 +1,4 @@
+import { resultsSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
 import { resultsDamageHtml } from './build.js';
 
@@ -8,7 +9,8 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
   const stat = (key, label, value) =>
     `<div><span>${label}${newBests.includes(key) ? ' · best!' : ''}</span><b>${value}</b></div>`;
   overlays.show(
-    `<h2>${title}</h2>
+    `<h2 class="ribbon ${summary.won ? 'win' : 'lose'}">${title}</h2>
+     ${resultsSceneHtml(summary.classId, summary.won)}
      <div class="stats">
        ${stat('time', 'Time', fmtTime(summary.time))}
        ${stat('kills', 'Kills', summary.kills)}

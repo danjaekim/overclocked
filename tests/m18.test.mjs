@@ -155,3 +155,13 @@ test('every class and enemy has sprite art, well-formed, with no baked-in hounds
   assert.equal(getSprite('smith'), null);                       // no DOM here: the renderer falls back to the disc
   assert.ok(spriteUrl('smith').startsWith('data:image/svg+xml'));
 });
+
+test('title and results scenes use real sprites and differ for win and loss', async () => {
+  const { titleSceneHtml, resultsSceneHtml } = await import('../src/ui/scenes.js');
+  const t = titleSceneHtml();
+  assert.equal((t.match(/<img/g) || []).length, 7);               // anvil + six heroes
+  const win = resultsSceneHtml('archer', true), lose = resultsSceneHtml('archer', false);
+  assert.ok(win.includes('class="scene rscene win"') && lose.includes('class="scene rscene lose"'));
+  assert.ok(win.includes('glow') && !lose.includes('glow'));
+  assert.ok(!win.includes('src=""') && !lose.includes('src=""'));
+});

@@ -48,6 +48,33 @@
     h2 { margin: 0 0 8px; font-size: 30px; }
     .sub { margin: 0 0 18px; color: var(--dim); }
     .hint { margin: 18px 0 0; color: var(--dim); font-size: 14px; max-width: 260px; }
+
+    /* Title and results illustrations (ui/scenes.js) */
+    .overlay.title { gap: 10px; overflow-y: auto; justify-content: flex-start; }
+    .overlay.title > :first-child { margin-top: auto; }
+    .overlay.title > :last-child { margin-bottom: auto; }
+    .overlay.title .btn { min-height: 48px; }
+    .overlay h1 { color: var(--ink); text-shadow: 2px 3px 0 var(--ember); }
+    .overlay .sub { margin-bottom: 4px; }
+    .scene { position: relative; width: min(100%, 340px); flex: none; pointer-events: none; }
+    .scene img { position: absolute; display: block; -webkit-user-drag: none; }
+    .tscene { aspect-ratio: 340 / 250; width: min(100%, 340px, 40vh); }
+    .tscene .anvil { left: 19%; top: -2%; width: 62%; }
+    .tscene .hero { bottom: 0; width: 16%; }
+    .rscene { aspect-ratio: 340 / 190; width: min(100%, 340px, 43vh); }
+    .rscene.lose .anvil, .rscene.lose .rhero { filter: grayscale(1) brightness(0.8); }
+    .rscene .gem { animation: bob 3s ease-in-out infinite; }
+    .scene .glow { position: absolute; left: 50%; top: 40%; width: 92%; aspect-ratio: 1; transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(255,122,46,0.5) 0%, rgba(232,83,30,0.16) 55%, rgba(232,83,30,0) 72%); animation: glowpulse 2.6s ease-in-out infinite; }
+    .ember { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ff9a4a; opacity: 0; animation: rise 4s linear infinite; }
+    h2.ribbon { margin: 0; padding: 6px 34px; font-size: 24px; letter-spacing: 0.12em; text-transform: uppercase;
+      clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 50%, 100% 100%, 0 100%, 14px 50%); }
+    h2.ribbon.win { background: var(--ember); color: #1a1205; }
+    h2.ribbon.lose { background: #59503f; color: #b8ab90; }
+    @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateY(-70px); opacity: 0; } }
+    @keyframes glowpulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @media (prefers-reduced-motion: reduce) { .ember, .glow, .rscene .gem { animation: none; } }
     .btn {
       min-width: 220px; min-height: 56px; padding: 0 24px;
       font: inherit; font-size: 18px; font-weight: 600; color: var(--ink);

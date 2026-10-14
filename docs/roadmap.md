@@ -42,7 +42,9 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M18** *(done)* | Music | Three synthesized techno tracks (title, run, boss) and layered sound effects with a music toggle and volume slider on the title and pause screens, saved with the game. See `architecture.md` M18. Sound effects were replaced with layered versions (`audio/sfx.js`), including a rising gem-pickup chain. |
 | **M19** *(done)* | Character art in the game | The six classes drawn as sprites (woodcut ink style), portraits on class select. See `architecture.md` M19.  |
 | **M20** *(done)* | Enemy art in the game | Goblin, Brute and Warlord drawn as sprites. See `architecture.md` M20.  |
-| **M21** *(done)* | Loot and prop art | Gems, ore, chests and the shrine anvil as sprites (set C). See `architecture.md` M21. Next: title and results art; optional visual changes on the hero for combined weapons. |
+| **M21** *(done)* | Loot and prop art | Gems, ore, chests and the shrine anvil as sprites (set C). See `architecture.md` M21. |
+| **M22** *(prototype)* | Evolved-weapon glow | A mote per evolved weapon orbits the hero in its element colour, plus a halo. Judge it on a phone before building art for it. |
+| **M23** *(done)* | Title and results art | Anvil title scene and win/lose results scenes. See `architecture.md` M23. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
 ### Why this order

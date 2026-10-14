@@ -1,3 +1,4 @@
+import { titleSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
 import { musicControlsHtml, bindMusicControls } from './music-controls.js';
 
@@ -8,6 +9,7 @@ export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleS
   const el = overlays.show(
     `<h1>OVERFORGED</h1>
      <p class="sub">Forge your build. Survive the horde.</p>
+     ${titleSceneHtml()}
      <button class="btn primary" data-act="play">Play</button>
      <button class="btn" data-act="guide">Compendium</button>
      <button class="btn" data-act="history">History</button>
