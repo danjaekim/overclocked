@@ -12,6 +12,7 @@ import { getSprite } from './sprites.js';
 const TAU = Math.PI * 2;
 const DEF_IDS = Object.keys(ENEMIES);
 const SPRITE_K = 3.5;                  // sprite width = radius * this (the hit circle stays the radius)
+const LOOT_K = 4.2;                    // gem and ore sprite width = radius * this
 const LIFT_K = 0.3;                    // feet sit near the circle's bottom
 
 // XP gems: one batched fill per tier colour, drawn as small diamonds.
@@ -23,6 +24,17 @@ export function drawGems(ctx, view, run) {
   const x1 = cam.x + view.w / 2 + 10;
   const y0 = cam.y - view.h / 2 - 10;
   const y1 = cam.y + view.h / 2 + 10;
+  const ready = getSprite('gem0') !== null;
+  if (ready) {
+    for (let i = 0; i < list.length; i++) {
+      const g = list[i];
+      if (g.kind !== KIND_GEM) continue;
+      if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+      const w = g.r * LOOT_K;
+      ctx.drawImage(getSprite('gem' + gemTier(g.value)), g.x - w / 2, g.y - w * 0.62, w, w);
+    }
+    return;
+  }
   for (let t = 0; t < GEM.tiers.length; t++) {
     ctx.fillStyle = GEM.tiers[t][2];
     ctx.beginPath();
@@ -50,6 +62,16 @@ export function drawOre(ctx, view, run) {
   const x1 = cam.x + view.w / 2 + 10;
   const y0 = cam.y - view.h / 2 - 10;
   const y1 = cam.y + view.h / 2 + 10;
+  if (getSprite('ore_iron')) {
+    for (let i = 0; i < list.length; i++) {
+      const g = list[i];
+      if (g.kind !== KIND_ORE) continue;
+      if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+      const w = g.r * LOOT_K;
+      ctx.drawImage(getSprite('ore_' + g.ore), g.x - w / 2, g.y - w * 0.62, w, w);
+    }
+    return;
+  }
   for (let t = 0; t < ORE_IDS.length; t++) {
     ctx.fillStyle = ORES[ORE_IDS[t]].color;
     ctx.beginPath();
@@ -77,6 +99,17 @@ export function drawChests(ctx, view, run) {
     if (g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
     const s = g.value === 1 ? 1.4 : 1;
     const y = g.y + Math.sin(run.time * 3 + g.x) * 2;
+    const spr = getSprite(g.value === 1 ? 'bosschest' : 'chest');
+    if (spr) {
+      const w = 46 * s;
+      ctx.drawImage(spr, g.x - w / 2, y - w * 0.62, w, w);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.25 + 0.25 * Math.sin(run.time * 4);
+      ctx.strokeRect(g.x - 14 * s, y - 10 * s, 28 * s, 20 * s);
+      ctx.globalAlpha = 1;
+      continue;
+    }
     ctx.fillStyle = g.value === 1 ? '#7fe9ff' : '#ffd34d';
     ctx.fillRect(g.x - 12 * s, y - 8 * s, 24 * s, 16 * s);
     ctx.fillStyle = 'rgba(40,24,6,0.85)';

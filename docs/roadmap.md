@@ -41,7 +41,8 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M17** *(done)* | Run history and export/import | The save keeps the last 100 runs (class, result, time, kills, level, damage, DPS, seed and the full build). A History screen on the title menu has totals, class and wins-only filters, expandable builds and Same seed. Export / import turns the whole save into a copyable code (checksummed, compressed) so progress can be backed up or moved between the Safari tab, the home-screen app and other devices. |
 | **M18** *(done)* | Music | Three synthesized techno tracks (title, run, boss) and layered sound effects with a music toggle and volume slider on the title and pause screens, saved with the game. See `architecture.md` M18. Sound effects were replaced with layered versions (`audio/sfx.js`), including a rising gem-pickup chain. |
 | **M19** *(done)* | Character art in the game | The six classes drawn as sprites (woodcut ink style), portraits on class select. See `architecture.md` M19.  |
-| **M20** *(done)* | Enemy art in the game | Goblin, Brute and Warlord drawn as sprites. See `architecture.md` M20. Next: title and results art, then pickups (gems, ore, chests). |
+| **M20** *(done)* | Enemy art in the game | Goblin, Brute and Warlord drawn as sprites. See `architecture.md` M20.  |
+| **M21** *(done)* | Loot and prop art | Gems, ore, chests and the shrine anvil as sprites (set C). See `architecture.md` M21. Next: title and results art; optional visual changes on the hero for combined weapons. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
 ### Why this order

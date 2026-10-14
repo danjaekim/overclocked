@@ -2,6 +2,7 @@
 // shrine is off screen (drawn in the HUD pass with `drawShrineArrows`).
 
 import { SHRINE } from '../data/forge.js';
+import { getSprite } from './sprites.js';
 
 const TAU = Math.PI * 2;
 
@@ -22,18 +23,24 @@ export function drawShrines(ctx, view, run) {
     ctx.arc(s.x, s.y, SHRINE.radius, 0, TAU);
     ctx.stroke();
     ctx.globalAlpha = fade;
-    // anvil: base, waist, face
-    ctx.fillStyle = '#3a3d4d';
-    ctx.fillRect(s.x - 14, s.y + 6, 28, 7);
-    ctx.fillRect(s.x - 7, s.y - 2, 14, 9);
-    ctx.fillStyle = '#9aa0b8';
-    ctx.beginPath();
-    ctx.moveTo(s.x - 20, s.y - 2);
-    ctx.lineTo(s.x + 20, s.y - 2);
-    ctx.lineTo(s.x + 12, s.y - 11);
-    ctx.lineTo(s.x - 14, s.y - 11);
-    ctx.closePath();
-    ctx.fill();
+    const spr = getSprite('shrine');
+    if (spr) {
+      const w = 74;
+      ctx.drawImage(spr, s.x - w / 2, s.y - w * 0.66, w, w);
+    } else {
+      // anvil: base, waist, face
+      ctx.fillStyle = '#3a3d4d';
+      ctx.fillRect(s.x - 14, s.y + 6, 28, 7);
+      ctx.fillRect(s.x - 7, s.y - 2, 14, 9);
+      ctx.fillStyle = '#9aa0b8';
+      ctx.beginPath();
+      ctx.moveTo(s.x - 20, s.y - 2);
+      ctx.lineTo(s.x + 20, s.y - 2);
+      ctx.lineTo(s.x + 12, s.y - 11);
+      ctx.lineTo(s.x - 14, s.y - 11);
+      ctx.closePath();
+      ctx.fill();
+    }
     // channel progress
     if (s.progress > 0) {
       ctx.strokeStyle = '#ffe3a3';
