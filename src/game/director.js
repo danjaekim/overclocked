@@ -92,6 +92,13 @@ export function createDirector(run) {
     get damageScale() { return damageScale; },
     get capBuff() { return capBuff; },
 
+    // The closure state, for run snapshots (game/run-snapshot.js).
+    getState() { return { acc: acc.map((a) => a.slice()), capBuff, hpScale, speedScale, damageScale, nextEvent }; },
+    setState(st) {
+      st.acc.forEach((a, i) => a.forEach((v, j) => { acc[i][j] = v; }));
+      capBuff = st.capBuff; hpScale = st.hpScale; speedScale = st.speedScale; damageScale = st.damageScale; nextEvent = st.nextEvent;
+    },
+
     update(dt) {
       const t = run.time / timeScale;                 // time on the authored timeline
       const atCap = run.world.enemies.count >= ENEMY_SOFT_CAP;

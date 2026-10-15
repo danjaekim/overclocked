@@ -12,6 +12,10 @@ export const MAX_WEAPONS = SLOTS.weapons;
 
 let nextInstance = 1;
 
+// Weapon instance ids count up across the whole session; run snapshots save and restore the counter.
+export const getInstanceCounter = () => nextInstance;
+export const setInstanceCounter = (n) => { nextInstance = n; };
+
 // Applies a weapon definition's baseMods (its elemental identity) to the instance.
 export function applyBaseMods(run, inst) {
   for (const m of inst.def.baseMods || []) {

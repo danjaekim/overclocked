@@ -26,8 +26,9 @@ import { LEVELUP } from '../data/progression.js';
 import { showHistory } from '../ui/history.js';
 import { showBackup } from '../ui/backup.js';
 import { encodeSave, decodeSave, describeSave } from '../save/transfer.js';
+import { snapshotRun, restoreRun } from './run-snapshot.js';
 
-export function createGame({ view, input, overlays, rotate, debug, params, save, audio }) {
+export function createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio }) {
   const game = { state: 'title', run: null };
   let nextSeed = params.seed;
   const sfx = (name) => audio && audio.play(name);
@@ -122,15 +123,37 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     nextSeed = null;                       // a ?seed= applies to the first run only
     input.reset();
     overlays.hide();
+    if (runSave) runSave.clear();
     game.run = createRun({ seed, view, debug, classId, sfx });
     scene('run');
     if (audio) audio.music.duck(false);
     game.state = 'run';
   }
 
+  // Writes the run in progress to the run save so closing the app does not lose it (game/run-snapshot.js).
+  // Debug (god) runs are never saved. A snapshot taken in the forge reopens it on resume.
+  function persistRun() {
+    const run = game.run;
+    if (!runSave || !run || run.over || debug.god) return;
+    const wasForge = game.state === 'forge';
+    try {
+      if (wasForge) run.forgeReady = true;
+      runSave.save(snapshotRun(run));
+    } catch (e) {
+      runSave.clear();                                  // a stale snapshot is worse than none
+    } finally {
+      if (wasForge) run.forgeReady = false;
+    }
+  }
+
   function pause(openBuild = false) {
     if (game.state !== 'run') return;
     game.state = 'paused';
+    persistRun();
+    openPause(openBuild);
+  }
+
+  function openPause(openBuild = false) {
     input.reset();
     if (audio) audio.music.duck(true);
     const show = () => showPause(overlays, {
@@ -138,12 +161,32 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       onResume: resume,
       onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
       onCompendium: () => showCompendium(overlays, { onClose: show, discovered: save.data.discovered }),
-      onQuit: toTitle,
+      onQuit: () => { if (runSave) runSave.clear(); toTitle(); },
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
     });
     if (openBuild) showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' });
     else show();
+  }
+
+  // On boot: a saved run comes back on its pause screen. Anything unreadable is dropped.
+  function resumeSaved() {
+    if (!runSave || params.seed != null || params.classId || debug.god) return false;
+    const snap = runSave.load();
+    if (!snap) return false;
+    try {
+      const run = restoreRun(snap, { view, debug, sfx });
+      if (run.over) throw new Error('finished run');
+      game.run = run;
+    } catch (e) {
+      console.warn('saved run dropped:', e.message);
+      runSave.clear();
+      return false;
+    }
+    game.state = 'paused';
+    scene('run');
+    openPause();
+    return true;
   }
 
   function resume() {
@@ -156,6 +199,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   function finishRun() {
     game.state = 'results';
     input.reset();
+    if (runSave) runSave.clear();
     const summary = game.run.summary();
     if (audio) audio.music.stop();
     sfx(summary.won ? 'win' : 'lose');
@@ -268,9 +312,14 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     else if (run.forgeReady) openForge();
   };
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pause();
-  });
+  // Out of view: pause (which saves the run). In a level-up, chest or forge screen the run is
+  // already frozen, so just save it; it comes back on the pause screen.
+  const onHidden = () => {
+    if (game.state === 'run') pause();
+    else if (game.state === 'levelup' || game.state === 'treasure' || game.state === 'forge') persistRun();
+  };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) onHidden(); });
+  window.addEventListener('pagehide', onHidden);
 
   if (debug.enabled) {
     window.addEventListener('keydown', (e) => {
@@ -285,6 +334,6 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
-  toTitle();
+  if (!resumeSaved()) toTitle();
   return game;
 }

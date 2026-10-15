@@ -10,6 +10,7 @@ import { createGame } from './game/game.js';
 import { createDebug, readParams } from './debug/debug.js';
 import { validateData } from './data/validate.js';
 import { createSave, browserStorage } from './save/save.js';
+import { createRunSave } from './save/run-save.js';
 import { createAudio } from './audio/audio.js';
 import { preloadSprites } from './render/sprites.js';
 
@@ -36,7 +37,8 @@ const input = createInput(canvas, { onPause: () => game && game.togglePause(), o
 const save = createSave(browserStorage());
 const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume });
 debug.audioState = () => audio.state;
-game = createGame({ view, input, overlays, rotate, debug, params, save, audio });
+const runSave = createRunSave(browserStorage());
+game = createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio });
 
 // a soft tick on every menu button
 document.getElementById('ui').addEventListener('click', (e) => {

@@ -1,7 +1,7 @@
 // Meta save (docs/architecture.md §8): a small versioned JSON blob in localStorage.
 // Storage can be missing or throw (private windows, blocked site data), so every access is
-// wrapped and the game plays fine without it. There is no mid-run save: runs are short and
-// auto-pause when the tab is hidden.
+// wrapped and the game plays fine without it. A run in progress is saved separately (save/run-save.js)
+// when the game pauses, which also happens whenever the tab is hidden.
 // createSave(storage) takes the storage object so tests can pass a fake.
 
 const KEY = 'overforged.save.v1';
