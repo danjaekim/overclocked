@@ -21,6 +21,7 @@ export function param(run, inst, key) {
   const rule = RULES[key];
   if (!rule) return base;
   const s = run.player.stats.getFor(rule[1], inst.tags);
+  if (key === 'cooldown' && run.cls && run.cls.frenzy > 0) return base * s * (1 - run.trait.frenzy.per * run.cls.frenzy);   // Berserker's Frenzy (game/class-traits.js)
   return rule[0] === 'mul' ? base * s : base + s;
 }
 

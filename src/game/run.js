@@ -24,6 +24,7 @@ import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { LEVELUP } from '../data/progression.js';
 import { createStats, statsSnapshot } from './run-stats.js';
+import { initClassTrait, updateClassTrait } from './class-traits.js';
 
 export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = () => {} }) {
   const run = {
@@ -75,6 +76,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       run.director.update(dt);                                  // 1 spawns
       updatePlayer(run.player, dt, move);                       // 2 player
       updateWeapons(run, dt);                                   // 3 weapons
+      updateClassTrait(run, dt);                                // 3b class trait timers (Frenzy, Holy Nova)
       updateEnemies(run, dt);                                   // 4 enemy AI
       updateProjectiles(run, dt);                               // 5 projectile movement
       updateEnemyShots(run, dt);                                // 5b slinger shots
@@ -192,6 +194,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
   };
 
   run.player = createPlayer(run, classId);
+  initClassTrait(run, classId);
   run.director = createDirector(run);
   addWeapon(run, CLASSES[classId].startWeapon);
   return run;

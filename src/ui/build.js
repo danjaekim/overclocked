@@ -1,6 +1,7 @@
 // The build panel: everything you own and how it is performing. One renderer shared by the
 // pause menu, the level-up screen (so upgrades can be judged against the build) and the end
 // screen's damage breakdown. Pure HTML strings; the caller mounts them in an overlay.
+import { CLASSES } from '../data/classes.js';
 import { RARITIES } from '../data/rarities.js';
 import { AFFIXES } from '../data/forge.js';
 import { RESONANCE } from '../data/resonance.js';
@@ -77,7 +78,10 @@ export function buildHtml(run, { withDamage = true } = {}) {
   const dmg = snap
     ? `<div class="bdps"><div><span>DPS now</span><b>${fmtNum(snap.recentDps)}</b></div><div><span>Average</span><b>${fmtNum(snap.avgDps)}</b></div><div><span>Peak</span><b>${fmtNum(snap.peakDps)}</b></div><div><span>Total</span><b>${fmtNum(snap.total)}</b></div></div>${causeBars(snap.causes, snap.total)}`
     : '';
+  const c = CLASSES[p.classId];
+  const cls = c && c.trait ? `<div class="brow slim"><div class="btop"><b>${c.name}: ${c.trait.name}</b></div><div class="bsub">${c.trait.text.join('. ')}.${run.cls && run.cls.frenzy ? ` Frenzy now: ${run.cls.frenzy}` : ''}</div></div>` : '';
   return `${keyStats(run)}
+    ${sec('Class', cls)}
     ${dmg ? sec('Damage', dmg) : ''}
     ${sec('Weapons', weapons)}
     ${sec('Passives', passives)}

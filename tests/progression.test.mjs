@@ -125,7 +125,7 @@ test('Wind Sigil is scoped to projectile weapons only', () => {
   const entry = addPassive(run, 'wind_sigil');
   levelUpPassive(run, entry);                                  // level 2: +1 pierce on projectile weapons
   const bow = run.player.weapons[0];
-  assert.equal(run.player.stats.getFor('pierce', bow.tags), 1);
+  assert.equal(run.player.stats.getFor('pierce', bow.tags), 2, 'the Archer\'s own +1 pierce on projectiles, plus Wind Sigil');
   const melee = makeTags(['melee', 'weapon:99']);
   assert.equal(run.player.stats.getFor('pierce', melee), 0);
   assert.equal(run.player.stats.get('pierce'), 0);

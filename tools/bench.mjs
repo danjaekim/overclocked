@@ -5,6 +5,7 @@
 //   node tools/bench.mjs --bots          bot runs only
 //   node tools/bench.mjs --builds        the perk build table (docs/design-m10-m13.md section 5)
 //   node tools/bench.mjs --quick         fewer bot seeds
+//   node tools/bench.mjs --classes       the same builds played by every class (class identity)
 //   node tools/bench.mjs --json          machine-readable output
 //
 // 1. Single-target DPS: one immobile dummy in range, one weapon at a time, at levels 1, 4, 8.
@@ -266,7 +267,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--grafts')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -310,7 +311,7 @@ if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--grafts')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
@@ -348,6 +349,65 @@ if (flag('--grafts')) {
       return `${WEAPONS[d].behavior}:${v >= base ? '+' : ''}${Math.round((v / base - 1) * 100)}%${mw ? 'm' : ''}`;
     });
     console.log(pad(h, 16) + pad(num(base), 7) + cells.join('  '));
+  }
+}
+
+// ---- class identity: the same build on every class ---------------------------------------------
+// Each build (shared weapons only, level 5, enhanced to +4, no perks) is played by every class against the same
+// stream of enemies walking in from the edge for 40 s, the player strolling in a slow circle (so
+// Fleet and Long Shot see normal play). Reports damage dealt; god mode, so it measures offense only.
+const CLASS_BUILDS = [
+  { id: 'ranged', weapons: ['storm_javelin', 'rime_shards', 'chakram'] },
+  { id: 'close', weapons: ['spirit_blades', 'cinder_ward', 'rime_orbs'] },
+  { id: 'elemental', weapons: ['static_rod', 'cinder_mortar', 'rime_shards'] },
+  { id: 'mixed', weapons: ['storm_javelin', 'cinder_ward', 'static_rod'] },
+];
+
+function classBuildDamage(cls, b, seed = 1) {
+  const bare = cls === 'none';                                       // no class at all: the reference
+  const run = createRun({ seed, view: VIEW, debug: { god: true }, classId: bare ? 'archer' : cls });
+  run.director.update = () => {};
+  const p = run.player;
+  if (bare) { p.stats.removeBySource('class:'); run.trait = {}; run.cls.inst = null; }
+  p.stats.removeBySource(`weapon:${p.weapons[0].instanceId}:`);
+  p.weapons.length = 0;
+  run.ore = 1e9;
+  for (const id of b.weapons) {
+    const w = addWeapon(run, id);
+    while (w.level < 5 && canLevelUp(w)) levelUpWeapon(run, w);
+    while (w.enhance < 4 && canEnhance(run, w)) enhance(run, w);   // a mid-run forge visit or two
+  }
+  run.ore = 0;
+  p.level = 12;                                                     // trait damage that scales with level (souls, nova) sees a mid-run level
+  const move = { x: 0, y: 0 };
+  let acc = 0;
+  for (let i = 0; i < 40 / STEP; i++) {
+    const t = i * STEP;
+    acc += 30 * STEP;                                               // 30 tough enemies a second from the edge: more than any build can kill, so damage is not capped by supply
+    while (acc >= 1) {
+      acc -= 1;
+      const a = run.rng.next() * Math.PI * 2;
+      const brute = run.rng.next() < 0.2;
+      spawnEnemy(run, brute ? 'brute' : 'goblin', p.x + Math.cos(a) * 300, p.y + Math.sin(a) * 300, 10);
+    }
+    move.x = Math.cos(t * 0.6) * 0.6; move.y = Math.sin(t * 0.6) * 0.6;
+    run.update(STEP, move);
+    p.level = 12;
+    run.pendingLevelUps = 0;
+  }
+  return { dmg: run.stats.total, kills: run.kills };
+}
+
+if (flag('--classes')) {
+  const classes = Object.keys(CLASSES);
+  const seeds = [1, 2, 3];
+  const avgDmg = (c, b) => seeds.reduce((a, sd) => a + classBuildDamage(c, b, sd).dmg, 0) / seeds.length;
+  console.log('\nCLASS IDENTITY  (same build on every class: damage in 40 s vs a stream of 30 tough enemies/s, 3 seeds; % vs the same build with no class)');
+  console.log(pad('build', 11) + pad('no class', 10) + classes.map((c) => pad(c, 11)).join(''));
+  for (const b of CLASS_BUILDS) {
+    const ref = avgDmg('none', b);
+    const cells = classes.map((c) => { const v = avgDmg(c, b); return `${v >= ref ? '+' : ''}${Math.round((v / ref - 1) * 100)}%`; });
+    console.log(pad(b.id, 11) + pad(`${Math.round(ref / 1000)}k`, 10) + cells.map((x) => pad(x, 11)).join(''));
   }
 }
 

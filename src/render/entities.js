@@ -148,7 +148,7 @@ export function drawProjectiles(ctx, view, run) {
   ctx.lineCap = 'butt';
   if (!special) return;
 
-  // Graft payload shots: saw discs (look 1) spin like a Ricochet Saw; shards (look 2) are bright diamonds.
+  // Special shots: saw discs (look 1) spin like a Ricochet Saw; shards (look 2) are bright diamonds; souls (look 3).
   ctx.strokeStyle = '#e6ecf8';
   ctx.fillStyle = '#9fb0cc';
   ctx.lineWidth = 2;
@@ -185,6 +185,21 @@ export function drawProjectiles(ctx, view, run) {
     ctx.closePath();
   }
   ctx.fill();
+  for (let i = 0; i < list.length; i++) {                  // souls (look 3): a violet wisp with a fading tail
+    const p = list[i];
+    if (p.look !== 3 || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#b48cff';
+    ctx.beginPath();
+    ctx.arc(p.x - p.dx * 9, p.y - p.dy * 9, 4, 0, Math.PI * 2);
+    ctx.arc(p.x - p.dx * 16, p.y - p.dy * 16, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#e4d6ff';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 export function drawEnemies(ctx, view, run) {

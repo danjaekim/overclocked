@@ -174,7 +174,7 @@ test('Overload does nothing when the hop lands on a non-burning enemy', () => {
 test('Superconduct: a chilled + shocked target is always crit; level 2 adds crit multiplier', () => {
   const { run, w } = setup();
   run.player.stats.add({ stat: 'critChance', op: 'set', value: 0, source: 't' });
-  const e = dummy(run, 300, 0);
+  const e = dummy(run, 60, 0);                            // close: no Long Shot bonus muddying the numbers
   own(run, 'superconduct', 1);
   const base = 100;
   resolveHit(run, w, e, base, 1, 0);

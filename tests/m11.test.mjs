@@ -134,7 +134,7 @@ test('Heavy Fletching grows projectile size; Long Reach grows close weapons only
   addPerk(run, 'heavy_fletching');
   addPerk(run, 'long_reach');
   approx(param(run, bow, 'radius'), r0 * 1.2);
-  approx(param(run, hammer, 'range'), h0 * 1.15);
+  approx(param(run, hammer, 'range'), (h0 / 1.15) * 1.3);   // Long Reach's +15% adds to the Smith's own +15% on close weapons
   approx(param(run, bow, 'range'), 380 * 1.2, 1e-6);   // Heavy Fletching's area also reaches the bow's range; Long Reach does not
 });
 
@@ -219,7 +219,7 @@ test('split: a lone target takes the parent hit once, not again from its own chi
   run.player.stats.add({ stat: 'split', op: 'flat', value: 2, tags: [bow.instanceTag], source: 't' });
   run.player.stats.add({ stat: 'critChance', op: 'set', value: 0, source: 't' });
   run.player.stats.removeBySource(`weapon:${bow.instanceId}:base:`);   // no burn ticks muddying the count
-  const a = dummy(run, 100, 0, 'brute');
+  const a = dummy(run, 50, 0, 'brute');                  // inside Long Shot's no-bonus range
   rehash(run);
   spawnProjectile(run, bow, 0, 0, 1, 0, 400, 100, 1, 5, 0);
   for (let i = 0; i < 40; i++) run.update(STEP, { x: 0, y: 0 });

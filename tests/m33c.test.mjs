@@ -70,7 +70,7 @@ test('a Chain Lightning line (the starter) still never forks', () => {
   run.update(STEP, { x: 0, y: 0 });
   w.cd = 0;
   run.update(STEP, { x: 0, y: 0 });
-  assert.equal(es.filter((e) => e.hp < e.maxHp).length, 1 + WEAPONS.static_rod.base.chains + 1, 'first + 4 jumps + the Static Charge-free chains stat (1)');
+  assert.equal(es.filter((e) => e.hp < e.maxHp).length, 1 + WEAPONS.static_rod.base.chains + run.player.stats.getFor('chains', w.tags), 'first + 4 jumps + the chains stat (1, +1 for the Mage)');
 });
 
 test('Tempest can be grafted both ways: as a donor it gives Arcing x2, as a host it carries a payload', () => {

@@ -32,6 +32,13 @@ export function drawHud(ctx, view, run) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('Lv ' + p.level, 12 + bw + 8, y0 - 1);
+  if (run.cls && run.cls.frenzy > 0) {                           // Berserker: Frenzy stacks, fading with their timer
+    ctx.globalAlpha = 0.45 + 0.55 * Math.min(1, run.cls.frenzyT / run.trait.frenzy.time);
+    ctx.fillStyle = '#ff6b4a';
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText(`Frenzy ${run.cls.frenzy}`, 12 + bw + 8, y0 + 16);
+    ctx.globalAlpha = 1;
+  }
 
   // Timer (top-center)
   ctx.fillStyle = '#e8e6df';

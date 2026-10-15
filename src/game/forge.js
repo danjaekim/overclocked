@@ -44,6 +44,8 @@ function addEnhanceMods(run, inst, level) {
   const bp = (inst.def.forge && inst.def.forge.breakpoints && inst.def.forge.breakpoints[level]) || ENHANCE.breakpoints[level];
   const stats = run.player.stats;
   for (const m of ENHANCE.perLevel) stats.add({ ...m, tags: [inst.instanceTag], source: enhSource(inst, level) + 'level' });
+  const ts = run.trait && run.trait.temperedSteel;                  // Smith: each enhance level is worth more
+  if (ts) stats.add({ stat: 'damage', op: 'inc', value: ts.damage, tags: [inst.instanceTag], source: enhSource(inst, level) + 'smith' });
   if (bp) for (const m of bp) stats.add({ ...m, tags: [inst.instanceTag], source: enhSource(inst, level) + 'bp' });
   if (temperOptions(inst, level)) inst.pendingTemper = level;       // +5 and +10: the player now chooses
 }

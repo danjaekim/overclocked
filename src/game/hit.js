@@ -3,6 +3,7 @@
 
 import { queueDamage, KIND_HIT } from '../systems/damage-queue.js';
 import { ST } from '../data/statuses.js';
+import { classHit } from './class-traits.js';
 
 export const KNOCKBACK_IMPULSE = 140;   // world units / second, scaled by the knockback stat and enemy size
 
@@ -23,6 +24,7 @@ export function resolveHit(run, inst, e, base, dx, dy, depth = 0) {
     const f = (1 - p.hp / p.maxHp) / 0.75;
     mult *= 1 + lh * (f < 0 ? 0 : f > 1 ? 1 : f);
   }
+  if (run.trait !== undefined) mult *= classHit(run, e, depth);   // Long Shot, Heavy Blows (game/class-traits.js)
   const amount = base * mult;
   const kb = KNOCKBACK_IMPULSE * stats.getFor('knockback', tags) * (10 / e.r);
   queueDamage(run, e, amount, crit, dx * kb, dy * kb, depth, inst, KIND_HIT);

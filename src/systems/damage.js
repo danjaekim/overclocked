@@ -11,6 +11,7 @@ import { spawnShrine } from './shrines.js';
 import { SHRINE } from '../data/forge.js';
 import { KIND_HIT, KIND_DOT } from './damage-queue.js';
 import { recordDamage, recordKill } from '../game/run-stats.js';
+import { onClassKill } from '../game/class-traits.js';
 import { ST } from '../data/statuses.js';
 import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike } from './status.js';
 
@@ -157,6 +158,7 @@ export function flushDamage(run) {
       if ((mask & 15) !== 0 && src) onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount);
       if (run.rules.chainReaction && src) chainReaction(run, e, src, depth, maxHp);
       if (src) fireTriggers(run, 'kill', src, ex, ey, depth);   // burn kills still count as the weapon's kills
+      if (run.cls) onClassKill(run, src, ex, ey);                // Frenzy stacks, Soul Harvest
     }
   }
   q.n = 0;
@@ -165,7 +167,14 @@ export function flushDamage(run) {
 export function damagePlayer(run, amount) {
   const p = run.player;
   if (p.iframes > 0 || run.over) return;
+  const dodge = run.trait && run.trait.dodge;                // Archer's Evasion: the hit misses, with a short grace
+  if (dodge && run.rng.next() < dodge.chance) {
+    p.iframes = dodge.grace;
+    addPuff(run, p.x, p.y, p.r * 1.2, '#cfe8ff');
+    return;
+  }
   run.sfx('hurt');
+  if (run.cls) run.cls.hurtT = run.time;                    // Mage's Arcane Ward waits for a quiet spell
   p.iframes = IFRAMES;
   p.hurtFlash = HURT_FLASH;
   run.cam.shake = 7;
