@@ -154,7 +154,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
 
     debugLines() {
       const w = run.world;
-      const ws = run.player.weapons.map((i) => `${i.weaponId} L${i.level}`).join(', ');
+      // a grafted weapon shows its graft name and both parents, e.g. "Quakebreaker of Saws (quakebreaker+ricochet_saw) L6"
+      const ws = run.player.weapons.map((i) => (i.graft ? `${i.graft.name} (${i.weaponId}+${i.graft.donorId})` : i.weaponId) + ` L${i.level}`).join(', ');
       const ps = run.player.passives.map((i) => `${i.id} L${i.level}`).join(', ');
       return [
         `enemies ${w.enemies.count}  proj ${w.projectiles.count}  gems ${w.pickups.count}  fx ${w.fx.count}`,

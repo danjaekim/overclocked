@@ -78,9 +78,9 @@ async function toggleLab() {
   if (labEl) { labEl.remove(); labEl = null; return; }
   const o = window.__overforged;
   if (!o || !o.game.run) return;
-  const [{ WEAPONS }, W, G, D, { MASTERWORKS }, { EVOLUTIONS }] = await Promise.all([
+  const [{ WEAPONS }, W, G, D, { MASTERWORKS }] = await Promise.all([
     import('../data/weapons.js'), import('../game/weapons.js'), import('../game/graft.js'),
-    import('../game/director.js'), import('../data/grafts.js'), import('../data/evolutions.js'),
+    import('../game/director.js'), import('../data/grafts.js'),
   ]);
   const run = () => o.game.run;
   const maxOut = (inst) => { while (W.canLevelUp(inst)) W.levelUpWeapon(run(), inst); return inst; };
@@ -89,9 +89,11 @@ async function toggleLab() {
     for (const w of r.player.weapons) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); }
     r.player.weapons.length = 0;
   };
-  // Adds a weapon at max level without touching the others (reuses one you already own). Null when the slots are full.
+  // Adds a weapon at max level without touching the others. An ungrafted copy you already own is reused;
+  // a grafted one is NOT (it would still carry its graft's effects), so a fresh plain copy is added.
+  // Null when the slots are full.
   const give = (id) => {
-    const have = run().player.weapons.find((w) => w.weaponId === id);
+    const have = run().player.weapons.find((w) => w.weaponId === id && !w.graft);
     if (have) return maxOut(have);
     const inst = W.addWeapon(run(), id);
     if (!inst) { run().toast = { text: 'Weapon slots full: remove some first', ttl: 2.5 }; return null; }
@@ -117,7 +119,7 @@ async function toggleLab() {
     star: () => { run().starsteel += 3; },
   };
   const baseIds = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false);
-  const branchIds = EVOLUTIONS.filter((r) => !r.with).map((r) => r.into);
+  const branchIds = Object.keys(WEAPONS).filter((id) => WEAPONS[id].rarity === 'evolved');   // branches and alloy evolutions alike
   const row = (title, items) => `<div style="margin:4px 0"><div style="opacity:.7">${title}</div>${items.map(([k, label]) =>
     `<button data-k="${k}" style="margin:2px;padding:6px 8px;font:11px monospace;background:#222;color:#9fe870;border:1px solid #4a6;border-radius:5px">${label}</button>`).join('')}</div>`;
   labEl = document.createElement('div');
