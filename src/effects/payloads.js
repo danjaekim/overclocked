@@ -14,6 +14,7 @@ import { spawnProjectile, markHit } from '../game/projectiles.js';
 import { chainArc, stagger } from '../systems/status.js';
 import { MAX_TRIGGER_DEPTH } from './index.js';
 
+const SAW_HOPS = 3;
 const area = (run, src) => run.player.stats.getFor('area', src.tags);
 
 // Direction from the player through the target (the way an attack was travelling).
@@ -28,12 +29,14 @@ function dirAway(run, e) {
 }
 
 // A small shot that cannot start another payload and does not hit the enemy that spawned it.
-function shot(run, src, e, a, speed, dmg, ttl, r, pierce) {
+function shot(run, src, e, a, speed, dmg, ttl, r, pierce, look = 0) {
   const pr = spawnProjectile(run, src, e.x, e.y, Math.cos(a), Math.sin(a), speed, dmg, ttl, r, pierce);
-  if (!pr) return;
+  if (!pr) return null;
+  pr.look = look;
   pr.sub = true;
   pr.depth = 1;
   markHit(pr, e.uid);
+  return pr;
 }
 
 function circleHits(run, src, x, y, radius, dmg, depth, kb, filter) {
@@ -95,7 +98,7 @@ const FX = {
 
   burst(run, src, e, dmg) {
     const a0 = run.fxRng.next() * Math.PI * 2;
-    for (let i = 0; i < 6; i++) shot(run, src, e, a0 + (i * Math.PI * 2) / 6, 300, dmg, 0.35, 5, 0);
+    for (let i = 0; i < 6; i++) shot(run, src, e, a0 + (i * Math.PI * 2) / 6, 320, dmg, 0.5, 6, 1, 2);
     addPuff(run, e.x, e.y, 18, '#cfeaff');
   },
 
@@ -115,11 +118,21 @@ const FX = {
     addPillar(run, src, e.x, e.y, 45 * area(run, src), 0.25, dmg, depth, CAUSE.GRAFT);
   },
 
+  // Two saw discs leave the target for the nearest other enemies and keep hopping (never to one they
+  // have cut), the way a Ricochet Saw does. Alone in the world they cut out and back through it.
   saw(run, src, e, dmg) {
-    const [dx, dy] = dirAway(run, e);
-    const a = Math.atan2(dy, dx);
-    shot(run, src, e, a, 340, dmg, 0.27, 10, 3);          // out (90 units)...
-    shot(run, src, e, a + Math.PI, 340, dmg, 0.27, 10, 3); // ...and back through the target
+    const near = nearestOthers(run, e, 2, 260);
+    const aims = near.map((o) => Math.atan2(o.y - e.y, o.x - e.x));
+    if (aims.length < 2) {
+      const [dx, dy] = dirAway(run, e);
+      const a = Math.atan2(dy, dx);
+      if (aims.length === 0) aims.push(a);
+      aims.push(aims[0] + Math.PI);
+    }
+    for (const a of aims) {
+      const pr = shot(run, src, e, a, 380, dmg, 0.9, 11, 0, 1);
+      if (pr) pr.bounce += SAW_HOPS;                       // on top of any Ricochet perk
+    }
   },
 
   frost_step(run, src, e, dmg, depth) {

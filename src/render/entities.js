@@ -132,6 +132,7 @@ export function drawProjectiles(ctx, view, run) {
   const x1 = cam.x + view.w / 2 + 20;
   const y0 = cam.y - view.h / 2 - 20;
   const y1 = cam.y + view.h / 2 + 20;
+  let special = false;
   ctx.strokeStyle = '#ffd27a';
   ctx.lineCap = 'round';
   ctx.lineWidth = 3;
@@ -139,11 +140,51 @@ export function drawProjectiles(ctx, view, run) {
   for (let i = 0; i < list.length; i++) {
     const p = list[i];
     if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+    if (p.look !== 0) { special = true; continue; }
     ctx.moveTo(p.x, p.y);
     ctx.lineTo(p.x - p.dx * 12, p.y - p.dy * 12);
   }
   ctx.stroke();
   ctx.lineCap = 'butt';
+  if (!special) return;
+
+  // Graft payload shots: saw discs (look 1) spin like a Ricochet Saw; shards (look 2) are bright diamonds.
+  ctx.strokeStyle = '#e6ecf8';
+  ctx.fillStyle = '#9fb0cc';
+  ctx.lineWidth = 2;
+  const spin = run.time * 22;
+  for (let i = 0; i < list.length; i++) {
+    const p = list[i];
+    if (p.look !== 1 || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(spin + i);
+    ctx.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const a = (k * Math.PI) / 2;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * p.r * 1.4, Math.sin(a) * p.r * 1.4);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, p.r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#cfeaff';
+  ctx.beginPath();
+  for (let i = 0; i < list.length; i++) {
+    const p = list[i];
+    if (p.look !== 2 || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+    const ax = p.dx * 7;
+    const ay = p.dy * 7;
+    ctx.moveTo(p.x + ax, p.y + ay);
+    ctx.lineTo(p.x - ay * 0.45, p.y + ax * 0.45);
+    ctx.lineTo(p.x - ax, p.y - ay);
+    ctx.lineTo(p.x + ay * 0.45, p.y - ax * 0.45);
+    ctx.closePath();
+  }
+  ctx.fill();
 }
 
 export function drawEnemies(ctx, view, run) {

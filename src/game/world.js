@@ -40,6 +40,7 @@ function makeProjectile() {
     hx: NaN, hy: NaN,                            // where the last enemy it hit stood (a rod plants there)
     sub: false, depth: 0, trailD: 0,             // distance since the last trail patch (weapons with base.trail)
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
+    look: 0,                                // how it is drawn: 0 streak, 1 spinning saw disc, 2 shard (graft payload shots)
     hits: new Int32Array(16), nh: 0,    // uids already hit
   };
 }
