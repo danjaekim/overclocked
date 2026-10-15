@@ -73,7 +73,7 @@ export const MASTERWORKS = [
   },
   {
     id: 'glacier_maul', host: 'colossus_maul', donor: 'glacial_bloom', name: 'Glacier Maul',
-    desc: 'Slams freeze everything in the arc. A slam that hits an already frozen enemy shatters it into ice shards.',
+    desc: 'Slams freeze everything in the crater. A slam that hits an already frozen enemy shatters it into ice shards.',
     mods: [{ stat: 'chillChance', op: 'flat', value: 1 }, { stat: 'chillStacks', op: 'flat', value: 3 }, { stat: 'statusDuration', op: 'inc', value: 0.5 }],   // a freeze lasts long enough for the next slam
     triggers: [{ on: 'hit', effect: 'shatter', params: { radius: 70, damageFrac: 0.6 } }],
     hooks: {},

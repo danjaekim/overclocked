@@ -199,7 +199,7 @@ test('every class starts with its own weapon and class mods', () => {
 });
 
 test('arc: hits enemies inside the cone, spares ones behind, and kills with repeated swings', () => {
-  const run = classRun('smith');
+  const run = classRun('berserker');
   const front = dummy(run, 50, 0);
   const behind = dummy(run, -50, 0);
   settle(run);
@@ -209,7 +209,7 @@ test('arc: hits enemies inside the cone, spares ones behind, and kills with repe
 });
 
 test('arc: a second swing (projectiles +1) also hits behind the player', () => {
-  const run = classRun('smith');
+  const run = classRun('berserker');
   const hammer = run.player.weapons[0];
   run.player.stats.add({ stat: 'projectiles', op: 'flat', value: 1, tags: [hammer.instanceTag], source: 't' });
   const front = dummy(run, 50, 0);
@@ -220,7 +220,7 @@ test('arc: a second swing (projectiles +1) also hits behind the player', () => {
 });
 
 test('arc: out-of-range enemies are not hit', () => {
-  const run = classRun('smith');
+  const run = classRun('berserker');
   const far = dummy(run, 300, 0);
   settle(run);
   tick(run, 1);

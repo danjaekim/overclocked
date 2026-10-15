@@ -95,7 +95,7 @@ function rollStatuses(run, e, src, amount, depth, kind) {
   c = stats.getFor('shockChance', tags);
   if (c > 0 && rng.next() < c) {
     if (alive) applyShock(run, e, src);
-    if (kind === KIND_HIT) chainArc(run, e, src, amount, depth);
+    if (kind === KIND_HIT && !src.def.base.ownChain) chainArc(run, e, src, amount, depth);   // Chain Lightning does its own jumping
   }
 }
 

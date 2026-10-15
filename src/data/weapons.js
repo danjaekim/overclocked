@@ -51,18 +51,18 @@ export const WEAPONS = {
 
   forge_hammer: {
     name: 'Forge Hammer',
-    desc: 'Sweeps a heavy blow at the nearest enemy. Hits everything in the arc.',
+    desc: 'Leaps onto the thickest part of the crowd and craters it, throwing back and staggering everything it hits.',
     class: 'smith',
     glyph: 'H',
     rarity: 'common',
     tags: ['melee', 'arc', 'physical', 'close'],
-    behavior: 'arc',
-    base: { damage: 25, cooldown: 1.0, count: 1, range: 88, arcWidth: 2.1 },
+    behavior: 'slam',
+    base: { damage: 32, cooldown: 1.2, count: 1, range: 130, radius: 62, stun: 0.35 },
     forge: {
       tempers: {
         5: [
           { id: 'maul_grip', name: 'Maul grip', desc: '40% more damage, +15% cooldown', mods: [{ stat: 'damage', op: 'more', value: 0.4 }, { stat: 'cooldown', op: 'inc', value: 0.15 }] },
-          { id: 'twin_hammers', name: 'Twin hammers', desc: 'Swings again behind you', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }] },
+          { id: 'twin_hammers', name: 'Twin hammers', desc: 'Slams again behind you', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }] },
         ],
         10: [
           { id: 'molten', name: 'Molten', desc: 'Becomes a fire weapon: +60% burn chance', mods: [{ stat: 'burnChance', op: 'flat', value: 0.6 }], addTags: ['fire'] },
@@ -80,7 +80,7 @@ export const WEAPONS = {
       [{ stat: 'area', op: 'inc', value: 0.25 }],
       [{ stat: 'damage', op: 'more', value: 0.3 }],
     ],
-    levelText: ['+25% damage', '+20% area; a shield every 12s', '-15% cooldown', 'swings again behind you', '+30% damage', '+25% area', '30% more damage'],
+    levelText: ['+25% damage', '+20% area; a shield every 12s', '-15% cooldown', 'a second slam behind you', '+30% damage', '+25% area', '30% more damage'],
     triggers: [
       { on: 'interval', every: 12, effect: 'shield', params: { amount: 20 }, minLevel: 3 },   // lv3+: forge aegis
     ],
@@ -137,8 +137,8 @@ export const WEAPONS = {
   },
 
   storm_javelin: {
-    name: 'Storm Javelin',
-    desc: 'Hurls a heavy javelin that pierces through a line of enemies.',
+    name: 'Lightning Rod',
+    desc: 'Hurls a javelin through a line of enemies. Where it stops it plants in the ground and zaps whatever is near for a few seconds.',
     class: null,
     glyph: 'J',
     rarity: 'uncommon',
@@ -156,8 +156,8 @@ export const WEAPONS = {
         ],
       },
     },
-    behavior: 'projectile',
-    base: { damage: 22, cooldown: 1.7, speed: 440, count: 1, pierce: 3, spread: 0.02, gap: 9, ttl: 1.3, radius: 7, range: 420 },
+    behavior: 'rod',
+    base: { damage: 18, cooldown: 1.7, speed: 440, count: 1, pierce: 3, spread: 0.02, gap: 9, ttl: 1.3, radius: 7, range: 420, rod: { radius: 100, ttl: 2.6, every: 1.0, zaps: 2, frac: 0.25, max: 3 } },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -165,10 +165,10 @@ export const WEAPONS = {
       [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
       [{ stat: 'projectiles', op: 'flat', value: 1 }],
       [{ stat: 'damage', op: 'inc', value: 0.3 }],
-      [{ stat: 'pierce', op: 'flat', value: 3 }],
+      [{ stat: 'area', op: 'inc', value: 0.25 }, { stat: 'duration', op: 'inc', value: 0.25 }],
       [{ stat: 'damage', op: 'more', value: 0.3 }],
     ],
-    levelText: ['+25% damage', '+2 pierce', '-15% cooldown', '+1 javelin', '+30% damage', '+3 pierce', '30% more damage'],
+    levelText: ['+25% damage', '+2 pierce', '-15% cooldown', '+1 javelin (and a rod)', '+30% damage', '+25% zap radius, rods last 25% longer', '30% more damage'],
     triggers: [],
     evolvesInto: 'thunder_lance',
   },
@@ -235,26 +235,26 @@ export const WEAPONS = {
   },
 
   static_rod: {
-    name: 'Static Rod',
-    desc: 'Calls lightning down on the nearest enemies. It never misses and arcs onward.',
+    name: 'Chain Lightning',
+    desc: 'A bolt that never misses: it strikes the nearest enemy and leaps from one to the next, shocking each.',
     class: null,
     glyph: 'T',
     rarity: 'uncommon',
     tags: ['bolt', 'ranged', 'magic', 'storm'],
     baseMods: [{ stat: 'shockChance', op: 'flat', value: 1 }],
-    behavior: 'bolt',
-    base: { damage: 16, cooldown: 1.2, count: 1, range: 240 },
+    behavior: 'chain',
+    base: { damage: 16, cooldown: 1.2, count: 1, range: 240, chains: 4, jump: 140, ownChain: true },
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
       [{ stat: 'projectiles', op: 'flat', value: 1 }],
       [{ stat: 'area', op: 'inc', value: 0.2 }],
       [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
-      [{ stat: 'chains', op: 'flat', value: 1 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
       [{ stat: 'damage', op: 'inc', value: 0.35 }],
       [{ stat: 'damage', op: 'more', value: 0.3 }],
     ],
-    levelText: ['+25% damage', '+1 target', '+20% reach', '-15% cooldown', '+1 chain', '+35% damage', '30% more damage'],
+    levelText: ['+25% damage', '+2 jumps', '+20% reach and jump range', '-15% cooldown', '+2 jumps', '+35% damage', '30% more damage'],
     triggers: [],
     evolvesInto: null,
   },
@@ -438,14 +438,14 @@ export const WEAPONS = {
 
   colossus_maul: {
     name: 'Colossus Maul',
-    desc: 'A huge maul that crushes everything in a wide arc and shields you as you fight.',
+    desc: 'A huge maul that craters a wide circle, staggers what it crushes for longer, and shields you as you fight.',
     class: null,
     pool: false,
     glyph: 'M',
     rarity: 'evolved',
     tags: ['melee', 'arc', 'physical', 'close'],
-    behavior: 'arc',
-    base: { damage: 76, cooldown: 1.1, count: 1, range: 108, arcWidth: 2.5 },
+    behavior: 'slam',
+    base: { damage: 80, cooldown: 1.2, count: 1, range: 150, radius: 92, stun: 0.6 },
     maxLevel: 6,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.3 }],
@@ -454,7 +454,7 @@ export const WEAPONS = {
       [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
       [{ stat: 'damage', op: 'more', value: 0.35 }],
     ],
-    levelText: ['+30% damage', '+20% area', 'swings again behind you', '-15% cooldown', '35% more damage'],
+    levelText: ['+30% damage', '+20% area', 'a second slam behind you', '-15% cooldown', '35% more damage'],
     triggers: [
       { on: 'interval', every: 8, effect: 'shield', params: { amount: 30 } },
     ],
@@ -536,15 +536,15 @@ export const WEAPONS = {
 
   thunder_lance: {
     name: 'Thunder Lance',
-    desc: 'Twin lances of thunder that punch through the whole line.',
+    desc: 'Twin lances that punch through the whole line and plant as rods, joined by crackling lightning.',
     class: null,
     pool: false,
     glyph: 'L',
     rarity: 'evolved',
     tags: ['projectile', 'ranged', 'storm'],
     baseMods: [{ stat: 'shockChance', op: 'flat', value: 0.7 }, { stat: 'chains', op: 'flat', value: 1 }],
-    behavior: 'projectile',
-    base: { damage: 44, cooldown: 1.3, speed: 540, count: 2, pierce: 8, spread: 0.02, gap: 9, ttl: 1.4, radius: 8, range: 460 },
+    behavior: 'rod',
+    base: { damage: 40, cooldown: 1.3, speed: 540, count: 2, pierce: 8, spread: 0.02, gap: 9, ttl: 1.4, radius: 8, range: 460, rod: { radius: 110, ttl: 3.2, every: 1.0, zaps: 2, frac: 0.14, max: 3, link: 170 } },
     maxLevel: 6,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -632,15 +632,15 @@ export const WEAPONS = {
 
   stormfrost_lance: {
     name: 'Stormfrost Lance',
-    desc: 'A lance of ice and lightning. Whatever it spears is chilled and shocked.',
+    desc: 'A lance of ice and lightning. Whatever it spears is chilled and shocked, and its rods chill everything around them.',
     class: null,
     pool: false,
     glyph: 'I',
     rarity: 'evolved',
     tags: ['projectile', 'ranged', 'frost', 'storm'],
     baseMods: [{ stat: 'chillChance', op: 'flat', value: 0.6 }, { stat: 'shockChance', op: 'flat', value: 0.6 }],
-    behavior: 'projectile',
-    base: { damage: 40, cooldown: 1.4, speed: 520, count: 2, pierce: 6, spread: 0.02, gap: 9, ttl: 1.3, radius: 8, range: 440 },
+    behavior: 'rod',
+    base: { damage: 38, cooldown: 1.4, speed: 520, count: 2, pierce: 6, spread: 0.02, gap: 9, ttl: 1.3, radius: 8, range: 440, rod: { radius: 110, ttl: 3.2, every: 1.0, zaps: 2, frac: 0.12, max: 3, chill: true } },
     maxLevel: 6,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -763,14 +763,14 @@ export const WEAPONS = {
 
   quakebreaker: {
     name: 'Quakebreaker',
-    desc: 'Every swing also sends a shockwave rolling far along the ground.',
+    desc: 'Every slam also sends four shockwaves rolling out from the crater in a cross.',
     class: null,
     pool: false,
     glyph: 'k',
     rarity: 'evolved',
     tags: ['melee', 'arc', 'physical', 'close'],
-    behavior: 'arc',
-    base: { damage: 62, cooldown: 1.0, count: 1, range: 100, arcWidth: 2.2 },
+    behavior: 'slam',
+    base: { damage: 64, cooldown: 1.1, count: 1, range: 140, radius: 66, stun: 0.4 },
     maxLevel: 6,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -781,7 +781,7 @@ export const WEAPONS = {
     ],
     levelText: ['+25% damage', '+20% area (longer wave)', '-15% cooldown', '+50% knockback', '35% more damage'],
     triggers: [
-      { on: 'attack', effect: 'shockwave', params: { speed: 420, range: 270, width: 34, damageFrac: 0.8 } },
+      { on: 'attack', effect: 'shockwave', params: { speed: 420, range: 230, width: 34, damageFrac: 0.3, cross: true } },
     ],
     evolvesInto: null,
   },

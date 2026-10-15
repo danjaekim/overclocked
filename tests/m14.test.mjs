@@ -42,7 +42,8 @@ test('m14 data validates; every starting weapon has an evolution; 3 fusions exis
 });
 
 test('bolt: strikes the nearest targets instantly and a shock chains on', () => {
-  const { run, inst } = lone('static_rod', 3);             // level 3: +1 target
+  const { run, inst } = lone('arc_bolt', 3);               // level 3: +1 target
+  run.player.stats.add({ stat: 'shockChance', op: 'flat', value: 1, tags: [inst.instanceTag], source: 't' });   // the bolt itself does not shock; give it a shock so the chain test still holds
   const near = dummy(run, 80, 0);
   const near2 = dummy(run, -100, 0);
   const far = dummy(run, 400, 0);                          // beyond the rod's reach

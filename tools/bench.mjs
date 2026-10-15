@@ -49,7 +49,7 @@ function loneWeaponRun(weaponId, level, classId = 'archer', seed = 1) {
 
 // Where a typical fight happens: projectile weapons engage at range (fans of arrows spread out
 // and side arrows miss a lone target), everything else is up close.
-const engageDist = (id) => (WEAPONS[id].behavior === 'projectile' ? 170 : WEAPONS[id].behavior === 'trail' ? 12 : 60);   // a trail hurts what stands on it
+const engageDist = (id) => (['projectile', 'rod'].includes(WEAPONS[id].behavior) ? 170 : WEAPONS[id].behavior === 'trail' ? 12 : 60);   // a trail hurts what stands on it
 
 function singleTargetDps(weaponId, level) {
   const { run } = loneWeaponRun(weaponId, level);

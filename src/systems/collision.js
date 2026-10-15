@@ -2,6 +2,7 @@
 // Uses the spatial hash built earlier in the same tick. Hits are queued, not applied here.
 
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { plantRod } from './hazards.js';
 import { damagePlayer } from './damage.js';
 import { resolveHit } from '../game/hit.js';
 import { hasHit, markHit, spawnSplit } from '../game/projectiles.js';
@@ -16,7 +17,7 @@ function playerContact(run) {
   let worst = 0;
   for (let i = 0; i < n; i++) {
     const e = w.scratch[i];
-    if (!e.alive) continue;
+    if (!e.alive || e.stunT > 0) continue;               // a staggered enemy cannot hit
     const dx = e.x - p.x;
     const dy = e.y - p.y;
     const rr = p.r + e.r;
@@ -68,12 +69,15 @@ function projectileHits(run) {
       if (dx * dx + dy * dy > rr * rr) continue;
       if (hasHit(pr, e.uid)) continue;
       markHit(pr, e.uid);
+      pr.hx = e.x;
+      pr.hy = e.y;
 
       resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy, pr.depth);
 
       if (pr.split > 0) spawnSplit(run, pr, e);
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy
         if (pr.bounce > 0 && ricochet(run, pr)) break;
+        plantRod(run, pr);
         w.projectiles.release(pr);
         break;
       }

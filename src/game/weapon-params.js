@@ -12,6 +12,7 @@ const RULES = {
   radius:   ['mul', 'area'],
   range:    ['mul', 'area'],
   arcWidth: ['mul', 'area'],
+  jump:     ['mul', 'area'],
 };
 
 // Final value of one base param for a weapon instance. Keys without a rule are used as-is.

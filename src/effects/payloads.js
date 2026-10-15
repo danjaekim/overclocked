@@ -11,7 +11,7 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff, addArc } from '../render/fx.js';
 import { addPatch, addSpin, addRing, addPillar, addBlast } from '../systems/hazards.js';
 import { spawnProjectile, markHit } from '../game/projectiles.js';
-import { chainArc } from '../systems/status.js';
+import { chainArc, stagger } from '../systems/status.js';
 import { MAX_TRIGGER_DEPTH } from './index.js';
 
 const area = (run, src) => run.player.stats.getFor('area', src.tags);
@@ -133,7 +133,7 @@ const FX = {
 
   quake(run, src, e, dmg, depth) {
     circleHits(run, src, e.x, e.y, 45 * area(run, src), dmg, depth, 140);
-    for (const o of nearStun(run, e, 45 * area(run, src))) o.stunT = Math.max(o.stunT || 0, o.def.boss ? 0.12 : 0.25);
+    for (const o of nearStun(run, e, 45 * area(run, src))) stagger(o, 0.25);
     addPuff(run, e.x, e.y, 22, '#c9b79a');
   },
 
@@ -159,11 +159,10 @@ function nearestOthers(run, e, count, range) {
   return out.map((x) => x.o);
 }
 
-// Enemies inside the circle that can be staggered (stunT exists once M32 adds it; harmless before).
+// Enemies inside the circle that can be staggered.
 function nearStun(run, e, r) {
   const w = run.world;
   const out = [];
-  if (e.stunT === undefined) return out;
   const n = w.hash.queryRadius(e.x, e.y, r + MAX_ENEMY_RADIUS, w.scratch);
   for (let i = 0; i < n; i++) {
     const o = w.scratch[i];

@@ -45,6 +45,7 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   e.chillT = e.freezeT = e.freezeImm = e.shockT = 0;
   e.slowMul = 1;
   e.sunderT = e.blessT = 0;
+  e.stunT = 0;
   return e;
 }
 

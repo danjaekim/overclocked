@@ -61,6 +61,14 @@ export const EFFECTS = {
     if (!src || depth + 1 > MAX_TRIGGER_DEPTH) return;
     const p = t.params;
     const pl = run.player;
+    if (p.cross) {                                            // Quakebreaker: four waves out of the crater
+      for (let k = 0; k < 4; k++) {
+        const a = ang + (k * Math.PI) / 2;
+        addWave(run, src, x, y, Math.cos(a), Math.sin(a), p.speed, p.range * area(run, src), p.width * area(run, src),
+          param(run, src, 'damage') * p.damageFrac, depth);
+      }
+      return;
+    }
     addWave(run, src, pl.x, pl.y, Math.cos(ang), Math.sin(ang), p.speed, p.range * area(run, src), p.width * area(run, src),
       param(run, src, 'damage') * p.damageFrac, depth);
   },

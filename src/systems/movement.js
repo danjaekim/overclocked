@@ -1,6 +1,6 @@
 // Projectile integration (step 5 of the tick). Enemies move in enemy-ai.js.
 
-import { addPatch, nearestVortex } from './hazards.js';
+import { addPatch, nearestVortex, plantRod } from './hazards.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
 
@@ -34,6 +34,7 @@ export function updateProjectiles(run, dt) {
       }
     }
     if (pr.ttl <= 0) {
+      plantRod(run, pr);
       const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards where it ends
       if (eb) {
         const dmg = pr.dmg * eb.damageFrac;

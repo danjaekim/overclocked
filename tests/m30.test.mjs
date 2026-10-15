@@ -111,7 +111,7 @@ test('payload hits are PROC damage credited to Graft and never fire another payl
 });
 
 test('each payload reaches an enemy next to the target and not one far away', () => {
-  const donors = { projectile: 'storm_volley', arc: 'colossus_maul', orbit: 'seraph_blades', aura: 'pyre_crown', bolt: 'singularity',
+  const donors = { projectile: 'storm_volley', arc: 'reaper_axe', slam: 'colossus_maul', rod: 'thunder_lance', orbit: 'seraph_blades', aura: 'pyre_crown', bolt: 'singularity',
     nova: 'glacial_bloom', mortar: 'stormshell_mortar', summon: 'bone_colossus', judge: 'judgement' };
   for (const [shape, donorId] of Object.entries(donors)) {
     const { run, h } = grafted('prismatic_bolt', donorId);

@@ -99,14 +99,17 @@ export function updateEnemies(run, dt) {
       e.sy = py;
     }
 
-    if (e.def.charge) bossStep(e, p, dt);
+    const stunned = e.stunT > 0;                        // staggered by a slam: no moving, shooting or charging
+    if (stunned) e.stunT -= dt;
+    if (e.def.charge && !stunned) bossStep(e, p, dt);
     const d = Math.sqrt(d2);
     const inv = d > 1e-3 ? 1 / d : 0;
     const sp = e.speed * e.slowMul;                     // chill slows; frozen sets slowMul to 0
     let vx = dx * inv * sp;
     let vy = dy * inv * sp;
-    if (e.def.ranged && rangedStep(run, e, d, dt)) { vx = 0; vy = 0; }
-    if (e.def.charge) {
+    if (stunned) { vx = 0; vy = 0; }
+    else if (e.def.ranged && rangedStep(run, e, d, dt)) { vx = 0; vy = 0; }
+    if (e.def.charge && !stunned) {
       if (e.ai === AI_WINDUP) { vx = 0; vy = 0; }
       else if (e.ai === AI_DASH) { vx = e.ax * e.def.charge.speed; vy = e.ay * e.def.charge.speed; }
     }

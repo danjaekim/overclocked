@@ -14,6 +14,9 @@ import summon from './summon.js';
 import judge from './judge.js';
 import trail from './trail.js';
 import pulse from './pulse.js';
+import slam from './slam.js';
+import chain from './chain.js';
+import rod from './rod.js';
 
 export const BEHAVIORS = {
   projectile,
@@ -28,4 +31,7 @@ export const BEHAVIORS = {
   judge,
   trail,
   pulse,
+  slam,
+  chain,
+  rod,
 };

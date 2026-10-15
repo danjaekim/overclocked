@@ -6,14 +6,14 @@
 // One flat array on the run, capped. Damage is queued as PROC damage attributed to the weapon
 // instance that made the hazard, so every perk, status and trigger applies as usual.
 
-import { queueDamage, KIND_PROC } from './damage-queue.js';
+import { queueDamage, KIND_PROC, CAUSE } from './damage-queue.js';
 import { applyBurn, applyChill, applyShock } from './status.js';
 import { resolveHit } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
-import { addPuff } from '../render/fx.js';
+import { addPuff, addArc } from '../render/fx.js';
 
 export const HAZARD_CAP = 90;
-const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6;
+const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7;
 const TAU = Math.PI * 2;
 
 function add(run, h) {
@@ -50,6 +50,31 @@ export function addRing(run, src, x, y, rMax, speed, dmg, depth, opts = {}) {
   const life = rMax / speed + 0.25;
   return add(run, { kind: RING, src, x, y, rr: 0, rMax, speed, ttl: life, life, dmg, depth, hit: new Set(), follow: !!opts.follow, status: opts.status || null, heal: opts.heal || 0, healed: 0, direct: !!opts.direct, thick: opts.thick || 4, color: opts.color || '#fff3b0', cause: opts.cause, kb: opts.kb === undefined ? 60 : opts.kb });
 }
+// A planted rod (Lightning Rod): every `every` s it zaps the `zaps` nearest enemies within r (shocking each),
+// and with `chill` it also chills everything in r once a second. `link` joins it to its weapon's other rods.
+export function addRod(run, src, x, y, r, ttl, dmg, o) {
+  const mine = [];
+  for (let i = 0; i < run.hazards.length; i++) if (run.hazards[i].kind === ROD && run.hazards[i].src === src) mine.push(run.hazards[i]);
+  while (mine.length >= o.max) {                              // the oldest rod goes
+    const old = mine.shift();
+    old.ttl = Math.min(old.ttl, 0.05);
+  }
+  return add(run, { kind: ROD, src, x, y, r, ttl, life: ttl, dmg, depth: 0, t: o.every * 0.5, every: o.every, zaps: o.zaps, chill: !!o.chill, chillT: 1, link: o.link || 0, linkT: 0.4, zapAt: -9 });
+}
+
+// Called where a projectile of a rod weapon ends. Payload shots (`sub`) never plant.
+export function plantRod(run, pr) {
+  const inst = pr.inst;
+  const b = inst && inst.def.base.rod;
+  if (!b || pr.sub) return;
+  const stats = run.player.stats;
+  const count = Math.max(1, Math.round(inst.def.base.count + stats.getFor('projectiles', inst.tags)));
+  const px = pr.hx === pr.hx ? pr.hx : pr.x;                  // plant among the enemies it struck, not off at the end of its flight
+  const py = pr.hy === pr.hy ? pr.hy : pr.y;
+  addRod(run, inst, px, py, b.radius * stats.getFor('area', inst.tags), b.ttl * stats.getFor('duration', inst.tags),
+    pr.dmg * b.frac, { every: b.every, zaps: b.zaps, max: b.max + count - 1, chill: b.chill, link: b.link });
+}
+
 export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
   return add(run, { kind: VORTEX, src, x, y, r: radius, ttl, life: ttl, pull, dmg, depth });
 }
@@ -134,6 +159,23 @@ export function updateHazards(run, dt) {
           if (st === 'bless') {
             e.blessT = 2;
             if (healed < 4) { healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + 0.5); }
+          }
+        }
+      }
+    } else if (h.kind === ROD) {
+      h.t -= dt;
+      if (h.t <= 0) {
+        h.t += h.every;
+        zapRod(run, h);
+      }
+      if (h.chill) {
+        h.chillT -= dt;
+        if (h.chillT <= 0) {
+          h.chillT += 1;
+          const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+          for (let k = 0; k < n; k++) {
+            const e = w.scratch[k];
+            if (e.alive && (e.x - h.x) * (e.x - h.x) + (e.y - h.y) * (e.y - h.y) <= (h.r + e.r) * (h.r + e.r)) applyChill(run, e, h.src, 1);
           }
         }
       }
@@ -245,6 +287,69 @@ export function updateHazards(run, dt) {
     }
   }
   netStep(run, dt);
+  rodLinks(run, dt);
+}
+
+// The nearest `zaps` enemies within the rod's radius take a hit and a shock, each with a bolt to the rod's tip.
+function zapRod(run, h) {
+  const w = run.world;
+  const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+  let a = null, b = null, da = Infinity, db = Infinity;
+  for (let k = 0; k < n; k++) {
+    const e = w.scratch[k];
+    if (!e.alive) continue;
+    const d = (e.x - h.x) * (e.x - h.x) + (e.y - h.y) * (e.y - h.y);
+    if (d > (h.r + e.r) * (h.r + e.r)) continue;
+    if (d < da) { b = a; db = da; a = e; da = d; } else if (d < db) { b = e; db = d; }
+  }
+  for (const e of [a, b]) {
+    if (!e || (e === b && h.zaps < 2)) continue;
+    addArc(run, h.x, h.y - 14, e.x, e.y);
+    queueDamage(run, e, h.dmg, false, 0, 0, 1, h.src, KIND_PROC, CAUSE.DIRECT);
+    applyShock(run, e, h.src);
+  }
+}
+
+// Thunder Lance: rods of one weapon between 40 and `link` units apart are joined by lightning that hurts
+// and shocks whatever stands on the line, once per enemy every 0.4 s.
+const LINK_TICK = 0.4;
+function rodLinks(run, dt) {
+  const list = run.hazards;
+  let rods = null;
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    if (h.kind === ROD && h.link > 0 && h.ttl > 0.1) (rods || (rods = [])).push(h);
+  }
+  if (!rods || rods.length < 2) { run.rodLinks = null; return; }
+  run.rodLinks = rods;
+  run.rodT = (run.rodT || 0) - dt;
+  if (run.rodT > 0) return;
+  run.rodT += LINK_TICK;
+  const w = run.world;
+  const seen = new Set();
+  for (let a = 0; a < rods.length; a++) {
+    const p = rods[a];
+    for (let b = a + 1; b < rods.length; b++) {
+      const q = rods[b];
+      if (q.src !== p.src) continue;
+      const len = Math.hypot(q.x - p.x, q.y - p.y);
+      if (len > p.link || len < 40) continue;
+      const steps = Math.max(1, Math.ceil(len / 30));
+      for (let s = 0; s <= steps; s++) {
+        const x = p.x + ((q.x - p.x) * s) / steps;
+        const y = p.y + ((q.y - p.y) * s) / steps;
+        const n = w.hash.queryRadius(x, y, 22 + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive || seen.has(e.uid)) continue;
+          if ((e.x - x) * (e.x - x) + (e.y - y) * (e.y - y) > (22 + e.r) * (22 + e.r)) continue;
+          seen.add(e.uid);
+          queueDamage(run, e, p.dmg * 1.5, false, 0, 0, 1, p.src, KIND_PROC, CAUSE.DIRECT);
+          applyShock(run, e, p.src);
+        }
+      }
+    }
+  }
 }
 
 // Wrath: every live pillar of a Wrath weapon is joined to the next by lightning. Anything standing
@@ -295,6 +400,27 @@ export function drawHazards(ctx, run) {
   const list = run.hazards;
   if (list.length === 0) return;
   const t = run.time;
+  if (run.rodLinks) {                                         // Thunder Lance: a crackling line between rods that are linked
+    ctx.strokeStyle = '#fff3a8';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.55 + 0.25 * Math.sin(t * 30);
+    for (let a = 0; a < run.rodLinks.length; a++) {
+      for (let b = a + 1; b < run.rodLinks.length; b++) {
+        const p = run.rodLinks[a];
+        const q = run.rodLinks[b];
+        const L = Math.hypot(q.x - p.x, q.y - p.y);
+        if (p.src !== q.src || L > p.link || L < 40) continue;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 16);
+        const mx = (p.x + q.x) / 2 + Math.sin(t * 40 + a) * 6;
+        const my = (p.y + q.y) / 2 - 16 + Math.cos(t * 37 + b) * 6;
+        ctx.lineTo(mx, my);
+        ctx.lineTo(q.x, q.y - 16);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
   for (let i = 0; i < list.length; i++) {
     const h = list[i];
     const k = h.ttl / h.life;                                // 1 -> 0
@@ -330,6 +456,29 @@ export function drawHazards(ctx, run) {
       ctx.strokeStyle = col[1];
       ctx.lineWidth = 1.5;
       ctx.stroke();
+    } else if (h.kind === ROD) {
+      const grow = Math.min(1, (h.life - h.ttl) * 8);            // the rod drops in
+      ctx.globalAlpha = Math.min(1, k * 3) * 0.22;
+      ctx.strokeStyle = h.chill ? '#9fdcff' : '#ffe066';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, h.r * (0.96 + 0.04 * Math.sin(t * 7 + h.x)), 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = Math.min(1, k * 3);
+      ctx.strokeStyle = '#d9d4c4';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(h.x, h.y + 2);
+      ctx.lineTo(h.x, h.y - 16 * grow);
+      ctx.stroke();
+      ctx.fillStyle = h.chill ? '#bfeaff' : '#fff3a8';
+      ctx.beginPath();
+      ctx.arc(h.x, h.y - 16 * grow, 3.2 + (Math.sin(t * 24 + h.y) > 0.6 ? 1.6 : 0), 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = '#2b2a24';
+      ctx.beginPath();
+      ctx.ellipse(h.x, h.y + 3, 6, 2.5, 0, 0, TAU);
+      ctx.fill();
     } else if (h.kind === VORTEX) {
       const spin = t * 5;
       ctx.strokeStyle = h.src && h.src.graft && h.src.graft.hooks.burnVortex ? '#ff8a3c' : '#c58bff';

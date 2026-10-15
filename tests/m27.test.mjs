@@ -118,12 +118,12 @@ test('Glacier Maul freezes, and a hit on a frozen enemy shatters', () => {
   const bystander = spawnEnemy(run, 'goblin', 100, 40);
   near.speed = bystander.speed = 0;
   near.maxHp = near.hp = 1e6;
-  tick(run, 0.5);
+  tick(run, 0.9);
   assert.ok(near.freezeT > 0 || near.freezeImm > 0, 'frozen by the first slam');
   let shatters = 0;
   const orig = EFFECTS.explode;
   EFFECTS.explode = (...a) => { if (a[1].params.color === '#bfeaff') shatters++; return orig(...a); };
-  try { tick(run, 1.2); } finally { EFFECTS.explode = orig; }
+  try { tick(run, 1.6); } finally { EFFECTS.explode = orig; }
   assert.ok(shatters >= 1, 'the second slam shattered it');
 });
 

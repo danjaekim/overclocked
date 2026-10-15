@@ -264,3 +264,9 @@ export function forkStrike(run, e, src, amount, depth) {
   if (run.rng.next() >= r.chance) return;
   chainArc(run, e, src, amount, depth, r.hops, r.frac, CAUSE.FORK);
 }
+
+// Staggers an enemy for `t` seconds (a slam or quake): it cannot move, shoot or hurt you. Bosses take half.
+export function stagger(e, t) {
+  const v = e.def.boss ? t * 0.5 : t;
+  if (v > e.stunT) e.stunT = v;
+}
