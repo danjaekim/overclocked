@@ -11,7 +11,7 @@ import { strike } from '../game/hit.js';
 import { addArc } from '../render/fx.js';
 import { attackTriggers } from '../game/triggers.js';
 import { queueDamage, KIND_PROC, CAUSE } from '../systems/damage-queue.js';
-import { applyShock } from '../systems/status.js';
+import { applyShock, forkChain } from '../systems/status.js';
 
 const FALLOFF = 0.88;
 const MAX_JUMPS = 14;
@@ -43,7 +43,7 @@ export default {
     strike(run, inst, first, dmg, (first.x - p.x) / d0, (first.y - p.y) / d0);
     inst.seen[0] = first.uid;
     if (b.fork) {
-      forkFrom(run, inst, first, dmg, Math.min(4, b.fork.gens + Math.max(1, Math.round(param(run, inst, 'count'))) - 1), b.fork.falloff, jump);
+      forkChain(run, inst, first, dmg, Math.min(4, b.fork.gens + Math.max(1, Math.round(param(run, inst, 'count'))) - 1), b.fork.falloff, jump, 0);
       inst.cd += param(run, inst, 'cooldown');
       attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
       return;
@@ -78,40 +78,3 @@ export default {
     attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
   },
 };
-
-// Tempest: breadth-first branching. Each generation every struck enemy forks to its two nearest
-// enemies that nothing has struck yet this cast.
-function forkFrom(run, inst, first, dmg, gens, falloff, jump) {
-  const w = run.world;
-  const seen = inst.seen;
-  let ns = 1;
-  let front = [first];
-  for (let g = 0; g < gens && front.length; g++) {
-    dmg *= falloff;
-    const next = [];
-    for (const from of front) {
-      for (let f = 0; f < 2 && ns < MAX_STRUCK; f++) {
-        let best = null;
-        let bestD = jump * jump;
-        const n = w.hash.queryRadius(from.x, from.y, jump + 20, w.scratch);
-        for (let i = 0; i < n; i++) {
-          const o = w.scratch[i];
-          if (!o.alive || o.hp <= 0) continue;
-          let used = false;
-          for (let k = 0; k < ns; k++) if (seen[k] === o.uid) { used = true; break; }
-          if (used) continue;
-          const d = (o.x - from.x) * (o.x - from.x) + (o.y - from.y) * (o.y - from.y);
-          if (d < bestD) { bestD = d; best = o; }
-        }
-        if (!best) break;
-        seen[ns++] = best.uid;
-        addArc(run, from.x, from.y, best.x, best.y);
-        applyShock(run, best, inst);
-        const d = Math.sqrt(bestD) || 1;
-        queueDamage(run, best, dmg, false, ((best.x - from.x) / d) * 30, ((best.y - from.y) / d) * 30, 1, inst, KIND_PROC, CAUSE.CHAIN);
-        next.push(best);
-      }
-    }
-    front = next;
-  }
-}

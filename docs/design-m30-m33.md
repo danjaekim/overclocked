@@ -268,7 +268,7 @@ build) 2-3 new masterworks that show off the new shapes, for example:
 All twelve read on screen (screenshots in the M33b report). Echo Strike and the Twin affix now say they
 add a slam; the Compendium's Grafts tab calls the rod shape "Planted rod" and the projectile shape "Arrow".
 
-### 6.2b Proposed new masterworks (for Dan; not built)
+### 6.2b New masterworks (proposed in M33b, built in M34 / v0.34.0 with Stormspire = Thunder Lance + Tempest)
 
 The suggested Stormspire (Thunder Lance + Chain Lightning) cannot exist: Chain Lightning has no evolution,
 so it can never be grafted. Meteor Hammer (slam + mortar shells) repeats Thunderscythe and Fault Line.

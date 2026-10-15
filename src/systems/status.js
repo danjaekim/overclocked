@@ -270,3 +270,43 @@ export function stagger(e, t) {
   const v = e.def.boss ? t * 0.5 : t;
   if (v > e.stunT) e.stunT = v;
 }
+
+// A branching chain (Tempest; Stormspire's rod zaps): breadth-first, every struck enemy forks to its two
+// nearest enemies not yet struck by this chain, for `gens` generations, each x`falloff`. `first` has
+// already been hit. PROC damage at depth + 1, cause Shock chains, shocking each. At most 31 strikes.
+const forkSeen = new Int32Array(32);
+export function forkChain(run, src, first, dmg, gens, falloff, jump, depth) {
+  if (depth + 1 > MAX_TRIGGER_DEPTH) return;
+  const w = run.world;
+  let ns = 1;
+  forkSeen[0] = first.uid;
+  let front = [first];
+  for (let g = 0; g < gens && front.length; g++) {
+    dmg *= falloff;
+    const next = [];
+    for (const from of front) {
+      for (let f = 0; f < 2 && ns < forkSeen.length; f++) {
+        let best = null;
+        let bestD = jump * jump;
+        const n = w.hash.queryRadius(from.x, from.y, jump + 20, w.scratch);
+        for (let i = 0; i < n; i++) {
+          const o = w.scratch[i];
+          if (!o.alive || o.hp <= 0) continue;
+          let used = false;
+          for (let k = 0; k < ns; k++) if (forkSeen[k] === o.uid) { used = true; break; }
+          if (used) continue;
+          const d = (o.x - from.x) * (o.x - from.x) + (o.y - from.y) * (o.y - from.y);
+          if (d < bestD) { bestD = d; best = o; }
+        }
+        if (!best) break;
+        forkSeen[ns++] = best.uid;
+        addArc(run, from.x, from.y, best.x, best.y);
+        applyShock(run, best, src);
+        const d = Math.sqrt(bestD) || 1;
+        queueDamage(run, best, dmg, false, ((best.x - from.x) / d) * 30, ((best.y - from.y) / d) * 30, depth + 1, src, KIND_PROC, CAUSE.CHAIN);
+        next.push(best);
+      }
+    }
+    front = next;
+  }
+}

@@ -35,7 +35,7 @@ const pair = (run, host, donor) => ({ h: addWeapon(run, host), d: addWeapon(run,
 
 test('m27 data validates and the twelve masterworks are distinct pairs', () => {
   assert.deepEqual(validateData(), []);
-  assert.equal(MASTERWORKS.length, 12);
+  assert.equal(MASTERWORKS.length, 16);                    // 12 from M27, 4 from M34
 });
 
 test('a masterwork pair works in either order and always has the same host', () => {
@@ -184,7 +184,7 @@ test('discovery: the save keeps found masterworks and the compendium reveals the
   const entries = buildEntries(save.data.discovered).filter((e) => e.tab === 'grafts');
   assert.ok(entries.some((e) => e.name === 'Thunderscythe'));
   assert.ok(entries.some((e) => /\+ \?\?\?$/.test(e.name)), 'unfound ones are hidden');
-  assert.ok(entries[0].name.includes('1 / 12'));
+  assert.ok(entries[0].name.includes('1 / 16'));
 });
 
 test('orbiting blades hit an enemy sitting on their path, not only at tick instants', () => {

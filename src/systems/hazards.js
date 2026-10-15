@@ -7,7 +7,7 @@
 // instance that made the hazard, so every perk, status and trigger applies as usual.
 
 import { queueDamage, KIND_PROC, CAUSE } from './damage-queue.js';
-import { applyBurn, applyChill, applyShock } from './status.js';
+import { applyBurn, applyChill, applyShock, forkChain } from './status.js';
 import { resolveHit } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff, addArc } from '../render/fx.js';
@@ -149,6 +149,7 @@ export function updateHazards(run, dt) {
             if (seen.size > 400) seen.clear();
             seen.set(e.uid, run.time);
             resolveHit(run, h.src, e, h.dmg, 0, 0);
+            if (h.bless) e.blessT = Math.max(e.blessT, 1.5);      // Aurora Wake
             continue;
           }
           queueDamage(run, e, h.dmg, false, 0, 0, h.depth + 1, h.src, KIND_PROC, h.cause);
@@ -307,6 +308,8 @@ function zapRod(run, h) {
     addArc(run, h.x, h.y - 14, e.x, e.y);
     queueDamage(run, e, h.dmg, false, 0, 0, 1, h.src, KIND_PROC, CAUSE.DIRECT);
     applyShock(run, e, h.src);
+    const fk = h.src && h.src.graft && h.src.graft.hooks.rodFork;   // Stormspire: every zap forks on like Tempest
+    if (fk) forkChain(run, h.src, e, h.dmg * fk.boost, fk.gens, fk.falloff, fk.jump, 0);
   }
 }
 

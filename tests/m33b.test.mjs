@@ -26,7 +26,7 @@ const crowd = (run, n = 30) => {
   const out = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
-    const d = 70 + (i % 4) * 35;
+    const d = 70 + (i % 6) * 35;
     const e = spawnEnemy(run, 'goblin', Math.cos(a) * d, Math.sin(a) * d);
     e.hp = e.maxHp = 1e9; e.speed = 0;
     out.push(e);
@@ -43,7 +43,7 @@ const make = (m) => {
   return { run, h };
 };
 
-test('version bumped', () => assert.ok(/^0\.(3[3-9]|[4-9]\d)\.([1-9]|\d\d)/.test(VERSION), VERSION));
+test('version bumped', () => assert.ok(/^0\.(33\.[1-9]|3[4-9]\.|[4-9]\d\.)/.test(VERSION), VERSION));
 
 test('every masterwork grafts, runs 6 s in a crowd, and deals more than its host alone', () => {
   for (const m of MASTERWORKS) {

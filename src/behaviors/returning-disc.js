@@ -12,6 +12,11 @@ import { param } from '../game/weapon-params.js';
 import { attackTriggers } from '../game/triggers.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { stagger } from '../systems/status.js';
+import { addRod } from '../systems/hazards.js';
+import { addPuff } from '../render/fx.js';
+
+const MILL_TELE = 0.22;
 
 const MAX_DISCS = 10;
 const FAN = 0.35;                 // radians between discs thrown together
@@ -23,6 +28,7 @@ export default {
   init(inst) {
     inst.cd = 0.4;
     inst.discs = [];
+    inst.mill = [];                 // Millstone: craters waiting to land { x, y, t }
   },
 
   update(inst, dt, run) {
@@ -35,6 +41,8 @@ export default {
     const bs = inst.def.base;
     const tickEvery = bs.tickEvery * param(run, inst, 'cooldown');
     const w = run.world;
+
+    if (inst.mill.length) millStep(inst, dt, run, dmg);
 
     // throw
     inst.cd -= dt;
@@ -60,11 +68,20 @@ export default {
       d.spin += dt * (d.parked > 0 ? 30 : 14);
       if (d.parked > 0) {                                  // Gyre: parked and spinning, dragging the crowd in
         d.parked -= dt;
-        if (d.parked <= 0) { d.parked = 0; d.back = true; }
+        if (d.parked <= 0) {
+          d.parked = 0;
+          d.back = true;
+          const ms = inst.graft && inst.graft.hooks.millstone;
+          if (ms) inst.mill.push({ x: d.x, y: d.y, t: MILL_TELE });   // the maul comes down where the saw gathered them
+        }
         pullIn(run, d, radius * 3, bs.park.pull * dt);
       } else if (!d.back && bs.bounce) {                   // Ricochet Saw: hop to the nearest enemy this disc has not cut
         if (!d.tgt || !d.tgt.alive || d.hit.has(d.tgt.uid)) {
-          if (d.tgt && d.hit.has(d.tgt.uid)) d.n++;
+          if (d.tgt && d.hit.has(d.tgt.uid)) {
+            d.n++;
+            const sr = inst.graft && inst.graft.hooks.bounceRod;   // Storm Saw: each bounce plants a short rod
+            if (sr) addRod(run, inst, d.tgt.x, d.tgt.y, sr.radius * run.player.stats.getFor('area', inst.tags), sr.ttl, dmg * sr.frac, { every: sr.every, zaps: sr.zaps, max: sr.max, link: sr.link });
+          }
           d.tgt = d.n >= bs.bounce.n ? null : nearestUncut(run, d, d.n === 0 ? reach * 1.1 : bs.bounce.range, p);
           if (!d.tgt) d.back = true;
         }
@@ -111,6 +128,21 @@ export default {
   },
 
   draw(inst, ctx, run) {
+    const ms = inst.graft && inst.graft.hooks.millstone;
+    if (ms) {
+      for (const m of inst.mill) {                         // the maul's shadow before it lands
+        const u = 1 - m.t / MILL_TELE;
+        ctx.globalAlpha = 0.2 + 0.35 * u;
+        ctx.fillStyle = '#1a1208';
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, ms.radius * (0.5 + 0.5 * u), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffd9a0';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
     const col = inst.def.base.color;
     ctx.strokeStyle = col || '#d9dde8';
     ctx.fillStyle = col || '#aeb6c8';
@@ -173,5 +205,32 @@ function pullIn(run, d, radius, step) {
     const k = (e.def.boss ? 0.3 : 1) * step / dist;
     e.x += dx * k;
     e.y += dy * k;
+  }
+}
+
+// Millstone: the maul lands on each spot a parked saw has finished spinning: a crater that hits and
+// staggers everything inside.
+function millStep(inst, dt, run, dmg) {
+  const ms = inst.graft.hooks.millstone;
+  const w = run.world;
+  for (let i = inst.mill.length - 1; i >= 0; i--) {
+    const m = inst.mill[i];
+    m.t -= dt;
+    if (m.t > 0) continue;
+    inst.mill.splice(i, 1);
+    const r = ms.radius * run.player.stats.getFor('area', inst.tags);
+    const n = w.hash.queryRadius(m.x, m.y, r + MAX_ENEMY_RADIUS, w.scratch);
+    for (let k = 0; k < n; k++) {
+      const e = w.scratch[k];
+      if (!e.alive) continue;
+      const dx = e.x - m.x;
+      const dy = e.y - m.y;
+      if (dx * dx + dy * dy > (r + e.r) * (r + e.r)) continue;
+      const d = Math.hypot(dx, dy) || 1;
+      strike(run, inst, e, dmg * ms.damageFrac, (dx / d) * 2, (dy / d) * 2);
+      stagger(e, ms.stun);
+    }
+    addPuff(run, m.x, m.y, r / 2, '#d9c3a0');
+    addPuff(run, m.x, m.y, r / 3.2, '#fff1d6');
   }
 }

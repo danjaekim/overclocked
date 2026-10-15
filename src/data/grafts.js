@@ -1,7 +1,7 @@
 // Grafts (docs/design-m26-m28.md §4): at the forge, one evolved weapon (the donor) is consumed into
 // another (the host). The host keeps its behaviour, level, enhance and affixes and gains the donor's
-// element tags plus a graft effect. Twelve named pairs are "masterworks" with their own effect (all
-// twelve are here); every other pair gets a generic PAYLOAD (below): the first hit of every attack
+// element tags plus a graft effect. Named pairs are "masterworks" with their own effect (twelve from
+// M27, four more from M34); every other pair gets a generic PAYLOAD (below): the first hit of every attack
 // the host makes also fires an effect shaped like the donor's attack.
 // Data only; rules in game/graft.js.
 //
@@ -18,6 +18,10 @@
 //             wrath { stay, linkFrac }                              pillars linger and are joined by lightning
 //             endBurst { count, speed, ttl, pierce, damageFrac }    a projectile that runs out bursts into a ring of shards
 //             familiars { count, every, damageFrac, targets, range } the host gains hounds that cast its attack
+//             aurora { every, rings, gap, range, speed, damageFrac, heal } trail patches bless; every nth is a ring beacon
+//             millstone { radius, damageFrac, stun }               a parked boomerang ends in a slam on its spot
+//             bounceRod { radius, ttl, every, zaps, frac, max, link } each boomerang bounce plants a rod
+//             rodFork { gens, falloff, jump, boost }               every rod zap forks on as a branching chain
 
 export const GRAFT = {
   cost: 1,                        // starsteel
@@ -150,6 +154,38 @@ export const MASTERWORKS = [
     hooks: { familiars: { count: 3, every: 1.2, damageFrac: 1.0, targets: 2, range: 260 } },
   },
 ];
+
+MASTERWORKS.push(
+  // ---- M34: masterworks for the M31-M33 shapes (docs/design-m30-m33.md §6.2b) ----
+  {
+    id: 'aurora_wake', host: 'vapor_wheel', donor: 'radiant_halo', name: 'Aurora Wake',
+    desc: 'Your wake blesses everything that walks through it, and every 3rd patch is a beacon that sends out two rings of light.',
+    mods: [{ stat: 'lifesteal', op: 'flat', value: 0.01 }],
+    triggers: [],
+    hooks: { aurora: { every: 3, rings: 2, gap: 0.45, range: 120, speed: 260, damageFrac: 3, heal: 0.3 } },
+  },
+  {
+    id: 'millstone', host: 'gyre', donor: 'colossus_maul', name: 'Millstone',
+    desc: 'When the parked saw stops spinning, the maul comes down on the crowd it gathered: a crater that crushes and staggers.',
+    mods: [],
+    triggers: [],
+    hooks: { millstone: { radius: 80, damageFrac: 2.5, stun: 0.6 } },
+  },
+  {
+    id: 'storm_saw', host: 'ricochet_saw', donor: 'thunder_lance', name: 'Storm Saw',
+    desc: 'Every bounce plants a short lightning rod. Rods near each other link, so the saw\'s path becomes a lightning fence.',
+    mods: [{ stat: 'shockChance', op: 'flat', value: 0.4 }],
+    triggers: [],
+    hooks: { bounceRod: { radius: 85, ttl: 2, every: 0.5, zaps: 2, frac: 0.5, max: 7, link: 170 } },
+  },
+  {
+    id: 'stormspire', host: 'thunder_lance', donor: 'tempest', name: 'Stormspire',
+    desc: 'Every zap from a planted rod forks on like Tempest, branching through the crowd around the rod.',
+    mods: [{ stat: 'shockChance', op: 'flat', value: 0.3 }],
+    triggers: [],
+    hooks: { rodFork: { gens: 2, falloff: 0.85, jump: 120, boost: 1.4 } },
+  },
+);
 
 export const ELEMENT_ORDER = ['fire', 'frost', 'storm'];
 export const ELEMENT_NAMES = { fire: 'Fire', frost: 'Frost', storm: 'Storm' };
