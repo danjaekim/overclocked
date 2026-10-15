@@ -219,7 +219,9 @@ has a payload. Smith bot win rate should not fall.
 
 Version: v0.32.x.
 
-## 6. M33: Chakram branches and masterwork review
+## 6. M33: Chakram branches (M33a) and masterwork review (M33b)
+
+Split in two so they can be built separately: **M33a** is 6.1 (Sonnet), **M33b** is 6.2 and 6.3 (Opus).
 
 ### 6.1 Chakram evolutions (boomerang)
 

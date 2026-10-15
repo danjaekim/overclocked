@@ -4,12 +4,13 @@
 import { RARITIES } from '../data/rarities.js';
 import { CLASSES } from '../data/classes.js';
 import { TABS, buildEntries, facetsFor, filterEntries } from '../game/compendium.js';
+import { startPreview, stopPreview, previewLevels } from './weapon-preview.js';
 
 const ELEMENT_COLOR = { fire: '#ff7a3c', frost: '#8fd8ff', storm: '#ffd34d' };
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Survives closing and reopening within a session, so you land where you left off.
-const state = { tab: 'weapons', filters: {}, q: '', open: new Set() };
+const state = { tab: 'weapons', filters: {}, q: '', open: new Set(), previewId: null, previewLevel: 0 };
 let entries = null;
 
 function chipLabel(key, v) {
@@ -23,13 +24,30 @@ function entryHtml(e) {
   const dots = e.elements.map((el) => `<i class="cdot" style="background:${ELEMENT_COLOR[el]}" title="${el}"></i>`).join('');
   const open = state.open.has(e.id);
   const body = open
-    ? `<div class="cbody">${e.lines.map((l) => `<p>${l}</p>`).join('')}${e.builds.length ? `<p class="cbuilds">Used in: ${e.builds.join(', ')}</p>` : ''}</div>`
+    ? `<div class="cbody">${previewHtml(e)}${e.lines.map((l) => `<p>${l}</p>`).join('')}${e.builds.length ? `<p class="cbuilds">Used in: ${e.builds.join(', ')}</p>` : ''}</div>`
     : `<div class="bsub">${e.summary}</div>`;
   return `<button class="centry${open ? ' open' : ''}" style="--c:${color}" data-act="cx:${e.id}">
     <span class="btop"><b>${e.name}</b><em>${dots}${chipLabel('rarity', e.rarity)}</em></span>
     <span class="ccat">${e.cat}${e.classes.length && e.tab !== 'builds' ? ' · ' + e.classes.map((c) => chipLabel('cls', c)).join(', ') : ''}</span>
     ${body}
   </button>`;
+}
+
+// A live preview under an open weapon entry (one at a time: the one opened last).
+function previewHtml(e) {
+  if (e.tab !== 'weapons' && e.tab !== 'evolve') return '';
+  if (state.previewId !== e.id) return `<span class="pvgo" role="button" data-act="pv:${e.id}">&#9654; Watch it in action</span>`;
+  const levels = previewLevels(e.id);
+  const lv = levels.includes(state.previewLevel) ? state.previewLevel : levels[levels.length - 1];
+  const chips = levels.map((l, i) => `<span class="pvlv${l === lv ? ' on' : ''}" role="button" data-act="pl:${e.id}:${l}">${i === levels.length - 1 && levels.length > 1 ? 'Max' : 'Lv ' + l}</span>`).join('');
+  return `<div class="pv"><canvas class="cprev" data-prev="${e.id}" data-lv="${lv}" data-act="noop"></canvas><div class="pvbar">${chips}</div></div>`;
+}
+
+// Starts the preview for whichever entry shows a canvas, or stops it.
+function mountPreview() {
+  const c = document.querySelector('canvas.cprev');
+  if (!c) { stopPreview(); return; }
+  startPreview(c, c.dataset.prev, Number(c.dataset.lv));
 }
 
 function listHtml() {
@@ -59,6 +77,7 @@ export function showCompendium(overlays, { onClose, discovered }) {
       onAct,
       'compendium'
     );
+    mountPreview();
     const on = el && el.querySelector('.ctab.on');
     if (on && on.scrollIntoView) on.scrollIntoView({ inline: 'center', block: 'nearest' });
     const input = el && el.querySelector('.csearch');
@@ -66,12 +85,21 @@ export function showCompendium(overlays, { onClose, discovered }) {
       input.addEventListener('input', () => {
         state.q = input.value;
         el.querySelector('.clist').innerHTML = listHtml();
+        mountPreview();
       });
     }
   }
 
+  function redraw() {
+    const list = document.querySelector('.clist');
+    const top = list ? list.scrollTop : 0;
+    if (list) { list.innerHTML = listHtml(); list.scrollTop = top; }
+    mountPreview();
+  }
+
   function onAct(act) {
-    if (act === 'close') return onClose();
+    if (act === 'close') { stopPreview(); return onClose(); }
+    if (act === 'noop') return;
     const [kind, a, b] = act.split(':');
     if (kind === 'ct') {
       state.tab = a;
@@ -83,10 +111,18 @@ export function showCompendium(overlays, { onClose, discovered }) {
       render();
     } else if (kind === 'cx') {
       const id = act.slice(3);
-      if (state.open.has(id)) state.open.delete(id); else state.open.add(id);
-      const list = document.querySelector('.clist');
-      const top = list ? list.scrollTop : 0;
-      if (list) { list.innerHTML = listHtml(); list.scrollTop = top; }
+      if (state.open.has(id)) { state.open.delete(id); if (state.previewId === id) state.previewId = null; } else { state.open.add(id); state.previewId = id; state.previewLevel = 0; }
+      redraw();
+      const opened = document.querySelector(`.centry.open[data-act="cx:${id}"]`);
+      if (opened && opened.scrollIntoView) opened.scrollIntoView({ block: 'nearest' });       // keep the preview and its buttons in view
+    } else if (kind === 'pv') {
+      state.previewId = a;
+      state.previewLevel = 0;
+      redraw();
+    } else if (kind === 'pl') {
+      state.previewId = a;
+      state.previewLevel = Number(b);
+      redraw();
     }
   }
 
