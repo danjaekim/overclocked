@@ -244,6 +244,48 @@ build) 2-3 new masterworks that show off the new shapes, for example:
 - **Stormspire** (Thunder Lance + Chain Lightning): chains start from every rod.
 - **Meteor Hammer** (Colossus Maul + Stormshell Mortar): the slam rains shells around the crater.
 
+### 6.2a Review results (M33b, v0.33.1)
+
+`node tools/masterwork-review.mjs` compares each masterwork with its host alone, with both weapons kept
+(no graft), and with the generic payload graft for the same pair. Ring = dps against 24 pinned dummies
+(inflated for freeze-shatter effects, whose dummies never die); horde = kills in a 30 s walking horde.
+
+| Masterwork | Before (ring / horde vs generic) | Change | After (ring MW vs generic, horde MW vs generic) |
+|---|---|---|---|
+| Thunderscythe | +188% vs +71%, 224 vs 225 | none | same; ahead on damage, level on kills |
+| Glacier Maul | +98% vs +9%, 307 vs 330 | shatter 0.6 -> 1.0 | +163% vs +9%, 308 vs 330 (the freeze lock is defensive value the god-mode bench cannot see) |
+| Eventide Volley | +299% vs +34%, 250 vs 211 | none | |
+| Hellhounds | **+53% vs +111%**, 274 vs 273 | aura radius 34 -> 46, tick 0.5 -> 0.4, 40% -> 60% | +179% vs +111%, 305 vs 273 |
+| Spear Wheel | +96% vs +39%, 299 vs 202 | none | |
+| Sanctum Titan | **+107% vs +120%**, 276 vs 283 | reworked for the new Radiant Pulse: the colossus sends out blessing rings of light (`minionPulse`) instead of a static aura; +30% burn chance | +164% vs +120%, 372 vs 283 |
+| Black Sun | +217% vs +19%, 306 vs 269 | none | |
+| Bladestorm | **+16% vs +40%**, 212 vs 257 | blades on every spin (was every 2nd), 4 blades (was 3) at 100% (was 70%) | +63% vs +40%, 280 vs 257 |
+| Comet | **+13% vs +106%**, 219 vs 258 | the shard burst was firing where the arrow ran out (off-screen); it now bursts at the last enemy pierced (`pr.hx/hy`), shards no longer set off shatter (depth 1); chill 100% and +2 stacks so the line actually freezes | ring inflated (shatter on pinned dummies), 336 vs 258 |
+| Fault Line | +80% vs +18%, 355 vs 278 | none (works on the slam's cross waves) | |
+| Wrath | +74% vs +0%, 285 vs 187 | none (Thunder Lance as a rod donor is fine) | |
+| Familiars | **+9% vs +38%**, 187 vs 209 | hounds cast every 1.2 s (was 2) at 100% (was 60%), and each bolt strikes 2 enemies (`targets`) | +64% vs +38%, 245 vs 209 |
+
+All twelve read on screen (screenshots in the M33b report). Echo Strike and the Twin affix now say they
+add a slam; the Compendium's Grafts tab calls the rod shape "Planted rod" and the projectile shape "Arrow".
+
+### 6.2b Proposed new masterworks (for Dan; not built)
+
+The suggested Stormspire (Thunder Lance + Chain Lightning) cannot exist: Chain Lightning has no evolution,
+so it can never be grafted. Meteor Hammer (slam + mortar shells) repeats Thunderscythe and Fault Line.
+Three that use the new shapes and only weapons that can be grafted:
+
+1. **Aurora Wake** (host Steam Wake, donor Radiant Pulse). Every 4th patch of your trail is a beacon that
+   sends out two small rings of light, and every patch blesses what stands in it. The wake already burns
+   and chills (so Quench fires on its own); blessed enemies take +10% from everything. Shows: trail + pulse.
+2. **Millstone** (host Gyre, donor Colossus Maul). When the parked saw finishes spinning, the maul comes
+   down on that spot: a full crater on the crowd the saw has just dragged together, with the maul's
+   stagger. Shows: boomerang park + slam, a two-beat combo you can see coming.
+3. **Storm Saw** (host Ricochet Saw, donor Thunder Lance). Each bounce plants a short rod (1.5 s) where it
+   struck; rods within reach link with Thunder Lance's lightning, so the saw's zig-zag path becomes a
+   lightning fence for a moment. Shows: bounce + rod links.
+
+Also worth deciding: give Chain Lightning an evolution so the chain shape can take part in grafts.
+
 ### 6.3 Docs
 
 Update the Compendium text for every changed weapon (it is generated from data, so check the strings),

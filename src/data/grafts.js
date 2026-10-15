@@ -10,13 +10,14 @@
 //   triggers  extra triggers (data/weapons.js shape; effects in effects/index.js)
 //   hooks     behaviour switches read by the host's behaviour or by projectile movement:
 //             minionAura { radius, tick, damageFrac, burn, color }  each summon minion burns what is near it
+//             minionPulse { every, range, speed, damageFrac, heal, color }  each minion sends out blessing rings of light
 //             launch { every, dist, speed }                         orbit blades shoot out and come back
 //             bend                                                  the host's projectiles curve toward vortices
 //             burnVortex { patchTtl }                               vortices burn what they pull and collapse into fire
 //             crack { every, radius, ttl, tick, damageFrac }        shockwaves leave burning, shocking cracks
 //             wrath { stay, linkFrac }                              pillars linger and are joined by lightning
 //             endBurst { count, speed, ttl, pierce, damageFrac }    a projectile that runs out bursts into a ring of shards
-//             familiars { count, every, damageFrac, range }         the host gains hounds that cast its attack
+//             familiars { count, every, damageFrac, targets, range } the host gains hounds that cast its attack
 
 export const GRAFT = {
   cost: 1,                        // starsteel
@@ -75,7 +76,7 @@ export const MASTERWORKS = [
     id: 'glacier_maul', host: 'colossus_maul', donor: 'glacial_bloom', name: 'Glacier Maul',
     desc: 'Slams freeze everything in the crater. A slam that hits an already frozen enemy shatters it into ice shards.',
     mods: [{ stat: 'chillChance', op: 'flat', value: 1 }, { stat: 'chillStacks', op: 'flat', value: 3 }, { stat: 'statusDuration', op: 'inc', value: 0.5 }],   // a freeze lasts long enough for the next slam
-    triggers: [{ on: 'hit', effect: 'shatter', params: { radius: 70, damageFrac: 0.6 } }],
+    triggers: [{ on: 'hit', effect: 'shatter', params: { radius: 70, damageFrac: 1.0 } }],
     hooks: {},
   },
   {
@@ -90,7 +91,7 @@ export const MASTERWORKS = [
     desc: 'Every hound wears a small burning aura, so fire spreads wherever the pack runs.',
     mods: [{ stat: 'burnChance', op: 'flat', value: 0.3 }],
     triggers: [],
-    hooks: { minionAura: { radius: 34, tick: 0.5, damageFrac: 0.4, burn: true, color: '#ff7a3c' } },
+    hooks: { minionAura: { radius: 46, tick: 0.4, damageFrac: 0.6, burn: true, color: '#ff7a3c' } },
   },
   {
     id: 'spear_wheel', host: 'seraph_blades', donor: 'thunder_lance', name: 'Spear Wheel',
@@ -101,10 +102,10 @@ export const MASTERWORKS = [
   },
   {
     id: 'sanctum_titan', host: 'bone_colossus', donor: 'radiant_halo', name: 'Sanctum Titan',
-    desc: 'The colossus carries the halo: anything near it burns, and its kills heal you.',
-    mods: [{ stat: 'lifesteal', op: 'flat', value: 0.015 }],
+    desc: 'The colossus carries the halo: it sends out rings of light that bless and burn everything they pass and mend you a little for each. Its kills heal you.',
+    mods: [{ stat: 'lifesteal', op: 'flat', value: 0.015 }, { stat: 'burnChance', op: 'flat', value: 0.3 }],
     triggers: [{ on: 'kill', effect: 'heal', params: { amount: 2 } }],
-    hooks: { minionAura: { radius: 105, tick: 0.45, damageFrac: 0.5, burn: true, color: '#ffe9a0' } },
+    hooks: { minionPulse: { every: 0.9, range: 130, speed: 300, damageFrac: 0.9, heal: 0.3, color: '#ffe9a0' } },
   },
   {
     id: 'black_sun', host: 'singularity', donor: 'pyre_crown', name: 'Black Sun',
@@ -117,13 +118,13 @@ export const MASTERWORKS = [
     id: 'bladestorm', host: 'whirlwind_cleaver', donor: 'seraph_blades', name: 'Bladestorm',
     desc: 'The spin flings blades outward in a turning pattern. They cut everything on the way out.',
     mods: [],
-    triggers: [{ on: 'attack', every: 2, effect: 'fling', params: { count: 3, speed: 330, ttl: 0.9, pierce: 4, radius: 10, twist: 0.7, damageFrac: 0.7 } }],
+    triggers: [{ on: 'attack', effect: 'fling', params: { count: 4, speed: 330, ttl: 0.9, pierce: 5, radius: 10, twist: 0.7, damageFrac: 1.0 } }],
     hooks: {},
   },
   {
     id: 'comet', host: 'sunpiercer', donor: 'glacial_bloom', name: 'Comet',
-    desc: 'The arrow chills what it pierces and bursts into a ring of ice shards where it ends. Frozen enemies along its line shatter.',
-    mods: [{ stat: 'chillChance', op: 'flat', value: 0.5 }, { stat: 'chillStacks', op: 'flat', value: 1 }],
+    desc: 'The arrow chills everything it pierces and bursts into a ring of ice shards at the last enemy it struck. Frozen enemies along its line shatter.',
+    mods: [{ stat: 'chillChance', op: 'flat', value: 1 }, { stat: 'chillStacks', op: 'flat', value: 2 }],
     triggers: [{ on: 'hit', effect: 'shatter', params: { radius: 55, damageFrac: 0.4 } }],
     hooks: { endBurst: { count: 10, speed: 380, ttl: 0.45, pierce: 2, damageFrac: 0.5 } },
   },
@@ -143,10 +144,10 @@ export const MASTERWORKS = [
   },
   {
     id: 'familiars', host: 'prismatic_bolt', donor: 'grave_legion', name: 'Familiars',
-    desc: 'Three spirit hounds hover beside you. Each casts a small prismatic bolt every 2 s.',
+    desc: 'Three spirit hounds hover beside you. Every 1.2 s each casts a prismatic bolt that strikes two enemies.',
     mods: [],
     triggers: [],
-    hooks: { familiars: { count: 3, every: 2, damageFrac: 0.6, range: 260 } },
+    hooks: { familiars: { count: 3, every: 1.2, damageFrac: 1.0, targets: 2, range: 260 } },
   },
 ];
 

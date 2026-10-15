@@ -132,12 +132,12 @@ export const PERKS = {
   },
   echo_strike: {
     name: 'Echo Strike', glyph: 'e', rarity: 'rare', maxLevel: 2, requires: [['tag:arc', 'tag:orbit']], affinity: ['arc', 'orbit'],
-    desc: 'An extra swing or blade on every arc and orbit weapon.',
+    desc: 'An extra swing, slam or blade on every melee and orbit weapon.',
     levels: [
       [{ stat: 'projectiles', op: 'flat', value: 1, tags: ['arc'] }, { stat: 'projectiles', op: 'flat', value: 1, tags: ['orbit'] }],
       [{ stat: 'projectiles', op: 'flat', value: 1, tags: ['arc'] }, { stat: 'projectiles', op: 'flat', value: 1, tags: ['orbit'] }],
     ],
-    levelText: ['+1 swing / blade', '+1 swing / blade'],
+    levelText: ['+1 swing, slam or blade', '+1 swing, slam or blade'],
   },
   bloodletting: {
     name: 'Bloodletting', glyph: 'b', rarity: 'uncommon', maxLevel: 3, requires: [['tag:close']], affinity: ['close'],

@@ -10,6 +10,7 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
 import { queueDamage, KIND_PROC } from '../systems/damage-queue.js';
 import { applyBurn } from '../systems/status.js';
+import { addRing } from '../systems/hazards.js';
 
 const MAX_MINIONS = 14;
 const TAU = Math.PI * 2;
@@ -34,7 +35,8 @@ export default {
     const leash = param(run, inst, 'range');
     const radius = param(run, inst, 'radius');
     const dmg = param(run, inst, 'damage');
-    const aura = inst.graft && inst.graft.hooks.minionAura;   // Hellhounds, Sanctum Titan
+    const aura = inst.graft && inst.graft.hooks.minionAura;   // Hellhounds
+    const pulse = inst.graft && inst.graft.hooks.minionPulse; // Sanctum Titan
     const tickEvery = inst.def.base.tickEvery;
     inst.t += dt;
 
@@ -76,6 +78,7 @@ export default {
 
       if (m.stomp > 0) m.stomp -= dt;
       if (aura) auraTick(run, inst, m, aura, dt, dmg);
+      if (pulse) pulseTick(run, inst, m, pulse, dt, dmg);
       let bit = false;
       const n = w.hash.queryRadius(m.x, m.y, radius + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
@@ -131,6 +134,16 @@ export default {
 };
 
 function isAlive(o) { return o.alive; }
+
+// Sanctum Titan: every `every` seconds each minion sends out a ring of light (the Radiant Pulse it
+// carries) that hurts and blesses everything it passes and mends you a little per enemy.
+function pulseTick(run, inst, m, pl, dt, dmg) {
+  m.pulseT = (m.pulseT === undefined ? pl.every * 0.5 : m.pulseT) - dt;
+  if (m.pulseT > 0) return;
+  m.pulseT += pl.every;
+  addRing(run, inst, m.x, m.y, pl.range * run.player.stats.getFor('area', inst.tags), pl.speed, dmg * pl.damageFrac, 0,
+    { status: 'bless', heal: pl.heal, color: pl.color, thick: 6 });
+}
 
 // A minion's burning aura: every `tick` seconds everything within `radius` of it takes a share of the
 // weapon's damage and catches fire.

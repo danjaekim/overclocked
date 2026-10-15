@@ -98,8 +98,12 @@ function familiarStep(inst, dt, run, fam) {
     const e = w.hash.queryNearest(f.x, f.y, fam.range, (o) => o.alive);
     if (!e) { f.t = 0.2; continue; }
     f.t += fam.every;
-    const d = Math.hypot(e.x - f.x, e.y - f.y) || 1;
-    addArc(run, f.x, f.y, e.x, e.y);
-    strike(run, inst, e, dmg, (e.x - f.x) / d, (e.y - f.y) / d);
+    for (let k = 0, t = e; k < (fam.targets || 1) && t; k++) {           // the hound's bolt, like the host's, strikes more than one
+      const d = Math.hypot(t.x - f.x, t.y - f.y) || 1;
+      addArc(run, f.x, f.y, t.x, t.y);
+      strike(run, inst, t, dmg, (t.x - f.x) / d, (t.y - f.y) / d);
+      const prev = t;
+      t = w.hash.queryNearest(prev.x, prev.y, 120, (o) => o.alive && o !== e && o !== prev);
+    }
   }
 }

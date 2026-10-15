@@ -35,13 +35,15 @@ export function updateProjectiles(run, dt) {
     }
     if (pr.ttl <= 0) {
       plantRod(run, pr);
-      const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards where it ends
+      const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards at the last enemy it pierced
       if (eb) {
         const dmg = pr.dmg * eb.damageFrac;
+        const bx = pr.hx === pr.hx ? pr.hx : pr.x;                // not off-screen where the arrow runs out
+        const by = pr.hy === pr.hy ? pr.hy : pr.y;
         for (let k = 0; k < eb.count; k++) {
           const a = (k * Math.PI * 2) / eb.count;
-          const c = spawnProjectile(run, pr.inst, pr.x, pr.y, Math.cos(a), Math.sin(a), eb.speed, dmg, eb.ttl, 7, eb.pierce);
-          if (c) c.sub = true;
+          const c = spawnProjectile(run, pr.inst, bx, by, Math.cos(a), Math.sin(a), eb.speed, dmg, eb.ttl, 7, eb.pierce);
+          if (c) { c.sub = true; c.depth = 1; }               // shards do not set off the arrow's own hit triggers (Comet's shatter)
         }
       }
       store.release(pr);

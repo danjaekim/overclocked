@@ -156,8 +156,10 @@ in. M28 ships #7–#12.
 Any two evolved weapons without a masterwork still graft. The host gets:
 
 - the donor's element tags, and
-- an **echo**: `on: 'attack', every: 3` → `cast` the donor's behaviour once at 50% of its damage, aimed at
-  the host's target. **[bench]**
+- ~~an echo: every 3rd attack casts the donor's behaviour at 50%~~ (replaced in M30) a **payload**: the
+  first hit of every host attack fires an effect shaped like the donor's attack (shrapnel, cleave,
+  spinning blades, quake, spark, ...). See [design-m30-m33.md](design-m30-m33.md) §3 for the table and
+  §6.2 / `architecture.md` M33b for the masterwork review against it.
 
 The name is "{Host} of {Donor's element}", for example "Reaper Axe of Frost" (decided: always readable,
 where generated portmanteaus are sometimes ugly; easy to change later). A donor with no element uses

@@ -71,7 +71,7 @@ export const AFFIXES = {
                    desc: 'Becomes a frost weapon: +25% chill chance', mods: [{ stat: 'chillChance', op: 'flat', value: 0.25 }] },
   storm_touched: { name: 'Storm-touched', rarity: 'uncommon', infusion: true, addTags: ['storm'],
                    desc: 'Becomes a storm weapon: +20% shock chance', mods: [{ stat: 'shockChance', op: 'flat', value: 0.20 }] },
-  twin:     { name: 'Twin',     rarity: 'rare',     desc: '+1 projectile/blade/swing', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }], requires: ['projectile', 'orbit', 'arc'] },
+  twin:     { name: 'Twin',     rarity: 'rare',     desc: '+1 projectile/blade/swing/slam', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }], requires: ['projectile', 'orbit', 'arc'] },
   volatile: { name: 'Volatile', rarity: 'rare',     desc: '10% of kills explode',
               triggers: [{ on: 'kill', chance: 0.1, effect: 'explode', params: { radius: 50, damageFrac: 0.4 } }] },
   ricocheting: { name: 'Ricocheting', rarity: 'rare', desc: '+2 bounces', mods: [{ stat: 'ricochet', op: 'flat', value: 2 }], requires: ['projectile'] },

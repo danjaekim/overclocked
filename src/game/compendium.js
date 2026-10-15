@@ -103,8 +103,8 @@ function weaponEntry(id, def, buildsFor) {
 
 // Plain names for the donor shapes, for the Grafts tab.
 const SHAPE_LABEL = {
-  projectile: 'Arrow or javelin', arc: 'Melee swing', orbit: 'Orbiting', aura: 'Ring', bolt: 'Bolt', nova: 'Shard burst', mortar: 'Mortar',
-  summon: 'Hound', judge: 'Pillar', boomerang: 'Thrown disc', trail: 'Trail', pulse: 'Pulse', slam: 'Slam', chain: 'Chain lightning', rod: 'Rod',
+  projectile: 'Arrow', arc: 'Melee swing', orbit: 'Orbiting', aura: 'Ring', bolt: 'Bolt', nova: 'Shard burst', mortar: 'Mortar',
+  summon: 'Hound', judge: 'Pillar', boomerang: 'Thrown disc', trail: 'Trail', pulse: 'Pulse', slam: 'Slam', chain: 'Chain lightning', rod: 'Planted rod',
 };
 
 export function buildEntries(discovered = { grafts: [] }) {
