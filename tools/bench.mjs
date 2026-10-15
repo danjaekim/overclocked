@@ -28,6 +28,8 @@ import { enhance, canEnhance, chooseTemper } from '../src/game/forge.js';
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
+import { graft } from '../src/game/graft.js';
+import { MASTERWORKS } from '../src/data/grafts.js';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -79,6 +81,33 @@ function crowdClear(weaponId, level) {
     if (run.world.enemies.count === 0 && clearedAt === null) { clearedAt = run.time; break; }
   }
   return { kills10: clearedAt !== null && clearedAt < 10 ? 20 : at10, kills20: run.kills, clearedAt };
+}
+
+// Graft value (docs/design-m30-m33.md §3.4): crowd damage per second of an evolved host alone and with a
+// donor of each shape grafted in. Tough dummies in a ring so nothing dies and the count stays constant.
+function graftCrowdDps(hostId, donorId) {
+  const run = createRun({ seed: 1, view: VIEW, debug: { god: true }, classId: 'archer' });
+  run.player.stats.removeBySource(`weapon:${run.player.weapons[0].instanceId}:`);
+  run.player.weapons.length = 0;
+  run.director.update = () => {};
+  run.starsteel = 3;
+  const host = addWeapon(run, hostId);
+  while (host.level < 6 && canLevelUp(host)) levelUpWeapon(run, host);
+  if (donorId) { const d = addWeapon(run, donorId); if (!graft(run, host, d).ok) return null; }
+  const dummies = [];
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    const d = 90 + (i % 3) * 40;
+    const e = spawnEnemy(run, 'goblin', Math.cos(a) * d, Math.sin(a) * d);
+    e.hp = e.maxHp = 1e12; e.speed = 0;
+    dummies.push([e, Math.cos(a) * d, Math.sin(a) * d]);
+  }
+  const seconds = 15;
+  for (let i = 0; i < seconds / STEP; i++) {
+    run.update(STEP, { x: 0, y: 0 });
+    for (const [e, x, y] of dummies) { e.x = x; e.y = y; e.kx = e.ky = 0; }
+  }
+  return dummies.reduce((a, [e]) => a + (1e12 - e.hp), 0) / seconds;
 }
 
 // ---- bot -------------------------------------------------------------------------------------
@@ -237,7 +266,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--grafts')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -281,7 +310,7 @@ if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')
   }
 }
 
-if (!flag('--weapons') && !flag('--builds')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--grafts')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
@@ -303,6 +332,22 @@ if (!flag('--weapons') && !flag('--builds')) {
         + pad(num(avg((r) => r.chests), 1), 8)
       );
     }
+  }
+}
+
+if (flag('--grafts')) {
+  const hosts = ['storm_volley', 'colossus_maul', 'seraph_blades', 'pyre_crown', 'prismatic_bolt', 'grave_legion'];
+  const donors = ['thunder_lance', 'reaper_axe', 'seraph_blades', 'pyre_crown', 'singularity', 'glacial_bloom', 'stormshell_mortar', 'bone_colossus', 'judgement'];
+  console.log('\nGRAFT VALUE  (crowd dps, host at level 6, 24 dummies; generic payload target: +35% to +60%; "m" = masterwork)');
+  for (const h of hosts) {
+    const base = graftCrowdDps(h, null);
+    const cells = donors.filter((d) => d !== h).map((d) => {
+      const v = graftCrowdDps(h, d);
+      if (v === null) return `${WEAPONS[d].behavior}:-`;
+      const mw = MASTERWORKS.some((m) => (m.host === h && m.donor === d));
+      return `${WEAPONS[d].behavior}:${v >= base ? '+' : ''}${Math.round((v / base - 1) * 100)}%${mw ? 'm' : ''}`;
+    });
+    console.log(pad(h, 16) + pad(num(base), 7) + cells.join('  '));
   }
 }
 

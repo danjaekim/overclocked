@@ -116,7 +116,7 @@ export function applyShock(run, e, src) {
 // Arc from `from` through up to `chains` nearest un-hit enemies. Each hop is PROC damage at
 // chainDamage x the original hit, shocks its target, and draws a short bolt.
 // hopsOverride / dmgFrac (>= 0) replace the weapon's `chains` / `chainDamage` (Thunderclap).
-export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dmgFrac = -1, cause = CAUSE.CHAIN) {
+export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dmgFrac = -1, cause = CAUSE.CHAIN, shock = null) {
   if (depth + 1 > MAX_TRIGGER_DEPTH) return;
   const stats = run.player.stats;
   const hops = Math.min(SHOCK.maxHops, hopsOverride >= 0 ? hopsOverride : Math.round(stats.getFor('chains', src.tags)));
@@ -145,7 +145,7 @@ export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dm
     if (!best) break;
     visited[nv++] = best.uid;
     addArc(run, cx, cy, best.x, best.y);
-    if (cause !== CAUSE.FORK) applyShock(run, best, src);      // a fork is plain damage, not a shock
+    if (shock === null ? cause !== CAUSE.FORK && cause !== CAUSE.GRAFT : shock) applyShock(run, best, src);      // a fork or a graft arc is plain damage unless told to shock
     const d = Math.sqrt(bestD) || 1;
     queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC, cause);
     if (run.rules.overload && (best.status & ST.BURN)) overload(run, best, src, dmg, depth);

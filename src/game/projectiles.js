@@ -17,6 +17,7 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.nh = 0;
   pr.trailD = 0;
   pr.sub = false;                  // a secondary projectile: no trail, no end burst
+  pr.depth = 0;                    // trigger depth its hits resolve at (graft payload shots use 1: they never fire payloads)
   const stats = run.player.stats;
   pr.bounce = Math.round(stats.getFor('ricochet', inst.tags));
   pr.split = Math.round(stats.getFor('split', inst.tags));

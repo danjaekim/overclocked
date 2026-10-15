@@ -1,7 +1,7 @@
 // Grafts (docs/design-m26-m28.md §4): the rules for burning one evolved weapon into another at the
 // forge. Pure rules, no DOM, like game/forge.js.
 
-import { GRAFT, MASTERWORKS, ELEMENT_ORDER, ELEMENT_NAMES } from '../data/grafts.js';
+import { GRAFT, MASTERWORKS, ELEMENT_ORDER, ELEMENT_NAMES, PAYLOADS, payloadFor, payloadText } from '../data/grafts.js';
 import { WEAPONS } from '../data/weapons.js';
 import { rebuildAffixes } from './forge.js';
 import { markGone } from './run-stats.js';
@@ -13,7 +13,6 @@ export function masterworkFor(idA, idB) {
   return MASTERWORKS.find((m) => (m.host === idA && m.donor === idB) || (m.host === idB && m.donor === idA)) || null;
 }
 
-const nth = (n) => (n === 1 ? 'one' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
 const isGraftable = (inst) => inst.def.rarity === 'evolved' && !inst.graft;
 
 // Element tags a weapon brings as a donor: its own plus any it gained from the forge.
@@ -31,12 +30,9 @@ export function previewGraft(host, donor) {
     return { masterwork: m, swap, name: m.name, desc: m.desc };
   }
   const els = elementsOf(donor);
-  const of = els.length ? els.map((e) => ELEMENT_NAMES[e]).join(' and ') : `the ${donor.def.name}`;
-  return {
-    masterwork: null, swap: false, name: `${host.def.name} of ${of}`,
-    desc: `Every ${nth(GRAFT.echoEvery)} attack also casts the ${donor.def.name}'s attack at ${Math.round(GRAFT.echoFrac * 100)}% damage.`
-      ,
-  };
+  const payload = payloadFor(donor.def);
+  const of = els.length ? els.map((e) => ELEMENT_NAMES[e]).join(' and ') : PAYLOADS[payload].name;
+  return { masterwork: null, swap: false, name: `${host.def.name} of ${of}`, payload, desc: payloadText(payload) };
 }
 
 export function canGraft(run, host, donor) {
@@ -83,7 +79,10 @@ export function graft(run, host, donor) {
     desc: pv.desc,
     donorId: donor.weaponId,
     tags: els,
-    triggers: m ? m.triggers : [{ on: 'attack', every: GRAFT.echoEvery, effect: 'cast', params: { frac: GRAFT.echoFrac } }],
+    triggers: m ? m.triggers : [],
+    payload: m ? null : pv.payload,                                    // generic grafts: what every attack's first hit also does (effects/payloads.js)
+    elements: els,                                                     // the donor's elements, for the payload's status
+    light: donor.def.tags.includes('light'),
     hooks: m ? m.hooks : {},
   };
   for (const mod of m ? m.mods : []) {

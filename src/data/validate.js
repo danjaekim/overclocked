@@ -11,7 +11,7 @@ import { RARITIES } from './rarities.js';
 import { CLASSES } from './classes.js';
 import { ENEMIES } from './enemies.js';
 import { EFFECTS } from '../effects/index.js';
-import { MASTERWORKS } from './grafts.js';
+import { MASTERWORKS, PAYLOADS, SHAPE_PAYLOAD } from './grafts.js';
 import { RUN, WAVES, EVENTS } from './waves.js';
 import { RUN_EVENTS } from '../game/run-events.js';
 import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
@@ -263,6 +263,11 @@ export function validateData() {
     });
   }
   if (new Set(MASTERWORKS.map((m) => m.id)).size !== MASTERWORKS.length) problems.push('masterwork ids must be unique');
+  for (const b of Object.keys(BEHAVIORS)) {                                       // a new behavior cannot ship without a graft payload
+    const id = SHAPE_PAYLOAD[b];
+    if (!id) problems.push(`behavior "${b}" has no graft payload (data/grafts.js SHAPE_PAYLOAD)`);
+    else if (!PAYLOADS[id]) problems.push(`graft payload "${id}" is not defined`);
+  }
 
   return problems;
 }

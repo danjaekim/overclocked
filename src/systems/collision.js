@@ -69,7 +69,7 @@ function projectileHits(run) {
       if (hasHit(pr, e.uid)) continue;
       markHit(pr, e.uid);
 
-      resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy);
+      resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy, pr.depth);
 
       if (pr.split > 0) spawnSplit(run, pr, e);
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy

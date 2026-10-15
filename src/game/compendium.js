@@ -16,7 +16,7 @@ import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
 import { RARITIES } from '../data/rarities.js';
 import { describe as describeReq } from './evolution.js';
-import { MASTERWORKS, GRAFT } from '../data/grafts.js';
+import { MASTERWORKS, GRAFT, PAYLOADS, SHAPE_PAYLOAD } from '../data/grafts.js';
 
 export const ELEMENTS = ['fire', 'frost', 'storm'];
 export const TABS = [
@@ -101,6 +101,12 @@ function weaponEntry(id, def, buildsFor) {
   };
 }
 
+// Plain names for the donor shapes, for the Grafts tab.
+const SHAPE_LABEL = {
+  projectile: 'Arrow or javelin', arc: 'Melee swing', orbit: 'Orbiting', aura: 'Ring', bolt: 'Bolt', nova: 'Shard burst', mortar: 'Mortar',
+  summon: 'Hound', judge: 'Pillar', boomerang: 'Thrown disc', trail: 'Trail', pulse: 'Pulse', slam: 'Slam', chain: 'Chain lightning', rod: 'Rod',
+};
+
 export function buildEntries(discovered = { grafts: [] }) {
   const buildsFor = (kind, id) => BUILDS.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
   const out = [];
@@ -160,7 +166,8 @@ export function buildEntries(discovered = { grafts: [] }) {
     summary: `At the forge, graft one evolved weapon into another for ${GRAFT.cost} starsteel.`,
     lines: [`Graft one evolved weapon (the donor) into another (the host) for ${GRAFT.cost} starsteel. The donor is consumed and frees its slot.`,
       'The host keeps its level, enhancement and effects, gains the donor\'s elements, and gets a graft effect. A weapon takes one graft.',
-      `Most pairs give the generic echo: every ${GRAFT.echoEvery}rd attack also casts the donor's attack at ${Math.round(GRAFT.echoFrac * 100)}% damage.`,
+      'Most pairs give a payload: the first hit of every attack the host makes also does something shaped like the donor\'s attack.',
+      ...Object.entries(SHAPE_PAYLOAD).map(([shape, id]) => `${SHAPE_LABEL[shape] || shape} donor: ${PAYLOADS[id].text} (${Math.round(PAYLOADS[id].frac * 100)}%).`),
       'Some pairs are masterworks with an effect of their own. Find them by trying.'], builds: [],
   });
   for (const m of MASTERWORKS) {

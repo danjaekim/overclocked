@@ -7,7 +7,7 @@ import { ST } from '../data/statuses.js';
 export const KNOCKBACK_IMPULSE = 140;   // world units / second, scaled by the knockback stat and enemy size
 
 // base: damage before crit. (dx, dy): unit vector the enemy is pushed along.
-export function resolveHit(run, inst, e, base, dx, dy) {
+export function resolveHit(run, inst, e, base, dx, dy, depth = 0) {
   const stats = run.player.stats;
   const tags = inst.tags;
   let crit = run.rng.next() < stats.getFor('critChance', tags);
@@ -25,7 +25,7 @@ export function resolveHit(run, inst, e, base, dx, dy) {
   }
   const amount = base * mult;
   const kb = KNOCKBACK_IMPULSE * stats.getFor('knockback', tags) * (10 / e.r);
-  queueDamage(run, e, amount, crit, dx * kb, dy * kb, 0, inst, KIND_HIT);
+  queueDamage(run, e, amount, crit, dx * kb, dy * kb, depth, inst, KIND_HIT);
 }
 
 export const strike = resolveHit;

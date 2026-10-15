@@ -37,7 +37,7 @@ function makeProjectile() {
     inst: null,
     x: 0, y: 0, dx: 0, dy: 0, vx: 0, vy: 0,
     r: 4, ttl: 0, dmg: 0, pierce: 0,
-    sub: false, trailD: 0,             // distance since the last trail patch (weapons with base.trail)
+    sub: false, depth: 0, trailD: 0,             // distance since the last trail patch (weapons with base.trail)
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
     hits: new Int32Array(16), nh: 0,    // uids already hit
   };

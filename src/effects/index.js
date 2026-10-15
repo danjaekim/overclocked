@@ -9,7 +9,6 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff } from '../render/fx.js';
 import { addPatch, addVortex, addPillar, addWave, addBlast } from '../systems/hazards.js';
 import { spawnProjectile } from '../game/projectiles.js';
-import { WEAPONS } from '../data/weapons.js';
 
 export const MAX_TRIGGER_DEPTH = 3;
 
@@ -142,34 +141,6 @@ export const EFFECTS = {
       const a = src.flingA + (i * Math.PI * 2) / p.count;
       const pr = spawnProjectile(run, src, pl.x, pl.y, Math.cos(a), Math.sin(a), p.speed, dmg, p.ttl, p.radius, p.pierce);
       if (pr) pr.sub = true;
-    }
-  },
-
-  // The generic graft's echo: fires the donor weapon's own kind of attack once, at the host's
-  // target, for a share of the donor's damage. Projectile-like donors throw projectiles, strike-
-  // from-the-sky donors drop a pillar, everything else bursts around the target.
-  cast(run, t, src, x, y, depth) {
-    if (!src || !src.graft || depth + 1 > MAX_TRIGGER_DEPTH) return;
-    const donor = WEAPONS[src.graft.donorId];
-    const w = run.world;
-    const pl = run.player;
-    const target = w.hash.queryNearest(x, y, 420, (o) => o.alive);
-    if (!target) return;
-    const b = donor.base;
-    const dmg = (b.damage || 10) * run.player.stats.getFor('damage', src.tags) * t.params.frac;
-    const kind = donor.behavior;
-    if (kind === 'projectile' || kind === 'boomerang' || kind === 'nova') {
-      const n = kind === 'nova' ? 8 : 1;
-      const a0 = Math.atan2(target.y - pl.y, target.x - pl.x);
-      for (let i = 0; i < n; i++) {
-        const a = n === 1 ? a0 : a0 + (i * Math.PI * 2) / n;
-        spawnProjectile(run, src, pl.x, pl.y, Math.cos(a), Math.sin(a), b.speed || 520, dmg, b.ttl || 1.2, b.radius || 6, Math.max(1, b.pierce || 1));
-      }
-    } else if (kind === 'bolt' || kind === 'judge' || kind === 'mortar') {
-      addPillar(run, src, target.x, target.y, 55 * area(run, src), 0.3, dmg, depth);
-    } else {
-      const radius = Math.min(110, Math.max(55, b.radius > 30 ? b.radius : (b.range || 100) * 0.55));
-      EFFECTS.explode(run, { params: { radius, dmg, color: '#d9c9ff' } }, src, target.x, target.y, depth);
     }
   },
 };

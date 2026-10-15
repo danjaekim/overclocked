@@ -74,45 +74,16 @@ test('a graft costs 1 starsteel, consumes the donor, adds its elements, and is o
   assert.equal(run.summary().grafts[0], 'Glacier Maul');
 });
 
-test('a pair without a masterwork gets a readable generic name and the echo', () => {
+test('a pair without a masterwork gets a readable generic name', () => {
   const run = newRun();
   const { h, d } = pair(run, 'reaper_axe', 'glacial_bloom');
   const pv = previewGraft(h, d);
   assert.equal(pv.name, 'Reaper Axe of Frost');
   assert.equal(pv.masterwork, null);
   const { h: h2, d: d2 } = pair(run, 'grave_legion', 'judgement');
-  assert.equal(previewGraft(h2, d2).name, 'Grave Legion of the Judgement');
+  assert.equal(previewGraft(h2, d2).name, 'Grave Legion of Judgement');
   const { h: h3, d: d3 } = pair(run, 'seraph_blades', 'vapor_wheel');
   assert.equal(previewGraft(h3, d3).name, 'Seraph Blades of Fire and Frost');
-});
-
-test('the generic echo casts the donor attack every third attack', () => {
-  const run = newRun();
-  const { h, d } = pair(run, 'reaper_axe', 'glacial_bloom');
-  graft(run, h, d);
-  let casts = 0;
-  const orig = EFFECTS.cast;
-  EFFECTS.cast = (...a) => { casts++; return orig(...a); };
-  try {
-    swarm(run, 20);
-    tick(run, 8);
-  } finally { EFFECTS.cast = orig; }
-  assert.ok(casts >= 2, `echo fired ${casts} times`);
-  assert.ok(run.kills > 0);
-});
-
-test('every donor behaviour can be echoed without throwing', () => {
-  const donors = ['storm_volley', 'colossus_maul', 'singularity', 'bone_colossus', 'judgement', 'stormshell_mortar', 'seraph_blades', 'pyre_crown', 'glacial_bloom', 'thunder_lance'];
-  for (const donorId of donors) {
-    const run = newRun(11);
-    const h = addWeapon(run, 'prismatic_bolt');
-    const d = addWeapon(run, donorId);
-    assert.ok(graft(run, h, d).ok, donorId);
-    swarm(run, 12);
-    run.update(STEP, { x: 0, y: 0 });
-    EFFECTS.cast(run, { params: { frac: 0.5 } }, h, 100, 0, 0);
-    tick(run, 2);
-  }
 });
 
 test('a reforge keeps the graft triggers', () => {
