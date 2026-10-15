@@ -280,7 +280,7 @@ export const WEAPONS = {
     ],
     levelText: ['+25% damage', '+1 disc', '+20% size and reach', '-15% cooldown', '+1 disc', '+35% damage', '30% more damage'],
     triggers: [],
-    evolvesInto: null,
+    evolvesInto: 'ricochet_saw',
   },
 
   rime_orbs: {
@@ -783,6 +783,52 @@ export const WEAPONS = {
     triggers: [
       { on: 'attack', effect: 'shockwave', params: { speed: 420, range: 230, width: 34, damageFrac: 0.3, cross: true } },
     ],
+    evolvesInto: null,
+  },
+
+  ricochet_saw: {
+    name: 'Ricochet Saw',
+    desc: 'A saw that hops from enemy to enemy, up to six of them, cutting harder with every bounce, then comes home.',
+    class: null,
+    pool: false,
+    glyph: 'x',
+    rarity: 'evolved',
+    tags: ['ranged', 'thrown', 'physical'],
+    behavior: 'boomerang',
+    base: { damage: 46, cooldown: 1.5, count: 1, range: 240, speed: 380, radius: 15, tickEvery: 0.4, color: '#ffd98a', bounce: { n: 6, gain: 0.08, range: 170 } },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '+1 saw', '-15% cooldown', '+20% size', '30% more damage'],
+    triggers: [],
+    evolvesInto: null,
+  },
+
+  gyre: {
+    name: 'Gyre',
+    desc: 'The disc parks at the far end of its throw and spins as a buzzsaw for a second and a half, dragging the crowd in, then comes home.',
+    class: null,
+    pool: false,
+    glyph: 'g',
+    rarity: 'evolved',
+    tags: ['ranged', 'thrown', 'physical'],
+    behavior: 'boomerang',
+    base: { damage: 40, cooldown: 1.9, count: 1, range: 230, speed: 360, radius: 22, tickEvery: 0.4, color: '#8fe6d4', park: { time: 1.5, pull: 70 } },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '+20% size (and a wider pull)', '-15% cooldown', '+1 saw', '30% more damage'],
+    triggers: [],
     evolvesInto: null,
   },
 

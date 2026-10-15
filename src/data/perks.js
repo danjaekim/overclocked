@@ -80,7 +80,7 @@ export const PERKS = {
 
   // ---- projectile ----------------------------------------------------------------------------
   ricochet: {
-    name: 'Ricochet', glyph: 'r', rarity: 'uncommon', maxLevel: 3, requires: [['tag:projectile']], affinity: ['projectile'],
+    name: 'Ricochet', glyph: 'r', rarity: 'uncommon', maxLevel: 3, requires: [['tag:projectile', 'tag:thrown']], affinity: ['projectile', 'thrown'],
     desc: 'Projectiles that run out of pierce bounce to a new enemy.',
     levels: [
       [{ stat: 'ricochet', op: 'flat', value: 1, tags: ['projectile'] }],

@@ -158,7 +158,7 @@ test('rolls favour the item that blocks an evolution (about 3x)', () => {
   addPassive(run, 'wind_sigil');
   const bow = run.player.weapons[0];
   bow.level = 3;                                      // the bow is the blocker (needs level 8)
-  addWeapon(run, 'chakram');
+  addWeapon(run, 'static_rod');                       // a control: no evolution of its own to block
   const blockers = evolutionBlockers(run);
   assert.ok(blockers.has(`weapon_up:${bow.instanceId}`));
   const st = offerState(run);
@@ -168,7 +168,7 @@ test('rolls favour the item that blocks an evolution (about 3x)', () => {
   for (let i = 0; i < 6000; i++) {
     const o = pickChestItem(st, rng, blockers, false);
     if (o.kind === 'weapon_up' && o.id === 'ember_bow') bowPicks++;
-    if (o.kind === 'weapon_up' && o.id === 'chakram') wardPicks++;
+    if (o.kind === 'weapon_up' && o.id === 'static_rod') wardPicks++;
   }
   const ratio = bowPicks / wardPicks;
   assert.ok(ratio > 2.5 && ratio < 3.6, `ratio ${ratio.toFixed(2)}`);

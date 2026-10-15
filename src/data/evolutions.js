@@ -60,6 +60,11 @@ export const EVOLUTIONS = [
   { id: 'judgement', from: 'halo', into: 'judgement',
     requires: [{ weaponLevel: 6 }, { passive: 'keen_whetstone', minLevel: 2 }, { starsteel: 1 }] },
 
+  { id: 'ricochet_saw', from: 'chakram', into: 'ricochet_saw',
+    requires: [{ weaponLevel: 6 }, { perk: 'ricochet', minLevel: 2 }, { starsteel: 1 }] },
+  { id: 'gyre', from: 'chakram', into: 'gyre',
+    requires: [{ weaponLevel: 6 }, { passive: 'wind_sigil', minLevel: 2 }, { starsteel: 1 }] },
+
   // ---- fusions: two element weapons become one that carries both ----
   { id: 'vapor_wheel', from: 'cinder_ward', with: 'rime_orbs', into: 'vapor_wheel',
     requires: [{ weaponLevel: 6 }, { starsteel: 1 }] },
