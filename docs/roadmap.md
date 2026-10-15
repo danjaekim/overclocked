@@ -8,8 +8,7 @@ milestones that fit one mobile-sized session, each pushed with its tests, docs u
 ## What the playtest told us
 
 1. **Sound** did not play on the phone. Likely cause: iPhone's silent switch mutes WebAudio, and Safari
-   only unlocks audio on certain gestures. Fixed in `audio/audio.js` (more unlock events, a playback
-   audio session, a silent keep-alive track) and `?debug=1` now shows the audio state. **Still needs
+   only unlocks audio on certain gestures. Fixed in `audio/audio.js` (more unlock events; the playback audio session and silent keep-alive track added then were removed in v0.34.1 so the game obeys the silent switch) and `?debug=1` now shows the audio state. **Still needs
    confirming on the phone.**
 2. **Build variety is thin.** There are 6 passives and almost no non-numeric upgrades. Real synergy needs
    statuses (burn, slow, freeze, shock) plus modifiers that interact with them, and many more small
@@ -103,3 +102,4 @@ damage (chain, ricochet, split), which matters more than the starting buff.
 - Rending Axe damage 30 -> 24, cooldown 0.85 -> 0.9; Berserker lifesteal 3% -> 2%.
 - Bot result (3 seeds, quick): Archer 2/3 wins, Smith 3/3, Berserker 3/3; avg level 14 / 12 / 17. Classes are within about 2x of each other, which is the bar until M15.
 - Sound is still unconfirmed on iPhone (check the `audio` line under `?debug=1`, and the ringer switch).
+- v0.34.1: the game now respects the iPhone silent switch. `audio/audio.js` sets `navigator.audioSession.type = 'ambient'` and no longer plays the silent keep-alive `<audio>` element (which had forced sound through silent mode). Needs a check on the phone with the ringer switch off.

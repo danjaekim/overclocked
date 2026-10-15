@@ -6,20 +6,6 @@
 import { createMusic } from './music.js';
 import { createSfx, SFX_NAMES } from './sfx.js';
 
-// One second of 8-bit mono silence as a WAV blob URL.
-function silentWavUrl() {
-  const rate = 8000;
-  const n = rate;
-  const buf = new Uint8Array(44 + n).fill(128);
-  const dv = new DataView(buf.buffer);
-  const str = (o, t) => { for (let i = 0; i < t.length; i++) buf[o + i] = t.charCodeAt(i); };
-  str(0, 'RIFF'); dv.setUint32(4, 36 + n, true); str(8, 'WAVE'); str(12, 'fmt ');
-  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
-  dv.setUint32(24, rate, true); dv.setUint32(28, rate, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
-  str(36, 'data'); dv.setUint32(40, n, true);
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
-}
-
 export function createAudio({ enabled = true, music: musicOn = true, musicVolume = 0.6 } = {}) {
   let ctx = null;
   let master = null;
@@ -29,7 +15,7 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
   const music = createMusic();
   music.setVolume(musicVolume);
   music.setEnabled(on && mOn);
-    const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+  const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
 
   function ensure() {
     if (ctx || !AC) return ctx;
@@ -67,7 +53,7 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
         src.connect(c.destination);
         src.start(0);
       } catch (e) { /* ignore */ }
-      beginPlaybackSession();
+      beginAmbientSession();
     },
 
     // 'none' (no WebAudio), 'suspended' (waiting for a gesture) or 'running'; shown in ?debug=1
@@ -83,24 +69,13 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
     },
   };
 
-  // iPhone's silent (ringer) switch mutes WebAudio unless the page is in a "playback" audio
-  // session. Safari 16.4+ has navigator.audioSession; older versions need a silent looping
-  // <audio> element playing (the same trick the unmute-ios-audio library uses).
-  let keepAlive = null;
-  function beginPlaybackSession() {
+  // Respect the iPhone silent (ringer) switch: WebAudio is muted by it unless the page holds a
+  // "playback" audio session, so we ask for 'ambient' (Safari 16.4+) and never start the silent
+  // <audio> keep-alive trick. 'ambient' also lets the player's own music keep playing under us.
+  function beginAmbientSession() {
     try {
-      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      if (navigator.audioSession) navigator.audioSession.type = 'ambient';
     } catch (e) { /* ignore */ }
-    if (keepAlive || typeof document === 'undefined') return;
-    try {
-      keepAlive = document.createElement('audio');
-      keepAlive.setAttribute('playsinline', '');
-      keepAlive.loop = true;
-      keepAlive.src = silentWavUrl();
-      keepAlive.play().catch(() => { keepAlive = null; });      // retried on the next gesture
-    } catch (e) {
-      keepAlive = null;
-    }
   }
 
   // First gesture anywhere creates/resumes the context. iOS only counts some events as user
@@ -111,15 +86,12 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
       window.addEventListener(ev, once, { passive: true });
     }
     window.addEventListener('keydown', once);
-    // Out of view means silent: suspend the context (music and sfx freeze on its clock) and stop
-    // the silent keep-alive element, which would otherwise hold the audio session open.
+    // Out of view means silent: suspend the context (music and sfx freeze on its clock).
     const sync = () => {
       if (document.hidden) {
         if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
-        if (keepAlive) keepAlive.pause();
       } else {
         if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
-        if (keepAlive) keepAlive.play().catch(() => {});
       }
     };
     document.addEventListener('visibilitychange', sync);
