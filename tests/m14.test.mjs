@@ -85,7 +85,8 @@ test('mortar: a shell lands after its fuse and hurts everything in the blast', (
 test('every new weapon can be added, levelled to max and run for 20 s with a crowd', () => {
   for (const id of ['static_rod', 'chakram', 'rime_orbs', 'cinder_mortar', 'reaper_axe', 'seraph_blades', 'pyre_crown', 'thunder_lance', 'glacial_bloom', 'vapor_wheel', 'stormshell_mortar', 'stormfrost_lance']) {
     const { run, inst } = lone(id, 8);
-    for (let i = 0; i < 25; i++) dummy(run, 60 + i * 12, (i % 5) * 30 - 60, 400);
+    const trail = inst.def.behavior === 'trail';       // a trail only hurts what stands on it, so the crowd starts on the player
+    for (let i = 0; i < 25; i++) dummy(run, (trail ? 4 : 60) + i * (trail ? 1 : 12), (i % 5) * (trail ? 3 : 30) - (trail ? 6 : 60), 400);
     tick(run, 20);
     assert.ok(Number.isFinite(run.stats.total) && run.stats.total > 0, `${id} dealt damage`);
     assert.ok(inst.level >= 1);
@@ -131,8 +132,8 @@ test('fusion: needs both weapons at level 6, consumes the partner, keeps enhance
   run.ore = 1e6;
   enhance(run, ward);
   assert.ok(ward.enhance >= 1);
-  const e = dummy(run, 40, 0);
-  tick(run, 2);                                            // the orbs deal some damage first, so there is a record to mark
+  const e = dummy(run, 12, 0);
+  tick(run, 2);                                            // the wake deals some damage first, so there is a record to mark
   e.alive = false; run.world.enemies.release(e);
   const before = run.player.weapons.length;
   assert.equal(canEvolve(run, orbs, recipe), true, 'either card can start it');

@@ -12,6 +12,8 @@ import boomerang from './returning-disc.js';
 import mortar from './mortar.js';
 import summon from './summon.js';
 import judge from './judge.js';
+import trail from './trail.js';
+import pulse from './pulse.js';
 
 export const BEHAVIORS = {
   projectile,
@@ -24,4 +26,6 @@ export const BEHAVIORS = {
   mortar,
   summon,
   judge,
+  trail,
+  pulse,
 };

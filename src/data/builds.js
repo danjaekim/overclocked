@@ -26,7 +26,7 @@ export const BUILDS = [
     tips: 'Deep Freeze makes freezing easy; Shatter turns every frozen kill into an explosion. Long Reach keeps the hammer in range. Rime-touched on the hammer adds chill.', bench: true },
   { id: 'steam engine', name: 'Steam Engine', cls: 'smith', weapons: ['forge_hammer', 'cinder_ward', 'rime_shards'], perks: ['kindling', 'frostbite', 'quench', 'long_reach'],
     idea: 'Burning and chilled enemies flash to steam and scald everything around them.',
-    tips: 'Needs fire and frost together. Vapor Wheel (fuse Cinder Ward and Rime Orbs) is the weapon version of the same idea.', bench: true },
+    tips: 'Needs fire and frost together. Steam Wake (fuse Cinder Ward and Frost Wake) is the weapon version of the same idea.', bench: true },
   { id: 'reaper', name: 'Reaper', cls: 'berserker', weapons: ['rending_axe', 'spirit_blades'], perks: ['echo_strike', 'long_reach', 'bloodletting', 'keen_eye', 'headsman'],
     idea: 'Wide swings, lots of crits, and a heal on every hit; wounded enemies die outright.',
     tips: 'Keen Eye unlocks Headsman. Echo Strike doubles the swing. Evolve the axe into Reaper Axe with Keen Eye level 2.', bench: true },
@@ -38,5 +38,5 @@ export const BUILDS = [
     tips: 'Every extra projectile is another hound, so Volley-style bonuses and level-ups matter. Fleet Greaves 2 evolves Bone Call into Grave Legion.', bench: true },
   { id: 'sun saint', name: 'Sun Saint', cls: 'saint', weapons: ['halo', 'cinder_ward'], perks: ['long_reach', 'bloodletting', 'kindling', 'fan_the_flames'],
     idea: 'Two rings of burning light that heal you on every tick.',
-    tips: 'Close-range perks (Long Reach, Bloodletting) apply to both rings. Tempered Core 2 evolves Halo into Radiant Halo.', bench: true },
+    tips: 'Close-range perks (Long Reach, Bloodletting) apply to both rings. Tempered Core 2 evolves Halo Pulse into Radiant Pulse.', bench: true },
 ];

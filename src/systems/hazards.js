@@ -8,6 +8,7 @@
 
 import { queueDamage, KIND_PROC } from './damage-queue.js';
 import { applyBurn, applyChill, applyShock } from './status.js';
+import { resolveHit } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff } from '../render/fx.js';
 
@@ -30,8 +31,11 @@ function add(run, h) {
 
 // status: what standing in it does besides damage: 'burn' (the default, null), 'chill', 'shock', 'bless'
 // (marks the enemy and mends you a little) or 'none'. cause: the damage cause to credit (run stats).
-export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth, shock = false, status = null, cause) {
-  return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, shock, status, cause });
+// direct: the patch is the weapon's own attack (Frost Wake): its ticks are real weapon hits (crit,
+// knockback, the weapon's own status chances, hit triggers, graft payloads) instead of PROC damage, and
+// `look` picks the colours. look: 'burn' | 'chill' | 'steam' | 'shock' | 'bless' | 'none'.
+export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth, shock = false, status = null, cause, direct = false, look = null) {
+  return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, shock, status, cause, direct, look });
 }
 
 // Blades that circle an enemy and hit whatever is near it (graft payload "Whirling Blades"). They
@@ -44,7 +48,7 @@ export function addSpin(run, src, target, radius, ttl, tick, dmg, depth, cause) 
 // edge reaches it. status 'bless' marks what it hits and heals you `heal` per enemy (capped per ring).
 export function addRing(run, src, x, y, rMax, speed, dmg, depth, opts = {}) {
   const life = rMax / speed + 0.25;
-  return add(run, { kind: RING, src, x, y, rr: 0, rMax, speed, ttl: life, life, dmg, depth, hit: new Set(), follow: !!opts.follow, status: opts.status || null, heal: opts.heal || 0, healed: 0, color: opts.color || '#fff3b0', cause: opts.cause, kb: opts.kb === undefined ? 60 : opts.kb });
+  return add(run, { kind: RING, src, x, y, rr: 0, rMax, speed, ttl: life, life, dmg, depth, hit: new Set(), follow: !!opts.follow, status: opts.status || null, heal: opts.heal || 0, healed: 0, direct: !!opts.direct, thick: opts.thick || 4, color: opts.color || '#fff3b0', cause: opts.cause, kb: opts.kb === undefined ? 60 : opts.kb });
 }
 export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
   return add(run, { kind: VORTEX, src, x, y, r: radius, ttl, life: ttl, pull, dmg, depth });
@@ -114,11 +118,19 @@ export function updateHazards(run, dt) {
           const dy = e.y - h.y;
           const rr = h.r + e.r;
           if (dx * dx + dy * dy > rr * rr) continue;
+          if (h.direct) {                                       // a weapon's own ground: real hits, no shove, and one hit per enemy per tick however many patches overlap
+            const seen = h.src.patchSeen || (h.src.patchSeen = new Map());
+            if (run.time - (seen.get(e.uid) || -1e9) < h.tick * 0.9) continue;
+            if (seen.size > 400) seen.clear();
+            seen.set(e.uid, run.time);
+            resolveHit(run, h.src, e, h.dmg, 0, 0);
+            continue;
+          }
           queueDamage(run, e, h.dmg, false, 0, 0, h.depth + 1, h.src, KIND_PROC, h.cause);
           const st = h.status;
-          if (!st || st === 'burn') applyBurn(run, e, h.src, h.dmg, h.depth + 1);
+          if (!st || st === 'burn' || st === 'steam') applyBurn(run, e, h.src, h.dmg, h.depth + 1);
           if (h.shock || st === 'shock') applyShock(run, e, h.src);
-          if (st === 'chill') applyChill(run, e, h.src, h.depth + 1);
+          if (st === 'chill' || st === 'steam') applyChill(run, e, h.src, h.depth + 1);
           if (st === 'bless') {
             e.blessT = 2;
             if (healed < 4) { healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + 0.5); }
@@ -145,7 +157,8 @@ export function updateHazards(run, dt) {
         if (dx * dx + dy * dy > rr * rr) continue;
         h.hit.add(e.uid);
         const d = Math.hypot(dx, dy) || 1;
-        queueDamage(run, e, h.dmg, false, (dx / d) * h.kb, (dy / d) * h.kb, h.depth + 1, h.src, KIND_PROC, h.cause);
+        if (h.direct) resolveHit(run, h.src, e, h.dmg, dx / d, dy / d);                 // the weapon's own attack (Halo Pulse)
+        else queueDamage(run, e, h.dmg, false, (dx / d) * h.kb, (dy / d) * h.kb, h.depth + 1, h.src, KIND_PROC, h.cause);
         if (h.status === 'bless') {
           e.blessT = 2;
           if (h.healed < 6) { h.healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + h.heal); }
@@ -275,7 +288,7 @@ function netStep(run, dt) {
   }
 }
 
-const PATCH_COLORS = { burn: ['#ff6a2e', '#ffb45e'], chill: ['#6ec8ff', '#d6f1ff'], shock: ['#ffd23a', '#fff3a8'], bless: ['#ffc83a', '#fff3b0'], none: ['#b9a7ff', '#e4dcff'] };
+const PATCH_COLORS = { burn: ['#ff6a2e', '#ffb45e'], chill: ['#6ec8ff', '#d6f1ff'], steam: ['#c3cfdc', '#ffd9b0'], shock: ['#ffd23a', '#fff3a8'], bless: ['#ffc83a', '#fff3b0'], none: ['#b9a7ff', '#e4dcff'] };
 
 // Drawn under the enemies. Everything here is cheap strokes and fills.
 export function drawHazards(ctx, run) {
@@ -301,13 +314,13 @@ export function drawHazards(ctx, run) {
       ctx.lineCap = 'butt';
     } else if (h.kind === RING) {
       ctx.strokeStyle = h.color;
-      ctx.lineWidth = 4 * (1 - 0.6 * (h.rr / h.rMax));
+      ctx.lineWidth = h.thick * (1 - 0.6 * (h.rr / h.rMax));
       ctx.globalAlpha = 0.75 * (1 - 0.7 * (h.rr / h.rMax));
       ctx.beginPath();
       ctx.arc(h.x, h.y, Math.max(1, h.rr), 0, TAU);
       ctx.stroke();
     } else if (h.kind === PATCH) {
-      const col = PATCH_COLORS[h.status || 'burn'] || PATCH_COLORS.burn;
+      const col = PATCH_COLORS[h.look || h.status || 'burn'] || PATCH_COLORS.burn;
       ctx.globalAlpha = Math.min(1, k * 2) * 0.28;
       ctx.fillStyle = h.shock && !h.status ? '#ff6a2e' : col[0];
       ctx.beginPath();
