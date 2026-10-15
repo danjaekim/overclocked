@@ -256,7 +256,7 @@ export const WEAPONS = {
     ],
     levelText: ['+25% damage', '+2 jumps', '+20% reach and jump range', '-15% cooldown', '+2 jumps', '+35% damage', '30% more damage'],
     triggers: [],
-    evolvesInto: null,
+    evolvesInto: 'tempest',
   },
 
   chakram: {
@@ -783,6 +783,30 @@ export const WEAPONS = {
     triggers: [
       { on: 'attack', effect: 'shockwave', params: { speed: 420, range: 230, width: 34, damageFrac: 0.3, cross: true } },
     ],
+    evolvesInto: null,
+  },
+
+  tempest: {
+    name: 'Tempest',
+    desc: 'Chain lightning that branches: every enemy it strikes forks the bolt to two more, three times over.',
+    class: null,
+    pool: false,
+    glyph: 'q',
+    rarity: 'evolved',
+    tags: ['bolt', 'ranged', 'magic', 'storm'],
+    baseMods: [{ stat: 'shockChance', op: 'flat', value: 1 }],
+    behavior: 'chain',
+    base: { damage: 44, cooldown: 1.1, count: 1, range: 260, chains: 4, jump: 150, ownChain: true, fork: { gens: 3, falloff: 0.85 } },
+    maxLevel: 6,
+    levels: [
+      [{ stat: 'damage', op: 'inc', value: 0.25 }],
+      [{ stat: 'area', op: 'inc', value: 0.2 }],
+      [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+      [{ stat: 'projectiles', op: 'flat', value: 1 }],
+      [{ stat: 'damage', op: 'more', value: 0.3 }],
+    ],
+    levelText: ['+25% damage', '+20% reach and jump range', '-15% cooldown', 'forks one more time', '30% more damage'],
+    triggers: [],
     evolvesInto: null,
   },
 

@@ -60,6 +60,8 @@ export const EVOLUTIONS = [
   { id: 'judgement', from: 'halo', into: 'judgement',
     requires: [{ weaponLevel: 6 }, { passive: 'keen_whetstone', minLevel: 2 }, { starsteel: 1 }] },
 
+  { id: 'tempest', from: 'static_rod', into: 'tempest',
+    requires: [{ weaponLevel: 6 }, { perk: 'static_charge', minLevel: 2 }, { starsteel: 1 }] },
   { id: 'ricochet_saw', from: 'chakram', into: 'ricochet_saw',
     requires: [{ weaponLevel: 6 }, { perk: 'ricochet', minLevel: 2 }, { starsteel: 1 }] },
   { id: 'gyre', from: 'chakram', into: 'gyre',

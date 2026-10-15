@@ -285,6 +285,8 @@ Three that use the new shapes and only weapons that can be grafted:
    lightning fence for a moment. Shows: bounce + rod links.
 
 Also worth deciding: give Chain Lightning an evolution so the chain shape can take part in grafts.
+(Done in M33c, v0.33.2: **Tempest**, a branching chain. That opens a Stormspire-style pair again, e.g.
+Thunder Lance + Tempest: every rod zap starts a small fork.)
 
 ### 6.3 Docs
 
