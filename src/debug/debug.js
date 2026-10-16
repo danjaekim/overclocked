@@ -78,12 +78,17 @@ async function toggleLab() {
   if (labEl) { labEl.remove(); labEl = null; return; }
   const o = window.__overforged;
   if (!o || !o.game.run) return;
-  const [{ WEAPONS }, W, G, D, { MASTERWORKS }] = await Promise.all([
+  const [{ WEAPONS }, W, G, D, { MASTERWORKS }, SF] = await Promise.all([
     import('../data/weapons.js'), import('../game/weapons.js'), import('../game/graft.js'),
-    import('../game/director.js'), import('../data/grafts.js'),
+    import('../game/director.js'), import('../data/grafts.js'), import('../game/starforge.js'),
   ]);
+  let starOn = false;                                                  // weapons added from the lab arrive starforged
   const run = () => o.game.run;
-  const maxOut = (inst) => { while (W.canLevelUp(inst)) W.levelUpWeapon(run(), inst); return inst; };
+  const maxOut = (inst) => {
+    while (W.canLevelUp(inst)) W.levelUpWeapon(run(), inst);
+    if (starOn && SF.mutationOf(inst)) inst.star = true;
+    return inst;
+  };
   const clear = () => {
     const r = run();
     for (const w of r.player.weapons) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); }
@@ -117,6 +122,9 @@ async function toggleLab() {
     clear,
     last: () => { const r = run(); const w = r.player.weapons.pop(); if (w) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); } },
     star: () => { run().starsteel += 3; },
+    starall: () => { for (const w of run().player.weapons) if (SF.mutationOf(w)) w.star = true; },           // starforge everything you hold (free; weapons with no mutation yet are skipped)
+    unstarall: () => { for (const w of run().player.weapons) w.star = false; },
+    starsteel10: () => { run().starsteel += 10; },
   };
   const baseIds = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false);
   const branchIds = Object.keys(WEAPONS).filter((id) => WEAPONS[id].rarity === 'evolved');   // branches and alloy evolutions alike
@@ -126,11 +134,12 @@ async function toggleLab() {
   labEl.style.cssText = 'position:fixed;left:6px;right:6px;bottom:52px;max-height:52vh;overflow:auto;z-index:6;background:rgba(0,0,0,.88);color:#9fe870;font:11px monospace;padding:8px;border:1px solid #4a6;border-radius:8px';
   labEl.innerHTML =
     row('Weapons', [['a:clear', 'REMOVE ALL WEAPONS'], ['a:last', 'remove last']]) +
+    row('Starforge (free; only weapons with a mutation)', [['a:starall', 'star all held'], ['a:unstarall', 'unstar all'], ['starmode', 'new weapons starred: OFF'], ['a:starsteel10', '+10 starsteel']]) +
     row('Normal weapons (added at max level)', baseIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
     row('Branches and evolutions (added at max level, nothing removed)', branchIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
     row('Masterworks (adds host + donor at max level, then grafts)', MASTERWORKS.map((m) => [`m:${m.id}`, m.name])) +
     row('Generic graft: pick two evolved weapons', [['gen', 'graft last two']]) +
-    row('World', Object.keys(actions).filter((k) => k !== 'clear' && k !== 'last').map((k) => [`a:${k}`, k]).concat([['calm', 'god + no level-ups']]));
+    row('World', Object.keys(actions).filter((k) => !['clear', 'last', 'starall', 'unstarall', 'starsteel10'].includes(k)).map((k) => [`a:${k}`, k]).concat([['calm', 'god + no level-ups']]));
   labEl.addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
     if (!b || !run()) return;
@@ -149,6 +158,7 @@ async function toggleLab() {
       if (ws.length >= 2) { run().starsteel += 1; G.graft(run(), ws[ws.length - 2], ws[ws.length - 1]); }
     } else if (kind === 'a') actions[id]();
     else if (kind === 'calm') calm();
+    else if (kind === 'starmode') { starOn = !starOn; b.textContent = `new weapons starred: ${starOn ? 'ON' : 'OFF'}`; }
   });
   document.body.appendChild(labEl);
 }
