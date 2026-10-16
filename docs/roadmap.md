@@ -5,6 +5,8 @@ the Berserker, five weapons, the forge, shrines, evolutions, a boss, titles, sav
 This file plans what comes next, driven by the first playtest (2026-10-13). Same rules as before: small
 milestones that fit one mobile-sized session, each pushed with its tests, docs updated in the same commit.
 
+Balance work (a class, a weapon, a Starforge mutation, a masterwork) follows `docs/balance-playbook.md`.
+
 ## What the playtest told us
 
 1. **Sound** did not play on the phone. Likely cause: iPhone's silent switch mutes WebAudio, and Safari
@@ -74,6 +76,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M42** *(done)* | Starforge, the last five and a balance pass (v0.42.0) | Mortar cluster shells, bolt seeking, summon star-touched, pulse echoes, judge double strike: all 15 behaviors have a mutation. Typical crowd gain about +45%; outliers trimmed. See `docs/architecture.md`. |
 | **M42b** *(done)* | Starforge measurement (v0.42.1) | Bot win rates, all 36 weapons star vs none, and all 16 masterworks at +15 with and without a star; Aftershock no longer re-fires hit triggers. Numbers in `docs/architecture.md`. |
 | **M43** *(done)* | Archer rework (v0.43.0) | Quiver (+1 shot on every ranged weapon, replacing +1 pierce), Rain of Arrows class trait, Ember Bow Embers at level 4. Archer bot win rate 47% -> 69% (smart bot 55% -> 75%). Bench tools: `CLASS_OVERRIDE`, `WEAPON_OVERRIDE`, `BOT_POLICY=smart`, `tools/diag-class.mjs`. |
+| **M43b** *(done)* | Archer recheck (v0.43.1) | Embers no longer cascade (trigger `direct`), Rain of Arrows every 3 s; Archer 67% / 77% (plain / smart bot). Balance procedure: `docs/balance-playbook.md`, runner `tools/variants.mjs`. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 

@@ -44,7 +44,7 @@ export const WEAPONS = {
     ],
     levelText: ['+20% damage', '+1 arrow', 'Embers: arrows burst on impact, +15% area', '-15% cooldown; 15% of kills explode', '+1 arrow', '+30% damage', '10% more damage'],   // lv5 also: 15% chance to explode on kill
     triggers: [
-      { on: 'hit', effect: 'explode', params: { radius: 30, damageFrac: 0.35, kb: 20 }, minLevel: 4 },   // Embers (M43): every arrow bursts where it hits
+      { on: 'hit', effect: 'explode', params: { radius: 30, damageFrac: 0.2, kb: 20 }, minLevel: 4, direct: true },   // Embers (M43): every arrow bursts where it hits (direct: an ember's own hits do not burst again)
       { on: 'kill', chance: 0.15, effect: 'explode', params: { radius: 55, damageFrac: 0.5 }, minLevel: 5 },
     ],
     evolvesInto: 'storm_volley',

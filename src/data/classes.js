@@ -28,12 +28,12 @@ export const CLASSES = {
     ],
     trait: {
       name: 'Deadeye',
-      text: ['Rain of Arrows: every 3.5 s arrows fall on the thickest crowd in range of your ranged weapon, more with every extra shot it fires', 'Quiver: every ranged weapon fires one more shot', 'Long Shot: hits deal up to 50% more damage the farther the target', 'Fleet: weapons attack 15% faster while you move', 'Evasion: 25% of hits miss you'],
+      text: ['Rain of Arrows: every 3 s arrows fall on the thickest crowd in range of your ranged weapon, more with every extra shot it fires', 'Quiver: every ranged weapon fires one more shot', 'Long Shot: hits deal up to 50% more damage the farther the target', 'Fleet: weapons attack 15% faster while you move', 'Evasion: 25% of hits miss you'],
       longShot: { near: 60, far: 220, bonus: 0.5 },
       dodge: { chance: 0.25, grace: 0.25 },
       // Rain of Arrows (game/class-traits.js): needs a ranged weapon; damage is `frac` x that weapon's, arrows = `arrows`
       // + `perProj` per extra projectile it fires (Quiver counts), up to `max`; spread and radius grow with area.
-      rain: { every: 3.5, arrows: 5, perProj: 2, max: 16, spread: 60, radius: 26, frac: 0.55, delay: 0.45, stagger: 0.04, reach: 240 },   // reach: stays on a phone screen, so you see it and the gems land near you
+      rain: { every: 3, arrows: 6, perProj: 2, max: 18, spread: 60, radius: 26, frac: 0.55, delay: 0.45, stagger: 0.04, reach: 240 },   // reach: stays on a phone screen, so you see it and the gems land near you
     },
     unlocked: true,
   },

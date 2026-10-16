@@ -8,6 +8,7 @@
 //   node tools/bench.mjs --starforge    star vs no star DPS for every weapon (STAR_ONLY=id,id narrows it)
 //   node tools/bench.mjs --masterworks   each masterwork at +15 with and without its star (MW_ONLY=id,id narrows it)
 //   node tools/bench.mjs --classes       the same builds played by every class (class identity)
+//   node tools/bench.mjs --dps          max-level DPS per weapon, single / pinned crowd / live crowd (DPS_IDS=id,id narrows it)
 //   --lib                                imported by another script (tools/*.mjs): run nothing, use the exports
 //   node tools/bench.mjs --json          machine-readable output
 //
@@ -56,13 +57,19 @@ import { MASTERWORKS } from '../src/data/grafts.js';
 const args = process.argv.slice(2);
 const SPEND = process.env.BOT_SPEND || 'all';        // what the bot buys with starsteel at the forge: 'none' | 'quench' | 'all' (Quench and Starforge)
 const flag = (n) => args.includes(n);
+const argv = process.argv;
+const numArg = (n, d) => (argv.includes(n) ? Number(argv[argv.indexOf(n) + 1]) : d);
 const STAR_WEAPONS = ['ember_bow', 'storm_volley', 'sunpiercer', 'forge_hammer', 'colossus_maul', 'quakebreaker', 'spirit_blades', 'seraph_blades', 'chakram', 'ricochet_saw', 'gyre'];
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
 const LEVELS = [1, 4, 8];
 
-function loneWeaponRun(weaponId, level, classId = 'archer', seed = 1) {
-  const run = createRun({ seed, view: VIEW, debug: { god: true }, classId });
+// classId 'none' (the default since M43): no class mods and no trait, so a weapon is measured on its own, not on the
+// Archer's kit (Quiver and Rain of Arrows would otherwise add to every number). Pass a class to see a kit's effect.
+function loneWeaponRun(weaponId, level, classId = 'none', seed = 1) {
+  const bare = classId === 'none';
+  const run = createRun({ seed, view: VIEW, debug: { god: true }, classId: bare ? 'archer' : classId });
+  if (bare) { run.player.stats.removeBySource('class:'); run.trait = {}; run.cls.inst = null; run.cls.rain = []; }
   run.player.stats.removeBySource(`weapon:${run.player.weapons[0].instanceId}:`);
   run.player.weapons.length = 0;
   run.director.update = () => {};                 // no wave spawns: we place enemies ourselves
@@ -140,7 +147,7 @@ function graftCrowdDps(hostId, donorId) {
 // some die while you walk a slow circle, scored as hp killed per second, so knockback, scattering and
 // moving count the way they do in a real fight.
 function starDps(weaponId, star, mode, seed, prep) {
-  const { run, inst: inst0 } = loneWeaponRun(weaponId, 99, 'archer', seed);
+  const { run, inst: inst0 } = loneWeaponRun(weaponId, 99, process.env.BENCH_CLASS || 'none', seed);
   let inst = inst0;
   if (prep) inst = prep(run, inst0) || inst0;      // e.g. enhance to +15 and graft a donor on (--masterworks)
   if (star) inst.star = true;
@@ -388,7 +395,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--lib')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -406,6 +413,27 @@ if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classe
     }
     out.weapons[id] = row;
     if (!flag('--json')) console.log(line);
+  }
+}
+
+// Weapon balance: damage per second at max level in the three Starforge modes (single target, pinned crowd of 24,
+// live crowd of 40 walking goblins), no star, mean of `--seeds` (default 3). DPS_IDS=id,id picks the weapons (default all).
+// WEAPON_OVERRIDE applies, so tools/variants.mjs can compare a weapon change against the original.
+if (flag('--dps')) {
+  const nSeeds = numArg('--seeds', 3);
+  const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
+  const ids = process.env.DPS_IDS ? process.env.DPS_IDS.split(',') : Object.keys(WEAPONS);
+  const rows = [];
+  for (const id of ids) {
+    const row = { id, behavior: WEAPONS[id].behavior };
+    for (const mode of ['single', 'held', 'flow']) row[mode] = seeds.reduce((a, sd) => a + starDps(id, false, mode, sd), 0) / seeds.length;
+    rows.push(row);
+  }
+  if (flag('--json')) out.dps = rows;
+  else {
+    console.log(`\nWEAPON DPS  (max level, no star; mean of ${nSeeds} seeds)`);
+    console.log(pad('weapon', 18) + pad('behavior', 11) + pad('single', 9) + pad('held', 9) + pad('live', 9));
+    for (const r of rows) console.log(pad(r.id, 18) + pad(r.behavior, 11) + pad(num(r.single), 9) + pad(num(r.held), 9) + pad(num(r.flow), 9));
   }
 }
 
@@ -442,8 +470,6 @@ if (flag('--builds')) {
 }
 
 // Difficulty experiments without editing data: --hp 1.3 scales enemy hp, --rate 1.2 spawn rates.
-const argv = process.argv;
-const numArg = (n, d) => (argv.includes(n) ? Number(argv[argv.indexOf(n) + 1]) : d);
 if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')) {
   const hpK = numArg('--hp', 1);
   const rateK = numArg('--rate', 1);
@@ -494,7 +520,7 @@ if (flag('--masterworks')) {
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--lib')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);

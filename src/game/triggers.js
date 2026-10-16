@@ -18,6 +18,7 @@ function fireList(run, list, on, src, x, y, depth, ang = 0, target = null) {
   for (let i = 0; i < list.length; i++) {
     const t = list[i];
     if (t.on !== on || src.level < (t.minLevel || 1)) continue;
+    if (t.direct && depth > 0) continue;              // direct: only the weapon's own hits, never its blasts' (no cascade)
     if (t.chance !== undefined && run.rng.next() >= t.chance) continue;
     EFFECTS[t.effect](run, t, src, x, y, depth, ang, target);
   }

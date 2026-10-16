@@ -100,3 +100,22 @@ test('m43 Embers: the Ember Bow\'s arrows burst on impact from level 4, not befo
   assert.equal(splash(3), 0, 'level 3: no embers');
   assert.ok(splash(4) > 0, 'level 4: arrows burst');
 });
+
+test('m43b Embers fire on the arrow\'s own hits only, never on an ember\'s hits (no cascade)', async () => {
+  const { fireTriggers } = await import('../src/game/triggers.js');
+  const blasts = (depth) => {
+    const run = newRun();
+    run.trait = { ...run.trait, rain: undefined };
+    const bow = run.player.weapons[0];
+    bow.cd = 1e9;
+    while (bow.level < 4 && canLevelUp(bow)) levelUpWeapon(run, bow);
+    const es = crowd(run, 0, -150, 8);
+    step(run);                                              // the spatial hash learns where the crowd is
+    const before = run.stats.causes[3];
+    fireTriggers(run, 'hit', bow, es[0].x, es[0].y, depth, es[0]);
+    step(run);
+    return run.stats.causes[3] - before;
+  };
+  assert.ok(blasts(0) > 0, 'an arrow\'s hit bursts');
+  assert.equal(blasts(1), 0, 'an ember\'s hit does not');
+});
