@@ -78,6 +78,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M43** *(done)* | Archer rework (v0.43.0) | Quiver (+1 shot on every ranged weapon, replacing +1 pierce), Rain of Arrows class trait, Ember Bow Embers at level 4. Archer bot win rate 47% -> 69% (smart bot 55% -> 75%). Bench tools: `CLASS_OVERRIDE`, `WEAPON_OVERRIDE`, `BOT_POLICY=smart`, `tools/diag-class.mjs`. |
 | **M43b** *(done)* | Archer recheck (v0.43.1) | Embers no longer cascade (trigger `direct`), Rain of Arrows every 3 s; Archer 67% / 77% (plain / smart bot). Balance procedure: `docs/balance-playbook.md`, runner `tools/variants.mjs`. |
 | **M44** *(done)* | Mage rework (v0.44.0) | Spellburst: enemies dying burning, chilled or shocked burst in each element. Arc Bolt strikes two targets and bursts where it lands (Prismatic Bolt bigger). Mage 62% / 83% -> 76% / 94% (plain / smart bot). Follow-ups: graft outliers (Comet, Eventide, Black Sun), Judgement in live crowds. |
+| **M44b** *(done)* | Shot shapes (v0.44.1) | Arrows, javelins and shards have their own silhouettes; the element is the head colour and trail. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
