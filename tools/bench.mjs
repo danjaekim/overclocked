@@ -140,7 +140,8 @@ function playBot(classId, seed) {
   let chests = 0;
   let bossSeen = false;
   const at = { 300: null };
-  const ss = { earned: 0, spent: 0, prev: run.starsteel, first: null };      // starsteel flow
+  const ss = { earned: 0, spent: 0, prev: run.starsteel, first: null };
+  const iron = { earned: 0, prev: run.ore };                                    // iron income      // starsteel flow
   const late = { n: 0, sum: 0, clear: 0, hp: 0 };       // crowd after 300 s: how full is the screen? (how often is it nearly empty?)
   while (!run.over && run.time < 601) {
     const p = run.player;
@@ -179,6 +180,8 @@ function playBot(classId, seed) {
     } else { move.x = 0; move.y = 0; }
 
     run.update(STEP, move);
+    if (run.ore > iron.prev) iron.earned += run.ore - iron.prev;
+    iron.prev = run.ore;
     if (run.starsteel !== ss.prev) { const d = run.starsteel - ss.prev; if (d > 0) { ss.earned += d; if (ss.first === null) ss.first = Math.round(run.time); } else ss.spent -= d; ss.prev = run.starsteel; }
     if (run.time >= 300 && run.world.tick % 30 === 0) {
       const n = run.world.enemies.count;
@@ -200,12 +203,14 @@ function playBot(classId, seed) {
       for (const w of p.weapons) for (const r of recipesFor(w)) if (canEvolve(run, w, r)) { evolve(run, w, r); evolved++; }
       if (run.starsteel !== ss.prev) { ss.spent += ss.prev - run.starsteel; ss.prev = run.starsteel; }
       for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (w && canEnhance(run, w)) enhance(run, w); else break; }
+      iron.prev = run.ore;
     }
   }
   return {
     won: run.won, time: Math.round(run.time), level: run.player.level, kills: run.kills,
     bossSeen, bossKilled: run.bossKilled, evolved, chests, titles: run.titles.length,
     at300: at[300],
+    iron: { earned: iron.earned, left: run.ore, topEnhance: Math.max(0, ...run.player.weapons.map((w) => w.enhance)) },
     starsteel: { earned: ss.earned, spent: ss.spent, left: run.starsteel, first: ss.first, elites: run.eliteKills },
     late: late.n ? { avg: Math.round(late.sum / late.n), clear: +(late.clear / late.n).toFixed(3), hp: +(late.hp / late.n).toFixed(2) } : null,
   };
