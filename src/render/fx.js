@@ -62,6 +62,7 @@ export const BURST_SPARKS = 1;
 export const BURST_SHARDS = 2;
 export const BURST_CRACKS = 3;
 export const BURST_STEAM = 4;
+export const BURST_SLAM = 5;          // a hammer's crater: dark pit, ground cracks, a fast shockwave and flying rubble (lives 0.55 s)
 export function addBurst(run, x, y, radius, color, style = BURST_PLAIN, color2 = '#ffffff') {
   const w = run.world;
   if (w.fxBursts >= MAX_BURSTS || w.fx.count >= MAX_PUFFS_POOL) return;
@@ -72,7 +73,7 @@ export function addBurst(run, x, y, radius, color, style = BURST_PLAIN, color2 =
   f.y = y;
   f.vx = f.vy = 0;
   f.r = radius;
-  f.ttl = f.maxTtl = 0.32;
+  f.ttl = f.maxTtl = style === BURST_SLAM ? 0.55 : 0.32;
   f.text = color;
   f.c2 = color2;
   f.style = style;
@@ -104,6 +105,7 @@ export function addArc(run, x1, y1, x2, y2, color = ARC_YELLOW) {
 const GOLDEN = 2.399963;
 function drawBurst(ctx, f) {
   const u = 1 - f.ttl / f.maxTtl;
+  if (f.style === BURST_SLAM) { drawSlamBurst(ctx, f, u); return; }
   const e = 1 - (1 - u) * (1 - u);                      // fast out, slow settle
   const R = f.r * (0.3 + 0.7 * e);
   const a = 1 - u;
@@ -203,6 +205,63 @@ function drawBurst(ctx, f) {
     }
     ctx.fill();
   }
+}
+
+// The crater a hammer leaves. The ring and cracks race out in the first third; the pit and cracks fade slowly after.
+function drawSlamBurst(ctx, f, u) {
+  const out = Math.min(1, u / 0.3);
+  const e = 1 - (1 - out) * (1 - out) * (1 - out);
+  const fade = u < 0.45 ? 1 : 1 - (u - 0.45) / 0.55;
+  const R = f.r;
+  ctx.fillStyle = '#120d08';                            // the pit
+  ctx.globalAlpha = 0.38 * fade;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R * 0.92 * (0.5 + 0.5 * e), 0, TAU);
+  ctx.fill();
+  if (u < 0.2) {                                        // the flash of the hit
+    ctx.fillStyle = f.c2;
+    ctx.globalAlpha = 0.7 * (1 - u / 0.2);
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, R * (0.35 + 0.5 * e), 0, TAU);
+    ctx.fill();
+  }
+  const ang = f.seed * TAU;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let pass = 0; pass < 2; pass++) {                // ground cracks: dark, then a lit core on top
+    ctx.strokeStyle = pass ? f.text : '#0a0704';
+    ctx.lineWidth = pass ? 1.6 : 4;
+    ctx.globalAlpha = (pass ? 0.9 : 0.8) * fade;
+    ctx.beginPath();
+    for (let k = 0; k < 9; k++) {
+      const t = ang + k * 0.7 + ((k * 5) % 3) * 0.12;
+      const len = R * (0.55 + 0.4 * (((k * 7) % 5) / 4)) * e;
+      const cx = Math.cos(t), cy = Math.sin(t), nx = -cy, ny = cx;
+      const j = R * 0.09 * (k % 2 ? 1 : -1);
+      ctx.moveTo(f.x + cx * R * 0.12, f.y + cy * R * 0.12);
+      ctx.lineTo(f.x + cx * len * 0.4 + nx * j, f.y + cy * len * 0.4 + ny * j);
+      ctx.lineTo(f.x + cx * len * 0.7 - nx * j, f.y + cy * len * 0.7 - ny * j);
+      ctx.lineTo(f.x + cx * len, f.y + cy * len);
+    }
+    ctx.stroke();
+  }
+  ctx.strokeStyle = f.text;                             // the shockwave
+  ctx.lineWidth = 1.5 + 5 * (1 - out);
+  ctx.globalAlpha = 0.95 * Math.max(0, 1 - u / 0.6);
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R * (0.2 + 0.8 * e), 0, TAU);
+  ctx.stroke();
+  ctx.fillStyle = f.c2;                                 // rubble thrown up and out, falling back
+  ctx.globalAlpha = 0.95 * fade;
+  for (let k = 0; k < 11; k++) {
+    const t = ang + k * GOLDEN;
+    const sp = R * (0.45 + 0.5 * (((k * 3) % 5) / 4));
+    const d = sp * Math.min(1, u * 2.2);
+    const lift = Math.sin(Math.min(1, u * 1.6) * Math.PI) * R * (0.25 + 0.15 * (k % 3));
+    const s = 2.2 + (k % 3);
+    ctx.fillRect(f.x + Math.cos(t) * d - s / 2, f.y + Math.sin(t) * d * 0.8 - lift - s / 2, s, s);
+  }
+  ctx.lineCap = 'butt';
 }
 
 // The colour an element's effects are drawn in (none: warm white).

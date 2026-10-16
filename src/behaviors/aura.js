@@ -1,6 +1,7 @@
 // aura: a ring around the player that damages every enemy inside it once per cooldown.
 
 import { param } from '../game/weapon-params.js';
+import { drawAxeSpin } from '../render/melee.js';
 import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
@@ -59,20 +60,7 @@ export default {
     const p = run.player;
     const el = elementOf(inst);
     if (inst.def.base.spin) {                              // Whirlwind Cleaver: a ring of blades turning around you
-      const a0 = run.time * 9;
-      ctx.strokeStyle = el ? el.main : '#ffe3a3';
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
-      ctx.globalAlpha = inst.pulse > 0 ? 0.85 : 0.5;
-      ctx.beginPath();
-      for (let k = 0; k < 3; k++) {
-        const a = a0 + (k * Math.PI * 2) / 3;
-        ctx.moveTo(p.x + Math.cos(a) * inst.auraR * 0.55, p.y + Math.sin(a) * inst.auraR * 0.55);
-        ctx.arc(p.x, p.y, inst.auraR * 0.85, a, a + 0.9);
-      }
-      ctx.stroke();
-      ctx.lineCap = 'butt';
-      ctx.globalAlpha = 1;
+      drawAxeSpin(ctx, p, run.time * 9, inst.auraR, 3, inst.pulse > 0, el);
       return;
     }
     ctx.strokeStyle = el ? el.main : '#ff7a3c';

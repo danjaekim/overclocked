@@ -3,6 +3,7 @@
 
 import { param } from '../game/weapon-params.js';
 import { elementOf } from '../render/elements.js';
+import { drawAxeSwing } from '../render/melee.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -11,7 +12,7 @@ import { STARFORGE } from '../data/starforge.js';
 
 const TAU = Math.PI * 2;
 const isAlive = (o) => o.alive;
-const SWING_TIME = 0.14;
+const SWING_TIME = 0.26;                                  // how long the axe is drawn swinging; the hit lands on the first frame
 const MAX_ECHOES = 8;
 
 // One cone sweep of `count` swings from (ox, oy) toward `base`. depth > 0 for an afterimage: it sets off nothing.
@@ -45,6 +46,8 @@ export default {
   init(inst) {
     inst.cd = 0.2;
     inst.swing = 0;          // seconds of swing animation left
+    inst.swingTime = SWING_TIME;
+    inst.dir = 1;            // which way the axe travels; alternates each swing
     inst.angle = 0;
     inst.range = 0;
     inst.width = 0;
@@ -94,6 +97,7 @@ export default {
     inst.width = width;
     inst.swings = count;
     inst.swing = SWING_TIME;
+    inst.dir = -inst.dir;
     inst.cd += param(run, inst, 'cooldown');
     attackTriggers(run, inst, target.x, target.y, base);
   },
@@ -134,24 +138,7 @@ export default {
     }
     ctx.globalAlpha = 1;
     if (inst.swing <= 0) return;
-    const p = run.player;
-    const u = 1 - inst.swing / SWING_TIME;
-    const el = elementOf(inst);
-    ctx.globalAlpha = 0.7 * (1 - u);
-    ctx.strokeStyle = el ? el.main : '#ffe3a3';
-    ctx.lineWidth = el ? 10 : 8;
-    ctx.beginPath();
-    for (let s = 0; s < inst.swings; s++) {
-      const a = inst.angle + (s * TAU) / inst.swings;
-      ctx.moveTo(p.x + Math.cos(a - inst.width / 2) * inst.range * 0.8, p.y + Math.sin(a - inst.width / 2) * inst.range * 0.8);
-      ctx.arc(p.x, p.y, inst.range * 0.8, a - inst.width / 2, a + inst.width / 2);
-    }
-    ctx.stroke();
-    if (el) {                                              // a bright inner edge in the element's light colour
-      ctx.strokeStyle = el.light;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
+    drawAxeSwing(ctx, run.player, inst.angle, inst.width, inst.range, inst.swings, inst.dir, 1 - inst.swing / SWING_TIME, elementOf(inst));
     ctx.globalAlpha = 1;
   },
 };

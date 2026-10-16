@@ -82,6 +82,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44c** *(done)* | One shot system (v0.44.2) | Discs, blades, graft shots, Rain of Arrows and Starfall use the shape-plus-skin system; several elements show as head, bands and side-by-side trails. |
 | **M44d** *(done)* | Area effects you can see (v0.44.3) | Explosions, Chain Reaction, Overload, Shatter, Quench, Thunderclap, Forked Strikes, Wildfire, Spellburst and rain landings each get a flash, a ring to their real radius and their own mark. |
 | **M44e** *(done)* | Status looks (v0.44.4) | Enemies are shaded in their top status's colour with the others as outlines, instead of coloured circles. |
+| **M44f** *(done)* | Melee looks (v0.44.5) | Axes swing as a real axe with a smear trail, Whirlwind Cleaver spins three axes, hammer slams drop a maul and leave a crater. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 

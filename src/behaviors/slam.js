@@ -9,7 +9,8 @@ import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
 import { stagger } from '../systems/status.js';
-import { addPuff } from '../render/fx.js';
+import { addPuff, addBurst, BURST_SLAM } from '../render/fx.js';
+import { drawHammer } from '../render/melee.js';
 import { activeMutation } from '../game/starforge.js';
 import { STARFORGE } from '../data/starforge.js';
 
@@ -79,6 +80,7 @@ export default {
       ctx.strokeStyle = el ? el.main : '#ffd9a0';
       ctx.lineWidth = el ? 3 : 2;
       ctx.stroke();
+      drawHammer(ctx, s.x, s.y, s.r, u, el);
     }
     ctx.globalAlpha = 1;
   },
@@ -144,8 +146,8 @@ function land(inst, run, s) {
     addPuff(run, s.x, s.y, s.r / 3.2, STARFORGE.light);
     return;                                              // an echo is not an attack: no triggers, no further echo
   }
-  addPuff(run, s.x, s.y, s.r / 2, el ? el.main : '#d9c3a0');
-  addPuff(run, s.x, s.y, s.r / 3.2, el ? el.light : '#fff1d6');
+  addBurst(run, s.x, s.y, s.r, el ? el.main : '#e8c690', BURST_SLAM, el ? el.light : '#fff1d6');
+  addPuff(run, s.x, s.y, s.r / 2.4, el ? el.main : '#d9c3a0');
   if (star) inst.pend.push({ x: s.x, y: s.y, t: star.delay, r: s.r * star.radius, echo: true, frac: star.frac, pull: star.pull });
   attackTriggers(run, inst, s.x, s.y, inst.aim || 0);
 }
