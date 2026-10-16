@@ -6,7 +6,7 @@
 import { param } from '../game/weapon-params.js';
 import { queueDamage, KIND_PROC } from '../systems/damage-queue.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
-import { addPuff } from '../render/fx.js';
+import { addPuff, addBurst, elementColor, BURST_PLAIN } from '../render/fx.js';
 import { addPatch, addVortex, addPillar, addWave, addBlast } from '../systems/hazards.js';
 import { spawnProjectile } from '../game/projectiles.js';
 
@@ -32,7 +32,7 @@ export const EFFECTS = {
       const kb = t.params.kb || 60;
       queueDamage(run, e, dmg, false, (dx / d) * kb, (dy / d) * kb, depth + 1, src, KIND_PROC);
     }
-    addPuff(run, x, y, radius / 2.4, t.params.color || '#ff9a3c');
+    addBurst(run, x, y, radius, t.params.color || elementColor(src), BURST_PLAIN, '#ffffff');       // in the weapon's element colour
   },
 
   // A flat damage-absorbing barrier on the player, capped at max hp.

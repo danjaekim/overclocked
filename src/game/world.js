@@ -55,7 +55,7 @@ function makePickup() {
 }
 
 function makeFx() {
-  return { kind: 0, x: 0, y: 0, vx: 0, vy: 0, x2: 0, y2: 0, ttl: 0, maxTtl: 1, r: 0, text: '', crit: false };
+  return { kind: 0, x: 0, y: 0, vx: 0, vy: 0, x2: 0, y2: 0, ttl: 0, maxTtl: 1, r: 0, text: '', crit: false, style: 0, seed: 0, c2: '' };
 }
 
 export function createWorld() {
@@ -70,5 +70,6 @@ export function createWorld() {
     tick: 0,
     nextUid: 1,
     fxNumbers: 0,          // live floating damage numbers (capped in render/fx.js)
+    fxBursts: 0,           // live area bursts (capped in render/fx.js)
   };
 }

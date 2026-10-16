@@ -18,7 +18,7 @@ import { spawnProjectile } from './projectiles.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { param } from './weapon-params.js';
 import { resolveHit } from './hit.js';
-import { addPuff } from '../render/fx.js';
+import { addPuff, addBurst, BURST_PLAIN } from '../render/fx.js';
 import { drawFallingArrows } from '../render/shots.js';
 
 const NO_TRAIT = {};
@@ -158,7 +158,7 @@ function landArrow(run, a) {
     const d = Math.hypot(dx, dy) || 1;
     resolveHit(run, run.cls.inst, e, a.dmg, dx / d * 0.3, dy / d * 0.3, 1);    // depth 1: the rain sets off no on-hit chains of its own
   }
-  addPuff(run, a.x, a.y, a.r * 0.7, '#e9c48a');
+  addBurst(run, a.x, a.y, a.r, '#e9c48a', BURST_PLAIN, '#fff3d6');
 }
 
 // Falling arrows: a shadow on the ground that tightens, and the arrow dropping onto it (the shared arrow shape, render/shots.js).

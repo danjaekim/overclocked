@@ -1,12 +1,16 @@
 // Visual effects: floating damage numbers and death puffs. Pure visuals, pooled, and
 // droppable: if the pool is full or too many numbers are on screen, new ones are skipped.
 
+import { elemBits, F_FROST, F_FIRE, F_STORM } from './shots.js';
+
 const TAU = Math.PI * 2;
 const MAX_NUMBERS = 60;      // text is the expensive part, so cap how many are live
 const MAX_PUFFS_POOL = 300;  // keep room for numbers
 const KIND_NUMBER = 0;
 const KIND_PUFF = 1;
 const KIND_ARC = 2;
+const KIND_BURST = 3;
+const MAX_BURSTS = 36;        // flashes alive at once: a chain reaction through a packed crowd stays readable and cheap
 
 const numStr = [];
 function numberText(n) {
@@ -45,9 +49,41 @@ export function addPuff(run, x, y, radius, color) {
   f.text = color;
 }
 
+// Area bursts (M45): what an area effect looks like where it lands. A filled flash and a ring that grow to the effect's
+// REAL radius in 0.32 s, with a mark that says which effect it is:
+//   BURST_PLAIN   short rays            explosions, Spellburst, rain landings
+//   BURST_SPARKS  sparks flung outward   Chain Reaction
+//   BURST_SHARDS  ice shards flying out  Shatter
+//   BURST_CRACKS  lightning cracks       Overload, Thunderclap
+//   BURST_STEAM   rising steam           Quench
+// `color` is the flash and ring, `color2` the mark's accent. Skipped when too many are alive.
+export const BURST_PLAIN = 0;
+export const BURST_SPARKS = 1;
+export const BURST_SHARDS = 2;
+export const BURST_CRACKS = 3;
+export const BURST_STEAM = 4;
+export function addBurst(run, x, y, radius, color, style = BURST_PLAIN, color2 = '#ffffff') {
+  const w = run.world;
+  if (w.fxBursts >= MAX_BURSTS || w.fx.count >= MAX_PUFFS_POOL) return;
+  const f = w.fx.acquire();
+  if (!f) return;
+  f.kind = KIND_BURST;
+  f.x = x;
+  f.y = y;
+  f.vx = f.vy = 0;
+  f.r = radius;
+  f.ttl = f.maxTtl = 0.32;
+  f.text = color;
+  f.c2 = color2;
+  f.style = style;
+  f.seed = run.fxRng.next();
+  w.fxBursts++;
+}
+
 // A short jagged bolt between two points (chain lightning; coloured by the weapon's element).
 const ARC_YELLOW = '#ffe066';
-const ARC_COLORS = [ARC_YELLOW, '#9fdcff', '#ff9a3c', '#d9b0ff'];   // = ELEMENTS[*].arc in render/elements.js
+export const ARC_FORK = '#7dffa0';            // Forked Strikes: green, so a fork never reads as a shock chain
+const ARC_COLORS = [ARC_YELLOW, '#9fdcff', '#ff9a3c', '#d9b0ff', ARC_FORK];   // = ELEMENTS[*].arc in render/elements.js
 export function addArc(run, x1, y1, x2, y2, color = ARC_YELLOW) {
   const w = run.world;
   if (w.fx.count >= MAX_PUFFS_POOL) return;
@@ -64,6 +100,118 @@ export function addArc(run, x1, y1, x2, y2, color = ARC_YELLOW) {
   f.text = color;                          // which of ARC_COLORS to draw it in
 }
 
+
+const GOLDEN = 2.399963;
+function drawBurst(ctx, f) {
+  const u = 1 - f.ttl / f.maxTtl;
+  const e = 1 - (1 - u) * (1 - u);                      // fast out, slow settle
+  const R = f.r * (0.3 + 0.7 * e);
+  const a = 1 - u;
+  ctx.fillStyle = f.text;                               // the flash
+  ctx.globalAlpha = (f.style === BURST_STEAM ? 0.12 : 0.3) * a;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = 0.55 * a * a;                       // a bright core in the first moments
+  ctx.fillStyle = f.c2;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R * 0.45, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = f.text;                             // the ring, thick to start with
+  ctx.lineWidth = 1.5 + 3.5 * a;
+  ctx.globalAlpha = 0.95 * a;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R, 0, TAU);
+  ctx.stroke();
+  const ang = f.seed * TAU;
+  if (f.style === BURST_PLAIN) {                        // short rays
+    ctx.strokeStyle = f.c2;
+    ctx.lineWidth = 2.6;
+    ctx.globalAlpha = 0.95 * a;
+    ctx.beginPath();
+    for (let k = 0; k < 8; k++) {
+      const t = ang + (k * TAU) / 8;
+      ctx.moveTo(f.x + Math.cos(t) * R * 0.55, f.y + Math.sin(t) * R * 0.55);
+      ctx.lineTo(f.x + Math.cos(t) * R * 0.95, f.y + Math.sin(t) * R * 0.95);
+    }
+    ctx.stroke();
+  } else if (f.style === BURST_SPARKS) {                // sparks flung outward, past the ring
+    ctx.fillStyle = f.c2;
+    ctx.globalAlpha = 0.95 * a;
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const t = ang + k * GOLDEN;
+      const d = R * (0.35 + 0.8 * e) * (0.7 + 0.3 * ((k * 7) % 5) / 4);
+      const sr = 3.4 * (1 - u) + 0.8;
+      const sx = f.x + Math.cos(t) * d;
+      const sy = f.y + Math.sin(t) * d;
+      ctx.moveTo(sx + sr, sy);
+      ctx.arc(sx, sy, sr, 0, TAU);
+    }
+    ctx.fill();
+  } else if (f.style === BURST_SHARDS) {                // ice shards flying out
+    ctx.fillStyle = f.c2;
+    ctx.strokeStyle = f.text;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.95 * a;
+    ctx.beginPath();
+    for (let k = 0; k < 9; k++) {
+      const t = ang + (k * TAU) / 9;
+      const d = R * (0.25 + 0.85 * e);
+      const cx = Math.cos(t);
+      const cy = Math.sin(t);
+      const px = f.x + cx * d;
+      const py = f.y + cy * d;
+      const L = 9 * (1 - 0.4 * u);
+      ctx.moveTo(px + cx * L, py + cy * L);
+      ctx.lineTo(px - cy * 2.6, py + cx * 2.6);
+      ctx.lineTo(px - cx * L * 0.6, py - cy * L * 0.6);
+      ctx.lineTo(px + cy * 2.6, py - cx * 2.6);
+      ctx.closePath();
+    }
+    ctx.fill();
+    ctx.stroke();
+  } else if (f.style === BURST_CRACKS) {                // lightning cracks from the centre to the ring
+    ctx.strokeStyle = f.c2;
+    ctx.lineWidth = 2.2;
+    ctx.globalAlpha = 0.95 * a;
+    ctx.beginPath();
+    for (let k = 0; k < 5; k++) {
+      const t = ang + (k * TAU) / 5;
+      const cx = Math.cos(t);
+      const cy = Math.sin(t);
+      const nx = -cy;
+      const ny = cx;
+      const j = R * 0.14 * (k % 2 ? 1 : -1);
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(f.x + cx * R * 0.35 + nx * j, f.y + cy * R * 0.35 + ny * j);
+      ctx.lineTo(f.x + cx * R * 0.65 - nx * j, f.y + cy * R * 0.65 - ny * j);
+      ctx.lineTo(f.x + cx * R, f.y + cy * R);
+    }
+    ctx.stroke();
+  } else if (f.style === BURST_STEAM) {                 // steam puffs rising
+    ctx.fillStyle = f.c2;
+    ctx.globalAlpha = 0.55 * a;
+    ctx.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const t = ang + k * 1.7;
+      const px = f.x + Math.cos(t) * R * 0.45;
+      const py = f.y + Math.sin(t) * R * 0.3 - R * 0.5 * e;
+      const pr = R * (0.22 + 0.2 * e);
+      ctx.moveTo(px + pr, py);
+      ctx.arc(px, py, pr, 0, TAU);
+    }
+    ctx.fill();
+  }
+}
+
+// The colour an element's effects are drawn in (none: warm white).
+const EL_COLORS = { [F_FROST]: '#9fdcff', [F_FIRE]: '#ff9a3c', [F_STORM]: '#ffe066' };
+export function elementColor(inst) {
+  const m = elemBits(inst);
+  return EL_COLORS[m & F_FROST ? F_FROST : m & F_FIRE ? F_FIRE : m & F_STORM ? F_STORM : 0] || '#f0dcb0';
+}
+
 export function updateFx(run, dt) {
   const w = run.world;
   const list = w.fx.active;
@@ -72,6 +220,7 @@ export function updateFx(run, dt) {
     f.ttl -= dt;
     if (f.ttl <= 0) {
       if (f.kind === KIND_NUMBER) w.fxNumbers--;
+      else if (f.kind === KIND_BURST) w.fxBursts--;
       w.fx.release(f);
       continue;
     }
@@ -102,6 +251,17 @@ export function drawFx(ctx, view, run) {
     ctx.arc(f.x, f.y, f.r * (1 + 1.4 * u), 0, TAU);
     ctx.stroke();
   }
+
+  // bursts: a flash and ring to the real radius, with the effect's own mark
+  ctx.lineCap = 'round';
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i];
+    if (f.kind !== KIND_BURST) continue;
+    if (f.x < x0 - f.r || f.x > x1 + f.r || f.y < y0 - f.r || f.y > y1 + f.r) continue;
+    drawBurst(ctx, f);
+  }
+  ctx.lineCap = 'butt';
+  ctx.globalAlpha = 1;
 
   // chain bolts: one jagged path per colour
   ctx.lineWidth = 2.5;

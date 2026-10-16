@@ -10,7 +10,7 @@ import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { queueDamage, KIND_PROC, KIND_DOT, CAUSE } from './damage-queue.js';
 import { MAX_TRIGGER_DEPTH } from '../effects/index.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
-import { addArc, addPuff } from '../render/fx.js';
+import { addArc, addPuff, addBurst, ARC_FORK, BURST_PLAIN, BURST_SPARKS, BURST_SHARDS, BURST_CRACKS, BURST_STEAM } from '../render/fx.js';
 
 const visited = new Int32Array(SHOCK.maxHops + 2);
 
@@ -104,7 +104,7 @@ function quench(run, e, src, depth) {
   e.freezeT = 0;
   e.slowMul = 1;
   refreshMask(e);
-  addPuff(run, e.x, e.y, QUENCH_RADIUS / 2.4, '#eaf6ff');
+  addBurst(run, e.x, e.y, QUENCH_RADIUS, '#eaf6ff', BURST_STEAM, '#9fdcff');
   if (pool > 0) burst(run, e.x, e.y, QUENCH_RADIUS, pool * run.rules.quench.mult, src, depth, CAUSE.QUENCH);
 }
 
@@ -144,7 +144,7 @@ export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dm
     }
     if (!best) break;
     visited[nv++] = best.uid;
-    addArc(run, cx, cy, best.x, best.y);
+    addArc(run, cx, cy, best.x, best.y, cause === CAUSE.FORK ? ARC_FORK : undefined);
     if (shock === null ? cause !== CAUSE.FORK && cause !== CAUSE.GRAFT : shock) applyShock(run, best, src);      // a fork or a graft arc is plain damage unless told to shock
     const d = Math.sqrt(bestD) || 1;
     queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC, cause);
@@ -160,7 +160,7 @@ function overload(run, e, src, hopDmg, depth) {
   const dmg = hopDmg * run.rules.overload.frac;
   const w = run.world;
   const n = w.hash.queryRadius(e.x, e.y, OVERLOAD_RADIUS + MAX_ENEMY_RADIUS, w.scratch);
-  addPuff(run, e.x, e.y, OVERLOAD_RADIUS / 2.4, '#ffb347');
+  addBurst(run, e.x, e.y, OVERLOAD_RADIUS, '#ff9a3c', BURST_CRACKS, '#fff3a8');
   for (let i = 0; i < n; i++) {
     const o = w.scratch[i];
     if (!o.alive) continue;
@@ -188,6 +188,7 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
     const w = run.world;
     const n = w.hash.queryRadius(e.x, e.y, WILDFIRE_RADIUS + MAX_ENEMY_RADIUS, w.scratch);
     const share = (burnLeft * r.mult) / r.n;
+    addBurst(run, e.x, e.y, 18, '#ff9a3c', BURST_PLAIN, '#fff3a8');
     // the r.n nearest living enemies in range, found by repeated selection over the candidate list
     for (let pick = 0; pick < r.n; pick++) {
       let best = null;
@@ -206,13 +207,15 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
       if (!best) break;
       visited[pick] = best.uid;
       addBurnPool(run, best, src, share);
+      addArc(run, e.x, e.y, best.x, best.y, '#ff9a3c');                // an ember thread from the dead enemy to each it lights
     }
   }
   if ((mask & ST.FROZEN) && rules.shatter) {
-    addPuff(run, e.x, e.y, SHATTER_RADIUS / 2.4, '#bfeaff');
+    addBurst(run, e.x, e.y, SHATTER_RADIUS, '#9fdcff', BURST_SHARDS, '#ffffff');
     burst(run, e.x, e.y, SHATTER_RADIUS, maxHp * rules.shatter.frac, src, depth, CAUSE.SHATTER);
   }
   if ((mask & ST.SHOCK) && rules.thunderclap) {
+    addBurst(run, e.x, e.y, 38, '#ffe066', BURST_CRACKS, '#ffffff');
     chainArc(run, e, src, amount, depth, rules.thunderclap.hops, THUNDERCLAP_FRAC, CAUSE.THUNDERCLAP);
   }
 }
@@ -227,7 +230,7 @@ function spellburst(run, e, src, depth, mask, maxHp, sb) {
   let k = 0;
   for (const [bit, color] of SPELLBURST_COLORS) {
     if (!(mask & bit)) continue;
-    addPuff(run, e.x, e.y, (sb.radius * (1 + 0.12 * k)) / 2.4, color);
+    addBurst(run, e.x, e.y, sb.radius * (1 + 0.15 * k), color, BURST_PLAIN, '#ffffff');
     k++;
   }
   if (!k) return;
@@ -273,7 +276,7 @@ const REACTION_CAP = 400;
 export function chainReaction(run, e, src, depth, maxHp) {
   if (e.def.boss) return;
   const r = run.rules.chainReaction;
-  addPuff(run, e.x, e.y, r.radius / 2.4, '#ffb347');
+  addBurst(run, e.x, e.y, r.radius, '#ff7ab8', BURST_SPARKS, '#ffe0f0');     // pink sparks: nothing else in the game is pink
   burst(run, e.x, e.y, r.radius, Math.min(maxHp * r.frac, REACTION_CAP), src, depth, CAUSE.REACTION);
 }
 
@@ -281,6 +284,7 @@ export function chainReaction(run, e, src, depth, maxHp) {
 export function forkStrike(run, e, src, amount, depth) {
   const r = run.rules.fork;
   if (run.rng.next() >= r.chance) return;
+  addBurst(run, e.x, e.y, 16, ARC_FORK, BURST_PLAIN, '#ffffff');       // where the strike splits
   chainArc(run, e, src, amount, depth, r.hops, r.frac, CAUSE.FORK);
 }
 

@@ -9,6 +9,8 @@ import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
 import { ST } from '../src/data/statuses.js';
 import { queueDamage, KIND_HIT, CAUSE } from '../src/systems/damage-queue.js';
+import { addBurst, updateFx } from '../src/render/fx.js';
+import { forkStrike, chainReaction } from '../src/systems/status.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -68,4 +70,28 @@ test('m44 arc bolt: a burst where each bolt lands hurts enemies near the target'
   for (let i = 0; i < 4; i++) step(run);
   assert.ok(target.hp < target.maxHp);
   assert.ok(near.hp < near.maxHp);
+});
+
+// M44d: area bursts (render/fx.js): every area effect shows where it lands, and a chain reaction cannot flood the screen.
+test('m44d bursts: capped while alive, and the count comes back down when they fade', () => {
+  const run = newRun('mage');
+  for (let i = 0; i < 100; i++) addBurst(run, i, 0, 40, '#fff');
+  const live = run.world.fxBursts;
+  assert.ok(live > 0 && live <= 40, `bursts alive ${live}`);
+  for (let i = 0; i < 30; i++) updateFx(run, 0.02);
+  assert.equal(run.world.fxBursts, 0);
+});
+
+test('m44d bursts: Chain Reaction, Forked Strikes and the element of an explosion each leave a cue', () => {
+  const run = newRun('mage');
+  const src = run.player.weapons[0];
+  const e = dummy(run, 150, 0, 50);
+  dummy(run, 170, 0);
+  run.rules.chainReaction = { frac: 0.3, radius: 65 };
+  chainReaction(run, e, src, 0, 100);
+  assert.ok(run.world.fxBursts >= 1, 'chain reaction bursts');
+  const before = run.world.fxBursts;
+  run.rules.fork = { chance: 1, hops: 1, frac: 0.5 };
+  forkStrike(run, dummy(run, 150, 40), src, 10, 0);
+  assert.ok(run.world.fxBursts > before, 'a fork marks where it splits');
 });
