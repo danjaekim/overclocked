@@ -181,7 +181,20 @@ function starDps(weaponId, star, mode, seed, prep) {
 
 // ---- bot -------------------------------------------------------------------------------------
 
+const SMART = process.env.BOT_POLICY === 'smart';   // a bot that chases evolution requirements and the perks/passives that scale what it owns
+const WISH = new Set(['volley', 'heavy_fletching', 'splitting_tips', 'keen_eye', 'wind_sigil', 'broad_strokes', 'kindling', 'fan_the_flames', 'keen_whetstone', 'quickening_gear', 'tempered_core', 'long_reach', 'bloodletting', 'scholars_lens']);
+function smartBonus(o, run) {
+  if (!SMART) return 0;
+  let b = 0;
+  const id = o.id;
+  if (id && WISH.has(id)) b += 30;
+  for (const w of run.player.weapons) for (const r of recipesFor(w)) for (const q of r.requires || []) if ((q.passive === id || q.perk === id) && id) b += 70;
+  return b;
+}
 function scoreOffer(o, run) {
+  return scoreOffer0(o, run) + smartBonus(o, run);
+}
+function scoreOffer0(o, run) {
   // greedy depth: finish owned weapons, then take evolution partners, then strong passives
   if (o.kind === 'weapon_up') return 100 + o.toLevel;
   if (o.kind === 'passive_up') return 60 + o.toLevel;
