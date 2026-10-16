@@ -79,8 +79,10 @@ wounded, as its kit intends) trades kills for deaths: wins out of 20 were 17 at 
 38%, 7 at 30% and 3 at 20%, with kills rising from 3,200 to 4,700. So the Berserker survives only by
 kiting and clears poorly, or fights and dies. That is a **class balance** signal (low sustain: 1.5%
 lifesteal, no hp or armor bonus), not a bot fault, and it was left alone: a number for Dan to decide.
-Options: lifesteal back up to 2% to 2.5%, a small max-hp bonus, or a Frenzy heal. The bench now records
-`forges`, the share of time hurt, and iron per run, to measure whichever is picked.
+Options were lifesteal, a max-hp bonus or a Frenzy heal. The bench now records
+`forges`, the share of time hurt, and iron per run.
+
+**Fix (v0.38.1).** Dan: raise lifesteal and add armor. Bot sweep, Berserker, 20 seeds (lifesteal / armor: wins, kills, time hurt, late enemies alive): 1.5% / 0: 17, 3,200, 66%, 270; 2.5% / 0: 17, 4,000, 45%, 175; 2.5% / 2: 20, 5,270, 13%, 59; 2% / 2: 20, 5,280, 18%, 63; 2.5% / 3: 20, 5,280, 4%, 58. Shipped 2% lifesteal and 2 armor: kills match the other classes and it is still hurt about a fifth of the run, so it plays as a wounded fighter. Armor 3 and above is not needed.
 
 ## 4. M39: Star Quench
 

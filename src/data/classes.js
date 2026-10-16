@@ -59,14 +59,15 @@ export const CLASSES = {
     blurb: 'Reckless. Heals as it hits and hits much harder when wounded.',
     startWeapon: 'rending_axe',
     mods: [
-      { stat: 'lifesteal', op: 'flat', value: 0.015 },
+      { stat: 'lifesteal', op: 'flat', value: 0.02 },
+      { stat: 'armor', op: 'flat', value: 2 },
       { stat: 'damage', op: 'more', value: 0.25, when: 'hpBelow50' },
       { stat: 'moveSpeed', op: 'inc', value: 0.1 },
       { stat: 'damage', op: 'inc', value: 0.15, tags: ['close'] },
     ],
     trait: {
       name: 'Bloodlust',
-      text: ['Frenzy: every kill makes your weapons 2% faster for 3 s, stacking to 30%', 'Heals as it hits; 25% more damage below half health', 'Close-range weapons deal 15% more damage'],
+      text: ['Frenzy: every kill makes your weapons 2% faster for 3 s, stacking to 30%', 'Heals as it hits (2%); 2 armor; 25% more damage below half health', 'Close-range weapons deal 15% more damage'],
       frenzy: { per: 0.02, max: 15, time: 3 },
     },
     unlocked: false,
