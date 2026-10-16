@@ -5,6 +5,8 @@
 //   node tools/bench.mjs --bots          bot runs only
 //   node tools/bench.mjs --builds        the perk build table (docs/design-m10-m13.md section 5)
 //   node tools/bench.mjs --quick         fewer bot seeds
+//   node tools/bench.mjs --starforge    star vs no star DPS for every weapon (STAR_ONLY=id,id narrows it)
+//   node tools/bench.mjs --masterworks   each masterwork at +15 with and without its star (MW_ONLY=id,id narrows it)
 //   node tools/bench.mjs --classes       the same builds played by every class (class identity)
 //   node tools/bench.mjs --json          machine-readable output
 //
@@ -122,8 +124,10 @@ function graftCrowdDps(hostId, donorId) {
 // in rings around the player; flow = a live crowd that is topped back up to 40 walking goblins (2,500 hp, late-run toughness) whenever
 // some die while you walk a slow circle, scored as hp killed per second, so knockback, scattering and
 // moving count the way they do in a real fight.
-function starDps(weaponId, star, mode, seed) {
-  const { run, inst } = loneWeaponRun(weaponId, 99, 'archer', seed);
+function starDps(weaponId, star, mode, seed, prep) {
+  const { run, inst: inst0 } = loneWeaponRun(weaponId, 99, 'archer', seed);
+  let inst = inst0;
+  if (prep) inst = prep(run, inst0) || inst0;      // e.g. enhance to +15 and graft a donor on (--masterworks)
   if (star) inst.star = true;
   const seconds = mode === 'single' ? 20 : 15;
   const HP = 2500;
@@ -349,7 +353,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -415,7 +419,47 @@ if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge')) {
+// ---- masterworks (M42 balance): a host at max level and +15, with and without its masterwork graft and its star ----
+function to15(run, inst) {
+  run.ore = 1e9;
+  for (let g = 0; g < 200 && inst.enhance < 15; g++) {
+    if (inst.pendingTemper) chooseTemper(run, inst, 0);
+    inst.quench = 1;
+    enhance(run, inst);
+  }
+  if (inst.pendingTemper) chooseTemper(run, inst, 0);
+  run.ore = 0;
+}
+if (flag('--masterworks')) {
+  const seeds = [1, 2, 3];
+  const only = process.env.MW_ONLY ? process.env.MW_ONLY.split(',') : null;
+  const avg = (f) => seeds.reduce((a, sd) => a + f(sd), 0) / seeds.length;
+  const plain = (run, inst) => { to15(run, inst); return inst; };
+  const grafted = (donorId) => (run, inst) => {
+    to15(run, inst);
+    run.starsteel = 10;
+    const d = addWeapon(run, donorId);
+    const r = graft(run, inst, d);
+    if (!r.ok) throw new Error('graft failed ' + inst.def.name + '<' + donorId);
+    return inst;
+  };
+  const pct = (a, b) => (b > 0 ? `${a / b >= 1 ? '+' : ''}${Math.round((a / b - 1) * 100)}%` : 'n/a');
+  console.log('\nMASTERWORKS at +15  (dps: plain host / host+star / masterwork / masterwork+star; the percentages are against the plain host)');
+  console.log(pad('masterwork', 16) + pad('host<donor', 36) + ['single', 'held', 'flow'].map((m) => pad(m, 44)).join(''));
+  for (const mw of MASTERWORKS) {
+    if (only && !only.includes(mw.id)) continue;
+    const cells = ['single', 'held', 'flow'].map((mode) => {
+      const a = avg((sd) => starDps(mw.host, false, mode, sd, plain));
+      const b = avg((sd) => starDps(mw.host, true, mode, sd, plain));
+      const c = avg((sd) => starDps(mw.host, false, mode, sd, grafted(mw.donor)));
+      const d = avg((sd) => starDps(mw.host, true, mode, sd, grafted(mw.donor)));
+      return pad(`${num(a)}/${num(b)}/${num(c)}/${num(d)}  ${pct(c, a)} ${pct(d, a)}`, 44);
+    });
+    console.log(pad(mw.id, 16) + pad(`${mw.host}<${mw.donor}`, 36) + cells.join(''));
+  }
+}
+
+if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
