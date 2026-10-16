@@ -1,0 +1,12 @@
+{
+  "mode": "bots",
+  "classes": ["mage"],
+  "policies": ["plain", "smart"],
+  "variants": [
+    { "name": "current" },
+    { "name": "sb-15", "classOverride": { "mage": { "trait": { "spellburst": { "frac": 0.15, "radius": 55, "cap": 300 } } } } },
+    { "name": "sb-25", "classOverride": { "mage": { "trait": { "spellburst": { "frac": 0.25, "radius": 55, "cap": 300 } } } } },
+    { "name": "sb-25+burst+2t", "classOverride": { "mage": { "trait": { "spellburst": { "frac": 0.25, "radius": 55, "cap": 300 } } } },
+      "weaponOverride": { "arc_bolt": { "base": { "damage": 24, "cooldown": 0.8, "count": 2, "range": 250 }, "triggers": [ { "on": "hit", "effect": "explode", "params": { "radius": 36, "damageFrac": 0.3, "kb": 10 }, "minLevel": 1, "direct": true } ] } } }
+  ]
+}

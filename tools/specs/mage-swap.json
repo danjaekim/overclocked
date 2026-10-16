@@ -1,0 +1,10 @@
+{
+  "mode": "bots",
+  "classes": ["mage"],
+  "policies": ["plain", "smart"],
+  "variants": [
+    { "name": "current" },
+    { "name": "mage+ember_bow", "classOverride": { "mage": { "startWeapon": "ember_bow" } } },
+    { "name": "mage+forge_hammer", "classOverride": { "mage": { "startWeapon": "forge_hammer" } } }
+  ]
+}

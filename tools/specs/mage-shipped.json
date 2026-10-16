@@ -1,0 +1,6 @@
+{
+  "mode": "bots",
+  "classes": ["mage", "archer", "summoner"],
+  "policies": ["plain", "smart"],
+  "variants": [ { "name": "shipped" } ]
+}

@@ -66,6 +66,8 @@ test('m42 cluster shells: a landing shell throws bomblets that land after their 
 
 test('m42 seeking bolt: each bolt strikes one more enemy than the plain weapon', () => {
   const struck = (star) => {
+    const saved = WEAPONS[ALL.bolt].triggers;
+    WEAPONS[ALL.bolt].triggers = [];                      // Arc Bolt's own burst (M44) would strike the crowd either way: count the bolts only
     const { run, w } = make(ALL.bolt, star);
     w.cd = 0;
     const before = new Map();
@@ -73,6 +75,7 @@ test('m42 seeking bolt: each bolt strikes one more enemy than the plain weapon',
     step(run); step(run);
     let n = 0;
     for (const e of run.world.enemies.active) if (e.hp < before.get(e.uid)) n++;
+    WEAPONS[ALL.bolt].triggers = saved;
     return n;
   };
   assert.ok(struck(true) > struck(false));

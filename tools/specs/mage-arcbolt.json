@@ -1,0 +1,12 @@
+{
+  "mode": "bots",
+  "classes": ["mage"],
+  "policies": ["plain", "smart"],
+  "variants": [
+    { "name": "current" },
+    { "name": "burst-L1", "weaponOverride": { "arc_bolt": { "triggers": [ { "on": "hit", "effect": "explode", "params": { "radius": 36, "damageFrac": 0.3, "kb": 10 }, "minLevel": 1, "direct": true } ] } } },
+    { "name": "burst-L1-big", "weaponOverride": { "arc_bolt": { "triggers": [ { "on": "hit", "effect": "explode", "params": { "radius": 44, "damageFrac": 0.45, "kb": 10 }, "minLevel": 1, "direct": true } ] } } },
+    { "name": "2-targets", "weaponOverride": { "arc_bolt": { "base": { "damage": 24, "cooldown": 0.8, "count": 2, "range": 250 } } } },
+    { "name": "burst-L1+2-targets", "weaponOverride": { "arc_bolt": { "base": { "damage": 24, "cooldown": 0.8, "count": 2, "range": 250 }, "triggers": [ { "on": "hit", "effect": "explode", "params": { "radius": 36, "damageFrac": 0.3, "kb": 10 }, "minLevel": 1, "direct": true } ] } } }
+  ]
+}

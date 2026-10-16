@@ -51,7 +51,7 @@ For weapon work use `"mode": "dps"` and `"weapons": ["ember_bow", "storm_volley"
 ## 2. Targets
 
 - **Classes (bot win rate, 200 seeds, `BOT_SPEND=none`).** At M43b: Berserker, Saint and Smith 91-98% on both bots;
-  Summoner 74% (plain) / 99% (smart); Mage 60% / 85%; Archer 67% / 77%. A class far below the others on *both* bots
+  Summoner 74% (plain) / 99% (smart); Mage 60% / 85% (before M44); Archer 67% / 77%. After M44 the Mage is 76% / 94%. A class far below the others on *both* bots
   has a problem. The bot cannot dodge, so these are relative standings, not how hard a human finds the class.
 - **Weapons (`--dps`, live crowd is the column that matters most for survival).** An evolution beats its base weapon
   in every column, or evolving is pointless. Peers of the same tier sit within about 2x of each other. A weapon that
@@ -119,6 +119,10 @@ For weapon work use `"mode": "dps"` and `"weapons": ["ember_bow", "storm_volley"
   non-melee class. Results are comparisons between classes and variants, not absolute difficulty.
 - **Second-order hits.** A mutation or effect that re-hits enemies can re-fire grafts' hit triggers (Aftershock and
   Glacier Maul's shatter, M42b). Secondary hits should resolve at depth 1 or more.
+- **Forcing a status in a test.** `e.status` is rebuilt from the timers (`burnT`, `chill`/`chillT`, `shockT`) every tick;
+  set the timers too, or the mask is wiped before the kill is processed (M44 test).
+- **Live-crowd DPS is noisy.** Arc Bolt read 259 -> 1919 live for a 2x change in targets plus a burst; trust win
+  rates over that column when it moves several-fold.
 - **Tests that assume a class.** Many tests run as the Archer (the default class). A kit change breaks tests that
   were really about something else: fix their setup (another class, or switch the trait off) rather than weakening
   the assertion, and say why in a comment.

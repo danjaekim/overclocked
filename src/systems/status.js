@@ -181,6 +181,8 @@ const SHATTER_RADIUS = 70;
 const THUNDERCLAP_FRAC = 0.6;
 export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount) {
   const rules = run.rules;
+  const sb = run.trait && run.trait.spellburst;            // Mage's Spellburst: an enemy dying under an element bursts in that element
+  if (sb) spellburst(run, e, src, depth, mask, maxHp, sb);
   if ((mask & ST.BURN) && rules.wildfire && burnLeft > 0) {
     const r = rules.wildfire;
     const w = run.world;
@@ -213,6 +215,23 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
   if ((mask & ST.SHOCK) && rules.thunderclap) {
     chainArc(run, e, src, amount, depth, rules.thunderclap.hops, THUNDERCLAP_FRAC, CAUSE.THUNDERCLAP);
   }
+}
+
+// Spellburst (Mage): every element an enemy dies under adds a burst of its own colour for `frac` of the
+// enemy's max HP (capped), so an enemy carrying all three bursts three times. The burst re-applies nothing,
+// but its hits are ordinary proc hits (they roll the Mage's element chances), and kills under an element
+// burst in turn, down to the trigger depth.
+const SPELLBURST_COLORS = [[ST.BURN, '#ff8a3d'], [ST.CHILL | ST.FROZEN, '#9fe0ff'], [ST.SHOCK, '#d9c9ff']];
+function spellburst(run, e, src, depth, mask, maxHp, sb) {
+  if (e.def.boss) return;
+  let k = 0;
+  for (const [bit, color] of SPELLBURST_COLORS) {
+    if (!(mask & bit)) continue;
+    addPuff(run, e.x, e.y, (sb.radius * (1 + 0.12 * k)) / 2.4, color);
+    k++;
+  }
+  if (!k) return;
+  burst(run, e.x, e.y, sb.radius, Math.min(maxHp * sb.frac * k, sb.cap), src, depth, CAUSE.SPELLBURST);
 }
 
 // Timers, slow, and burn ticks. Untouched enemies cost one integer test.

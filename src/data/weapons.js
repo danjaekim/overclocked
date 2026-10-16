@@ -336,13 +336,13 @@ export const WEAPONS = {
 
   arc_bolt: {
     name: 'Arc Bolt',
-    desc: 'Bolts of raw arcane force strike the nearest enemy. Never misses.',
+    desc: 'Two bolts of raw arcane force strike the nearest enemies and burst where they land. Never misses.',
     class: 'mage',
     glyph: 'A',
     rarity: 'common',
     tags: ['bolt', 'ranged', 'magic', 'arcane'],
     behavior: 'bolt',
-    base: { damage: 24, cooldown: 0.8, count: 1, range: 250 },
+    base: { damage: 24, cooldown: 0.8, count: 2, range: 250 },   // M44: two targets from the start
     maxLevel: 8,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -354,7 +354,8 @@ export const WEAPONS = {
       [{ stat: 'damage', op: 'more', value: 0.5 }],
     ],
     levelText: ['+25% damage', '+1 target', '+20% reach', '-15% cooldown', '+1 target', '+35% damage', '50% more damage'],
-    triggers: [],
+    // Arcane burst (M44): each bolt bursts where it strikes, and the burst rolls the Mage's element chances too
+    triggers: [{ on: 'hit', effect: 'explode', params: { radius: 36, damageFrac: 0.3, kb: 10 }, direct: true }],
     evolvesInto: 'prismatic_bolt',
   },
 
@@ -675,7 +676,8 @@ export const WEAPONS = {
       [{ stat: 'damage', op: 'more', value: 0.3 }],
     ],
     levelText: ['+25% damage', '+1 target', '-15% cooldown', '+20% reach', '30% more damage'],
-    triggers: [],
+    // Bigger than Arc Bolt's burst (M44), so evolving stays an upgrade
+    triggers: [{ on: 'hit', effect: 'explode', params: { radius: 46, damageFrac: 0.5, kb: 12 }, direct: true }],
     evolvesInto: null,
   },
 

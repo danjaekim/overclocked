@@ -1,0 +1,123 @@
+{
+ "mode": "bots",
+ "classes": [
+  "mage"
+ ],
+ "policies": [
+  "plain",
+  "smart"
+ ],
+ "variants": [
+  {
+   "name": "sb25+b30",
+   "classOverride": {
+    "mage": {
+     "trait": {
+      "spellburst": {
+       "frac": 0.25,
+       "radius": 55,
+       "cap": 300
+      }
+     }
+    }
+   },
+   "weaponOverride": {
+    "arc_bolt": {
+     "base": {
+      "damage": 24,
+      "cooldown": 0.8,
+      "count": 2,
+      "range": 250
+     },
+     "triggers": [
+      {
+       "on": "hit",
+       "effect": "explode",
+       "params": {
+        "radius": 36,
+        "damageFrac": 0.3,
+        "kb": 10
+       },
+       "minLevel": 1,
+       "direct": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "sb35+b30",
+   "classOverride": {
+    "mage": {
+     "trait": {
+      "spellburst": {
+       "frac": 0.35,
+       "radius": 55,
+       "cap": 300
+      }
+     }
+    }
+   },
+   "weaponOverride": {
+    "arc_bolt": {
+     "base": {
+      "damage": 24,
+      "cooldown": 0.8,
+      "count": 2,
+      "range": 250
+     },
+     "triggers": [
+      {
+       "on": "hit",
+       "effect": "explode",
+       "params": {
+        "radius": 36,
+        "damageFrac": 0.3,
+        "kb": 10
+       },
+       "minLevel": 1,
+       "direct": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "sb25+b40-r42",
+   "classOverride": {
+    "mage": {
+     "trait": {
+      "spellburst": {
+       "frac": 0.25,
+       "radius": 55,
+       "cap": 300
+      }
+     }
+    }
+   },
+   "weaponOverride": {
+    "arc_bolt": {
+     "base": {
+      "damage": 24,
+      "cooldown": 0.8,
+      "count": 2,
+      "range": 250
+     },
+     "triggers": [
+      {
+       "on": "hit",
+       "effect": "explode",
+       "params": {
+        "radius": 42,
+        "damageFrac": 0.4,
+        "kb": 10
+       },
+       "minLevel": 1,
+       "direct": true
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

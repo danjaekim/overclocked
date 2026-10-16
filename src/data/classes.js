@@ -6,6 +6,7 @@
 // Each class also has a `trait` (docs/architecture.md M36, game/class-traits.js): a signature mechanic
 // that applies to whatever weapons you hold, so the same build plays differently on another class.
 //   longShot  { near, far, bonus }        hits deal up to +bonus damage the farther the target (near..far)
+//   spellburst { frac, radius, cap }      an enemy that dies burning, chilled or shocked bursts once per element (systems/status.js)
 //   ward      { amount, delay }            a shield of `amount` that refills after `delay` s without being hit
 //   dodge     { chance, grace }            a hit on you misses (then `grace` s of invulnerability)
 //   temperedSteel { damage }             each enhance level also adds `damage` (inc) to that weapon (game/forge.js)
@@ -78,7 +79,7 @@ export const CLASSES = {
   },
   mage: {
     name: 'Mage',
-    blurb: 'Bolts that never miss. Every hit has a small chance to burn, chill and shock, so any element build works.',
+    blurb: 'Bolts that never miss. Every hit may burn, chill or shock, and whatever dies under an element bursts in it.',
     startWeapon: 'arc_bolt',
     mods: [
       { stat: 'area', op: 'inc', value: 0.15 },
@@ -96,7 +97,8 @@ export const CLASSES = {
     trait: {
       name: 'Attunement',
       ward: { amount: 15, delay: 5 },
-      text: ['Elements are stronger: burns hit 80% harder, chills stack twice, shocks jump once more, all last 25% longer', 'Every hit has an 8% chance each to burn, chill and shock', 'Burning, chilled and shocked enemies each take 10% more damage from you', 'Arcane Ward: a 15-point shield that refills after 5 s without being hit', 'Spells reach 15% wider'],
+      spellburst: { frac: 0.25, radius: 55, cap: 300 },       // Spellburst (systems/status.js): an enemy dying under an element bursts in it
+      text: ['Spellburst: an enemy that dies burning, chilled or shocked bursts in each of those elements, for a quarter of its max HP', 'Elements are stronger: burns hit 80% harder, chills stack twice, shocks jump once more, all last 25% longer', 'Every hit has an 8% chance each to burn, chill and shock', 'Burning, chilled and shocked enemies each take 10% more damage from you', 'Arcane Ward: a 15-point shield that refills after 5 s without being hit', 'Spells reach 15% wider'],
     },
     unlocked: false,
     unlock: { event: 'win', hint: 'Survive the full ten minutes' },
