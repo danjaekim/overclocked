@@ -1,5 +1,5 @@
 // M40: Starforge. 2 starsteel, once per weapon, at max weapon level: one mutation set by the weapon's behavior
-// (projectile comet, slam aftershock, orbit counter ring, boomerang double return). The star survives evolving,
+// (projectile Starfall, slam Aftershock, orbit Binary Stars, boomerang Double Return). The star survives evolving,
 // passes from a graft donor to the host, and is lost on salvage.
 
 import { test, assert } from './harness.mjs';
@@ -14,8 +14,7 @@ import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { evolve, canEvolve } from '../src/game/evolution.js';
 import { addPassive, findPassive, levelUpPassive } from '../src/game/passives.js';
 import { addPerk, findPerk, levelUpPerk } from '../src/game/perks.js';
-import { updateProjectiles } from '../src/systems/movement.js';
-import { spawnProjectile } from '../src/game/projectiles.js';
+import { callStar } from '../src/behaviors/projectile.js';
 import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 
 const VIEW = { w: 480, h: 1040 };
@@ -61,50 +60,53 @@ test('m40 data validates; mutations are keyed by behavior and the gate is level,
   assert.ok(!canStarforge(run, axe));
 });
 
-test('m40 comet volley: every Nth volley is one big piercing comet; the rest are normal', () => {
+test('m40 starfall: every Nth volley is marked, and each enemy those arrows hit calls a star down', () => {
   const run = newRun();
   const bow = maxed(run, 'ember_bow');
   run.starsteel = 2;
   starforge(run, bow);
-  dummy(run, 150, 0);
-  const comets = [];
+  const e = dummy(run, 150, 0);
+  let marked = 0;
+  let unmarked = 0;
+  let calls = 0;
+  let maxFalls = 0;
   let prev = new Set();
-  let volleys = 0;
-  for (let i = 0; i < 60 * 14; i++) {
+  for (let i = 0; i < 60 * 12; i++) {
     step(run);
-    const now = new Set(run.world.projectiles.active.filter((pr) => pr.look === 4));      // pooled objects are reused, so count arrivals
-    for (const pr of now) if (!prev.has(pr)) comets.push({ r: pr.r });
+    const now = new Set(run.world.projectiles.active);
+    for (const pr of now) if (!prev.has(pr)) { if (pr.fall) marked++; else unmarked++; }
     prev = now;
-    volleys = bow.volley;
+    if (bow.falls && bow.falls.length > maxFalls) { maxFalls = bow.falls.length; calls++; }
   }
-  assert.ok(volleys >= 2 * MUTATIONS.projectile.every, `fired ${volleys} volleys`);
-  assert.equal(comets.length, Math.floor(volleys / MUTATIONS.projectile.every), 'one comet per N volleys');
-  assert.equal(comets[0].r, bow.def.base.radius * run.player.stats.getFor('area', bow.tags) * MUTATIONS.projectile.size);
+  assert.ok(bow.volley >= 2 * MUTATIONS.projectile.every, `fired ${bow.volley} volleys`);
+  assert.ok(marked > 0 && unmarked > marked, 'only some volleys are marked');
+  assert.ok(maxFalls > 0, 'stars were called');
 });
 
-test('m40 an unstarred bow never fires a comet', () => {
+test('m40 an unstarred bow never marks an arrow or calls a star', () => {
   const run = newRun();
   const bow = maxed(run, 'ember_bow');
   dummy(run, 150, 0);
-  let comet = false;
-  for (let i = 0; i < 60 * 8; i++) { step(run); if (run.world.projectiles.active.some((p) => p.look === 4)) comet = true; }
-  assert.ok(!comet);
-  assert.equal(bow.star, false);
+  for (let i = 0; i < 60 * 8; i++) { step(run); assert.ok(!run.world.projectiles.active.some((p) => p.fall)); }
+  assert.ok(!bow.falls || bow.falls.length === 0);
 });
 
-test('m40 a comet bursts where it ends and hurts what is around that spot', () => {
+test('m40 a star lands after its delay and hurts what is around the spot, not what is far away', () => {
   const run = newRun();
   const bow = maxed(run, 'ember_bow');
-  run.player.weapons.length = 0;                                    // nothing else may hurt the dummies
-  const near = dummy(run, 400, 0);
-  const far = dummy(run, 400 + MUTATIONS.projectile.burstRadius * 3, 0);
-  const pr = spawnProjectile(run, bow, run.player.x + 400, run.player.y, 1, 0, 0, 100, 0.03, 12, 999);
-  pr.look = 4;
+  run.player.weapons.length = 0;                                    // only the star may hurt the dummies
+  run.player.weapons.push(bow);                                     // ...but the bow still updates its falling stars
+  bow.cd = 99;
+  bow.star = true;
+  const near = dummy(run, 300, 0);
+  const far = dummy(run, 300 + MUTATIONS.projectile.radius * 3, 0);
+  callStar(run, bow, near.x, near.y, 100);
   const a = near.hp;
-  const b = far.hp;
-  tick(run, 4);
-  assert.ok(near.hp < a, 'the burst reached the enemy at the end');
-  assert.equal(far.hp, b, 'and not one far from it');
+  tick(run, Math.floor(MUTATIONS.projectile.delay * 60) - 3);
+  assert.equal(near.hp, a, 'nothing yet');
+  tick(run, 8);
+  assert.ok(near.hp < a, 'the star landed on it');
+  assert.equal(far.hp, far.maxHp, 'and not on one far away');
 });
 
 test('m40 aftershock: each slam is followed by a cyan echo on the same spot that lands later', () => {
@@ -132,36 +134,36 @@ test('m40 an unstarred hammer queues no echo', () => {
   for (let i = 0; i < 60 * 3; i++) { step(run); assert.ok(!hammer.pend.some((s) => s.echo)); }
 });
 
-test('m40 counter ring: a second ring of half the blades spins the other way, further out', () => {
-  const run = newRun();
-  const blades = maxed(run, 'spirit_blades');
-  run.starsteel = 2;
-  starforge(run, blades);
-  tick(run, 2);
-  const count = Math.max(1, Math.round(blades.blades));
-  assert.equal(blades.blades2, Math.max(1, Math.round(count * MUTATIONS.orbit.count)));
-  assert.ok(Math.abs(blades.orbitR2 - blades.orbitR * MUTATIONS.orbit.radius) < 1e-6);
-  const a0 = blades.angle2;
-  const m0 = blades.angle;
-  tick(run, 10);
-  const da = ((blades.angle - m0 + Math.PI * 4) % (Math.PI * 2));
-  const db = ((blades.angle2 - a0 + Math.PI * 4) % (Math.PI * 2));
-  assert.ok(da < Math.PI && db > Math.PI, 'opposite directions');
-});
-
-test('m40 the counter ring hits what only it can reach', () => {
+test('m40 binary stars: every blade becomes a spinning pair, and a starred ring out-damages a plain one', () => {
   const dmgAt = (star) => {
     const run = newRun();
     const blades = maxed(run, 'spirit_blades');
     if (star) { run.starsteel = 2; starforge(run, blades); }
     tick(run, 2);
-    const r = blades.orbitR * MUTATIONS.orbit.radius;
-    const e = dummy(run, r, 0);
+    const e = dummy(run, blades.orbitR, 0);                         // on the ring's path
+    const p0 = blades.pair;
+    tick(run, 60 * 6);
+    if (star) assert.ok(blades.pair !== p0, 'the pairs spin');
+    return e.maxHp - e.hp;
+  };
+  const plain = dmgAt(false);
+  const starred = dmgAt(true);
+  assert.ok(plain > 0);
+  assert.ok(starred > plain, `${starred} > ${plain}`);
+});
+
+test('m40 binary stars reach a little further in and out than the plain ring', () => {
+  const reach = (star, off) => {
+    const run = newRun();
+    const blades = maxed(run, 'spirit_blades');
+    if (star) { run.starsteel = 2; starforge(run, blades); }
+    tick(run, 2);
+    const e = dummy(run, blades.orbitR + off * (blades.bladeR + 10), 0);   // just past the plain blades' edge
     tick(run, 60 * 6);
     return e.maxHp - e.hp;
   };
-  assert.equal(dmgAt(false), 0, 'the main ring cannot reach out there');
-  assert.ok(dmgAt(true) > 0, 'the counter ring can');
+  assert.equal(reach(false, 1.15), 0, 'out of the plain ring\'s reach');
+  assert.ok(reach(true, 1.15) > 0, 'inside the binary pair\'s sweep');
 });
 
 test('m40 double return: a starred disc flies out a second time at 80% and an unstarred one does not', () => {
@@ -208,7 +210,7 @@ test('m40 a star survives evolving and is lost on salvage; a graft passes it to 
   assert.ok(host.star, 'the donor\'s star passed to the host');
 });
 
-test('m40 a star survives a snapshot and the comet still fires after resume', () => {
+test('m40 a star survives a snapshot and the starred bow plays on identically after resume', () => {
   const a = newRun();
   const bow = maxed(a, 'ember_bow');
   a.starsteel = 2;
@@ -225,20 +227,3 @@ test('m40 a star survives a snapshot and the comet still fires after resume', ()
   assert.equal(wb.volley, bow.volley, 'the resumed run fires the same volleys');
 });
 
-test('m40 a comet hits each enemy of a dense pile once, however many it passes, and weakens as it goes', () => {
-  const run = newRun();
-  const bow = maxed(run, 'ember_bow');
-  run.player.weapons.length = 0;                                    // only the comet may hurt the pile
-  const pile = [];
-  for (let i = 0; i < 40; i++) pile.push(dummy(run, 60 + (i % 8) * 14, ((i / 8) | 0) * 9 - 18));    // far more than a projectile's 16-hit memory
-  const pr = spawnProjectile(run, bow, run.player.x, run.player.y, 1, 0, 300, 100, 2, 12, 999);
-  pr.look = 4;
-  pr.big = new Set();
-  pr.aux = 100;
-  const hp = pile.map((e) => e.hp);
-  tick(run, 90);
-  const hits = pile.map((e, i) => hp[i] - e.hp).filter((d) => d > 0);
-  assert.ok(hits.length >= 30, `${hits.length} of 40 were hit`);
-  assert.ok(Math.max(...hits) < 100 * 1.5 * 2 + 100 * MUTATIONS.projectile.burstFrac * 3, 'no enemy was re-hit over and over');
-  assert.ok(pr.dmg < 100 * 0.5 || !run.world.projectiles.active.includes(pr), 'the comet weakened as it pierced');
-});

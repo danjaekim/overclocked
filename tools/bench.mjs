@@ -120,7 +120,8 @@ function graftCrowdDps(hostId, donorId) {
 // Starforge value (docs/design-m39-m42.md): damage per second of a max-level weapon with and without its star,
 // averaged over a few seeds. single = one tough dummy at the usual fighting distance; held = 24 dummies pinned
 // in rings around the player; flow = a live crowd that is topped back up to 40 walking goblins (2,500 hp, late-run toughness) whenever
-// some die, scored as hp killed per second, so knockback and scattering count the way they do in a real fight.
+// some die while you walk a slow circle, scored as hp killed per second, so knockback, scattering and
+// moving count the way they do in a real fight.
 function starDps(weaponId, star, mode, seed) {
   const { run, inst } = loneWeaponRun(weaponId, 99, 'archer', seed);
   if (star) inst.star = true;
@@ -156,7 +157,8 @@ function starDps(weaponId, star, mode, seed) {
   for (let i = 0; i < seconds / STEP; i++) {
     if (mode === 'flow') top();
     const k0 = run.kills;
-    run.update(STEP, { x: 0, y: 0 });
+    const t = i * STEP * 0.9;                                    // in the live crowd you walk a slow circle, as in a real fight
+    run.update(STEP, mode === 'flow' ? { x: Math.cos(t) * 0.55, y: Math.sin(t) * 0.55 } : { x: 0, y: 0 });
     killed += run.kills - k0;
     if (mode !== 'flow') for (const [e, x, y] of dummies) { e.x = x; e.y = y; e.kx = e.ky = 0; }
   }

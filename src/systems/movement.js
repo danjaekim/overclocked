@@ -3,10 +3,6 @@
 import { addPatch, nearestVortex, plantRod } from './hazards.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
-import { strike } from '../game/hit.js';
-import { MUTATIONS, STARFORGE } from '../data/starforge.js';
-import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
-import { addPuff } from '../render/fx.js';
 
 export function updateProjectiles(run, dt) {
   const store = run.world.projectiles;
@@ -39,7 +35,6 @@ export function updateProjectiles(run, dt) {
     }
     if (pr.ttl <= 0) {
       plantRod(run, pr);
-      if (pr.look === 4) cometBurst(run, pr);                // Starforge comet: it bursts where it ends
       const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards at the last enemy it pierced
       if (eb) {
         const dmg = pr.dmg * eb.damageFrac;
@@ -56,23 +51,3 @@ export function updateProjectiles(run, dt) {
   }
 }
 
-// The Comet Volley burst: a ring of damage at the last enemy the comet passed (or where it ran out).
-function cometBurst(run, pr) {
-  const m = MUTATIONS.projectile;
-  const bx = pr.hx === pr.hx ? pr.hx : pr.x;
-  const by = pr.hy === pr.hy ? pr.hy : pr.y;
-  const w = run.world;
-  const n = w.hash.queryRadius(bx, by, m.burstRadius + MAX_ENEMY_RADIUS, w.scratch);
-  for (let i = 0; i < n; i++) {
-    const e = w.scratch[i];
-    if (!e.alive) continue;
-    const dx = e.x - bx;
-    const dy = e.y - by;
-    const rr = m.burstRadius + e.r;
-    if (dx * dx + dy * dy > rr * rr) continue;
-    const d = Math.hypot(dx, dy) || 1;
-    strike(run, pr.inst, e, pr.aux * m.burstFrac, dx / d, dy / d, 1);
-  }
-  addPuff(run, bx, by, m.burstRadius * 0.8, STARFORGE.color);
-  addPuff(run, bx, by, m.burstRadius * 0.45, STARFORGE.light);
-}
