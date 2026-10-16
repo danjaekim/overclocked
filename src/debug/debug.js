@@ -122,7 +122,7 @@ async function toggleLab() {
     clear,
     last: () => { const r = run(); const w = r.player.weapons.pop(); if (w) { r.player.stats.removeBySource(`weapon:${w.instanceId}:`); r.player.stats.removeBySource(`forge:${w.instanceId}:`); r.player.stats.removeBySource(`graft:${w.instanceId}:`); } },
     star: () => { run().starsteel += 3; },
-    starall: () => { for (const w of run().player.weapons) if (SF.mutationOf(w)) w.star = true; },           // starforge everything you hold (free; weapons with no mutation yet are skipped)
+    starall: () => { for (const w of run().player.weapons) if (SF.mutationOf(w)) { maxOut(w); w.star = true; } },   // starforge everything you hold (free), at max level like a real one; weapons with no mutation yet are skipped
     unstarall: () => { for (const w of run().player.weapons) w.star = false; },
     starsteel10: () => { run().starsteel += 10; },
   };
@@ -134,7 +134,7 @@ async function toggleLab() {
   labEl.style.cssText = 'position:fixed;left:6px;right:6px;bottom:52px;max-height:52vh;overflow:auto;z-index:6;background:rgba(0,0,0,.88);color:#9fe870;font:11px monospace;padding:8px;border:1px solid #4a6;border-radius:8px';
   labEl.innerHTML =
     row('Weapons', [['a:clear', 'REMOVE ALL WEAPONS'], ['a:last', 'remove last']]) +
-    row('Starforge (free; only weapons with a mutation)', [['a:starall', 'star all held'], ['a:unstarall', 'unstar all'], ['starmode', 'new weapons starred: OFF'], ['a:starsteel10', '+10 starsteel']]) +
+    row('Starforge (free; maxes the weapon; only weapons with a mutation)', [['a:starall', 'star all held'], ['a:unstarall', 'unstar all'], ['starmode', 'new weapons starred: OFF'], ['a:starsteel10', '+10 starsteel']]) +
     row('Normal weapons (added at max level)', baseIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
     row('Branches and evolutions (added at max level, nothing removed)', branchIds.map((id) => [`w:${id}`, WEAPONS[id].name])) +
     row('Masterworks (adds host + donor at max level, then grafts)', MASTERWORKS.map((m) => [`m:${m.id}`, m.name])) +
