@@ -71,7 +71,7 @@ function cometBurst(run, pr) {
     const rr = m.burstRadius + e.r;
     if (dx * dx + dy * dy > rr * rr) continue;
     const d = Math.hypot(dx, dy) || 1;
-    strike(run, pr.inst, e, pr.dmg * m.burstFrac, dx / d, dy / d, 1);
+    strike(run, pr.inst, e, pr.aux * m.burstFrac, dx / d, dy / d, 1);
   }
   addPuff(run, bx, by, m.burstRadius * 0.8, STARFORGE.color);
   addPuff(run, bx, by, m.burstRadius * 0.45, STARFORGE.light);

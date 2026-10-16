@@ -45,8 +45,8 @@ export default {
     if (star && inst.volley % star.every === 0) {
       const dx = Math.cos(base);
       const dy = Math.sin(base);
-      const c = spawnProjectile(run, inst, p.x, p.y, dx, dy, speed, dmg * count, ttl, radius * star.size, 999);
-      if (c) { c.look = 4; c.sub = true; c.bounce = 0; c.split = 0; }
+      const c = spawnProjectile(run, inst, p.x, p.y, dx, dy, speed, dmg * count * star.damage, ttl, radius * star.size, 999);
+      if (c) { c.look = 4; c.bounce = 0; c.split = 0; c.big = new Set(); c.aux = dmg * count * star.damage; }          // the comet remembers every enemy it has hit, so a dense pile is hit once each
       inst.cd += param(run, inst, 'cooldown');
       attackTriggers(run, inst, target.x, target.y, base);
       return;

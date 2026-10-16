@@ -15,6 +15,8 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.dmg = dmg;
   pr.pierce = pierce;
   pr.nh = 0;
+  pr.big = null;
+  pr.aux = 0;
   pr.hx = pr.hy = NaN;
   pr.trailD = 0;
   pr.sub = false;                  // a secondary projectile: no trail, no end burst
@@ -51,12 +53,14 @@ export function spawnSplit(run, parent, hitEnemy) {
 
 // Hit-set: a small fixed ring of enemy uids this projectile has already damaged.
 export function hasHit(pr, uid) {
+  if (pr.big) return pr.big.has(uid);
   const n = pr.nh < pr.hits.length ? pr.nh : pr.hits.length;
   for (let i = 0; i < n; i++) if (pr.hits[i] === uid) return true;
   return false;
 }
 
 export function markHit(pr, uid) {
+  if (pr.big) { pr.big.add(uid); return; }
   pr.hits[pr.nh % pr.hits.length] = uid;
   pr.nh++;
 }

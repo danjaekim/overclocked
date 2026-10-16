@@ -157,9 +157,9 @@ everything gets starred; at 3, most runs cannot afford one.
 
 | Behavior | Mutation | Draft numbers |
 |---|---|---|
-| projectile | Every 5th volley is one big comet that pierces everything and bursts at the end of its range | comet 2.5x radius, burst 70 radius at 100% damage **[bench]** |
-| slam | Each slam repeats as an aftershock | 0.4 s later, 60% damage, same spot |
-| orbit | A second ring of blades spins the other way, further out | 1.6x radius, half the blade count (min 1) |
+| projectile | Every 6th volley is one big comet that pierces everything, weakening 10% per enemy, and bursts at the end of its range | comet 2x radius, burst 70 radius at 40% damage (tuned in v0.40.3) |
+| slam | Each slam collapses 0.4 s later: a wider ring that pulls enemies back in | 1.3x radius, 35% damage, inward pull (tuned in v0.40.3) |
+| orbit | A second ring of blades spins the other way, further out | 1.7x radius, three quarters of the blade count (min 1) |
 | boomerang | Returns twice | second outbound trip at 80% damage |
 
 **Structure.**

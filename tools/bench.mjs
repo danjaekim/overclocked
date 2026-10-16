@@ -27,6 +27,9 @@ import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { enhance, canEnhance, chooseTemper, quench, canQuench } from '../src/game/forge.js';
 import { canStarforge, starforge } from '../src/game/starforge.js';
+import { MUTATIONS } from '../src/data/starforge.js';
+if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(process.env.SF_OVERRIDE))) Object.assign(MUTATIONS[b], o);   // tuning sweeps without editing data
+const STAR_ONLY = process.env.STAR_ONLY ? process.env.STAR_ONLY.split(',') : null;
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
@@ -36,6 +39,7 @@ import { MASTERWORKS } from '../src/data/grafts.js';
 const args = process.argv.slice(2);
 const SPEND = process.env.BOT_SPEND || 'all';        // what the bot buys with starsteel at the forge: 'none' | 'quench' | 'all' (Quench and Starforge)
 const flag = (n) => args.includes(n);
+const STAR_WEAPONS = ['ember_bow', 'storm_volley', 'sunpiercer', 'forge_hammer', 'colossus_maul', 'quakebreaker', 'spirit_blades', 'seraph_blades', 'chakram', 'ricochet_saw', 'gyre'];
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
 const LEVELS = [1, 4, 8];
@@ -109,6 +113,57 @@ function graftCrowdDps(hostId, donorId) {
   for (let i = 0; i < seconds / STEP; i++) {
     run.update(STEP, { x: 0, y: 0 });
     for (const [e, x, y] of dummies) { e.x = x; e.y = y; e.kx = e.ky = 0; }
+  }
+  return dummies.reduce((a, [e]) => a + (1e12 - e.hp), 0) / seconds;
+}
+
+// Starforge value (docs/design-m39-m42.md): damage per second of a max-level weapon with and without its star,
+// averaged over a few seeds. single = one tough dummy at the usual fighting distance; held = 24 dummies pinned
+// in rings around the player; flow = a live crowd that is topped back up to 40 walking goblins (2,500 hp, late-run toughness) whenever
+// some die, scored as hp killed per second, so knockback and scattering count the way they do in a real fight.
+function starDps(weaponId, star, mode, seed) {
+  const { run, inst } = loneWeaponRun(weaponId, 99, 'archer', seed);
+  if (star) inst.star = true;
+  const seconds = mode === 'single' ? 20 : 15;
+  const HP = 2500;
+  const dummies = [];
+  if (mode === 'single') {
+    const dist = engageDist(weaponId);
+    const e = spawnEnemy(run, 'brute', dist, 0);
+    e.hp = e.maxHp = 1e12; e.speed = 0;
+    dummies.push([e, dist, 0]);
+  } else if (mode === 'held') {
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const d = 90 + (i % 3) * 40;
+      const e = spawnEnemy(run, 'goblin', Math.cos(a) * d, Math.sin(a) * d);
+      e.hp = e.maxHp = 1e12; e.speed = 0;
+      dummies.push([e, Math.cos(a) * d, Math.sin(a) * d]);
+    }
+  }
+  let spawned = 0;
+  const top = () => {
+    while (run.world.enemies.count < 40) {
+      const a = run.rng.next() * Math.PI * 2;
+      const d = 190 + run.rng.next() * 110;
+      const e = spawnEnemy(run, 'goblin', run.player.x + Math.cos(a) * d, run.player.y + Math.sin(a) * d);
+      if (!e) return;
+      e.hp = e.maxHp = HP;
+      spawned++;
+    }
+  };
+  let killed = 0;
+  for (let i = 0; i < seconds / STEP; i++) {
+    if (mode === 'flow') top();
+    const k0 = run.kills;
+    run.update(STEP, { x: 0, y: 0 });
+    killed += run.kills - k0;
+    if (mode !== 'flow') for (const [e, x, y] of dummies) { e.x = x; e.y = y; e.kx = e.ky = 0; }
+  }
+  if (mode === 'flow') {
+    let partial = 0;
+    for (const e of run.world.enemies.active) partial += HP - e.hp;
+    return (killed * HP + partial) / seconds;
   }
   return dummies.reduce((a, [e]) => a + (1e12 - e.hp), 0) / seconds;
 }
@@ -292,7 +347,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -310,6 +365,28 @@ if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classe
     }
     out.weapons[id] = row;
     if (!flag('--json')) console.log(line);
+  }
+}
+
+if (flag('--starforge')) {
+  const seeds = [1, 2, 3, 4, 5];
+  const avg = (id, star, mode) => seeds.reduce((a, sd) => a + starDps(id, star, mode, sd), 0) / seeds.length;
+  const rows = [];
+  for (const id of STAR_ONLY || STAR_WEAPONS) {
+    const row = { id, behavior: WEAPONS[id].behavior };
+    for (const mode of ['single', 'held', 'flow']) {
+      const a = avg(id, false, mode);
+      const b = avg(id, true, mode);
+      row[mode] = { base: a, star: b, gain: a > 0 ? b / a - 1 : null };
+    }
+    rows.push(row);
+  }
+  if (flag('--json')) out.starforge = rows;
+  else {
+    console.log('\nSTARFORGE  (damage per second at max level, star vs no star; mean of 5 seeds)');
+    console.log(pad('weapon', 15) + pad('behavior', 11) + ['single', 'held crowd', 'live crowd'].map((m) => pad(m + ' base>star', 22)).join(''));
+    const pct = (g) => (g === null ? 'n/a' : `${g >= 0 ? '+' : ''}${Math.round(g * 100)}%`);
+    for (const r of rows) console.log(pad(r.id, 15) + pad(r.behavior, 11) + ['single', 'held', 'flow'].map((m) => pad(`${num(r[m].base)}>${num(r[m].star)} ${pct(r[m].gain)}`, 22)).join(''));
   }
 }
 
@@ -336,7 +413,7 @@ if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);

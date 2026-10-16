@@ -6,6 +6,7 @@ import { plantRod } from './hazards.js';
 import { damagePlayer } from './damage.js';
 import { resolveHit } from '../game/hit.js';
 import { hasHit, markHit, spawnSplit } from '../game/projectiles.js';
+import { MUTATIONS } from '../data/starforge.js';
 
 const RICOCHET_RANGE = 180;
 const RICOCHET_TTL = 0.5;
@@ -73,6 +74,7 @@ function projectileHits(run) {
       pr.hy = e.y;
 
       resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy, pr.depth);
+      if (pr.look === 4) pr.dmg *= MUTATIONS.projectile.falloff;       // the Starforge comet weakens with every enemy it pierces
 
       if (pr.split > 0) spawnSplit(run, pr, e);
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy

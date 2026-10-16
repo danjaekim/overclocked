@@ -61,7 +61,7 @@ test('m40 data validates; mutations are keyed by behavior and the gate is level,
   assert.ok(!canStarforge(run, axe));
 });
 
-test('m40 comet volley: every 5th volley is one big piercing comet; the rest are normal', () => {
+test('m40 comet volley: every Nth volley is one big piercing comet; the rest are normal', () => {
   const run = newRun();
   const bow = maxed(run, 'ember_bow');
   run.starsteel = 2;
@@ -77,8 +77,8 @@ test('m40 comet volley: every 5th volley is one big piercing comet; the rest are
     prev = now;
     volleys = bow.volley;
   }
-  assert.ok(volleys >= 10, `fired ${volleys} volleys`);
-  assert.equal(comets.length, Math.floor(volleys / 5), 'one comet per 5 volleys');
+  assert.ok(volleys >= 2 * MUTATIONS.projectile.every, `fired ${volleys} volleys`);
+  assert.equal(comets.length, Math.floor(volleys / MUTATIONS.projectile.every), 'one comet per N volleys');
   assert.equal(comets[0].r, bow.def.base.radius * run.player.stats.getFor('area', bow.tags) * MUTATIONS.projectile.size);
 });
 
@@ -223,4 +223,22 @@ test('m40 a star survives a snapshot and the comet still fires after resume', ()
   assert.equal(wb.volley, bow.volley);
   for (let i = 0; i < 600; i++) { a.update(STEP, { x: 0, y: 0 }); b.update(STEP, { x: 0, y: 0 }); }
   assert.equal(wb.volley, bow.volley, 'the resumed run fires the same volleys');
+});
+
+test('m40 a comet hits each enemy of a dense pile once, however many it passes, and weakens as it goes', () => {
+  const run = newRun();
+  const bow = maxed(run, 'ember_bow');
+  run.player.weapons.length = 0;                                    // only the comet may hurt the pile
+  const pile = [];
+  for (let i = 0; i < 40; i++) pile.push(dummy(run, 60 + (i % 8) * 14, ((i / 8) | 0) * 9 - 18));    // far more than a projectile's 16-hit memory
+  const pr = spawnProjectile(run, bow, run.player.x, run.player.y, 1, 0, 300, 100, 2, 12, 999);
+  pr.look = 4;
+  pr.big = new Set();
+  pr.aux = 100;
+  const hp = pile.map((e) => e.hp);
+  tick(run, 90);
+  const hits = pile.map((e, i) => hp[i] - e.hp).filter((d) => d > 0);
+  assert.ok(hits.length >= 30, `${hits.length} of 40 were hit`);
+  assert.ok(Math.max(...hits) < 100 * 1.5 * 2 + 100 * MUTATIONS.projectile.burstFrac * 3, 'no enemy was re-hit over and over');
+  assert.ok(pr.dmg < 100 * 0.5 || !run.world.projectiles.active.includes(pr), 'the comet weakened as it pierced');
 });

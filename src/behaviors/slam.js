@@ -133,7 +133,8 @@ function land(inst, run, s) {
     const rr = s.r + e.r;
     if (dx * dx + dy * dy > rr * rr) continue;
     const d = Math.hypot(dx, dy) || 1;
-    strike(run, inst, e, dmg, (dx / d) * THROW, (dy / d) * THROW);
+    const k = s.echo ? -s.pull * THROW : THROW;                     // an aftershock pulls inward
+    strike(run, inst, e, dmg, (dx / d) * k, (dy / d) * k);
     stagger(e, stun);
   }
   const el = elementOf(inst);
@@ -145,6 +146,6 @@ function land(inst, run, s) {
   }
   addPuff(run, s.x, s.y, s.r / 2, el ? el.main : '#d9c3a0');
   addPuff(run, s.x, s.y, s.r / 3.2, el ? el.light : '#fff1d6');
-  if (star) inst.pend.push({ x: s.x, y: s.y, t: star.delay, r: s.r, echo: true, frac: star.frac });
+  if (star) inst.pend.push({ x: s.x, y: s.y, t: star.delay, r: s.r * star.radius, echo: true, frac: star.frac, pull: star.pull });
   attackTriggers(run, inst, s.x, s.y, inst.aim || 0);
 }

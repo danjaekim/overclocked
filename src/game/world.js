@@ -43,6 +43,8 @@ function makeProjectile() {
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
     look: 0,                                // how it is drawn: 0 streak, 1 spinning saw disc, 2 shard (graft payload shots), 3 soul (Summoner)
     hits: new Int32Array(16), nh: 0,    // uids already hit
+    aux: 0,                             // look 4 (comet): the volley damage its burst is based on
+    big: null,                          // a Set of every uid hit, for shots that pierce a whole crowd (the Starforge comet)
   };
 }
 

@@ -14,23 +14,27 @@ export const STARFORGE = {
 export const MUTATIONS = {
   projectile: {
     name: 'Comet Volley',
-    desc: 'Every 5th volley is one huge comet that pierces everything and bursts where it ends.',
-    every: 5,                  // volleys between comets
-    size: 2.5,                 // comet radius x
+    desc: 'Every 6th volley is one huge comet that pierces everything, weakening as it goes, and bursts where it ends.',
+    every: 6,                  // volleys between comets
+    size: 2,                   // comet radius x
     burstRadius: 70,
-    burstFrac: 1,              // burst damage x the comet's
+    burstFrac: 0.4,            // burst damage x the whole volley's
+    damage: 1,                 // the comet's own damage x the whole volley's
+    falloff: 0.9,             // each enemy it pierces leaves it this share of its damage (the first is hit in full)
   },
   slam: {
     name: 'Aftershock',
-    desc: 'Each slam lands a second time on the same spot 0.4 s later at 60% damage.',
+    desc: 'Each slam collapses 0.4 s later in a wider ring, pulling back what it threw and hitting it again at 35%.',
     delay: 0.4,
-    frac: 0.6,
+    frac: 0.35,
+    radius: 1.3,               // the collapse is this much wider than the slam, so thrown enemies are still inside
+    pull: 1.6,                 // inward knockback, x the slam's own throw
   },
   orbit: {
     name: 'Counter Ring',
-    desc: 'A second ring of blades spins the other way, further out (half as many).',
-    radius: 1.6,               // x the main ring
-    count: 0.5,                // x the main blade count (at least 1)
+    desc: 'A second ring of blades spins the other way, much further out (three quarters as many).',
+    radius: 1.7,               // x the main ring
+    count: 0.75,                // x the main blade count (at least 1)
   },
   boomerang: {
     name: 'Double Return',
