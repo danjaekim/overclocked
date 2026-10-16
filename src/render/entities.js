@@ -123,7 +123,30 @@ export function drawChests(ctx, view, run) {
   }
 }
 
-// Arrows: one stroked path for the whole batch.
+// Projectiles are drawn by element, sized by their real hit radius (so Wide / Colossal / area show):
+//   frost  pale ice crystals     fire  embers with a glowing core and a short tail
+//   storm  jagged sparks         none  a plain amber streak
+// A weapon with two elements (Stormfrost Lance, Rime-touched Ember Bow) draws its first element's
+// shape (frost, then fire, then storm) with a dot of the second element's colour in the middle.
+const F_FROST = 1;
+const F_FIRE = 2;
+const F_STORM = 4;
+const elemCache = new WeakMap();                      // inst.tags -> element bits (tags are replaced when they change)
+function elemOf(inst) {
+  const tags = inst.tags;
+  if (!tags || !tags.set) return 0;
+  let e = elemCache.get(tags);
+  if (e === undefined) {
+    e = (tags.set.has('frost') ? F_FROST : 0) | (tags.set.has('fire') ? F_FIRE : 0) | (tags.set.has('storm') ? F_STORM : 0);
+    elemCache.set(tags, e);
+  }
+  return e;
+}
+const ACCENT = { [F_FROST]: '#cfeaff', [F_FIRE]: '#ffb04d', [F_STORM]: '#fff3a8' };
+const primary = (e) => (e & F_FROST ? F_FROST : e & F_FIRE ? F_FIRE : e & F_STORM ? F_STORM : 0);
+const kLen = 2.2;                                     // half-length of the drawn shot = hit radius x this
+const kWid = 0.62;                                    // half-width = hit radius x this
+
 export function drawProjectiles(ctx, view, run) {
   const list = run.world.projectiles.active;
   if (list.length === 0) return;
@@ -133,19 +156,157 @@ export function drawProjectiles(ctx, view, run) {
   const y0 = cam.y - view.h / 2 - 20;
   const y1 = cam.y + view.h / 2 + 20;
   let special = false;
-  ctx.strokeStyle = '#ffd27a';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
+  let mask = 0;
+  let multi = false;                                   // any shot with two elements
   for (let i = 0; i < list.length; i++) {
     const p = list[i];
     if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
     if (p.look !== 0) { special = true; continue; }
-    ctx.moveTo(p.x, p.y);
-    ctx.lineTo(p.x - p.dx * 12, p.y - p.dy * 12);
+    const e = elemOf(p.inst);
+    mask |= primary(e) || 8;
+    if (e & (e - 1)) multi = true;
   }
-  ctx.stroke();
-  ctx.lineCap = 'butt';
+
+  const visible = (p, el) => p.look === 0 && p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && (primary(elemOf(p.inst)) || 8) === el;
+  const accent = (p, el) => {                          // second element: a coloured dot in the middle
+    const e = elemOf(p.inst) & ~el;
+    return e ? ACCENT[primary(e)] : null;
+  };
+
+  if (mask & 8) {                                      // plain streaks, one path
+    ctx.strokeStyle = '#ffd27a';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!visible(p, 8)) continue;
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.dx * p.r * kLen * 1.2, p.y - p.dy * p.r * kLen * 1.2);
+    }
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+
+  if (mask & F_FROST) {                                // ice crystals: a long hexagonal shard with a pale core
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!visible(p, F_FROST)) continue;
+      const L = p.r * kLen;
+      const W = p.r * kWid * 1.15;
+      const ax = p.dx * L;
+      const ay = p.dy * L;
+      const nx = -p.dy * W;
+      const ny = p.dx * W;
+      ctx.moveTo(p.x + ax, p.y + ay);
+      ctx.lineTo(p.x + ax * 0.25 + nx, p.y + ay * 0.25 + ny);
+      ctx.lineTo(p.x - ax * 0.8 + nx * 0.5, p.y - ay * 0.8 + ny * 0.5);
+      ctx.lineTo(p.x - ax * 0.8 - nx * 0.5, p.y - ay * 0.8 - ny * 0.5);
+      ctx.lineTo(p.x + ax * 0.25 - nx, p.y + ay * 0.25 - ny);
+      ctx.closePath();
+    }
+    ctx.fillStyle = '#7fcfff';
+    ctx.fill();
+    ctx.strokeStyle = '#ecf8ff';
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.lineJoin = 'miter';
+    ctx.fillStyle = '#ffffff';                         // glint along the shard's axis
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!visible(p, F_FROST)) continue;
+      ctx.moveTo(p.x + p.dx * p.r * 0.9 + p.r * 0.28, p.y + p.dy * p.r * 0.9);
+      ctx.arc(p.x + p.dx * p.r * 0.9, p.y + p.dy * p.r * 0.9, p.r * 0.28, 0, TAU);
+    }
+    ctx.fill();
+  }
+
+  if (mask & F_FIRE) {                                 // embers: faded tail, orange body, hot core
+    ctx.fillStyle = '#ff6a2e';
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!visible(p, F_FIRE)) continue;
+      const r = p.r * 0.8;
+      const bx = p.x - p.dx * p.r * 1.4;
+      const by = p.y - p.dy * p.r * 1.4;
+      ctx.moveTo(bx + r, by);
+      ctx.arc(bx, by, r, 0, TAU);
+      const cx = p.x - p.dx * p.r * 2.6;
+      const cy = p.y - p.dy * p.r * 2.6;
+      ctx.moveTo(cx + r * 0.6, cy);
+      ctx.arc(cx, cy, r * 0.6, 0, TAU);
+    }
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff8a2e';
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!visible(p, F_FIRE)) continue;
+      const r = p.r * 1.05;
+      ctx.moveTo(p.x + r, p.y);
+      ctx.arc(p.x, p.y, r, 0, TAU);
+    }
+    ctx.fill();
+    ctx.fillStyle = '#ffe3a3';
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!visible(p, F_FIRE)) continue;
+      const r = p.r * 0.5;
+      ctx.moveTo(p.x + r, p.y);
+      ctx.arc(p.x, p.y, r, 0, TAU);
+    }
+    ctx.fill();
+  }
+
+  if (mask & F_STORM) {                                // sparks: a jagged bolt, bright core over a yellow glow
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.strokeStyle = pass === 0 ? '#ffd23a' : '#fffbe0';
+      ctx.lineWidth = pass === 0 ? 4 : 1.8;
+      ctx.globalAlpha = pass === 0 ? 0.55 : 1;
+      ctx.beginPath();
+      for (let i = 0; i < list.length; i++) {
+        const p = list[i];
+        if (!visible(p, F_STORM)) continue;
+        const L = p.r * kLen * 1.2;
+        const W = p.r * kWid * 1.4;
+        const nx = -p.dy;
+        const ny = p.dx;
+        ctx.moveTo(p.x + p.dx * L, p.y + p.dy * L);
+        ctx.lineTo(p.x + p.dx * L * 0.3 + nx * W, p.y + p.dy * L * 0.3 + ny * W);
+        ctx.lineTo(p.x - p.dx * L * 0.1 - nx * W, p.y - p.dy * L * 0.1 - ny * W);
+        ctx.lineTo(p.x - p.dx * L * 0.6 + nx * W, p.y - p.dy * L * 0.6 + ny * W);
+        ctx.lineTo(p.x - p.dx * L, p.y - p.dy * L);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
+  }
+
+  if (multi) {                                         // second-element accents
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (p.look !== 0) continue;
+      const el = primary(elemOf(p.inst));
+      if (!el || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+      const a = accent(p, el);
+      if (!a) continue;
+      ctx.fillStyle = a;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 0.45, 0, TAU);
+      ctx.fill();
+    }
+  }
   if (!special) return;
 
   // Special shots: saw discs (look 1) spin like a Ricochet Saw; shards (look 2) are bright diamonds; souls (look 3).
