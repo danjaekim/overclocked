@@ -5,7 +5,7 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { plantRod } from './hazards.js';
 import { damagePlayer } from './damage.js';
 import { resolveHit } from '../game/hit.js';
-import { hasHit, markHit, spawnSplit } from '../game/projectiles.js';
+import { hasHit, markHit, spawnSplit, turnBack } from '../game/projectiles.js';
 import { callStar } from '../behaviors/projectile.js';
 
 const RICOCHET_RANGE = 180;
@@ -79,6 +79,7 @@ function projectileHits(run) {
       if (pr.split > 0) spawnSplit(run, pr, e);
       if (pr.pierce-- <= 0) {          // used up: pierce 0 stops on the first enemy
         if (pr.bounce > 0 && ricochet(run, pr)) break;
+        if (pr.ret === 1) { turnBack(run, pr); break; }          // Return Orbit: a spent shard turns around instead of ending
         plantRod(run, pr);
         w.projectiles.release(pr);
         break;

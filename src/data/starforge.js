@@ -41,4 +41,44 @@ export const MUTATIONS = {
     desc: 'Every disc flies out a second time after it returns, at 80% damage.',
     frac: 0.8,
   },
+  aura: {
+    name: 'Shockwave',
+    desc: 'Every 1.5 s the aura sends a shockwave ring out to twice its radius, hitting as hard as the aura.',
+    every: 1.5,                // seconds between shockwaves
+    reach: 2,                  // ring radius x the aura's
+    frac: 1,
+    speed: 4,                  // aura radii per second the ring travels
+  },
+  rod: {
+    name: 'Star Mark',
+    desc: 'Every javelin leaves a star mark where it strikes; a second later it detonates for 30%.',
+    delay: 1,                  // fuse, seconds
+    radius: 60,
+    frac: 0.3,
+  },
+  nova: {
+    name: 'Return Orbit',
+    desc: 'Shards turn at the end of their flight and fly back through the crowd to you at 40% damage.',
+    frac: 0.4,
+  },
+  arc: {
+    name: 'Afterimage',
+    desc: 'Each swing leaves a crescent in the air that cuts again 0.5 s later at 40% damage.',
+    delay: 0.5,
+    frac: 0.4,
+  },
+  chain: {
+    name: 'Forked Chain',
+    desc: 'The bolt forks at its first target: a second chain with half the jumps at 70% damage (a branching bolt sends three bolts from every strike instead of two, and each generation keeps more of its damage).',
+    frac: 0.7,
+    branches: 3,               // a branching bolt's fan-out
+    keep: 0.95,                // ...and its falloff per generation
+  },
+  trail: {
+    name: 'Pulse Wake',
+    desc: 'Each patch of the trail sends one pulse out to 2.2x its radius as it fades, hitting as hard as the patch.',
+    reach: 2.2,
+    frac: 1.6,
+    at: 0.3,                   // the pulse leaves this many seconds before the patch ends
+  },
 };

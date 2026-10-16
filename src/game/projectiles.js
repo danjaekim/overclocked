@@ -1,3 +1,5 @@
+import { MUTATIONS } from '../data/starforge.js';
+
 // Projectile spawning and helpers. The projectile store lives in world.js.
 
 export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius, pierce) {
@@ -16,6 +18,9 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.pierce = pierce;
   pr.nh = 0;
   pr.fall = 0;
+  pr.ret = 0;
+  pr.pierce0 = 0;
+  pr.ttl0 = 0;
   pr.hx = pr.hy = NaN;
   pr.trailD = 0;
   pr.sub = false;                  // a secondary projectile: no trail, no end burst
@@ -26,6 +31,25 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.split = Math.round(stats.getFor('split', inst.tags));
   pr.splitFrac = stats.getFor('splitDamage', inst.tags);
   return pr;
+}
+
+// Starforge Return Orbit (nova): a shard at the end of its flight, or spent on a hit, turns round and flies
+// back to the player at reduced damage, with its pierce and hit-set renewed. It only turns once.
+export function turnBack(run, pr) {
+  const p = run.player;
+  const sp = Math.hypot(pr.vx, pr.vy) || 1;
+  const dx = p.x - pr.x;
+  const dy = p.y - pr.y;
+  const d = Math.hypot(dx, dy) || 1;
+  pr.ret = 2;
+  pr.dx = dx / d;
+  pr.dy = dy / d;
+  pr.vx = pr.dx * sp;
+  pr.vy = pr.dy * sp;
+  pr.ttl = d / sp + 0.12;
+  pr.dmg *= MUTATIONS.nova.frac;
+  pr.pierce = pr.pierce0;
+  pr.nh = 0;
 }
 
 const SPLIT_STEP = 0.44;       // radians between split shots

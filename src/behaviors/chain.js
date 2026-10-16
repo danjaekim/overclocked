@@ -13,6 +13,7 @@ import { addArc } from '../render/fx.js';
 import { attackTriggers } from '../game/triggers.js';
 import { queueDamage, KIND_PROC, CAUSE } from '../systems/damage-queue.js';
 import { applyShock, forkChain } from '../systems/status.js';
+import { activeMutation } from '../game/starforge.js';
 
 const FALLOFF = 0.88;
 const MAX_JUMPS = 14;
@@ -43,15 +44,31 @@ export default {
     addArc(run, p.x, p.y, first.x, first.y, arcColor(inst));
     strike(run, inst, first, dmg, (first.x - p.x) / d0, (first.y - p.y) / d0);
     inst.seen[0] = first.uid;
-    if (b.fork) {
-      forkChain(run, inst, first, dmg, Math.min(4, b.fork.gens + Math.max(1, Math.round(param(run, inst, 'count'))) - 1), b.fork.falloff, jump, 0);
+    const star = activeMutation(inst);
+    if (b.fork) {                                          // Forked Chain on a branching bolt: three bolts leave every strike instead of two
+      forkChain(run, inst, first, dmg, Math.min(4, b.fork.gens + Math.max(1, Math.round(param(run, inst, 'count'))) - 1), star ? Math.max(b.fork.falloff, star.keep) : b.fork.falloff, jump, 0, star ? star.branches : 2);
       inst.cd += param(run, inst, 'cooldown');
       attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
       return;
     }
     let ns = 1;
-    let cx = first.x;
-    let cy = first.y;
+    ns = chainFrom(run, inst, first, jumps, dmg, jump, ns);
+    if (star) {                                            // Forked Chain: a second chain leaves the first target the other way
+      const half = Math.max(1, Math.ceil(jumps / 2));
+      chainFrom(run, inst, first, half, (dmg * star.frac) / FALLOFF, jump, ns);
+    }
+    inst.cd += param(run, inst, 'cooldown');
+    attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
+  },
+};
+
+// Jumps up to `jumps` times from `from` to the nearest enemy not yet in inst.seen, striking each with the
+// damage falling off; returns the new seen count.
+function chainFrom(run, inst, from, jumps, dmg, jump, ns) {
+  const w = run.world;
+  {
+    let cx = from.x;
+    let cy = from.y;
     for (let j = 0; j < jumps; j++) {
       let best = null;
       let bestD = jump * jump;
@@ -75,7 +92,6 @@ export default {
       cx = best.x;
       cy = best.y;
     }
-    inst.cd += param(run, inst, 'cooldown');
-    attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
-  },
-};
+  }
+  return ns;
+}

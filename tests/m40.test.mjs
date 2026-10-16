@@ -1,5 +1,5 @@
 // M40: Starforge. 2 starsteel, once per weapon, at max weapon level: one mutation set by the weapon's behavior
-// (projectile Starfall, slam Aftershock, orbit Binary Stars, boomerang Double Return). The star survives evolving,
+// (see data/starforge.js). The star survives evolving,
 // passes from a graft donor to the host, and is lost on salvage.
 
 import { test, assert } from './harness.mjs';
@@ -55,7 +55,7 @@ test('m40 data validates; mutations are keyed by behavior and the gate is level,
   assert.ok(!starforge(run, bow).ok, 'once per weapon');
   assert.equal(run.starsteel, 1);
   assert.equal(activeMutation(bow), MUTATIONS.projectile);
-  const axe = addWeapon(run, 'rending_axe');                       // arc: no mutation yet
+  const axe = addWeapon(run, 'cinder_mortar');                       // mortar: no mutation yet (M42)
   assert.equal(mutationOf(axe), null);
   assert.ok(!canStarforge(run, axe));
 });

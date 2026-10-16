@@ -376,11 +376,11 @@ export function drawProjectiles(ctx, view, run) {
       ctx.fill();
     }
   }
-  ctx.fillStyle = '#7fe9ff';                          // Starforge Starfall arrows carry a cyan spark
+  ctx.fillStyle = '#7fe9ff';                          // Starforge Starfall arrows and returning Return Orbit shards carry a cyan spark
   ctx.beginPath();
   for (let i = 0; i < list.length; i++) {
     const p = list[i];
-    if (!p.fall || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+    if (!(p.fall || p.ret === 2) || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
     ctx.moveTo(p.x + 3.5, p.y);
     ctx.arc(p.x, p.y, 3.5, 0, TAU);
   }

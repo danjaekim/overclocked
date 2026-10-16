@@ -275,7 +275,7 @@ export function stagger(e, t) {
 // nearest enemies not yet struck by this chain, for `gens` generations, each x`falloff`. `first` has
 // already been hit. PROC damage at depth + 1, cause Shock chains, shocking each. At most 31 strikes.
 const forkSeen = new Int32Array(32);
-export function forkChain(run, src, first, dmg, gens, falloff, jump, depth) {
+export function forkChain(run, src, first, dmg, gens, falloff, jump, depth, branches = 2) {
   if (depth + 1 > MAX_TRIGGER_DEPTH) return;
   const w = run.world;
   let ns = 1;
@@ -285,7 +285,7 @@ export function forkChain(run, src, first, dmg, gens, falloff, jump, depth) {
     dmg *= falloff;
     const next = [];
     for (const from of front) {
-      for (let f = 0; f < 2 && ns < forkSeen.length; f++) {
+      for (let f = 0; f < branches && ns < forkSeen.length; f++) {
         let best = null;
         let bestD = jump * jump;
         const n = w.hash.queryRadius(from.x, from.y, jump + 20, w.scratch);

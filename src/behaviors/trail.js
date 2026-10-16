@@ -6,6 +6,7 @@
 import { param } from '../game/weapon-params.js';
 import { addPatch, addRing } from '../systems/hazards.js';
 import { attackTriggers } from '../game/triggers.js';
+import { activeMutation } from '../game/starforge.js';
 
 export default {
   uses: ['damage', 'cooldown', 'area', 'duration', 'critChance', 'critMult', 'knockback'],
@@ -33,6 +34,8 @@ export default {
     inst.cd = param(run, inst, 'cooldown');
     const b = inst.def.base;
     const patch = addPatch(run, inst, p.x, p.y, param(run, inst, 'radius'), param(run, inst, 'ttl'), b.tick * (param(run, inst, 'cooldown') / b.cooldown), param(run, inst, 'damage'), 0, false, null, undefined, true, b.look);
+    const star = activeMutation(inst);
+    if (patch && star) patch.pulse = star;                    // Pulse Wake: read when the patch is about to end
     if (au) {                                                 // Aurora Wake: the wake blesses, and every nth patch is a beacon
       if (patch) patch.bless = true;
       if (++inst.drops % au.every === 0) inst.beacons.push({ x: p.x, y: p.y, t: 0, left: au.rings });

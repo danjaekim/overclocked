@@ -43,6 +43,9 @@ function makeProjectile() {
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
     look: 0,                                // how it is drawn: 0 streak, 1 spinning saw disc, 2 shard (graft payload shots), 3 soul (Summoner)
     hits: new Int32Array(16), nh: 0,    // uids already hit
+    ret: 0,                             // Starforge Return Orbit: 1 = turns at the end of its flight, 2 = on its way back
+    pierce0: 0,
+    ttl0: 0,
     fall: 0,                            // Starforge Starfall: each enemy this arrow hits calls a star down (1) or not (0)
   };
 }

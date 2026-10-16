@@ -5,6 +5,9 @@ import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
+import { activeMutation } from '../game/starforge.js';
+import { addRing } from '../systems/hazards.js';
+import { STARFORGE } from '../data/starforge.js';
 
 const PULSE_TIME = 0.25;
 
@@ -15,12 +18,22 @@ export default {
     inst.cd = 0.3;
     inst.pulse = 0;
     inst.auraR = 0;
+    inst.wave = 0;
   },
 
   update(inst, dt, run) {
     const p = run.player;
     inst.auraR = param(run, inst, 'range');
     if (inst.pulse > 0) inst.pulse -= dt;
+    const star = activeMutation(inst);
+    if (star) {                                            // Shockwave: a ring that rolls out to twice the aura's radius
+      inst.wave = (inst.wave || 0) - dt;
+      if (inst.wave <= 0) {
+        inst.wave = star.every;
+        addRing(run, inst, p.x, p.y, inst.auraR * star.reach, inst.auraR * star.speed, param(run, inst, 'damage') * star.frac, 0,
+          { follow: true, color: STARFORGE.color, thick: 7, kb: 90 });
+      }
+    }
     inst.cd -= dt;
     if (inst.cd > 0) return;
     inst.cd += param(run, inst, 'cooldown');

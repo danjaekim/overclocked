@@ -2,7 +2,7 @@
 
 import { addPatch, nearestVortex, plantRod } from './hazards.js';
 import { param } from '../game/weapon-params.js';
-import { spawnProjectile } from '../game/projectiles.js';
+import { spawnProjectile, turnBack } from '../game/projectiles.js';
 
 export function updateProjectiles(run, dt) {
   const store = run.world.projectiles;
@@ -33,6 +33,7 @@ export function updateProjectiles(run, dt) {
         addPatch(run, pr.inst, pr.x, pr.y, tr.radius, tr.ttl, tr.tick, param(run, pr.inst, 'damage') * tr.damageFrac, 0);
       }
     }
+    if (pr.ttl <= 0 && pr.ret === 1) turnBack(run, pr);      // Return Orbit: turn around and fly back through the crowd
     if (pr.ttl <= 0) {
       plantRod(run, pr);
       const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards at the last enemy it pierced

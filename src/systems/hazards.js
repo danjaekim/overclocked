@@ -131,6 +131,11 @@ export function updateHazards(run, dt) {
     const h = list[i];
     h.ttl -= dt;
     if (h.kind === PATCH) {
+      if (h.pulse && h.ttl <= h.pulse.at) {                  // Pulse Wake: the patch sends one ring out as it fades
+        addRing(run, h.src, h.x, h.y, h.r * h.pulse.reach, h.r * h.pulse.reach * 4, h.dmg * h.pulse.frac, h.depth,
+          { color: '#7fe9ff', thick: 4, kb: 25 });
+        h.pulse = null;
+      }
       h.t -= dt;
       if (h.t <= 0) {
         let healed = 0;
