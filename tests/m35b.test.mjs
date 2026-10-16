@@ -66,13 +66,13 @@ test('m35b: Shards are drawn as shards (look 2) and pierce', () => {
 
 test('m35b: a payload shot never leaves a stale look on a reused projectile', () => {
   const run = crowd('quakebreaker', 'saw', 60 * 4);
-  for (const p of run.world.projectiles.active) assert.ok(p.look === 1 || p.look === 0 || p.look === 2);
+  for (const p of run.world.projectiles.active) assert.ok(p.look === 1 || p.look === 0 || p.look === 2 || p.look === 4);   // 4: a graft volley's arrow (M44b)
   const w = run.world.projectiles;
   for (const p of [...w.active]) w.release(p);
   const e = run.world.enemies.active[0];
   PAYLOAD_FX.saw(run, run.player.weapons[0], e, 1);
   PAYLOAD_FX.shrapnel(run, run.player.weapons[0], e, 1);
-  assert.ok(run.world.projectiles.active.some((p) => p.look === 0), 'shrapnel is still a plain streak');
+  assert.ok(run.world.projectiles.active.some((p) => p.look === 4), 'shrapnel is an arrow (look 4), not the saw look it may have reused');
 });
 
 test('m35b: audit: on a slam host the Saws payload adds a real share of the damage (it used to add about 4%)', () => {

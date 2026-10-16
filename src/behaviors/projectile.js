@@ -13,6 +13,9 @@ import { STARFORGE } from '../data/starforge.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff } from '../render/fx.js';
+import { drawFallingArrows } from '../render/shots.js';
+
+const falling = [];                          // scratch list for the falling-star arrows drawn each frame
 
 const isAlive = (o) => o.alive;
 const FALL_H = 150;                        // how far above the spot a falling star is first drawn
@@ -137,18 +140,13 @@ export default {
       ctx.arc(f.x, f.y, f.rad * (1 - 0.45 * u), 0, Math.PI * 2);
       ctx.stroke();
       const sy = f.y - FALL_H * (1 - u);
-      ctx.globalAlpha = 0.35;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(f.x + 18 * (1 - u) + 10, sy - 34);
-      ctx.lineTo(f.x + 18 * (1 - u), sy);
-      ctx.stroke();
       ctx.globalAlpha = 1;
-      ctx.fillStyle = STARFORGE.light;
-      ctx.beginPath();
-      ctx.arc(f.x + 18 * (1 - u), sy, 4.5, 0, Math.PI * 2);
-      ctx.fill();
+      const fx = f.x + 18 * (1 - u);                            // the star falls as a cyan-headed arrow, tip down onto the ring
+      const dx = -10 / 35.4;
+      const dy = 34 / 35.4;
+      falling.push({ x: fx - dx * 9, y: sy - dy * 9, dx, dy, r: 3.4, star: true });
     }
+    if (falling.length) { drawFallingArrows(ctx, falling); falling.length = 0; }
     ctx.globalAlpha = 1;
     ctx.lineCap = 'butt';
   },

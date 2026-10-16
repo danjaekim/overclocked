@@ -148,7 +148,7 @@ export const EFFECTS = {
     for (let i = 0; i < p.count; i++) {
       const a = src.flingA + (i * Math.PI * 2) / p.count;
       const pr = spawnProjectile(run, src, pl.x, pl.y, Math.cos(a), Math.sin(a), p.speed, dmg, p.ttl, p.radius, p.pierce);
-      if (pr) pr.sub = true;
+      if (pr) { pr.sub = true; pr.look = 5; }
     }
   },
 };

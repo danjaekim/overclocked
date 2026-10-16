@@ -68,12 +68,12 @@ const FX = {
   shrapnel(run, src, e, dmg) {
     const near = nearestOthers(run, e, 3, 220);
     if (near.length) {                                       // at the nearest other enemies, so it works in a crowd
-      for (const o of near) shot(run, src, e, Math.atan2(o.y - e.y, o.x - e.x), 520, dmg, 0.5, 5, 1);
+      for (const o of near) shot(run, src, e, Math.atan2(o.y - e.y, o.x - e.x), 520, dmg, 0.5, 5, 1, 4);
       return;
     }
     const [dx, dy] = dirAway(run, e);                        // nothing near: a fan onward
     const a0 = Math.atan2(dy, dx);
-    for (let i = -1; i <= 1; i++) shot(run, src, e, a0 + i * 0.43, 520, dmg, 0.5, 5, 1);
+    for (let i = -1; i <= 1; i++) shot(run, src, e, a0 + i * 0.43, 520, dmg, 0.5, 5, 1, 4);
   },
 
   cleave(run, src, e, dmg, depth) {

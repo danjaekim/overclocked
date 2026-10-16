@@ -41,7 +41,7 @@ function makeProjectile() {
     hx: NaN, hy: NaN,                            // where the last enemy it hit stood (a rod plants there)
     sub: false, depth: 0, trailD: 0,             // distance since the last trail patch (weapons with base.trail)
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
-    look: 0,                                // how it is drawn: 0 streak, 1 spinning saw disc, 2 shard (graft payload shots), 3 soul (Summoner)
+    look: 0,                                // how it is drawn (render/shots.js): 0 the weapon's own shape, 1 saw disc, 2 shard, 3 soul (Summoner), 4 arrow (graft volleys), 5 blade (Bladestorm)
     hits: new Int32Array(16), nh: 0,    // uids already hit
     ret: 0,                             // Starforge Return Orbit: 1 = turns at the end of its flight, 2 = on its way back
     pierce0: 0,

@@ -16,6 +16,7 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { stagger } from '../systems/status.js';
 import { addRod } from '../systems/hazards.js';
 import { addPuff } from '../render/fx.js';
+import { drawDisc, elemBits, F_STAR } from '../render/shots.js';
 import { activeMutation } from '../game/starforge.js';
 import { STARFORGE } from '../data/starforge.js';
 
@@ -176,29 +177,14 @@ export default {
       const second = d.trips > 0;                          // the second trip of a Double Return is cyan
       if (d.parked > 0) {                                  // the drag zone of a parked Gyre
         ctx.globalAlpha = 0.18 + 0.1 * Math.sin(d.spin * 0.5);
+        ctx.strokeStyle = col || '#d9dde8';
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(d.x, d.y, param(run, inst, 'radius') * 3, 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
-      ctx.save();
-      ctx.translate(d.x, d.y);
-      ctx.rotate(d.spin);
-      if (second) { ctx.strokeStyle = STARFORGE.color; ctx.fillStyle = STARFORGE.light; }
-      ctx.beginPath();
-      const rad = param(run, inst, 'radius');
-      for (let k = 0; k < 4; k++) {
-        const a = (k * Math.PI) / 2;
-        ctx.moveTo(0, 0);
-        ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
-      }
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(0, 0, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-      ctx.strokeStyle = col || '#d9dde8';
-      ctx.fillStyle = col || '#aeb6c8';
+      drawDisc(ctx, d.x, d.y, param(run, inst, 'radius'), d.spin, second ? F_STAR : elemBits(inst));   // steel blades, the elements on the rim (render/shots.js)
     }
   },
 };

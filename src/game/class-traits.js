@@ -19,6 +19,7 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { param } from './weapon-params.js';
 import { resolveHit } from './hit.js';
 import { addPuff } from '../render/fx.js';
+import { drawFallingArrows } from '../render/shots.js';
 
 const NO_TRAIT = {};
 
@@ -160,11 +161,12 @@ function landArrow(run, a) {
   addPuff(run, a.x, a.y, a.r * 0.7, '#e9c48a');
 }
 
-// Falling arrows: a shadow on the ground that tightens, and the arrow dropping onto it.
+// Falling arrows: a shadow on the ground that tightens, and the arrow dropping onto it (the shared arrow shape, render/shots.js).
+const dropping = [];
 export function drawClassTrait(ctx, run) {
   const c = run.cls;
   if (!c || !c.rain || !c.rain.length) return;
-  ctx.lineCap = 'round';
+  dropping.length = 0;
   for (const a of c.rain) {
     const u = 1 - a.t / a.d;                                 // 0 loosed .. 1 landing
     ctx.globalAlpha = 0.2 + 0.35 * u;
@@ -173,20 +175,14 @@ export function drawClassTrait(ctx, run) {
     ctx.ellipse(a.x, a.y, a.r * (1 - 0.5 * u), a.r * 0.5 * (1 - 0.5 * u), 0, 0, Math.PI * 2);
     ctx.fill();
     const h = 140 * (1 - u);
-    ctx.globalAlpha = 0.9;
-    ctx.strokeStyle = '#f3dcae';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(a.x - 6 * (1 - u), a.y - h - 22);
-    ctx.lineTo(a.x - 6 * (1 - u) + 3, a.y - h);
-    ctx.stroke();
-    ctx.fillStyle = '#ffb46a';
-    ctx.beginPath();
-    ctx.arc(a.x - 6 * (1 - u) + 3, a.y - h, 2.4, 0, Math.PI * 2);
-    ctx.fill();
+    const tipX = a.x - 6 * (1 - u) + 3;
+    const tipY = a.y - h;
+    const dx = 3 / 22.2;
+    const dy = 22 / 22.2;
+    dropping.push({ x: tipX - dx * 8.3, y: tipY - dy * 8.3, dx, dy, r: 3.2, star: false });
   }
   ctx.globalAlpha = 1;
-  ctx.lineCap = 'butt';
+  drawFallingArrows(ctx, dropping);
 }
 
 // Called for every enemy death with the weapon that killed it (null for some world deaths).
