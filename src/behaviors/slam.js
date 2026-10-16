@@ -134,7 +134,7 @@ function land(inst, run, s) {
     if (dx * dx + dy * dy > rr * rr) continue;
     const d = Math.hypot(dx, dy) || 1;
     const k = s.echo ? -s.pull * THROW : THROW;                     // an aftershock pulls inward
-    strike(run, inst, e, dmg, (dx / d) * k, (dy / d) * k);
+    strike(run, inst, e, dmg, (dx / d) * k, (dy / d) * k, s.echo ? 1 : 0);   // an aftershock is not a direct hit: Glacier Maul's shatter and the like only answer depth 0
     stagger(e, stun);
   }
   const el = elementOf(inst);
