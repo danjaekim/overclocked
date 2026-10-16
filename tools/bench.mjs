@@ -201,6 +201,12 @@ function chestPickup(run) {
 // Classes whose kit is short range: the bot engages instead of kiting (a fair fight for each role)
 const MELEE = new Set(['smith', 'berserker', 'saint']);
 
+// What the bot owns right now: weapons (id, level, enhance), passive and perk counts and ids.
+function snapBuild(run) {
+  const p = run.player;
+  return { weapons: p.weapons.map((w) => [w.weaponId, w.level, w.enhance]), passives: p.passives.map((i) => [i.id, i.level]), perks: p.perks.map((i) => [i.id, i.level]) };
+}
+
 function playBot(classId, seed) {
   const run = createRun({ seed, view: VIEW, debug: { god: false }, classId });
   const move = { x: 0, y: 0 };
@@ -262,7 +268,7 @@ function playBot(classId, seed) {
       if (n <= 25) late.clear++;
     }
     if (run.bossAlive) bossSeen = true;
-    if (at[300] === null && run.time >= 300) at[300] = { level: p.level, kills: run.kills, hp: Math.round(p.hp) };
+    if (at[300] === null && run.time >= 300) at[300] = { level: p.level, kills: run.kills, hp: Math.round(p.hp), build: snapBuild(run) };
 
     while (run.pendingChests.length > 0) { openChest(run, run.pendingChests.shift()); chests++; }
     while (run.pendingLevelUps > 0) {
@@ -283,7 +289,7 @@ function playBot(classId, seed) {
   return {
     won: run.won, time: Math.round(run.time), level: run.player.level, kills: run.kills,
     bossSeen, bossKilled: run.bossKilled, evolved, chests, titles: run.titles.length,
-    at300: at[300],
+    at300: at[300], buildEnd: snapBuild(run),
     forges, hurt: +(hurtTicks / Math.max(1, ticks)).toFixed(2),
     iron: { earned: iron.earned, left: run.ore, topEnhance: Math.max(0, ...run.player.weapons.map((w) => w.enhance)) },
     starsteel: { earned: ss.earned, spent: ss.spent, left: run.starsteel, first: ss.first, elites: run.eliteKills },
