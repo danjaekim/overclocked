@@ -43,8 +43,8 @@ export const SALVAGE = { base: 2, perLevel: 1, perEnhance: 2 };   // ore returne
 
 export const SHRINE = {
   maxActive: 1,
-  ttl: 45,                 // seconds before a shrine fades
-  bossShrineTtl: 90,
+  ttl: 80,                 // seconds before a shrine fades (was 45: too easy to miss while fighting)
+  bossShrineTtl: 150,
   radius: 40,              // activation radius, world units
   channel: 0.8,            // seconds standing inside to open the forge
   drain: 2,                // progress drains this many times faster outside the radius

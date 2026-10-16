@@ -3,7 +3,7 @@
 
 import { ELITE, affixDefs } from '../data/elites.js';
 import { ENEMIES, PROPS } from '../data/enemies.js';
-import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP } from '../data/waves.js';
+import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP, RATE_RAMP } from '../data/waves.js';
 import { RUN_EVENTS } from './run-events.js';
 import { perimeterPoint, lerp } from '../core/math.js';
 
@@ -106,6 +106,8 @@ export function createDirector(run) {
       const atCap = run.world.enemies.count >= ENEMY_SOFT_CAP;
       if (atCap) capBuff += CAP_BUFF_PER_SEC * dt;
 
+      const ramp = t <= RATE_RAMP.from ? 1 : lerp(1, RATE_RAMP.end, Math.min(1, (t - RATE_RAMP.from) / (RATE_RAMP.to - RATE_RAMP.from)));
+
       while (nextEvent < EVENTS.length && t >= EVENTS[nextEvent].at) {
         RUN_EVENTS[EVENTS[nextEvent].event](run, EVENTS[nextEvent]);
         nextEvent++;
@@ -120,7 +122,7 @@ export function createDirector(run) {
         const u = (t - seg.from) / (seg.to - seg.from);
         for (let j = 0; j < seg.spawns.length; j++) {
           const s = seg.spawns[j];
-          const rate = lerp(s.perSec, s.perSecEnd === undefined ? s.perSec : s.perSecEnd, u);
+          const rate = lerp(s.perSec, s.perSecEnd === undefined ? s.perSec : s.perSecEnd, u) * ramp;
           acc[i][j] += rate * dt;
           if (atCap) {
             if (acc[i][j] > 1) acc[i][j] = 1;         // no burst when room frees up

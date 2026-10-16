@@ -42,4 +42,9 @@ export const EVENTS = [
   { at: 540, event: 'elite', enemy: 'brute' },
 ];
 
+// Late-run pressure: every spawn rate above is multiplied by a ramp that is 1 until `from`, then climbs
+// linearly to `end` at `to` (authored seconds, rescaled like the segments). Power grows through a run
+// (levels, evolutions, enhances), so a flat curve lets late waves be cleared as fast as they arrive.
+export const RATE_RAMP = { from: 180, to: 600, end: 1.8 };
+
 export const ENEMY_SOFT_CAP = 500;   // director stops spawning here and buffs hp instead

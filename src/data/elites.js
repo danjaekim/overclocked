@@ -34,6 +34,8 @@ export const CHEST = {
   luckScale: 0.1,           // multiplies the 3 and 5 weights by (1 + luckScale * luck)
   firstEliteMin: 3,         // the first elite chest of a run is at least this many rolls
   newWeaponChance: 0.12,    // per roll after the first, 5-roll chests only, at most one per chest
+  fusionNewChance: 0.3,     // ... and while a fusion partner is on offer (see fusionPartners), 3-roll chests too, at this chance
+  fusionPartnerBoost: 6,    // weight of a new-weapon roll that is the missing half of a fusion you hold the other half of
   newWeaponTagBoost: 1.5,   // a new weapon sharing an element tag with an owned weapon
   weights: { weapon_up: 1.5, passive_up: 1.0, perk_up: 1.0 },
   blockerMult: 3,           // an upgrade that advances a blocked evolution

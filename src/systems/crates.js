@@ -8,7 +8,7 @@ import { CRATES } from '../data/crates.js';
 import { ORES } from '../data/ores.js';
 import { xpToNext } from '../game/xp.js';
 import { spawnEnemy } from '../game/director.js';
-import { spawnGem, spawnOre, spawnHeal, healPlayer } from './pickups.js';
+import { spawnGem, spawnOre, spawnHeal, spawnMagnet, KIND_GEM, KIND_ORE } from './pickups.js';
 import { addPuff } from '../render/fx.js';
 
 export function liveCrates(run) {
@@ -56,18 +56,24 @@ export function lootWeights(run) {
     const f = p.hp / p.maxHp;
     for (const [below, mult] of CRATES.hurt) if (f <= below) { heal *= mult; break; }
   }
-  return { heal, xp: L.xp.weight, ore: L.ore.weight };
+  let magnet = 0;
+  let loose = 0;
+  const ground = run.world.pickups.active;
+  for (let i = 0; i < ground.length; i++) if (ground[i].kind === KIND_GEM || ground[i].kind === KIND_ORE) loose++;
+  if (loose >= L.magnet.minOnGround) magnet = L.magnet.weight;
+  return { heal, xp: L.xp.weight, ore: L.ore.weight, magnet };
 }
 
 export function rollLoot(run) {
   const w = lootWeights(run);
-  let r = run.rng.next() * (w.heal + w.xp + w.ore);
+  let r = run.rng.next() * (w.heal + w.xp + w.ore + w.magnet);
   if ((r -= w.heal) < 0) return 'heal';
   if ((r -= w.xp) < 0) return 'xp';
-  return 'ore';
+  if ((r -= w.ore) < 0) return 'ore';
+  return 'magnet';
 }
 
-// A crate was broken: drop its loot where it stood.
+// A crate was broken: drop its loot where it stood (a heart, xp gems, ore, or a magnet).
 export function breakCrate(run, e) {
   const L = CRATES.loot;
   const x = e.x;
@@ -75,6 +81,8 @@ export function breakCrate(run, e) {
   const what = rollLoot(run);
   if (what === 'heal') {
     spawnHeal(run, x, y, L.heal.frac);
+  } else if (what === 'magnet') {
+    spawnMagnet(run, x, y);
   } else if (what === 'xp') {
     const value = Math.max(2, Math.round(xpToNext(run.player.level) * L.xp.perGem));
     for (let k = 0; k < L.xp.gems; k++) {

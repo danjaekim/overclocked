@@ -13,6 +13,7 @@ export const LEVELUP = {
   offers: 3,
   rerolls: 2,               // per run: redraw all the offers
   banishes: 1,              // per run: remove one offered item from the rest of the run
+  fusionPartnerBoost: 1.5,  // weight of offering the missing half of a fusion you hold the other half of (game/upgrades.js fusionPartners)
 };
 
 export const GEM = {

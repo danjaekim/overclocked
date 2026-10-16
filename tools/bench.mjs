@@ -140,6 +140,7 @@ function playBot(classId, seed) {
   let chests = 0;
   let bossSeen = false;
   const at = { 300: null };
+  const late = { n: 0, sum: 0, clear: 0, hp: 0 };       // crowd after 300 s: how full is the screen? (how often is it nearly empty?)
   while (!run.over && run.time < 601) {
     const p = run.player;
     let near = null;
@@ -177,6 +178,11 @@ function playBot(classId, seed) {
     } else { move.x = 0; move.y = 0; }
 
     run.update(STEP, move);
+    if (run.time >= 300 && run.world.tick % 30 === 0) {
+      const n = run.world.enemies.count;
+      late.n++; late.sum += n; late.hp += p.hp / p.maxHp;
+      if (n <= 25) late.clear++;
+    }
     if (run.bossAlive) bossSeen = true;
     if (at[300] === null && run.time >= 300) at[300] = { level: p.level, kills: run.kills, hp: Math.round(p.hp) };
 
@@ -197,6 +203,7 @@ function playBot(classId, seed) {
     won: run.won, time: Math.round(run.time), level: run.player.level, kills: run.kills,
     bossSeen, bossKilled: run.bossKilled, evolved, chests, titles: run.titles.length,
     at300: at[300],
+    late: late.n ? { avg: Math.round(late.sum / late.n), clear: +(late.clear / late.n).toFixed(3), hp: +(late.hp / late.n).toFixed(2) } : null,
   };
 }
 

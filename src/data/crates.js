@@ -14,5 +14,8 @@ export const CRATES = {
     heal: { weight: 3, frac: 0.15 },             // a heart worth 15% of max hp
     xp:   { weight: 4, gems: 4, perGem: 0.04 },  // 4 gems, each worth 4% of the xp to the next level (at least 2)
     ore:  { weight: 3, amount: 3, type: 'iron' },
+    // pulls in every gem, ore and heart on the ground; only rolled when at least `minOnGround` of them are
+    // lying around, so it is never wasted on an empty floor
+    magnet: { weight: 2, minOnGround: 8 },
   },
 };

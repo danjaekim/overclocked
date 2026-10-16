@@ -5,7 +5,7 @@
 import { CHEST } from '../data/elites.js';
 import { WEAPONS } from '../data/weapons.js';
 import { SLOTS } from '../data/progression.js';
-import { buildCandidates, offerWeight } from './upgrades.js';
+import { buildCandidates, offerWeight, fusionPartners } from './upgrades.js';
 import { offerState, applyOffer } from './apply-offer.js';
 import { recipesFor, canEvolve, evolve, pair } from './evolution.js';
 import { findPassive } from './passives.js';
@@ -55,11 +55,12 @@ export function pickChestItem(state, rng, blockers, wantNew) {
 
   if (wantNew) {
     const owned = new Set(state.ownedTags || []);
+    const partners = fusionPartners(state);
     const news = cands.filter((c) => c.kind === 'weapon_new');
     if (news.length) {
       const weight = (c) => {
         const shares = WEAPONS[c.id].tags.some((t) => (t === 'fire' || t === 'frost' || t === 'storm') && owned.has(t));
-        return offerWeight(c, luck) * (shares ? CHEST.newWeaponTagBoost : 1);
+        return offerWeight(c, luck) * (shares ? CHEST.newWeaponTagBoost : 1) * (partners.has(c.id) ? CHEST.fusionPartnerBoost : 1);   // the missing half of a fusion
       };
       return rng.weighted(news, weight);
     }
@@ -93,7 +94,9 @@ export function openChest(run, tier) {
   let gaveNew = false;
   while (rolls.length < count) {
     const idx = rolls.length;
-    const wantNew = !gaveNew && count >= 5 && idx >= 1 && p.weapons.length < SLOTS.weapons && run.rng.next() < CHEST.newWeaponChance;
+    const partner = fusionPartners(offerState(run)).size > 0;                    // a fusion half is missing: new weapons get likelier
+    const wantNew = !gaveNew && (count >= 5 || (partner && count >= 3)) && idx >= 1 && p.weapons.length < SLOTS.weapons
+      && run.rng.next() < (partner ? CHEST.fusionNewChance : CHEST.newWeaponChance);
     const offer = pickChestItem(offerState(run), run.rng, evolutionBlockers(run), wantNew);
     if (!offer) {
       run.ore += CHEST.oreFallback;

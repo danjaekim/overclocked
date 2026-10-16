@@ -140,6 +140,22 @@ export function evoNeeds(state) {
   return need;
 }
 
+// Fusions (evolution recipes with `with`) where you hold one half: a map of the MISSING half's weapon id
+// to the name of the weapon the pair makes. Only halves you could actually be offered count.
+export function fusionPartners(state) {
+  const out = new Map();
+  const owned = new Set(state.weapons.map((w) => w.weaponId));
+  for (const r of EVOLUTIONS) {
+    if (!r.with || owned.has(r.into)) continue;
+    const missing = owned.has(r.from) && !owned.has(r.with) ? r.with : owned.has(r.with) && !owned.has(r.from) ? r.from : null;
+    if (!missing) continue;
+    const def = WEAPONS[missing];
+    if (def.pool === false || (def.class != null && def.class !== state.classId)) continue;
+    out.set(missing, WEAPONS[r.into].name);
+  }
+  return out;
+}
+
 export function offerWeight(candidate, luck) {
   const r = RARITIES[candidate.rarity];
   const w = r.weight * (1 + luck * r.luckScale) * (candidate.owned ? 1.5 : 1) * (candidate.boost || 1);
@@ -155,6 +171,14 @@ export function generateOffers(state, rng, count = LEVELUP.offers) {
     const fam = c.kind.startsWith('weapon') ? 'weapon' : c.kind.startsWith('passive') ? 'passive' : c.kind.startsWith('perk') ? 'perk' : null;
     const into = fam && need.get(fam + ':' + c.id);
     if (into) { c.evo = into; c.boost = (c.boost || 1) * EVO_BOOST; }
+  }
+  const partners = state.weapons.length < SLOTS.weapons ? fusionPartners(state) : null;
+  if (partners && partners.size) {              // the missing half of a fusion: a little more likely, and marked
+    for (const c of pool) {
+      if (c.kind !== 'weapon_new' || !partners.has(c.id)) continue;
+      c.boost = (c.boost || 1) * LEVELUP.fusionPartnerBoost;
+      if (!c.evo) c.evo = partners.get(c.id);
+    }
   }
   const picked = [];
   // First card: when any weapon or passive can be upgraded, one of them leads, so perks never crowd

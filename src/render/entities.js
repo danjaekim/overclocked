@@ -5,7 +5,7 @@ import { ENEMIES, PROPS } from '../data/enemies.js';
 import { GEM } from '../data/progression.js';
 import { ORES } from '../data/ores.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
-import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST, KIND_HEAL } from '../systems/pickups.js';
+import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST, KIND_HEAL, KIND_MAGNET } from '../systems/pickups.js';
 import { ELITE, affixDefs } from '../data/elites.js';
 import { getSprite } from './sprites.js';
 
@@ -154,6 +154,41 @@ export function drawHearts(ctx, view, run) {
     ctx.fillRect(g.x - 1.8, y - 6, 3.6, 12);
     ctx.fillRect(g.x - 6, y - 1.8, 12, 3.6);
     ctx.globalAlpha = 1;
+  }
+}
+
+// Magnets (supply crate drop): a red horseshoe with white tips in a soft blue glow.
+export function drawMagnets(ctx, view, run) {
+  const list = run.world.pickups.active;
+  const cam = run.cam;
+  const x0 = cam.x - view.w / 2 - 20;
+  const x1 = cam.x + view.w / 2 + 20;
+  const y0 = cam.y - view.h / 2 - 20;
+  const y1 = cam.y + view.h / 2 + 20;
+  ctx.lineCap = 'butt';
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.kind !== KIND_MAGNET || g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+    const y = g.y + Math.sin(run.time * 4 + g.x) * 2;
+    ctx.fillStyle = 'rgba(143,184,255,0.28)';
+    ctx.beginPath();
+    ctx.arc(g.x, y, g.r + 6, 0, TAU);
+    ctx.fill();
+    ctx.lineWidth = 5.5;
+    ctx.strokeStyle = '#e8453c';
+    ctx.beginPath();
+    ctx.moveTo(g.x - 7, y - 7);
+    ctx.lineTo(g.x - 7, y);
+    ctx.arc(g.x, y, 7, Math.PI, 0, true);
+    ctx.lineTo(g.x + 7, y - 7);
+    ctx.stroke();
+    ctx.strokeStyle = '#f4f4ff';
+    ctx.beginPath();
+    ctx.moveTo(g.x - 7, y - 7);
+    ctx.lineTo(g.x - 7, y - 3.5);
+    ctx.moveTo(g.x + 7, y - 7);
+    ctx.lineTo(g.x + 7, y - 3.5);
+    ctx.stroke();
   }
 }
 

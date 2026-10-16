@@ -18,7 +18,7 @@ import { updateShrines } from '../systems/shrines.js';
 import { updateHazards, drawHazards } from '../systems/hazards.js';
 import { updateEnemyShots } from '../systems/enemy-shots.js';
 import { updateFx, drawFx } from '../render/fx.js';
-import { drawGems, drawOre, drawChests, drawHearts, drawEnemies, drawProjectiles, drawEnemyShots } from '../render/entities.js';
+import { drawGems, drawOre, drawChests, drawHearts, drawMagnets, drawEnemies, drawProjectiles, drawEnemyShots } from '../render/entities.js';
 import { drawShrines } from '../render/shrines.js';
 import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
@@ -113,6 +113,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       drawOre(ctx, view, run);
       drawChests(ctx, view, run);
       drawHearts(ctx, view, run);
+      drawMagnets(ctx, view, run);
       drawHazards(ctx, run);
       drawEnemies(ctx, view, run);
       drawEnemyShots(ctx, run);

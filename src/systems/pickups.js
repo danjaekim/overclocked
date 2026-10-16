@@ -11,6 +11,7 @@ export const KIND_GEM = 0;
 export const KIND_ORE = 1;
 export const KIND_CHEST = 2;
 export const KIND_HEAL = 3;
+export const KIND_MAGNET = 4;
 
 export function gemTier(value) {
   let t = 0;
@@ -85,6 +86,34 @@ export function spawnHeal(run, x, y, frac) {
   return g;
 }
 
+// A magnet: touching it pulls every gem, ore and heart on the ground to you (chests stay put).
+export function spawnMagnet(run, x, y) {
+  const g = run.world.pickups.acquire();
+  if (!g) {
+    pullAll(run);
+    return null;
+  }
+  g.kind = KIND_MAGNET;
+  g.x = x;
+  g.y = y;
+  g.value = 0;
+  g.r = 11;
+  g.magnet = false;
+  g.speed = GEM.baseMagnet;
+  return g;
+}
+
+export function pullAll(run) {
+  const list = run.world.pickups.active;
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.kind === KIND_GEM || g.kind === KIND_ORE || g.kind === KIND_HEAL) {
+      g.magnet = true;
+      if (g.speed < GEM.baseMagnet) g.speed = GEM.baseMagnet;
+    }
+  }
+}
+
 export function healPlayer(run, frac) {
   const p = run.player;
   const before = p.hp;
@@ -149,6 +178,11 @@ export function updatePickups(run, dt) {
     if (d2 <= rr * rr) {
       if (g.kind === KIND_CHEST) { run.pendingChests.push(g.value); run.sfx('chest'); }
       else if (g.kind === KIND_ORE) { bankOre(run, g.ore, g.value); run.sfx('ore'); }
+      else if (g.kind === KIND_MAGNET) {
+        pullAll(run);
+        addPuff(run, p.x, p.y, p.r * 2.2, '#8fb8ff');
+        run.sfx('magnet');
+      }
       else if (g.kind === KIND_HEAL) {
         healPlayer(run, g.value);
         addPuff(run, p.x, p.y, p.r * 1.4, '#7dff9a');
