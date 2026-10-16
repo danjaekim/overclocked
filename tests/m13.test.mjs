@@ -266,7 +266,7 @@ test('Longbow trades arrows for one heavy piercing shot', () => {
   const dmg0 = st.getFor('damage', bow.tags);
   const pierce0 = st.getFor('pierce', bow.tags);
   chooseTemper(run, bow, 0);
-  assert.equal(st.getFor('projectiles', bow.tags), 1);
+  assert.equal(st.getFor('projectiles', bow.tags), 2, 'down to one arrow, plus the Archer\'s Quiver (M43)');
   assert.equal(st.getFor('pierce', bow.tags), pierce0 + 2);
   approx(st.getFor('damage', bow.tags), dmg0 * 1.6);
 });

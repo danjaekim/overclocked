@@ -73,6 +73,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M41** *(done)* | Starforge, six more (v0.41.0) | Aura shockwave, rod star mark, nova return, arc crescent, chain fork, trail pulse. Spec: `docs/design-m39-m42.md` §6. |
 | **M42** *(done)* | Starforge, the last five and a balance pass (v0.42.0) | Mortar cluster shells, bolt seeking, summon star-touched, pulse echoes, judge double strike: all 15 behaviors have a mutation. Typical crowd gain about +45%; outliers trimmed. See `docs/architecture.md`. |
 | **M42b** *(done)* | Starforge measurement (v0.42.1) | Bot win rates, all 36 weapons star vs none, and all 16 masterworks at +15 with and without a star; Aftershock no longer re-fires hit triggers. Numbers in `docs/architecture.md`. |
+| **M43** *(done)* | Archer rework (v0.43.0) | Quiver (+1 shot on every ranged weapon, replacing +1 pierce), Rain of Arrows class trait, Ember Bow Embers at level 4. Archer bot win rate 47% -> 69% (smart bot 55% -> 75%). Bench tools: `CLASS_OVERRIDE`, `WEAPON_OVERRIDE`, `BOT_POLICY=smart`, `tools/diag-class.mjs`. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 

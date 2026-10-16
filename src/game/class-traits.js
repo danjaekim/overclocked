@@ -1,6 +1,7 @@
 // Class traits (data/classes.js `trait`): one signature mechanic per class that works with whatever
 // weapons you hold, so the same build plays differently on another class.
-//   Archer    longShot   hits deal more damage the farther the target (game/hit.js); dodge (systems/damage.js)
+//   Archer    longShot   hits deal more damage the farther the target (game/hit.js); dodge (systems/damage.js);
+//             rain       Rain of Arrows: a volley falls on the thickest knot of enemies, if you hold a ranged weapon
 //   Smith     heavyBlows direct hits may stagger; staggered enemies take more damage (game/hit.js)
 //   Berserker frenzy     kills stack attack speed for a few seconds (game/weapon-params.js reads it)
 //   Summoner  souls      kills release a soul that flies at the nearest enemy
@@ -15,6 +16,9 @@ import { makeTags } from '../stats/stats.js';
 import { addRing } from '../systems/hazards.js';
 import { spawnProjectile } from './projectiles.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { param } from './weapon-params.js';
+import { resolveHit } from './hit.js';
+import { addPuff } from '../render/fx.js';
 
 const NO_TRAIT = {};
 
@@ -35,9 +39,12 @@ export function initClassTrait(run, classId) {
     frenzy: 0, frenzyT: 0,                           // Bloodlust stacks and seconds left on them
     hurtT: -1e9,                                     // run.time you were last hit (Arcane Ward recharges after a quiet spell)
     novaT: t.nova ? t.nova.every * 0.6 : 0,          // seconds to the next Holy Nova
+    rainT: t.rain ? t.rain.every * 0.5 : 0,           // seconds to the next Rain of Arrows
+    rain: [],                                        // arrows still falling { x, y, t, d, dmg, r }
     inst: t.nova ? standIn(-1, 'Holy Nova', ['light', 'magic'])
       : t.souls ? standIn(-2, 'Soul Harvest', ['summon', 'magic'])
-        : null,
+        : t.rain ? standIn(-3, 'Rain of Arrows', ['projectile', 'ranged', 'physical'])
+          : null,
   };
 }
 
@@ -52,6 +59,7 @@ export function updateClassTrait(run, dt) {
   const t = run.trait;
   const c = run.cls;
   if (t.frenzy && c.frenzy > 0 && (c.frenzyT -= dt) <= 0) { c.frenzy = 0; c.frenzyT = 0; }
+  if (t.rain) rainStep(run, dt);
   if (t.ward && run.time - c.hurtT >= t.ward.delay && run.player.shield < t.ward.amount) run.player.shield = t.ward.amount;
   if (t.nova && (c.novaT -= dt) <= 0) {
     const n = t.nova;
@@ -61,6 +69,124 @@ export function updateClassTrait(run, dt) {
     const r = n.radius * stats.getFor('area', c.inst.tags);
     addRing(run, c.inst, run.player.x, run.player.y, r, n.speed, dmg, 0, { follow: true, status: 'bless', heal: n.heal, thick: 7, color: '#fff3b0', kb: 90 });
   }
+}
+
+// Archer: Rain of Arrows. Every `every` s, if you hold a ranged weapon, `arrows` arrows (+`perProj` for each extra
+// projectile that weapon fires) fall on the thickest knot of enemies within its range. Each lands at a random spot
+// within `spread` of the knot's centre and hits what is within `radius` of it for `frac` x that weapon's damage, so
+// the rain grows with the weapon's damage, its projectile count and your area.
+function rainStep(run, dt) {
+  const r = run.trait.rain;
+  const c = run.cls;
+  if (c.rain.length) {
+    for (let i = c.rain.length - 1; i >= 0; i--) {
+      const a = c.rain[i];
+      if ((a.t -= dt) > 0) continue;
+      c.rain.splice(i, 1);
+      landArrow(run, a);
+    }
+  }
+  if ((c.rainT -= dt) > 0) return;
+  const w = rangedWeapon(run);
+  if (!w) { c.rainT = 0.5; return; }                // no ranged weapon: no rain (try again shortly)
+  const p = run.player;
+  const range = Math.min(param(run, w, 'range') || 300, r.reach);
+  const knot = thickest(run, p.x, p.y, range, r.spread);
+  if (!knot) { c.rainT = 0.3; return; }
+  c.rainT = r.every;
+  const stats = p.stats;
+  const area = stats.getFor('area', w.tags);
+  const extra = Math.max(0, Math.round(stats.getFor('projectiles', w.tags)));
+  const n = Math.min(r.max, r.arrows + r.perProj * extra);
+  const dmg = param(run, w, 'damage') * r.frac;
+  const spread = r.spread * area;
+  for (let k = 0; k < n; k++) {
+    const ang = run.rng.next() * Math.PI * 2;
+    const dist = Math.sqrt(run.rng.next()) * spread;
+    c.rain.push({ x: knot.x + Math.cos(ang) * dist, y: knot.y + Math.sin(ang) * dist, t: r.delay + k * r.stagger, d: r.delay + k * r.stagger, dmg, r: r.radius * area });
+  }
+}
+
+// The ranged weapon the rain is drawn from: the one that hits hardest.
+function rangedWeapon(run) {
+  let best = null;
+  let bd = 0;
+  for (const w of run.player.weapons) {
+    if (!w.tags.set.has('ranged')) continue;
+    const d = param(run, w, 'damage');
+    if (d > bd) { bd = d; best = w; }
+  }
+  return best;
+}
+
+// The enemy (among up to 24 sampled within range) with the most others within `spread` of it, nearer knots
+// preferred (a knot at the edge of range counts half): the rain covers what is closing in on you, and the gems
+// it drops land where you can reach them.
+function thickest(run, x, y, range, spread) {
+  const w = run.world;
+  const n = w.hash.queryRadius(x, y, range, w.scratch);
+  if (!n) return null;
+  const step = Math.max(1, Math.floor(n / 24));
+  let best = null;
+  let bc = -1;
+  const s2 = spread * spread;
+  for (let i = 0; i < n; i += step) {
+    const a = w.scratch[i];
+    if (!a.alive || a.prop === 1) continue;
+    let cnt = 0;
+    for (let j = 0; j < n; j++) {
+      const b = w.scratch[j];
+      if (b.alive && (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) <= s2) cnt++;
+    }
+    const score = cnt * (1 - 0.5 * Math.min(1, Math.hypot(a.x - x, a.y - y) / range));
+    if (score > bc) { bc = score; best = a; }
+  }
+  return best ? { x: best.x, y: best.y } : null;
+}
+
+function landArrow(run, a) {
+  const w = run.world;
+  const n = w.hash.queryRadius(a.x, a.y, a.r + MAX_ENEMY_RADIUS, w.scratch);
+  for (let i = 0; i < n; i++) {
+    const e = w.scratch[i];
+    if (!e.alive) continue;
+    const dx = e.x - a.x;
+    const dy = e.y - a.y;
+    const rr = a.r + e.r;
+    if (dx * dx + dy * dy > rr * rr) continue;
+    const d = Math.hypot(dx, dy) || 1;
+    resolveHit(run, run.cls.inst, e, a.dmg, dx / d * 0.3, dy / d * 0.3, 1);    // depth 1: the rain sets off no on-hit chains of its own
+  }
+  addPuff(run, a.x, a.y, a.r * 0.7, '#e9c48a');
+}
+
+// Falling arrows: a shadow on the ground that tightens, and the arrow dropping onto it.
+export function drawClassTrait(ctx, run) {
+  const c = run.cls;
+  if (!c || !c.rain || !c.rain.length) return;
+  ctx.lineCap = 'round';
+  for (const a of c.rain) {
+    const u = 1 - a.t / a.d;                                 // 0 loosed .. 1 landing
+    ctx.globalAlpha = 0.2 + 0.35 * u;
+    ctx.fillStyle = '#3a2a18';
+    ctx.beginPath();
+    ctx.ellipse(a.x, a.y, a.r * (1 - 0.5 * u), a.r * 0.5 * (1 - 0.5 * u), 0, 0, Math.PI * 2);
+    ctx.fill();
+    const h = 140 * (1 - u);
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = '#f3dcae';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(a.x - 6 * (1 - u), a.y - h - 22);
+    ctx.lineTo(a.x - 6 * (1 - u) + 3, a.y - h);
+    ctx.stroke();
+    ctx.fillStyle = '#ffb46a';
+    ctx.beginPath();
+    ctx.arc(a.x - 6 * (1 - u) + 3, a.y - h, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'butt';
 }
 
 // Called for every enemy death with the weapon that killed it (null for some world deaths).

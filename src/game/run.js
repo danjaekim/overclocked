@@ -24,7 +24,7 @@ import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { LEVELUP } from '../data/progression.js';
 import { createStats, statsSnapshot } from './run-stats.js';
-import { initClassTrait, updateClassTrait } from './class-traits.js';
+import { initClassTrait, updateClassTrait, drawClassTrait } from './class-traits.js';
 
 export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = () => {} }) {
   const run = {
@@ -115,6 +115,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       drawHearts(ctx, view, run);
       drawMagnets(ctx, view, run);
       drawHazards(ctx, run);
+      drawClassTrait(ctx, run);                                 // Rain of Arrows
       drawEnemies(ctx, view, run);
       drawEnemyShots(ctx, run);
       drawProjectiles(ctx, view, run);

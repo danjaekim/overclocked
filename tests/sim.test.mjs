@@ -80,7 +80,7 @@ test('weapon level-ups apply their modifiers through the stat block', () => {
   while (canLevelUp(inst)) assert.ok(levelUpWeapon(run, inst));
   assert.equal(inst.level, inst.def.maxLevel);
   approx(dmg(), base * (1 + 0.2 + 0.3) * 1.1);          // two additive bonuses, then 10% more
-  assert.equal(run.player.stats.getFor('projectiles', inst.tags), 2);
+  assert.equal(run.player.stats.getFor('projectiles', inst.tags), 3, 'two from the bow\'s levels, one from the Archer\'s Quiver (M43)');
   assert.equal(levelUpWeapon(run, inst), false);
 });
 

@@ -36,14 +36,15 @@ export const WEAPONS = {
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.2 }],
       [{ stat: 'projectiles', op: 'flat', value: 1 }],
-      [{ stat: 'pierce', op: 'flat', value: 1 }],
+      [{ stat: 'area', op: 'inc', value: 0.15 }],                     // lv4: Embers (the hit trigger below)
       [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
       [{ stat: 'projectiles', op: 'flat', value: 1 }],
       [{ stat: 'damage', op: 'inc', value: 0.3 }],
       [{ stat: 'damage', op: 'more', value: 0.1 }],
     ],
-    levelText: ['+20% damage', '+1 arrow', '+1 pierce', '-15% cooldown; 15% of kills explode', '+1 arrow', '+30% damage', '10% more damage'],   // lv5 also: 15% chance to explode on kill
+    levelText: ['+20% damage', '+1 arrow', 'Embers: arrows burst on impact, +15% area', '-15% cooldown; 15% of kills explode', '+1 arrow', '+30% damage', '10% more damage'],   // lv5 also: 15% chance to explode on kill
     triggers: [
+      { on: 'hit', effect: 'explode', params: { radius: 30, damageFrac: 0.35, kb: 20 }, minLevel: 4 },   // Embers (M43): every arrow bursts where it hits
       { on: 'kill', chance: 0.15, effect: 'explode', params: { radius: 55, damageFrac: 0.5 }, minLevel: 5 },
     ],
     evolvesInto: 'storm_volley',

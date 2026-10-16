@@ -16,7 +16,8 @@ import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
-  const run = createRun({ seed: 9, view: { w: 480, h: 1040 }, debug: { god: true }, classId: 'archer' });
+  // Smith: the Archer's Quiver (M43) would throw a second disc and its Rain of Arrows would hit the dummies
+  const run = createRun({ seed: 9, view: { w: 480, h: 1040 }, debug: { god: true }, classId: 'smith' });
   run.director.update = () => {};
   run.player.weapons.length = 0;
   return run;
@@ -87,8 +88,14 @@ test('ricochet saw returns and is caught when nothing is left to hop to', () => 
   const run = newRun();
   const w = addWeapon(run, 'ricochet_saw');
   dummy(run, 120, 0);
-  tick(run, 4);
-  assert.equal(w.discs.length, 0, 'caught');
+  let out = false;
+  let caught = false;
+  for (let i = 0; i < 60 * 4 && !caught; i++) {             // the next throw may already be in the air at 4 s: look for the catch itself
+    run.update(STEP, { x: 0, y: 0 });
+    if (w.discs.length) out = true;
+    else if (out) caught = true;
+  }
+  assert.ok(caught, 'caught');
 });
 
 test('gyre: parks at the end of its throw, keeps cutting there, drags enemies in, then returns', () => {

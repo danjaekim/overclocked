@@ -90,7 +90,8 @@ test('a full gem pool merges new gems into the farthest one and loses no xp', ()
 });
 
 test('kills drop gems worth the enemy xp, and collecting them levels the player up', () => {
-  const run = newRun(5, { god: true });
+  // a Smith: it stands still here, and the Archer's Rain of Arrows (M43) kills enemies before they come within magnet reach
+  const run = createRun({ seed: 5, view: VIEW, debug: { god: true }, classId: 'smith' });
   for (let i = 0; i < 60 * 40; i++) run.update(STEP, STILL);
   assert.ok(run.kills > 5);
   assert.ok(run.player.level > 1, `expected a level-up, still level ${run.player.level}`);
@@ -125,7 +126,7 @@ test('Wind Sigil is scoped to projectile weapons only', () => {
   const entry = addPassive(run, 'wind_sigil');
   levelUpPassive(run, entry);                                  // level 2: +1 pierce on projectile weapons
   const bow = run.player.weapons[0];
-  assert.equal(run.player.stats.getFor('pierce', bow.tags), 2, 'the Archer\'s own +1 pierce on projectiles, plus Wind Sigil');
+  assert.equal(run.player.stats.getFor('pierce', bow.tags), 1, 'Wind Sigil\'s +1 pierce (the Archer\'s own +1 pierce became Quiver in M43)');
   const melee = makeTags(['melee', 'weapon:99']);
   assert.equal(run.player.stats.getFor('pierce', melee), 0);
   assert.equal(run.player.stats.get('pierce'), 0);

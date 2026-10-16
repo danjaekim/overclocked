@@ -18,6 +18,7 @@ const STEP = 1 / 60;
 const newRun = (classId = 'archer') => {
   const run = createRun({ seed: 3, view: VIEW, debug: { god: true }, classId });
   run.director.update = () => {};
+  run.trait = { ...run.trait, rain: undefined };     // these tests isolate status mechanics: no Rain of Arrows (M43) landing on the dummies
   return run;
 };
 const tick = (run, s) => { for (let i = 0; i < Math.round(s / STEP); i++) run.update(STEP, { x: 0, y: 0 }); };
@@ -195,6 +196,7 @@ test('vsBurning / vsChilled / vsShocked multiply only against targets with that 
 
 test('an untouched enemy has status 0 and a status-free run never ticks any', () => {
   const run = newRun();
+  run.player.weapons.length = 0;                   // untouched: since M43 the Archer's two arrows reach this dummy and may ignite it
   const e = dummy(run);
   assert.equal(e.status, 0);
   tick(run, 2);
@@ -222,10 +224,10 @@ test('nova: fires count shards evenly around the circle only when an enemy is in
   rehash(run);
   rs.cd = 0;
   run.update(STEP, { x: 0, y: 0 });
-  assert.equal(run.world.projectiles.count, 6);
+  assert.equal(run.world.projectiles.count, 7, 'six shards, plus one from the Archer\'s Quiver (M43)');
   const angles = run.world.projectiles.active.map((p) => Math.atan2(p.dy, p.dx)).sort((a, b) => a - b);
   const gaps = angles.slice(1).map((a, i) => a - angles[i]);
-  for (const g of gaps) approx(g, Math.PI / 3, 0.01);
+  for (const g of gaps) approx(g, (Math.PI * 2) / 7, 0.01);
 });
 
 test('Rime Shards freeze an enemy that two volleys hit', () => {

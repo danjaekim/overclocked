@@ -8,6 +8,7 @@
 //   node tools/bench.mjs --starforge    star vs no star DPS for every weapon (STAR_ONLY=id,id narrows it)
 //   node tools/bench.mjs --masterworks   each masterwork at +15 with and without its star (MW_ONLY=id,id narrows it)
 //   node tools/bench.mjs --classes       the same builds played by every class (class identity)
+//   --lib                                imported by another script (tools/*.mjs): run nothing, use the exports
 //   node tools/bench.mjs --json          machine-readable output
 //
 // 1. Single-target DPS: one immobile dummy in range, one weapon at a time, at levels 1, 4, 8.
@@ -34,7 +35,16 @@ if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(proc
 if (process.env.CLASS_OVERRIDE) for (const [c, o] of Object.entries(JSON.parse(process.env.CLASS_OVERRIDE))) {   // class tuning sweeps: {"archer":{"addMods":[{"stat":"maxHp","op":"flat","value":30}],"trait":{"dodge":{"chance":0.3}},"startWeapon":"x"}}
   if (o.addMods) CLASSES[c].mods.push(...o.addMods);
   if (o.trait) Object.assign(CLASSES[c].trait, o.trait);
+  if (o.mods) CLASSES[c].mods = o.mods;
+  if (o.dropTrait) for (const k of o.dropTrait) delete CLASSES[c].trait[k];
   if (o.startWeapon) CLASSES[c].startWeapon = o.startWeapon;
+}
+if (process.env.WEAPON_OVERRIDE) for (const [id, o] of Object.entries(JSON.parse(process.env.WEAPON_OVERRIDE))) {   // {"ember_bow":{"base":{"cooldown":0.7},"triggers":[...],"levels":[...]}}
+  const w = WEAPONS[id];
+  if (o.base) Object.assign(w.base, o.base);
+  if (o.triggers) w.triggers = o.triggers;
+  if (o.levels) w.levels = o.levels;
+  if (o.baseMods) w.baseMods = o.baseMods;
 }
 const STAR_ONLY = process.env.STAR_ONLY ? process.env.STAR_ONLY.split(',') : null;
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
@@ -220,7 +230,7 @@ function snapBuild(run) {
   return { weapons: p.weapons.map((w) => [w.weaponId, w.level, w.enhance]), passives: p.passives.map((i) => [i.id, i.level]), perks: p.perks.map((i) => [i.id, i.level]) };
 }
 
-function playBot(classId, seed) {
+export function playBot(classId, seed, onTick) {
   const run = createRun({ seed, view: VIEW, debug: { god: false }, classId });
   const move = { x: 0, y: 0 };
   let evolved = 0;
@@ -270,6 +280,7 @@ function playBot(classId, seed) {
     } else { move.x = 0; move.y = 0; }
 
     run.update(STEP, move);
+    if (onTick) onTick(run);
     ticks++;
     if (hurt) hurtTicks++;
     if (run.ore > iron.prev) iron.earned += run.ore - iron.prev;
@@ -377,7 +388,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--lib')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -483,7 +494,7 @@ if (flag('--masterworks')) {
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--lib')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
