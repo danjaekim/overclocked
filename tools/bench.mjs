@@ -141,6 +141,9 @@ function playBot(classId, seed) {
   let bossSeen = false;
   const at = { 300: null };
   const ss = { earned: 0, spent: 0, prev: run.starsteel, first: null };
+  let forges = 0;
+  let hurtTicks = 0;
+  let ticks = 0;
   const iron = { earned: 0, prev: run.ore };                                    // iron income      // starsteel flow
   const late = { n: 0, sum: 0, clear: 0, hp: 0 };       // crowd after 300 s: how full is the screen? (how often is it nearly empty?)
   while (!run.over && run.time < 601) {
@@ -158,7 +161,7 @@ function playBot(classId, seed) {
     }
     const l = Math.hypot(sx, sy);
     const melee = MELEE.has(classId);
-    const hurt = p.hp < p.maxHp * 0.45;
+    const hurt = p.hp < p.maxHp * (0.45);    
     if (melee && !hurt && near) {                 // melee classes wade in while healthy
       const dx = near.x - p.x; const dy = near.y - p.y; const d = Math.hypot(dx, dy) || 1;
       move.x = dx / d; move.y = dy / d;
@@ -180,6 +183,8 @@ function playBot(classId, seed) {
     } else { move.x = 0; move.y = 0; }
 
     run.update(STEP, move);
+    ticks++;
+    if (hurt) hurtTicks++;
     if (run.ore > iron.prev) iron.earned += run.ore - iron.prev;
     iron.prev = run.ore;
     if (run.starsteel !== ss.prev) { const d = run.starsteel - ss.prev; if (d > 0) { ss.earned += d; if (ss.first === null) ss.first = Math.round(run.time); } else ss.spent -= d; ss.prev = run.starsteel; }
@@ -200,6 +205,7 @@ function playBot(classId, seed) {
     }
     if (run.forgeReady) {
       run.forgeReady = false;
+      forges++;
       for (const w of p.weapons) for (const r of recipesFor(w)) if (canEvolve(run, w, r)) { evolve(run, w, r); evolved++; }
       if (run.starsteel !== ss.prev) { ss.spent += ss.prev - run.starsteel; ss.prev = run.starsteel; }
       for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (w && canEnhance(run, w)) enhance(run, w); else break; }
@@ -210,6 +216,7 @@ function playBot(classId, seed) {
     won: run.won, time: Math.round(run.time), level: run.player.level, kills: run.kills,
     bossSeen, bossKilled: run.bossKilled, evolved, chests, titles: run.titles.length,
     at300: at[300],
+    forges, hurt: +(hurtTicks / Math.max(1, ticks)).toFixed(2),
     iron: { earned: iron.earned, left: run.ore, topEnhance: Math.max(0, ...run.player.weapons.map((w) => w.enhance)) },
     starsteel: { earned: ss.earned, spent: ss.spent, left: run.starsteel, first: ss.first, elites: run.eliteKills },
     late: late.n ? { avg: Math.round(late.sum / late.n), clear: +(late.clear / late.n).toFixed(3), hp: +(late.hp / late.n).toFixed(2) } : null,

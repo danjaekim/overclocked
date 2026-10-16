@@ -65,15 +65,22 @@ Gambling from +0 to +15 costs about 6,840 iron (15 runs of income); with every a
 284. A guarantee is worth almost nothing below +7 and thousands of iron at +14, which is why Star Quench
 gives a variable number of guarantees per starsteel (section 4) instead of one per starsteel.
 
-## 3. M38b: Berserker iron check
+## 3. M38b: Berserker iron check (done, finding only)
 
-Small, before M39. Berserker bots earn about 240 iron and reach about +4, against 430–580 iron and +8
-to +10 for the other classes. Find out whether it is the class (iron drop rate, `oreGain`, kill
-pattern) or the bench bot (it only enhances `weapons[0]`, and the Berserker's first weapon may stall on
-a temper or a cap). Fix whichever it is. Iron matters more once Star Quench lands.
+Berserker bots earn about 250 iron and reach about +4, against 430–580 and +8 to +10 for other classes.
+It is **not an iron-drop or enhance bug**. The Berserker bot kills about 3,200 enemies per run against
+about 5,300 for Smith and Saint, so it collects proportionally less iron (and visits the forge about as
+often, 2.8 times against 3.0 to 3.3). Why it kills less: it spends 66% of the run below 45% hp (Smith
+56%, Saint 16%), and the bot retreats when hurt, which a short-range axe cannot fight from. By the last
+five minutes about 270 enemies are alive on the Berserker's screen, against about 48.
 
-- Done when: the cause is known and written down; if it is the class, Berserker iron is within the
-  other classes' range in the bench.
+The bench bot's retreat threshold was tested as the cause. Lowering it for the Berserker (fight while
+wounded, as its kit intends) trades kills for deaths: wins out of 20 were 17 at the 45% threshold, 13 at
+38%, 7 at 30% and 3 at 20%, with kills rising from 3,200 to 4,700. So the Berserker survives only by
+kiting and clears poorly, or fights and dies. That is a **class balance** signal (low sustain: 1.5%
+lifesteal, no hp or armor bonus), not a bot fault, and it was left alone: a number for Dan to decide.
+Options: lifesteal back up to 2% to 2.5%, a small max-hp bonus, or a Frenzy heal. The bench now records
+`forges`, the share of time hurt, and iron per run, to measure whichever is picked.
 
 ## 4. M39: Star Quench
 
