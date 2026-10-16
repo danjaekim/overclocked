@@ -106,7 +106,7 @@ export default {
     }
   },
 
-  draw(inst, ctx) {
+  draw(inst, ctx, run) {
     const aura = inst.graft && inst.graft.hooks.minionAura;
     if (aura) {                                            // the halo each minion carries
       ctx.strokeStyle = aura.color;
@@ -117,7 +117,8 @@ export default {
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    const r = inst.def.base.radius;
+    const r = param(run, inst, 'radius');                  // the real hit radius, so area (Wide, Heavy ...) shows
+    const k = r / inst.def.base.radius;
     const el = elementOf(inst);
     if (el) {                                              // infused minions glow in the element's colour
       ctx.fillStyle = el.main;
@@ -136,8 +137,8 @@ export default {
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#2b2a24';                           // two eye sockets
-      ctx.fillRect(m.x - 3.5, m.y - 2.5, 2.4, 3);
-      ctx.fillRect(m.x + 1.1, m.y - 2.5, 2.4, 3);
+      ctx.fillRect(m.x - 3.5 * k, m.y - 2.5 * k, 2.4 * k, 3 * k);
+      ctx.fillRect(m.x + 1.1 * k, m.y - 2.5 * k, 2.4 * k, 3 * k);
       ctx.fillStyle = '#e8e2cf';
     }
   },

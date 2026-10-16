@@ -73,7 +73,25 @@ function drawEvolvedGlow(p, t, front) {
   }
 }
 
+  // Magnet range: a faint dashed ring once something (Magnet perks, passives) pushes it past the base 70,
+  // so the extra pickup range is something you can see.
+  const BASE_PICKUP = 70;
+  function drawPickupRing(p) {
+    const r = p.stats.get('pickupRadius');
+    if (r < BASE_PICKUP * 1.05) return;
+    ctx.strokeStyle = '#9fe8ff';
+    ctx.globalAlpha = 0.16;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 7]);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+
   function drawPlayer(p, t) {
+    drawPickupRing(p);
     drawEvolvedGlow(p, t, false);
     const spr = getSprite(p.classId, p.hurtFlash > 0);
     if (spr) {
