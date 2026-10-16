@@ -119,3 +119,39 @@ export function drawChestArrows(ctx, view, run) {
     ctx.fill();
   }
 }
+
+// HUD pass: a green arrow toward each off-screen supply crate, ringed by its time left.
+export function drawCrateArrows(ctx, view, run) {
+  const list = run.world.enemies.active;
+  const cam = run.cam;
+  const top = view.insetTop + 56;
+  const bottom = view.h - 40;
+  const m = 26;
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.prop !== 1) continue;
+    const sx = view.w / 2 + (g.x - cam.x);
+    const sy = view.h / 2 + (g.y - cam.y);
+    if (sx > m && sx < view.w - m && sy > top && sy < bottom) continue;
+    const cx = view.w / 2;
+    const cy = view.h / 2;
+    const dx = sx - cx;
+    const dy = sy - cy;
+    const k = Math.min((view.w / 2 - m) / (Math.abs(dx) || 1e-6), (cy - top) / (Math.abs(dy) || 1e-6), (bottom - cy) / (Math.abs(dy) || 1e-6));
+    const ax = cx + dx * Math.min(1, k);
+    const ay = cy + dy * Math.min(1, k);
+    const a = Math.atan2(dy, dx);
+    ctx.fillStyle = '#7dff9a';
+    ctx.beginPath();
+    ctx.moveTo(ax + Math.cos(a) * 14, ay + Math.sin(a) * 14);
+    ctx.lineTo(ax + Math.cos(a + 2.5) * 12, ay + Math.sin(a + 2.5) * 12);
+    ctx.lineTo(ax + Math.cos(a - 2.5) * 12, ay + Math.sin(a - 2.5) * 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125,255,154,0.8)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(ax - Math.cos(a) * 6, ay - Math.sin(a) * 6, 20, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(0, g.aiCd / g.def.ttl));
+    ctx.stroke();
+  }
+}

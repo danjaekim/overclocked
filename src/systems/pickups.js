@@ -5,10 +5,12 @@
 import { GEM } from '../data/progression.js';
 import { gainXp } from '../game/xp.js';
 import { ORES } from '../data/ores.js';
+import { addPuff } from '../render/fx.js';
 
 export const KIND_GEM = 0;
 export const KIND_ORE = 1;
 export const KIND_CHEST = 2;
+export const KIND_HEAL = 3;
 
 export function gemTier(value) {
   let t = 0;
@@ -64,6 +66,32 @@ export function spawnChest(run, x, y, tier) {
   return g;
 }
 
+// A heart (value = share of max hp). It waits on the ground until you are hurt: at full health it is
+// neither pulled in nor taken, so a heal is never wasted, and it never expires. If the pool is full it
+// heals straight away.
+export function spawnHeal(run, x, y, frac) {
+  const g = run.world.pickups.acquire();
+  if (!g) {
+    healPlayer(run, frac);
+    return null;
+  }
+  g.kind = KIND_HEAL;
+  g.x = x;
+  g.y = y;
+  g.value = frac;
+  g.r = 10;
+  g.magnet = false;
+  g.speed = GEM.baseMagnet;
+  return g;
+}
+
+export function healPlayer(run, frac) {
+  const p = run.player;
+  const before = p.hp;
+  p.hp = Math.min(p.maxHp, p.hp + p.maxHp * frac);
+  return p.hp - before;
+}
+
 function bankOre(run, type, amount) {
   if (ORES[type].bank === 'starsteel') run.starsteel += amount;
   else run.ore += amount;
@@ -101,6 +129,7 @@ export function updatePickups(run, dt) {
     let dx = p.x - g.x;
     let dy = p.y - g.y;
     let d2 = dx * dx + dy * dy;
+    if (g.kind === KIND_HEAL && p.hp >= p.maxHp) continue;     // a heart is saved for when you need it
     if (g.kind !== KIND_CHEST && !g.magnet && d2 <= radius2) g.magnet = true;
 
     if (g.magnet) {
@@ -120,6 +149,11 @@ export function updatePickups(run, dt) {
     if (d2 <= rr * rr) {
       if (g.kind === KIND_CHEST) { run.pendingChests.push(g.value); run.sfx('chest'); }
       else if (g.kind === KIND_ORE) { bankOre(run, g.ore, g.value); run.sfx('ore'); }
+      else if (g.kind === KIND_HEAL) {
+        healPlayer(run, g.value);
+        addPuff(run, p.x, p.y, p.r * 1.4, '#7dff9a');
+        run.sfx('heal');
+      }
       else { gainXp(run, g.value * xpGain); run.sfx('gem'); }
       store.release(g);
     }

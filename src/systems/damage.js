@@ -12,6 +12,7 @@ import { SHRINE } from '../data/forge.js';
 import { KIND_HIT, KIND_DOT } from './damage-queue.js';
 import { recordDamage, recordKill } from '../game/run-stats.js';
 import { onClassKill } from '../game/class-traits.js';
+import { breakCrate } from './crates.js';
 import { ST } from '../data/statuses.js';
 import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike } from './status.js';
 
@@ -110,6 +111,12 @@ export function flushDamage(run) {
     const src = q.src[i];
     q.src[i] = null;
     if (!e.alive || e.uid !== q.uid[i]) continue;     // already dead (or slot reused) this tick
+    if (e.prop === 1) {                               // a supply crate: any damage wears it down; no statuses, numbers, kills or lifesteal
+      e.hp -= q.amount[i];
+      e.flash = HIT_FLASH;
+      if (e.hp <= 0) breakCrate(run, e);
+      continue;
+    }
     const depth = q.depth[i];
     const kind = q.kind[i];
     const ex = e.x;

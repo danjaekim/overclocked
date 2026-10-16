@@ -2,7 +2,7 @@
 // the view. At the soft cap it stops spawning and buffs enemy hp so pressure keeps rising.
 
 import { ELITE, affixDefs } from '../data/elites.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, PROPS } from '../data/enemies.js';
 import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP } from '../data/waves.js';
 import { RUN_EVENTS } from './run-events.js';
 import { perimeterPoint, lerp } from '../core/math.js';
@@ -17,7 +17,7 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   const w = run.world;
   const e = w.enemies.acquire();
   if (!e) return null;
-  const def = ENEMIES[defId];
+  const def = ENEMIES[defId] || PROPS[defId];
   e.uid = w.nextUid++;
   e.defId = defId;
   e.def = def;
@@ -46,6 +46,8 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   e.slowMul = 1;
   e.sunderT = e.blessT = 0;
   e.stunT = 0;
+  e.prop = def.prop ? 1 : 0;
+  if (e.prop) e.aiCd = def.ttl;                    // a prop's aiCd counts down its life
   return e;
 }
 

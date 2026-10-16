@@ -1,6 +1,7 @@
 // Handlers for one-off timeline events (data/waves.js EVENTS). The director calls these.
 
 import { spawnShrine } from '../systems/shrines.js';
+import { spawnCrate } from '../systems/crates.js';
 import { spawnEnemy, spawnElite, randomPerimeterPoint } from './director.js';
 import { ELITE } from '../data/elites.js';
 import { RUN } from '../data/waves.js';
@@ -10,6 +11,11 @@ const tmp = { x: 0, y: 0 };
 export const RUN_EVENTS = {
   shrine(run) {
     spawnShrine(run);
+  },
+
+  // A supply crate just past the view edge (data/crates.js); skipped if two are already out there.
+  crate(run) {
+    spawnCrate(run);
   },
 
   // An elite enters from the view edge with a random affix; it drops a chest.

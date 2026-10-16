@@ -31,7 +31,7 @@ export default {
       const range = param(run, inst, 'range');
       const n = w.hash.queryRadius(p.x, p.y, range, w.scratch);
       let live = 0;
-      for (let i = 0; i < n; i++) if (w.scratch[i].alive) w.scratch[live++] = w.scratch[i];
+      for (let i = 0; i < n; i++) if (w.scratch[i].alive && w.scratch[i].prop !== 1) w.scratch[live++] = w.scratch[i];
       if (live === 0) {
         inst.cd = 0;
       } else {

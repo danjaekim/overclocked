@@ -33,7 +33,7 @@ export default {
       let bestScore = -1;
       for (let i = 0; i < n; i++) {
         const e = w.scratch[i];
-        if (!e || !e.alive) continue;
+        if (!e || !e.alive || e.prop === 1) continue;
         let used = false;
         for (let j = 0; j < k; j++) if (inst.picked[j] === e.uid) used = true;
         if (used) continue;

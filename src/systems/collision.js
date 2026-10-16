@@ -34,7 +34,7 @@ function ricochet(run, pr) {
   let bestD = RICOCHET_RANGE * RICOCHET_RANGE;
   for (let i = 0; i < n; i++) {
     const o = w.scratch[i];
-    if (!o.alive || hasHit(pr, o.uid)) continue;
+    if (!o.alive || o.prop === 1 || hasHit(pr, o.uid)) continue;
     const dx = o.x - pr.x;
     const dy = o.y - pr.y;
     const d = dx * dx + dy * dy;

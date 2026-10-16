@@ -18,6 +18,7 @@ function makeEnemy() {
     ai: 0, aiT: 0,         // boss state machine: 0 chase, 1 windup, 2 dash; seconds left in it
     ax: 0, ay: 0,          // boss dash direction
     aiCd: 0,               // seconds until the next charge
+    prop: 0,               // 1 = a breakable prop (a supply crate), not an enemy: weapons do not aim at it (data/enemies.js PROPS)
     elite: 0, affix: '', affix2: '',   // elites (data/elites.js): flag and affix ids (the second only late in the run)
     wardT: 0,              // seconds a Shaman's ward still covers this enemy (takes half damage)
     lastHitT: 0,           // run.time of the last damage taken (regenerating elites)
@@ -46,7 +47,7 @@ function makeProjectile() {
 }
 
 function makePickup() {
-  return { kind: 0, ore: 'iron', x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore, 2 = chest (value = tier: 0 elite, 1 boss)
+  return { kind: 0, ore: 'iron', x: 0, y: 0, r: 4, value: 1, magnet: false, speed: 0 };   // kind 0 = xp gem, 1 = ore, 2 = chest (value = tier: 0 elite, 1 boss), 3 = heart (value = share of max hp)
 }
 
 function makeFx() {

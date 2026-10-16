@@ -4,13 +4,13 @@
 
 export const SFX_NAMES = [
   'hit', 'kill', 'gem', 'ore', 'hurt', 'levelup', 'forge', 'fail', 'shrine',
-  'boss', 'chest', 'evolve', 'win', 'lose', 'tap',
+  'boss', 'chest', 'evolve', 'win', 'lose', 'tap', 'heal', 'crate',
 ];
 
 // minimum seconds between two plays of the same sound
 const GAP = {
   hit: 0.05, kill: 0.04, gem: 0.03, ore: 0.05, hurt: 0.15, levelup: 0.3, forge: 0.08, fail: 0.1,
-  shrine: 0.3, boss: 0.5, chest: 0.2, evolve: 0.5, win: 0.5, lose: 0.5, tap: 0.02,
+  shrine: 0.3, boss: 0.5, chest: 0.2, evolve: 0.5, win: 0.5, lose: 0.5, tap: 0.02, heal: 0.25, crate: 0.1,
 };
 
 const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
@@ -116,6 +116,13 @@ export function createSfx(ctx, dest) {
     chest: (t) => {
       osc({ t, type: 'triangle', f: 260, to: 1040, dur: 0.35, vol: 0.18 });
       [2093, 2637, 3136, 3520, 4186].forEach((f, i) => osc({ t: t + 0.3 + i * 0.06, f, dur: 0.3, vol: 0.07 }));
+    },
+    heal: (t) => {                                  // a soft rising chime
+      [523, 659, 784].forEach((f, i) => osc({ t: t + i * 0.07, type: 'sine', f, dur: 0.28, vol: 0.12 }));
+    },
+    crate: (t) => {                                 // wood splintering
+      noise(t, 0.12, 0.14, 'bandpass', 900);
+      osc({ t, type: 'square', f: 180, to: 70, dur: 0.1, vol: 0.08 });
     },
     evolve: (t) => {
       osc({ t, type: 'sawtooth', f: 160, to: 1800, dur: 0.75, vol: 0.1, lp: { from: 600, to: 5000 } });

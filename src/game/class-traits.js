@@ -89,7 +89,7 @@ function soul(run, s, x, y) {
   near.length = 0;
   for (let i = 0; i < n; i++) {
     const o = w.scratch[i];
-    if (!o.alive) continue;
+    if (!o.alive || o.prop === 1) continue;
     const d = (o.x - p.x) * (o.x - p.x) + (o.y - p.y) * (o.y - p.y);
     if (d > s.range * s.range) continue;
     let k = near.length;

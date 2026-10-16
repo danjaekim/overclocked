@@ -70,6 +70,13 @@ export function updateEnemies(run, dt) {
     const dy = p.y - e.y;
     const d2 = dx * dx + dy * dy;
 
+    if (e.prop === 1) {                     // a supply crate: stands still, fades, never chases or hurts
+      e.aiCd -= dt;
+      if (e.flash > 0) e.flash -= dt;
+      if (e.aiCd <= 0 || d2 > farSq * 2) w.enemies.release(e);
+      continue;
+    }
+
     if (d2 > farSq) {                       // too far to matter: re-enter from the edge
       randomPerimeterPoint(run, tmp);
       e.x = tmp.x;

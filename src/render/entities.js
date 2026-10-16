@@ -1,16 +1,17 @@
 // Entity drawing. Enemies are sprites (discs batched per colour until the art loads), with a
 // white silhouette for hit-flashing ones. Everything is culled to the camera rect.
 
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, PROPS } from '../data/enemies.js';
 import { GEM } from '../data/progression.js';
 import { ORES } from '../data/ores.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
-import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST } from '../systems/pickups.js';
+import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST, KIND_HEAL } from '../systems/pickups.js';
 import { ELITE, affixDefs } from '../data/elites.js';
 import { getSprite } from './sprites.js';
 
 const TAU = Math.PI * 2;
-const DEF_IDS = Object.keys(ENEMIES);
+const ALL_DEFS = { ...ENEMIES, ...PROPS };             // enemies and props share the pool and the drawing
+const DEF_IDS = Object.keys(ALL_DEFS);
 const SPRITE_K = 3.5;                  // sprite width = radius * this (the hit circle stays the radius)
 const LOOT_K = 4.2;                    // gem and ore sprite width = radius * this
 const LIFT_K = 0.3;                    // feet sit near the circle's bottom
@@ -119,6 +120,39 @@ export function drawChests(ctx, view, run) {
     ctx.lineWidth = 1.5;
     ctx.globalAlpha = 0.4 + 0.3 * Math.sin(run.time * 4);
     ctx.strokeRect(g.x - 14 * s, y - 10 * s, 28 * s, 20 * s);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Hearts (supply crate heals): a bobbing green orb with a white cross, bright while you are hurt
+// (when it will come to you) and dim at full health (when it waits).
+export function drawHearts(ctx, view, run) {
+  const list = run.world.pickups.active;
+  const cam = run.cam;
+  const x0 = cam.x - view.w / 2 - 20;
+  const x1 = cam.x + view.w / 2 + 20;
+  const y0 = cam.y - view.h / 2 - 20;
+  const y1 = cam.y + view.h / 2 + 20;
+  const hurt = run.player.hp < run.player.maxHp;
+  for (let i = 0; i < list.length; i++) {
+    const g = list[i];
+    if (g.kind !== KIND_HEAL || g.x < x0 || g.x > x1 || g.y < y0 || g.y > y1) continue;
+    const y = g.y + Math.sin(run.time * 4 + g.x) * 2;
+    ctx.globalAlpha = hurt ? 1 : 0.6;
+    ctx.fillStyle = 'rgba(125,255,154,0.25)';
+    ctx.beginPath();
+    ctx.arc(g.x, y, g.r + 5, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#3fcf6a';
+    ctx.strokeStyle = '#e9ffe9';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(g.x, y, g.r, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(g.x - 1.8, y - 6, 3.6, 12);
+    ctx.fillRect(g.x - 6, y - 1.8, 12, 3.6);
     ctx.globalAlpha = 1;
   }
 }
@@ -395,7 +429,7 @@ export function drawEnemies(ctx, view, run) {
     for (let d = 0; d < DEF_IDS.length; d++) {
       const id = DEF_IDS[d];
       if (getSprite(id)) continue;
-      ctx.fillStyle = ENEMIES[id].color;
+      ctx.fillStyle = ALL_DEFS[id].color;
       ctx.beginPath();
       for (let i = 0; i < list.length; i++) {
         const e = list[i];

@@ -162,7 +162,7 @@ function nearestOthers(run, e, count, range) {
   const out = [];
   for (let i = 0; i < n; i++) {
     const o = w.scratch[i];
-    if (!o.alive || o === e) continue;
+    if (!o.alive || o === e || o.prop === 1) continue;
     const d = (o.x - e.x) * (o.x - e.x) + (o.y - e.y) * (o.y - e.y);
     if (d > range * range) continue;
     let k = out.length;

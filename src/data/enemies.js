@@ -72,5 +72,12 @@ export const ENEMIES = {
   },
 };
 
+// Props: breakable things that live in the enemy pool, so every weapon, swing and blast hits them with
+// no special cases, but that are not enemies: they never move or hurt you, weapons do not aim at them,
+// and breaking one is not a kill (systems/crates.js decides what falls out). `ttl`: seconds before it fades.
+export const PROPS = {
+  crate: { name: 'Supply Crate', hp: 15, speed: 0, damage: 0, radius: 14, xp: 0, ttl: 70, prop: true, color: '#b08850' },
+};
+
 // Largest enemy radius; collision queries use this so no candidate is missed.
 export const MAX_ENEMY_RADIUS = Math.max(...Object.values(ENEMIES).map((e) => e.radius));

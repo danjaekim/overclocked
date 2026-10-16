@@ -79,7 +79,7 @@ function densestSpot(run, p, range) {
   let a = null, b = null, c = null, da = Infinity, db = Infinity, dc = Infinity;
   for (let i = 0; i < n; i++) {
     const e = w.scratch[i];
-    if (!e.alive) continue;
+    if (!e.alive || e.prop === 1) continue;
     const d = (e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y);
     if (d > (range + e.r) * (range + e.r)) continue;
     if (d < da) { c = b; dc = db; b = a; db = da; a = e; da = d; }
