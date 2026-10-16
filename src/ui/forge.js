@@ -1,7 +1,7 @@
 // Forge overlay: one card per owned weapon with Enhance / Reforge / Salvage. The run is frozen
 // while it is open. Rules live in game/forge.js; this file only shows state and forwards taps.
 
-import { ENHANCE, AFFIXES } from '../data/forge.js';
+import { ENHANCE, AFFIXES, QUENCH } from '../data/forge.js';
 import { RARITIES } from '../data/rarities.js';
 import { WEAPONS } from '../data/weapons.js';
 import { recipesFor, checklist, canEvolve, evolve } from '../game/evolution.js';
@@ -9,14 +9,14 @@ import { graftOptions, graft } from '../game/graft.js';
 import { GRAFT } from '../data/grafts.js';
 import { weaponName } from '../game/weapons.js';
 import {
-  enhance, enhanceCost, enhanceChance, canEnhance, downgradeChance,
+  enhance, enhanceCost, enhanceOdds, canEnhance, downgradeChance, quench, quenchCharges, canQuench,
   rollReforge, applyReforge, keepCurrent, reforgeCost, reforgeSlots, canReforge,
   temperOptions, chooseTemper, salvage, salvageValue, canSalvage,
 } from '../game/forge.js';
 
 function outcomeText(r) {
   if (!r.ok) return '';
-  if (r.outcome === 'success') return `Enhanced to +${r.level}!`;
+  if (r.outcome === 'success') return r.quenched ? `Quenched! Enhanced to +${r.level}.` : `Enhanced to +${r.level}!`;
   if (r.outcome === 'downgrade') return `Failed. Dropped to +${r.level}.`;
   return `Failed. ${r.cost} ore lost.`;
 }
@@ -47,10 +47,15 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     const tags = inst.addTags.length ? ` · ${inst.addTags.join(' + ')}` : '';
 
     const maxed = inst.enhance >= ENHANCE.maxLevel;
-    const risk = downgradeChance(run, inst) > 0 ? ' <i>risk</i>' : '';
+    const charged = (inst.quench || 0) > 0;
+    const risk = !charged && downgradeChance(run, inst) > 0 ? ' <i>risk</i>' : '';
     const enhLabel = maxed
       ? 'Max'
-      : `Enhance +${inst.enhance + 1}<small>${enhanceCost(run, inst)} ore · ${Math.round(enhanceChance(inst) * 100)}%${risk}</small>`;
+      : `Enhance +${inst.enhance + 1}<small>${enhanceCost(run, inst)} ore · ${Math.round(enhanceOdds(inst) * 100)}%${charged ? ' ◆' : ''}${risk}</small>`;
+    const qn = quenchCharges(inst);
+    const quenchRow = qn > 0 || charged
+      ? `<div class="frow"><button class="fbtn quench" data-act="qch:${inst.instanceId}" ${canQuench(run, inst) ? '' : 'disabled'}>Star Quench<small>${qn > 0 ? `${QUENCH.cost} starsteel · next ${qn} enhance${qn === 1 ? '' : 's'} can't fail` : 'Max level'}</small></button></div>`
+      : '';
     const salLabel = confirming === inst.instanceId
       ? 'Sure?'
       : `Salvage<small>+${salvageValue(inst)} ore</small>`;
@@ -70,7 +75,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     }).join('');
 
     return `<div class="fcard" style="--c:${color}">
-      <div class="ftop"><b>${weaponName(inst)}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
+      <div class="ftop"><b>${weaponName(inst)}</b><em>${charged ? `<span class="fq" title="Star Quench charges">${'◆'.repeat(Math.min(inst.quench, 9))}</span> ` : ''}Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
       ${inst.graft ? `<div class="fgraft">Grafted: ${inst.graft.desc}</div>` : ''}
       ${chosen || tags ? `<div class="faff">${chosen}${tags}</div>` : ''}
       ${slots}
@@ -78,6 +83,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
         <button class="fbtn" data-act="enh:${inst.instanceId}" ${canEnhance(run, inst) ? '' : 'disabled'}>${inst.pendingTemper ? 'Choose a temper' : enhLabel}</button>
         <button class="fbtn${confirming === inst.instanceId ? ' warn' : ''}" data-act="sal:${inst.instanceId}" ${canSalvage(run) ? '' : 'disabled'}>${salLabel}</button>
       </div>
+      ${quenchRow}
       ${evo}
     </div>`;
   }
@@ -178,7 +184,14 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
       message = outcomeText(r);
       if (r.ok && r.outcome === 'success' && inst.pendingTemper) message = `Enhanced to +${r.level}! Choose a temper.`;
       tone = r.outcome === 'success' ? 'good' : 'bad';
-      if (r.ok) sfx(r.outcome === 'success' ? 'forge' : 'fail');
+      if (r.ok) sfx(r.quenched ? 'quench' : r.outcome === 'success' ? 'forge' : 'fail');
+    } else if (kind === 'qch') {
+      const r = quench(run, inst);
+      if (r.ok) {
+        sfx('quench');
+        message = `Quenched: the next ${r.total} enhance${r.total === 1 ? '' : 's'} can't fail.`;
+        tone = 'star';
+      }
     } else if (kind === 'rfs') {
       const r = rollReforge(run, inst, Number(extra));
       if (r.ok) sfx('forge');
@@ -221,7 +234,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     } else if (kind === 'sal') {
       if (confirming !== inst.instanceId) {
         confirming = inst.instanceId;
-        message = `Tap again to salvage ${weaponName(inst)}`;
+        message = `Tap again to salvage ${weaponName(inst)}${inst.quench ? ` (its ${inst.quench} Quench charge${inst.quench === 1 ? '' : 's'} are lost)` : ''}`;
         tone = 'bad';
       } else {
         const r = salvage(run, inst);

@@ -9,7 +9,7 @@
 // INVARIANT (tested): no outcome of a failed enhance removes the weapon. Only salvage does.
 
 import { markGone } from './run-stats.js';
-import { ENHANCE, REFORGE, SALVAGE, AFFIXES } from '../data/forge.js';
+import { ENHANCE, REFORGE, SALVAGE, AFFIXES, QUENCH } from '../data/forge.js';
 import { instanceTagSet } from './weapons.js';
 import { refreshResonance } from './resonance.js';
 import { RARITIES } from '../data/rarities.js';
@@ -34,6 +34,34 @@ export function downgradeChance(run, inst) {
   const luck = run.player.stats.get('luck');
   const protect = Math.min(0.5, Math.max(0, luck) * ENHANCE.luckProtect);
   return ENHANCE.downgradeChance * (1 - protect);
+}
+
+// ---- star quench (M39) ----------------------------------------------------------------------
+
+// Charges one purchase would give at this weapon's current enhance level (0 = cannot be bought).
+export function quenchCharges(inst) {
+  if (inst.enhance >= ENHANCE.maxLevel) return 0;
+  for (const [from, n] of QUENCH.bands) if (inst.enhance >= from) return n;
+  return 0;
+}
+
+export function canQuench(run, inst) {
+  const n = quenchCharges(inst);
+  return n > 0 && run.starsteel >= QUENCH.cost && (inst.quench || 0) < QUENCH.maxCharges;
+}
+
+// Spends starsteel for charges. Returns { ok, charges, total }.
+export function quench(run, inst) {
+  if (!canQuench(run, inst)) return { ok: false, charges: 0, total: inst.quench || 0 };
+  const n = Math.min(quenchCharges(inst), QUENCH.maxCharges - (inst.quench || 0));
+  run.starsteel -= QUENCH.cost;
+  inst.quench = (inst.quench || 0) + n;
+  return { ok: true, charges: n, total: inst.quench };
+}
+
+// The odds the next attempt really has (a charge makes it certain).
+export function enhanceOdds(inst) {
+  return (inst.quench || 0) > 0 ? 1 : enhanceChance(inst);
 }
 
 export function canEnhance(run, inst) {
@@ -85,17 +113,19 @@ export function syncTags(run, inst) {
   refreshResonance(run);
 }
 
-// Spends ore and rolls. Returns { ok, outcome: 'success' | 'fail' | 'downgrade', cost, level }.
+// Spends ore and rolls. Returns { ok, outcome: 'success' | 'fail' | 'downgrade', cost, level, quenched }.
 // ok is false (nothing spent) when the action isn't possible.
 export function enhance(run, inst) {
   if (!canEnhance(run, inst)) return { ok: false, outcome: 'blocked', cost: 0, level: inst.enhance };
   const cost = enhanceCost(run, inst);
   run.ore -= cost;
-  if (run.rng.next() < enhanceChance(inst)) {
+  const quenched = (inst.quench || 0) > 0;              // a Star Quench charge: certain, no roll, no downgrade
+  if (quenched) inst.quench--;
+  if (quenched || run.rng.next() < enhanceChance(inst)) {
     inst.enhance++;
     addEnhanceMods(run, inst, inst.enhance);
     onMilestone(run, 'enhance', inst.enhance);
-    return { ok: true, outcome: 'success', cost, level: inst.enhance };
+    return { ok: true, outcome: 'success', cost, level: inst.enhance, quenched };
   }
   // failure: the ore is lost; above the threshold one enhance level may be lost too
   if (run.rng.next() < downgradeChance(run, inst)) {

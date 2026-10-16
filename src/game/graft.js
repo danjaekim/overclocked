@@ -67,6 +67,7 @@ export function graft(run, host, donor) {
   const pv = previewGraft(host, donor);
   run.starsteel -= GRAFT.cost;
 
+  host.quench = (host.quench || 0) + (donor.quench || 0);              // paid-for Quench charges are not lost with the donor
   p.stats.removeBySource(`weapon:${donor.instanceId}:`);               // the donor is consumed
   p.stats.removeBySource(`forge:${donor.instanceId}:`);
   p.weapons.splice(p.weapons.indexOf(donor), 1);

@@ -25,7 +25,7 @@ import { CLASSES } from '../src/data/classes.js';
 import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
-import { enhance, canEnhance, chooseTemper } from '../src/game/forge.js';
+import { enhance, canEnhance, chooseTemper, quench, canQuench } from '../src/game/forge.js';
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
@@ -208,7 +208,7 @@ function playBot(classId, seed) {
       forges++;
       for (const w of p.weapons) for (const r of recipesFor(w)) if (canEvolve(run, w, r)) { evolve(run, w, r); evolved++; }
       if (run.starsteel !== ss.prev) { ss.spent += ss.prev - run.starsteel; ss.prev = run.starsteel; }
-      for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (w && canEnhance(run, w)) enhance(run, w); else break; }
+      for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (w && w.enhance >= 7 && !w.quench && canQuench(run, w)) quench(run, w); if (w && canEnhance(run, w)) enhance(run, w); else break; }
       iron.prev = run.ore;
     }
   }

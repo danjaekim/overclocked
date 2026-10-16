@@ -30,6 +30,16 @@ export const ENHANCE = {
   luckProtect: 0.05,       // each point of luck cuts the downgrade chance by 5% (max 50%)
 };
 
+// Star Quench (M39): starsteel buys guaranteed enhance attempts. `bands` is [minEnhanceLevel, charges] checked
+// from the top: buying at +10 to +12 gives 2 charges, at +13 or +14 gives 1, at +4 to +9 gives 3. A charge makes
+// the next enhance attempt succeed (no roll, no downgrade); the ore is still paid. Below the lowest band the
+// odds are already near-certain, so it cannot be bought; at max level there is nothing to buy.
+export const QUENCH = {
+  cost: 1,                 // starsteel per purchase
+  maxCharges: 9,           // a weapon holds at most this many at once
+  bands: [[13, 1], [10, 2], [4, 3]],
+};
+
 // One reforge fills or replaces ONE affix slot: you see `options` random affixes and pick one (or keep
 // what you have; the ore is spent either way). At least one option is uncommon or better when one exists.
 export const REFORGE = {

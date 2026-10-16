@@ -10,7 +10,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { PERKS } from '../data/perks.js';
 import { PASSIVES } from '../data/passives.js';
 import { EVOLUTIONS } from '../data/evolutions.js';
-import { AFFIXES, ENHANCE } from '../data/forge.js';
+import { AFFIXES, ENHANCE, QUENCH } from '../data/forge.js';
 import { RESONANCE } from '../data/resonance.js';
 import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
@@ -158,6 +158,14 @@ export function buildEntries(discovered = { grafts: [] }) {
       lines: [`Two ${id} weapons: ${r.text[0]}.`, `Three: ${r.text[1]}.`, 'Infusions and tempers count, so any weapon can join a set.'], builds: [],
     });
   }
+
+  out.push({
+    tab: 'forge', id: 'quench', name: 'Star Quench', glyph: '◆', rarity: 'epic', elements: [], cat: 'Forge', classes: [],
+    summary: `Spend ${QUENCH.cost} starsteel to make several enhance attempts certain.`,
+    lines: [`At the forge, ${QUENCH.cost} starsteel gives a weapon Quench charges: 3 at +4 to +9, 2 at +10 to +12, 1 at +13 or +14.`,
+      'A charge makes the next enhance attempt succeed, with no roll and no downgrade. The ore is still paid.',
+      'Charges stay on the weapon, carry through evolving, join the host in a graft, and are lost if the weapon is salvaged.'], builds: [],
+  });
 
   const found = new Set(discovered.grafts || []);
   out.push({
