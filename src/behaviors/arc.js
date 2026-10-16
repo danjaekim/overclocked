@@ -2,6 +2,7 @@
 // With count > 1 the extra swings are spread evenly around the player (2 = front and back).
 
 import { param } from '../game/weapon-params.js';
+import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -74,9 +75,10 @@ export default {
     if (inst.swing <= 0) return;
     const p = run.player;
     const u = 1 - inst.swing / SWING_TIME;
+    const el = elementOf(inst);
     ctx.globalAlpha = 0.7 * (1 - u);
-    ctx.strokeStyle = '#ffe3a3';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = el ? el.main : '#ffe3a3';
+    ctx.lineWidth = el ? 10 : 8;
     ctx.beginPath();
     for (let s = 0; s < inst.swings; s++) {
       const a = inst.angle + (s * TAU) / inst.swings;
@@ -84,6 +86,11 @@ export default {
       ctx.arc(p.x, p.y, inst.range * 0.8, a - inst.width / 2, a + inst.width / 2);
     }
     ctx.stroke();
+    if (el) {                                              // a bright inner edge in the element's light colour
+      ctx.strokeStyle = el.light;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
     ctx.globalAlpha = 1;
   },
 };

@@ -9,6 +9,7 @@
 //                              `time` s (cutting twice as often), dragging enemies in `pull` units/s.
 
 import { param } from '../game/weapon-params.js';
+import { elementOf } from '../render/elements.js';
 import { attackTriggers } from '../game/triggers.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
@@ -143,7 +144,8 @@ export default {
       }
       ctx.globalAlpha = 1;
     }
-    const col = inst.def.base.color;
+    const el = elementOf(inst);
+    const col = el ? el.main : inst.def.base.color;
     ctx.strokeStyle = col || '#d9dde8';
     ctx.fillStyle = col || '#aeb6c8';
     ctx.lineWidth = 2;

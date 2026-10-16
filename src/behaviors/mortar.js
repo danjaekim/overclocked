@@ -3,6 +3,7 @@
 // normal weapon hit, so burn and shock land on all of them. Area scales both reach and blast.
 
 import { param } from '../game/weapon-params.js';
+import { elementOf, accentOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { addPuff } from '../render/fx.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
@@ -50,7 +51,8 @@ export default {
       s.t -= dt;
       if (s.t > 0) continue;
       shells.splice(i, 1);
-      addPuff(run, s.x, s.y, blast / 2.2, '#ff9a3c');
+      const el = elementOf(inst);
+      addPuff(run, s.x, s.y, blast / 2.2, el ? el.puff : '#ff9a3c');
       const n = w.hash.queryRadius(s.x, s.y, blast + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
         const e = w.scratch[k];
@@ -68,7 +70,9 @@ export default {
   draw(inst, ctx, run) {
     const blast = param(run, inst, 'radius');
     const fuse = inst.def.base.fuse;
-    ctx.strokeStyle = '#ff8a3c';
+    const el = elementOf(inst);
+    const ac = accentOf(inst);
+    ctx.strokeStyle = el ? el.main : '#ff8a3c';
     ctx.lineWidth = 2;
     for (const s of inst.shells) {
       const u = 1 - s.t / fuse;
@@ -76,9 +80,16 @@ export default {
       ctx.beginPath();
       ctx.arc(s.x, s.y, blast * (1.15 - 0.15 * u), 0, Math.PI * 2);
       ctx.stroke();
+      if (ac) {                                          // second element: an inner ring in its colour
+        ctx.strokeStyle = ac.main;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, blast * 0.7 * (1.15 - 0.15 * u), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = el ? el.main : '#ff8a3c';
+      }
       ctx.beginPath();
       ctx.arc(s.x, s.y, 4 + 4 * u, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffb347';
+      ctx.fillStyle = el ? el.light : '#ffb347';
       ctx.fill();
     }
     ctx.globalAlpha = 1;

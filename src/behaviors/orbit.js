@@ -2,6 +2,7 @@
 // seconds (scaled by the cooldown stat). Area scales orbit radius and blade size.
 
 import { param } from '../game/weapon-params.js';
+import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -76,7 +77,8 @@ export default {
   draw(inst, ctx, run) {
     const p = run.player;
     const out = launchRadius(inst);
-    ctx.fillStyle = inst.launchU > 0 ? '#ffe9a0' : '#9fd8ff';
+    const el = elementOf(inst);
+    ctx.fillStyle = el ? (inst.launchU > 0 ? el.light : el.main) : inst.launchU > 0 ? '#fff8dc' : '#ffe28a';   // no element: light blades are gold
     ctx.beginPath();
     for (let b = 0; b < inst.blades; b++) {
       const a = inst.angle + (b * TAU) / inst.blades;

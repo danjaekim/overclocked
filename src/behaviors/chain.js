@@ -7,6 +7,7 @@
 // projectile, at most 4: up to 31 strikes), each generation `falloff` weaker.
 
 import { param } from '../game/weapon-params.js';
+import { arcColor } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { addArc } from '../render/fx.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -39,7 +40,7 @@ export default {
     const jump = param(run, inst, 'jump');
     let dmg = param(run, inst, 'damage');
     const d0 = Math.hypot(first.x - p.x, first.y - p.y) || 1;
-    addArc(run, p.x, p.y, first.x, first.y);
+    addArc(run, p.x, p.y, first.x, first.y, arcColor(inst));
     strike(run, inst, first, dmg, (first.x - p.x) / d0, (first.y - p.y) / d0);
     inst.seen[0] = first.uid;
     if (b.fork) {
@@ -67,7 +68,7 @@ export default {
       if (!best) break;
       inst.seen[ns++] = best.uid;
       dmg *= FALLOFF;
-      addArc(run, cx, cy, best.x, best.y);
+      addArc(run, cx, cy, best.x, best.y, arcColor(inst));
       applyShock(run, best, inst);
       const d = Math.sqrt(bestD) || 1;
       queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, 1, inst, KIND_PROC, CAUSE.CHAIN);

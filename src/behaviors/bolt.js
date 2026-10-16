@@ -3,6 +3,7 @@
 // onward through chainArc exactly like a javelin's would.
 
 import { param } from '../game/weapon-params.js';
+import { arcColor } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { addArc } from '../render/fx.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -64,7 +65,7 @@ export default {
       inst.picked[k] = best.uid;
       inst.nPicked = k + 1;
       const d = Math.sqrt(bestD) || 1;
-      addArc(run, p.x, p.y, best.x, best.y);
+      addArc(run, p.x, p.y, best.x, best.y, arcColor(inst));
       strike(run, inst, best, dmg, (best.x - p.x) / d, (best.y - p.y) / d);
     }
     inst.nPicked = 0;
@@ -100,7 +101,7 @@ function familiarStep(inst, dt, run, fam) {
     f.t += fam.every;
     for (let k = 0, t = e; k < (fam.targets || 1) && t; k++) {           // the hound's bolt, like the host's, strikes more than one
       const d = Math.hypot(t.x - f.x, t.y - f.y) || 1;
-      addArc(run, f.x, f.y, t.x, t.y);
+      addArc(run, f.x, f.y, t.x, t.y, arcColor(inst));
       strike(run, inst, t, dmg, (t.x - f.x) / d, (t.y - f.y) / d);
       const prev = t;
       t = w.hash.queryNearest(prev.x, prev.y, 120, (o) => o.alive && o !== e && o !== prev);

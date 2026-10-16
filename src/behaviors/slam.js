@@ -4,6 +4,7 @@
 // slams land on the opposite side of you. docs/design-m30-m33.md §5.1.
 
 import { param } from '../game/weapon-params.js';
+import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -54,16 +55,17 @@ export default {
   },
 
   draw(inst, ctx) {
+    const el = elementOf(inst);
     for (const s of inst.pend) {
       const u = 1 - s.t / TELEGRAPH;
       ctx.globalAlpha = 0.18 + 0.3 * u;
-      ctx.fillStyle = '#1a1208';
+      ctx.fillStyle = el ? el.dark : '#1a1208';
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.r * (0.55 + 0.45 * u), 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 0.5 * u + 0.2;
-      ctx.strokeStyle = '#ffd9a0';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = el ? el.main : '#ffd9a0';
+      ctx.lineWidth = el ? 3 : 2;
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
@@ -117,7 +119,8 @@ function land(inst, run, s) {
     strike(run, inst, e, dmg, (dx / d) * THROW, (dy / d) * THROW);
     stagger(e, stun);
   }
-  addPuff(run, s.x, s.y, s.r / 2, '#d9c3a0');
-  addPuff(run, s.x, s.y, s.r / 3.2, '#fff1d6');
+  const el = elementOf(inst);
+  addPuff(run, s.x, s.y, s.r / 2, el ? el.main : '#d9c3a0');
+  addPuff(run, s.x, s.y, s.r / 3.2, el ? el.light : '#fff1d6');
   attackTriggers(run, inst, s.x, s.y, inst.aim || 0);
 }

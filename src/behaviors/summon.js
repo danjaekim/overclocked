@@ -5,6 +5,7 @@
 // needed. Their hits are ordinary weapon hits, so every status, perk and trigger applies.
 
 import { param } from '../game/weapon-params.js';
+import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -117,9 +118,18 @@ export default {
       ctx.globalAlpha = 1;
     }
     const r = inst.def.base.radius;
+    const el = elementOf(inst);
+    if (el) {                                              // infused minions glow in the element's colour
+      ctx.fillStyle = el.main;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      for (const m of inst.minions) { ctx.moveTo(m.x + r * 1.3, m.y); ctx.arc(m.x, m.y, r * 1.3, 0, TAU); }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     ctx.fillStyle = '#e8e2cf';
-    ctx.strokeStyle = '#7d7660';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = el ? el.main : '#7d7660';
+    ctx.lineWidth = el ? 2.5 : 1.5;
     for (const m of inst.minions) {
       ctx.beginPath();
       ctx.arc(m.x, m.y, r * 0.8, 0, TAU);

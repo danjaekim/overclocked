@@ -45,8 +45,10 @@ export function addPuff(run, x, y, radius, color) {
   f.text = color;
 }
 
-// A short jagged bolt between two points (chain lightning).
-export function addArc(run, x1, y1, x2, y2) {
+// A short jagged bolt between two points (chain lightning; coloured by the weapon's element).
+const ARC_YELLOW = '#ffe066';
+const ARC_COLORS = [ARC_YELLOW, '#9fdcff', '#ff9a3c', '#d9b0ff'];   // = ELEMENTS[*].arc in render/elements.js
+export function addArc(run, x1, y1, x2, y2, color = ARC_YELLOW) {
   const w = run.world;
   if (w.fx.count >= MAX_PUFFS_POOL) return;
   const f = w.fx.acquire();
@@ -59,6 +61,7 @@ export function addArc(run, x1, y1, x2, y2) {
   f.vx = f.vy = 0;
   f.r = run.fxRng.next();                  // seeds the zig-zag
   f.ttl = f.maxTtl = 0.14;
+  f.text = color;                          // which of ARC_COLORS to draw it in
 }
 
 export function updateFx(run, dt) {
@@ -100,27 +103,29 @@ export function drawFx(ctx, view, run) {
     ctx.stroke();
   }
 
-  // chain bolts: one jagged path for all of them
-  ctx.strokeStyle = '#ffe066';
+  // chain bolts: one jagged path per colour
   ctx.lineWidth = 2.5;
   ctx.globalAlpha = 0.9;
-  ctx.beginPath();
-  for (let i = 0; i < list.length; i++) {
-    const f = list[i];
-    if (f.kind !== KIND_ARC) continue;
-    if ((f.x < x0 && f.x2 < x0) || (f.x > x1 && f.x2 > x1) || (f.y < y0 && f.y2 < y0) || (f.y > y1 && f.y2 > y1)) continue;
-    const dx = f.x2 - f.x;
-    const dy = f.y2 - f.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const j = (f.r - 0.5) * 18;
-    ctx.moveTo(f.x, f.y);
-    ctx.lineTo(f.x + dx * 0.35 + nx * j, f.y + dy * 0.35 + ny * j);
-    ctx.lineTo(f.x + dx * 0.65 - nx * j, f.y + dy * 0.65 - ny * j);
-    ctx.lineTo(f.x2, f.y2);
+  for (let c = 0; c < ARC_COLORS.length; c++) {
+    ctx.strokeStyle = ARC_COLORS[c];
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i];
+      if (f.kind !== KIND_ARC || f.text !== ARC_COLORS[c]) continue;
+      if ((f.x < x0 && f.x2 < x0) || (f.x > x1 && f.x2 > x1) || (f.y < y0 && f.y2 < y0) || (f.y > y1 && f.y2 > y1)) continue;
+      const dx = f.x2 - f.x;
+      const dy = f.y2 - f.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const j = (f.r - 0.5) * 18;
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(f.x + dx * 0.35 + nx * j, f.y + dy * 0.35 + ny * j);
+      ctx.lineTo(f.x + dx * 0.65 - nx * j, f.y + dy * 0.65 - ny * j);
+      ctx.lineTo(f.x2, f.y2);
+    }
+    ctx.stroke();
   }
-  ctx.stroke();
 
   // numbers: normal first, then crits on top
   ctx.textAlign = 'center';

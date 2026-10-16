@@ -1,6 +1,7 @@
 // aura: a ring around the player that damages every enemy inside it once per cooldown.
 
 import { param } from '../game/weapon-params.js';
+import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -43,9 +44,10 @@ export default {
 
   draw(inst, ctx, run) {
     const p = run.player;
+    const el = elementOf(inst);
     if (inst.def.base.spin) {                              // Whirlwind Cleaver: a ring of blades turning around you
       const a0 = run.time * 9;
-      ctx.strokeStyle = '#ffe3a3';
+      ctx.strokeStyle = el ? el.main : '#ffe3a3';
       ctx.lineWidth = 5;
       ctx.lineCap = 'round';
       ctx.globalAlpha = inst.pulse > 0 ? 0.85 : 0.5;
@@ -60,7 +62,7 @@ export default {
       ctx.globalAlpha = 1;
       return;
     }
-    ctx.strokeStyle = '#ff7a3c';
+    ctx.strokeStyle = el ? el.main : '#ff7a3c';
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.18;
     ctx.beginPath();
