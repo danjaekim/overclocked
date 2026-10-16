@@ -8,8 +8,11 @@ import { strike } from '../game/hit.js';
 import { addPuff } from '../render/fx.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
+import { activeMutation } from '../game/starforge.js';
+import { STARFORGE, MUTATIONS } from '../data/starforge.js';
 
 const MAX_SHELLS = 12;
+const MAX_BOMBLETS = 36;
 
 export default {
   uses: ['damage', 'cooldown', 'area', 'projectiles', 'critChance', 'critMult', 'knockback'],
@@ -46,23 +49,33 @@ export default {
     }
 
     const dmg = param(run, inst, 'damage');
+    const star = activeMutation(inst);
     for (let i = shells.length - 1; i >= 0; i--) {
       const s = shells[i];
       s.t -= dt;
       if (s.t > 0) continue;
       shells.splice(i, 1);
       const el = elementOf(inst);
-      addPuff(run, s.x, s.y, blast / 2.2, el ? el.puff : '#ff9a3c');
-      const n = w.hash.queryRadius(s.x, s.y, blast + MAX_ENEMY_RADIUS, w.scratch);
+      const br = s.sub ? blast * star.size : blast;            // a bomblet's smaller blast
+      const bd = s.sub ? dmg * star.frac : dmg;
+      addPuff(run, s.x, s.y, br / 2.2, s.sub ? STARFORGE.color : el ? el.puff : '#ff9a3c');
+      if (star && !s.sub && shells.length < MAX_BOMBLETS) {    // Cluster Shells: the burst throws bomblets around it
+        const a0 = run.rng.next() * Math.PI * 2;
+        for (let b = 0; b < star.bomblets; b++) {
+          const a = a0 + (b * Math.PI * 2) / star.bomblets;
+          shells.push({ x: s.x + Math.cos(a) * blast * star.scatter, y: s.y + Math.sin(a) * blast * star.scatter, t: star.delay, sub: true });
+        }
+      }
+      const n = w.hash.queryRadius(s.x, s.y, br + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
         const e = w.scratch[k];
         if (!e.alive) continue;
         const dx = e.x - s.x;
         const dy = e.y - s.y;
-        const rr = blast + e.r;
+        const rr = br + e.r;
         if (dx * dx + dy * dy > rr * rr) continue;
         const d = Math.hypot(dx, dy) || 1;
-        strike(run, inst, e, dmg, dx / d, dy / d);
+        strike(run, inst, e, bd, dx / d, dy / d, s.sub ? 1 : 0);
       }
     }
   },
@@ -75,6 +88,20 @@ export default {
     ctx.strokeStyle = el ? el.main : '#ff8a3c';
     ctx.lineWidth = 2;
     for (const s of inst.shells) {
+      if (s.sub) {                                       // a cyan bomblet ring, closing
+        const u2 = 1 - s.t / MUTATIONS.mortar.delay;
+        ctx.globalAlpha = 0.3 + 0.5 * u2;
+        ctx.strokeStyle = STARFORGE.color;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, blast * MUTATIONS.mortar.size * (1.15 - 0.15 * u2), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = STARFORGE.light;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3 + 2 * u2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = el ? el.main : '#ff8a3c';
+        continue;
+      }
       const u = 1 - s.t / fuse;
       ctx.globalAlpha = 0.25 + 0.4 * u;
       ctx.beginPath();

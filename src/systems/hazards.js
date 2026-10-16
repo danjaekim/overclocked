@@ -78,10 +78,10 @@ export function plantRod(run, pr) {
 export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
   return add(run, { kind: VORTEX, src, x, y, r: radius, ttl, life: ttl, pull, dmg, depth });
 }
-export function addPillar(run, src, x, y, radius, tele, dmg, depth, cause) {
+export function addPillar(run, src, x, y, radius, tele, dmg, depth, cause, star = false) {
   const wr = src && src.graft && src.graft.hooks.wrath;          // Wrath: the pillar stays and joins the lightning net
   const life = tele + 0.3 + (wr ? wr.stay : 0);
-  return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: life, tele, life, dmg, depth, done: false, net: !!wr, cause });
+  return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: life, tele, life, dmg, depth, done: false, net: !!wr, cause, star });
 }
 export function addWave(run, src, x, y, dx, dy, speed, range, width, dmg, depth) {
   return add(run, { kind: WAVE, src, x, y, dx, dy, speed, left: range, r: width, ttl: range / speed + 0.2, life: range / speed + 0.2, dmg, depth, hit: new Set() });
@@ -521,7 +521,7 @@ export function drawHazards(ctx, run) {
       const age = h.life - h.ttl;
       if (age < h.tele) {                                    // telegraph: a ring closing in
         ctx.globalAlpha = 0.6;
-        ctx.strokeStyle = '#fff3b0';
+        ctx.strokeStyle = h.star ? '#7fe9ff' : '#fff3b0';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(h.x, h.y, h.r * (1.4 - 0.4 * (age / h.tele)), 0, TAU);
@@ -529,7 +529,7 @@ export function drawHazards(ctx, run) {
       } else {
         const f = h.net ? Math.max(0.3, 1 - (age - h.tele) / 0.3) * Math.min(1, h.ttl * 2) : 1 - (age - h.tele) / 0.3;
         ctx.globalAlpha = 0.75 * f;
-        ctx.fillStyle = '#fff3b0';
+        ctx.fillStyle = h.star ? '#9ff0ff' : '#fff3b0';
         ctx.fillRect(h.x - h.r * 0.5, h.y - 260, h.r, 260);
         ctx.globalAlpha = 0.45 * f;
         ctx.beginPath();

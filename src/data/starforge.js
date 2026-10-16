@@ -81,4 +81,38 @@ export const MUTATIONS = {
     frac: 1.6,
     at: 0.3,                   // the pulse leaves this many seconds before the patch ends
   },
+  mortar: {
+    name: 'Cluster Shells',
+    desc: 'Each shell bursts into 3 bomblets that land 0.35 s later around it, at 50% damage in a smaller blast.',
+    bomblets: 3,
+    frac: 0.5,
+    size: 0.6,                 // bomblet blast radius x the shell's
+    scatter: 1,                // how far from the burst they land, x the shell's radius
+    delay: 0.35,
+  },
+  bolt: {
+    name: 'Seeking Bolt',
+    desc: 'After it strikes, every bolt homes on one more enemy within 160 units at 50% damage, and the first one sets off the weapon\'s attack effect where it lands.',
+    frac: 0.5,
+    range: 160,
+  },
+  summon: {
+    name: 'Star-touched',
+    desc: 'One extra minion joins you: larger and glowing.',
+    size: 1.4,                 // hit radius and body x the others'
+    frac: 1,                   // damage x (the extra minion is larger; its gain is its size and its extra body)
+  },
+  pulse: {
+    name: 'Echoing Rings',
+    desc: 'Each ring is followed by two echoes 0.25 s apart, each at 50% damage.',
+    echoes: 2,
+    gap: 0.25,
+    frac: 0.5,
+  },
+  judge: {
+    name: 'Double Strike',
+    desc: 'Each pillar strikes the same spot a second time 0.3 s later at 60% damage.',
+    delay: 0.3,
+    frac: 0.6,
+  },
 };

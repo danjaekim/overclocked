@@ -55,9 +55,12 @@ test('m40 data validates; mutations are keyed by behavior and the gate is level,
   assert.ok(!starforge(run, bow).ok, 'once per weapon');
   assert.equal(run.starsteel, 1);
   assert.equal(activeMutation(bow), MUTATIONS.projectile);
-  const axe = addWeapon(run, 'cinder_mortar');                       // mortar: no mutation yet (M42)
+  const axe = addWeapon(run, 'cinder_mortar');                     // every behavior has a mutation since M42: fake one without
+  const saved = MUTATIONS.mortar;
+  delete MUTATIONS.mortar;
   assert.equal(mutationOf(axe), null);
   assert.ok(!canStarforge(run, axe));
+  MUTATIONS.mortar = saved;
 });
 
 test('m40 starfall: every Nth volley is marked, and each enemy those arrows hit calls a star down', () => {

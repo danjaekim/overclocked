@@ -12,8 +12,10 @@ import { attackTriggers } from '../game/triggers.js';
 import { queueDamage, KIND_PROC } from '../systems/damage-queue.js';
 import { applyBurn } from '../systems/status.js';
 import { addRing } from '../systems/hazards.js';
+import { activeMutation } from '../game/starforge.js';
+import { STARFORGE } from '../data/starforge.js';
 
-const MAX_MINIONS = 14;
+const MAX_MINIONS = 15;
 const TAU = Math.PI * 2;
 
 export default {
@@ -30,7 +32,8 @@ export default {
     const p = run.player;
     const w = run.world;
     const list = inst.minions;
-    const want = Math.min(MAX_MINIONS, Math.max(1, Math.round(param(run, inst, 'count'))));
+    const star = activeMutation(inst);
+    const want = Math.min(MAX_MINIONS, Math.max(1, Math.round(param(run, inst, 'count'))) + (star ? 1 : 0));   // Star-touched: one extra
     if (inst.frenzyT > 0) inst.frenzyT -= dt;
     const speed = param(run, inst, 'speed') * (inst.frenzyT > 0 ? 1.3 : 1);   // Grave Legion's kill frenzy
     const leash = param(run, inst, 'range');
@@ -81,19 +84,21 @@ export default {
       if (aura) auraTick(run, inst, m, aura, dt, dmg);
       if (pulse) pulseTick(run, inst, m, pulse, dt, dmg);
       let bit = false;
-      const n = w.hash.queryRadius(m.x, m.y, radius + MAX_ENEMY_RADIUS, w.scratch);
+      const big = star && i === 0;                         // the star-touched one: bigger and harder-hitting
+      const mr = big ? radius * star.size : radius;
+      const n = w.hash.queryRadius(m.x, m.y, mr + MAX_ENEMY_RADIUS, w.scratch);
       for (let k = 0; k < n; k++) {
         const e = w.scratch[k];
         if (!e.alive) continue;
         const ex = e.x - m.x;
         const ey = e.y - m.y;
-        const rr = radius + e.r;
+        const rr = mr + e.r;
         if (ex * ex + ey * ey > rr * rr) continue;
         const last = m.hit.get(e.uid);
         if (last !== undefined && run.time - last < tickEvery) continue;
         m.hit.set(e.uid, run.time);
         const ed = Math.hypot(ex, ey) || 1;
-        strike(run, inst, e, dmg, ex / ed, ey / ed);
+        strike(run, inst, e, big ? dmg * star.frac : dmg, ex / ed, ey / ed);
         bit = true;
       }
       if (bit && m.stomp <= 0 && inst.def.triggers.length) {   // Bone Colossus: each bite is a stomp (attack triggers)
@@ -128,13 +133,27 @@ export default {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
+    const star = activeMutation(inst);
+    if (star && inst.minions.length) {                     // Star-touched: a glow round the first minion
+      const m0 = inst.minions[0];
+      ctx.fillStyle = STARFORGE.color;
+      ctx.globalAlpha = 0.35 + 0.15 * Math.sin(run.time * 6);
+      ctx.beginPath();
+      ctx.arc(m0.x, m0.y, r * star.size * 1.5, 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     ctx.fillStyle = '#e8e2cf';
     ctx.strokeStyle = el ? el.main : '#7d7660';
     ctx.lineWidth = el ? 2.5 : 1.5;
-    for (const m of inst.minions) {
+    for (let i = 0; i < inst.minions.length; i++) {
+      const m = inst.minions[i];
+      const big = star && i === 0;
       ctx.beginPath();
-      ctx.arc(m.x, m.y, r * 0.8, 0, TAU);
+      ctx.arc(m.x, m.y, r * 0.8 * (big ? star.size : 1), 0, TAU);
+      if (big) ctx.fillStyle = STARFORGE.light;
       ctx.fill();
+      ctx.strokeStyle = big ? STARFORGE.color : el ? el.main : '#7d7660';
       ctx.stroke();
       ctx.fillStyle = '#2b2a24';                           // two eye sockets
       ctx.fillRect(m.x - 3.5 * k, m.y - 2.5 * k, 2.4 * k, 3 * k);
