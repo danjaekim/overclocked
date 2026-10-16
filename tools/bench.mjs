@@ -31,6 +31,11 @@ import { enhance, canEnhance, chooseTemper, quench, canQuench } from '../src/gam
 import { canStarforge, starforge } from '../src/game/starforge.js';
 import { MUTATIONS } from '../src/data/starforge.js';
 if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(process.env.SF_OVERRIDE))) Object.assign(MUTATIONS[b], o);   // tuning sweeps without editing data
+if (process.env.CLASS_OVERRIDE) for (const [c, o] of Object.entries(JSON.parse(process.env.CLASS_OVERRIDE))) {   // class tuning sweeps: {"archer":{"addMods":[{"stat":"maxHp","op":"flat","value":30}],"trait":{"dodge":{"chance":0.3}},"startWeapon":"x"}}
+  if (o.addMods) CLASSES[c].mods.push(...o.addMods);
+  if (o.trait) Object.assign(CLASSES[c].trait, o.trait);
+  if (o.startWeapon) CLASSES[c].startWeapon = o.startWeapon;
+}
 const STAR_ONLY = process.env.STAR_ONLY ? process.env.STAR_ONLY.split(',') : null;
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
