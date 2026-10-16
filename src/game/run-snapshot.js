@@ -34,6 +34,7 @@ import * as passives from '../data/passives.js';
 import * as perks from '../data/perks.js';
 import * as progression from '../data/progression.js';
 import * as rarities from '../data/rarities.js';
+import * as starforge from '../data/starforge.js';
 import * as resonance from '../data/resonance.js';
 import * as statuses from '../data/statuses.js';
 import * as titles from '../data/titles.js';
@@ -43,7 +44,7 @@ import * as weapons from '../data/weapons.js';
 // Bump when the encoding changes; an older snapshot is then dropped instead of misread.
 export const SNAPSHOT_FORMAT = 1;
 
-const DATA = { builds, classes, elites, enemies, evolutions, forge, grafts, ores, passives, perks, progression, rarities, resonance, statuses, titles, waves, weapons };
+const DATA = { builds, classes, elites, enemies, evolutions, forge, grafts, ores, passives, perks, progression, rarities, resonance, starforge, statuses, titles, waves, weapons };
 const POOLS = ['enemies', 'projectiles', 'pickups'];       // entity pools that are saved (fx is visual only)
 const SKIP_TOP = new Set(['view', 'debug', 'sfx', 'world', 'rng', 'fxRng', 'director']);
 

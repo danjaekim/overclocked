@@ -2,6 +2,8 @@
 // while it is open. Rules live in game/forge.js; this file only shows state and forwards taps.
 
 import { ENHANCE, AFFIXES, QUENCH } from '../data/forge.js';
+import { STARFORGE } from '../data/starforge.js';
+import { mutationOf, starforgeBlocker, starforge } from '../game/starforge.js';
 import { RARITIES } from '../data/rarities.js';
 import { WEAPONS } from '../data/weapons.js';
 import { recipesFor, checklist, canEvolve, evolve } from '../game/evolution.js';
@@ -56,6 +58,11 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     const quenchRow = qn > 0 || charged
       ? `<div class="frow"><button class="fbtn quench" data-act="qch:${inst.instanceId}" ${canQuench(run, inst) ? '' : 'disabled'}>Star Quench<small>${qn > 0 ? `${QUENCH.cost} starsteel · next ${qn} enhance${qn === 1 ? '' : 's'} can't fail` : 'Max level'}</small></button></div>`
       : '';
+    const mut = mutationOf(inst);
+    const why = mut && !inst.star ? starforgeBlocker(run, inst) : null;
+    const starRow = !mut ? ''
+      : inst.star ? `<div class="fstar"><b>✦ ${mut.name}</b> ${mut.desc}</div>`
+      : `<div class="frow"><button class="fbtn starforge" data-act="sfg:${inst.instanceId}" ${why ? 'disabled' : ''}>Starforge: ${mut.name}<small>${why || `${STARFORGE.cost} starsteel`}</small></button></div><div class="fstar dim">${mut.desc}</div>`;
     const salLabel = confirming === inst.instanceId
       ? 'Sure?'
       : `Salvage<small>+${salvageValue(inst)} ore</small>`;
@@ -75,7 +82,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     }).join('');
 
     return `<div class="fcard" style="--c:${color}">
-      <div class="ftop"><b>${weaponName(inst)}</b><em>${charged ? `<span class="fq" title="Star Quench charges">${'◆'.repeat(Math.min(inst.quench, 9))}</span> ` : ''}Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
+      <div class="ftop"><b>${inst.star ? '<span class="fq">✦</span> ' : ''}${weaponName(inst)}</b><em>${charged ? `<span class="fq" title="Star Quench charges">${'◆'.repeat(Math.min(inst.quench, 9))}</span> ` : ''}Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
       ${inst.graft ? `<div class="fgraft">Grafted: ${inst.graft.desc}</div>` : ''}
       ${chosen || tags ? `<div class="faff">${chosen}${tags}</div>` : ''}
       ${slots}
@@ -84,6 +91,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
         <button class="fbtn${confirming === inst.instanceId ? ' warn' : ''}" data-act="sal:${inst.instanceId}" ${canSalvage(run) ? '' : 'disabled'}>${salLabel}</button>
       </div>
       ${quenchRow}
+      ${starRow}
       ${evo}
     </div>`;
   }
@@ -126,7 +134,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
       return `<div class="fgopt${m ? ' master' : ''}">
         <div class="fgtop"><b>${m ? '✦ ' : ''}${o.preview.name}</b></div>
         <div class="fgdesc">${o.preview.desc}</div>
-        <div class="fgnote">${o.host.def.name} takes in ${o.donor.def.name}, which is consumed. ${GRAFT.cost} starsteel.</div>
+        <div class="fgnote">${o.host.def.name} takes in ${o.donor.def.name}, which is consumed. ${GRAFT.cost} starsteel.${o.donor.star ? (o.host.star ? ' Both are starforged: only one star is kept.' : ' Its star passes to the host.') : ''}</div>
         <button class="fbtn${confirmingGraft === key ? ' warn' : ''}" data-act="gft:${o.host.instanceId}:${o.donor.instanceId}" ${o.ok ? '' : 'disabled'}>${confirmingGraft === key ? 'Sure?' : 'Graft'}</button>
       </div>`;
     }).join('');
@@ -185,6 +193,9 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
       if (r.ok && r.outcome === 'success' && inst.pendingTemper) message = `Enhanced to +${r.level}! Choose a temper.`;
       tone = r.outcome === 'success' ? 'good' : 'bad';
       if (r.ok) sfx(r.quenched ? 'quench' : r.outcome === 'success' ? 'forge' : 'fail');
+    } else if (kind === 'sfg') {
+      const r = starforge(run, inst);
+      if (r.ok) { sfx('evolve'); message = `${r.mutation.name}: ${r.mutation.desc}`; tone = 'star'; }
     } else if (kind === 'qch') {
       const r = quench(run, inst);
       if (r.ok) {
@@ -234,7 +245,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     } else if (kind === 'sal') {
       if (confirming !== inst.instanceId) {
         confirming = inst.instanceId;
-        message = `Tap again to salvage ${weaponName(inst)}${inst.quench ? ` (its ${inst.quench} Quench charge${inst.quench === 1 ? '' : 's'} are lost)` : ''}`;
+        message = `Tap again to salvage ${weaponName(inst)}${inst.quench ? ` (its ${inst.quench} Quench charge${inst.quench === 1 ? '' : 's'} are lost)` : ''}${inst.star ? ' (its star is lost)' : ''}`;
         tone = 'bad';
       } else {
         const r = salvage(run, inst);

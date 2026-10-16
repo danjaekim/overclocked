@@ -6,6 +6,7 @@
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
 import { attackTriggers } from '../game/triggers.js';
+import { activeMutation } from '../game/starforge.js';
 
 const isAlive = (o) => o.alive;
 
@@ -39,6 +40,17 @@ export default {
     const radius = param(run, inst, 'radius');
     const pierce = Math.floor(param(run, inst, 'pierce'));
 
+    const star = activeMutation(inst);                      // Starforge: every Nth volley is one huge comet
+    inst.volley = (inst.volley || 0) + 1;
+    if (star && inst.volley % star.every === 0) {
+      const dx = Math.cos(base);
+      const dy = Math.sin(base);
+      const c = spawnProjectile(run, inst, p.x, p.y, dx, dy, speed, dmg * count, ttl, radius * star.size, 999);
+      if (c) { c.look = 4; c.sub = true; c.bounce = 0; c.split = 0; }
+      inst.cd += param(run, inst, 'cooldown');
+      attackTriggers(run, inst, target.x, target.y, base);
+      return;
+    }
     for (let i = 0; i < count; i++) {
       const k = i - (count - 1) / 2;
       const a = base + k * spread;

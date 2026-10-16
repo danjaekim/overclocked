@@ -6,6 +6,8 @@ import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
+import { activeMutation } from '../game/starforge.js';
+import { STARFORGE } from '../data/starforge.js';
 
 const TAU = Math.PI * 2;
 
@@ -23,6 +25,8 @@ export default {
     inst.launchU = 0;       // 0..1 how far out the blades are
     inst.launchHit = new Set();
     inst.hitAt = new Map(); // blade x enemy -> run.time of the last hit
+    inst.angle2 = 0;        // Starforge Counter Ring: the second ring spins the other way
+    inst.blades2 = 0;
   },
 
   update(inst, dt, run) {
@@ -32,6 +36,10 @@ export default {
     inst.orbitR = param(run, inst, 'range');
     inst.bladeR = param(run, inst, 'radius');
     inst.angle = (inst.angle + param(run, inst, 'speed') * dt) % TAU;
+    const star = activeMutation(inst);
+    inst.blades2 = star ? Math.max(1, Math.round(count * star.count)) : 0;
+    inst.orbitR2 = inst.orbitR * (star ? star.radius : 1);
+    inst.angle2 = (inst.angle2 - param(run, inst, 'speed') * dt + TAU) % TAU;
     const launch = inst.graft && inst.graft.hooks.launch;
     if (launch) launchStep(inst, dt, run, launch, count);
 
@@ -49,10 +57,12 @@ export default {
     const w = run.world;
     const out = launchRadius(inst);
     const hits = inst.hitAt;
-    for (let b = 0; b < count; b++) {
-      const a = inst.angle + (b * TAU) / count;
-      const bx = p.x + Math.cos(a) * out;
-      const by = p.y + Math.sin(a) * out;
+    for (let b = 0; b < count + inst.blades2; b++) {
+      const outer = b >= count;                                // the Counter Ring blades come after the main ones
+      const a = outer ? inst.angle2 + ((b - count) * TAU) / inst.blades2 : inst.angle + (b * TAU) / count;
+      const rr0 = outer ? inst.orbitR2 : out;
+      const bx = p.x + Math.cos(a) * rr0;
+      const by = p.y + Math.sin(a) * rr0;
       const n = w.hash.queryRadius(bx, by, inst.bladeR + MAX_ENEMY_RADIUS, w.scratch);
       for (let i = 0; i < n; i++) {
         const e = w.scratch[i];
@@ -61,7 +71,7 @@ export default {
         const dy = e.y - by;
         const rr = inst.bladeR + e.r;
         if (dx * dx + dy * dy > rr * rr) continue;
-        const key = e.uid * 16 + b;
+        const key = e.uid * 32 + b;
         const last = hits.get(key);
         if (last !== undefined && run.time - last < every) continue;
         hits.set(key, run.time);
@@ -88,6 +98,33 @@ export default {
       ctx.arc(bx, by, inst.bladeR, 0, TAU);
     }
     ctx.fill();
+    if (inst.blades2 > 0) {                                    // Counter Ring: a pale cyan track and cyan blades
+      ctx.globalAlpha = 0.16;
+      ctx.strokeStyle = STARFORGE.color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, inst.orbitR2, 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = STARFORGE.color;
+      ctx.beginPath();
+      for (let b = 0; b < inst.blades2; b++) {
+        const a = inst.angle2 + (b * TAU) / inst.blades2;
+        const bx = p.x + Math.cos(a) * inst.orbitR2;
+        const by = p.y + Math.sin(a) * inst.orbitR2;
+        ctx.moveTo(bx + inst.bladeR, by);
+        ctx.arc(bx, by, inst.bladeR, 0, TAU);
+      }
+      ctx.fill();
+      ctx.fillStyle = STARFORGE.light;
+      ctx.beginPath();
+      for (let b = 0; b < inst.blades2; b++) {
+        const a = inst.angle2 + (b * TAU) / inst.blades2;
+        ctx.moveTo(p.x + Math.cos(a) * inst.orbitR2 + inst.bladeR * 0.45, p.y + Math.sin(a) * inst.orbitR2);
+        ctx.arc(p.x + Math.cos(a) * inst.orbitR2, p.y + Math.sin(a) * inst.orbitR2, inst.bladeR * 0.45, 0, TAU);
+      }
+      ctx.fill();
+    }
   },
 };
 

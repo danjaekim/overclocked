@@ -415,6 +415,27 @@ export function drawProjectiles(ctx, view, run) {
     ctx.closePath();
   }
   ctx.fill();
+  for (let i = 0; i < list.length; i++) {                  // Starforge comets (look 4): a big cyan head with a long fading tail
+    const p = list[i];
+    if (p.look !== 4 || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+    for (let k = 5; k >= 1; k--) {
+      ctx.globalAlpha = 0.09 * (6 - k);
+      ctx.fillStyle = '#7fe9ff';
+      ctx.beginPath();
+      ctx.arc(p.x - p.dx * p.r * 1.6 * k, p.y - p.dy * p.r * 1.6 * k, p.r * (1.1 - k * 0.12), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = '#7fe9ff';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * 1.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#e6fbff';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
   for (let i = 0; i < list.length; i++) {                  // souls (look 3): a violet wisp with a fading tail
     const p = list[i];
     if (p.look !== 3 || p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;

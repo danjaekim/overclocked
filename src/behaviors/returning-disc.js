@@ -16,6 +16,8 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { stagger } from '../systems/status.js';
 import { addRod } from '../systems/hazards.js';
 import { addPuff } from '../render/fx.js';
+import { activeMutation } from '../game/starforge.js';
+import { STARFORGE } from '../data/starforge.js';
 
 const MILL_TELE = 0.22;
 
@@ -56,7 +58,7 @@ export default {
         const base = Math.atan2(target.y - p.y, target.x - p.x);
         for (let i = 0; i < count && discs.length < MAX_DISCS; i++) {
           const a = base + (i - (count - 1) / 2) * FAN;
-          discs.push({ x: p.x, y: p.y, dx: Math.cos(a), dy: Math.sin(a), out: 0, back: false, spin: 0, hit: new Map(), n: 0, tgt: null, parked: 0 });
+          discs.push({ x: p.x, y: p.y, dx: Math.cos(a), dy: Math.sin(a), out: 0, back: false, spin: 0, hit: new Map(), n: 0, tgt: null, parked: 0, trips: 0, mult: 1 });
         }
         inst.cd += param(run, inst, 'cooldown');
         attackTriggers(run, inst, target.x, target.y, base);
@@ -107,7 +109,28 @@ export default {
         const hx = p.x - d.x;
         const hy = p.y - d.y;
         const hd = Math.hypot(hx, hy);
-        if (hd < CATCH) { discs.splice(i, 1); continue; }
+        if (hd < CATCH) {
+          const star = activeMutation(inst);
+          if (star && d.trips === 0) {                       // Starforge Double Return: out again, toward the nearest enemy
+            const t2 = w.hash.queryNearest(p.x, p.y, reach * 1.1, (o) => o.alive);
+            const ang = t2 ? Math.atan2(t2.y - p.y, t2.x - p.x) : Math.atan2(d.y - p.y, d.x - p.x);
+            d.trips = 1;
+            d.mult = star.frac;
+            d.back = false;
+            d.out = 0;
+            d.n = 0;
+            d.tgt = null;
+            d.parked = 0;
+            d.hit.clear();
+            d.x = p.x;
+            d.y = p.y;
+            d.dx = Math.cos(ang);
+            d.dy = Math.sin(ang);
+            continue;
+          }
+          discs.splice(i, 1);
+          continue;
+        }
         d.x += (hx / hd) * speed * 1.25 * dt;
         d.y += (hy / hd) * speed * 1.25 * dt;
       }
@@ -123,7 +146,7 @@ export default {
         if (last !== undefined && run.time - last < (d.parked > 0 ? tickEvery * 0.5 : tickEvery)) continue;   // so a fast pass still hits and a lingering one keeps cutting
         d.hit.set(e.uid, run.time);
         const ed = Math.hypot(ex, ey) || 1;
-        strike(run, inst, e, bs.bounce ? dmg * (1 + bs.bounce.gain * d.n) : dmg, ex / ed, ey / ed);
+        strike(run, inst, e, (bs.bounce ? dmg * (1 + bs.bounce.gain * d.n) : dmg) * d.mult, ex / ed, ey / ed);
       }
     }
   },
@@ -150,6 +173,7 @@ export default {
     ctx.fillStyle = col || '#aeb6c8';
     ctx.lineWidth = 2;
     for (const d of inst.discs) {
+      const second = d.trips > 0;                          // the second trip of a Double Return is cyan
       if (d.parked > 0) {                                  // the drag zone of a parked Gyre
         ctx.globalAlpha = 0.18 + 0.1 * Math.sin(d.spin * 0.5);
         ctx.beginPath();
@@ -160,6 +184,7 @@ export default {
       ctx.save();
       ctx.translate(d.x, d.y);
       ctx.rotate(d.spin);
+      if (second) { ctx.strokeStyle = STARFORGE.color; ctx.fillStyle = STARFORGE.light; }
       ctx.beginPath();
       const rad = param(run, inst, 'radius');
       for (let k = 0; k < 4; k++) {
@@ -172,6 +197,8 @@ export default {
       ctx.arc(0, 0, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
+      ctx.strokeStyle = col || '#d9dde8';
+      ctx.fillStyle = col || '#aeb6c8';
     }
   },
 };

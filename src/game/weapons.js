@@ -36,6 +36,7 @@ export function addWeapon(run, weaponId) {
     def,
     level: 1,
     enhance: 0,
+    star: false,            // starforged: one behavior mutation (game/starforge.js)
     quench: 0,              // Star Quench charges: each makes the next enhance attempt certain (game/forge.js)
     affixes: [],            // affix ids rolled by the forge
     extraTriggers: [],      // triggers granted by affixes

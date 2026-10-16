@@ -10,6 +10,8 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
 import { stagger } from '../systems/status.js';
 import { addPuff } from '../render/fx.js';
+import { activeMutation } from '../game/starforge.js';
+import { STARFORGE } from '../data/starforge.js';
 
 const TELEGRAPH = 0.22;
 const NEIGHBOUR = 60;          // how close counts as "in the crowd" when choosing the densest spot
@@ -57,6 +59,16 @@ export default {
   draw(inst, ctx) {
     const el = elementOf(inst);
     for (const s of inst.pend) {
+      if (s.echo) {                                      // Starforge aftershock: a cyan ring that tightens onto the spot
+        const k = Math.max(0, Math.min(1, s.t / activeEchoDelay(inst)));
+        ctx.globalAlpha = 0.25 + 0.4 * (1 - k);
+        ctx.strokeStyle = STARFORGE.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * (0.6 + 0.4 * k), 0, Math.PI * 2);
+        ctx.stroke();
+        continue;
+      }
       const u = 1 - s.t / TELEGRAPH;
       ctx.globalAlpha = 0.18 + 0.3 * u;
       ctx.fillStyle = el ? el.dark : '#1a1208';
@@ -102,10 +114,15 @@ function densestSpot(run, p, range) {
   return { x: best.x, y: best.y };
 }
 
+function activeEchoDelay(inst) {
+  const m = activeMutation(inst);
+  return m ? m.delay : 0.4;
+}
+
 function land(inst, run, s) {
   const w = run.world;
   const def = inst.def.base;
-  const dmg = param(run, inst, 'damage');
+  const dmg = param(run, inst, 'damage') * (s.echo ? s.frac : 1);
   const stun = (def.stun || 0.35) * run.player.stats.getFor('statusDuration', inst.tags);
   const n = w.hash.queryRadius(s.x, s.y, s.r + MAX_ENEMY_RADIUS, w.scratch);
   for (let i = 0; i < n; i++) {
@@ -120,7 +137,14 @@ function land(inst, run, s) {
     stagger(e, stun);
   }
   const el = elementOf(inst);
+  const star = activeMutation(inst);
+  if (s.echo) {
+    addPuff(run, s.x, s.y, s.r / 2, STARFORGE.color);
+    addPuff(run, s.x, s.y, s.r / 3.2, STARFORGE.light);
+    return;                                              // an echo is not an attack: no triggers, no further echo
+  }
   addPuff(run, s.x, s.y, s.r / 2, el ? el.main : '#d9c3a0');
   addPuff(run, s.x, s.y, s.r / 3.2, el ? el.light : '#fff1d6');
+  if (star) inst.pend.push({ x: s.x, y: s.y, t: star.delay, r: s.r, echo: true, frac: star.frac });
   attackTriggers(run, inst, s.x, s.y, inst.aim || 0);
 }

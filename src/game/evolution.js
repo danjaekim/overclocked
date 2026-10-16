@@ -91,6 +91,7 @@ export function evolve(run, clicked, recipe) {
   for (const req of recipe.requires) if (req.starsteel !== undefined) run.starsteel -= req.starsteel;
   if (partner) {                                       // fusion: the partner is consumed
     const p = run.player;
+    inst.star = inst.star || !!partner.star;
     inst.quench = (inst.quench || 0) + (partner.quench || 0);          // its Quench charges are kept
     p.stats.removeBySource(`weapon:${partner.instanceId}:`);
     p.stats.removeBySource(`forge:${partner.instanceId}:`);

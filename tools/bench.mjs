@@ -26,6 +26,7 @@ import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { enhance, canEnhance, chooseTemper, quench, canQuench } from '../src/game/forge.js';
+import { canStarforge, starforge } from '../src/game/starforge.js';
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
@@ -33,6 +34,7 @@ import { graft } from '../src/game/graft.js';
 import { MASTERWORKS } from '../src/data/grafts.js';
 
 const args = process.argv.slice(2);
+const SPEND = process.env.BOT_SPEND || 'all';        // what the bot buys with starsteel at the forge: 'none' | 'quench' | 'all' (Quench and Starforge)
 const flag = (n) => args.includes(n);
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -208,7 +210,7 @@ function playBot(classId, seed) {
       forges++;
       for (const w of p.weapons) for (const r of recipesFor(w)) if (canEvolve(run, w, r)) { evolve(run, w, r); evolved++; }
       if (run.starsteel !== ss.prev) { ss.spent += ss.prev - run.starsteel; ss.prev = run.starsteel; }
-      for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (w && w.enhance >= 7 && !w.quench && canQuench(run, w)) quench(run, w); if (w && canEnhance(run, w)) enhance(run, w); else break; }
+      for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (SPEND !== 'none' && w && canStarforge(run, w) && SPEND === 'all') starforge(run, w); if (SPEND !== 'none' && w && w.enhance >= 7 && !w.quench && canQuench(run, w)) quench(run, w); if (w && canEnhance(run, w)) enhance(run, w); else break; }
       iron.prev = run.ore;
     }
   }

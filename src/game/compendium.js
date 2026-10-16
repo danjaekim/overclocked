@@ -11,6 +11,7 @@ import { PERKS } from '../data/perks.js';
 import { PASSIVES } from '../data/passives.js';
 import { EVOLUTIONS } from '../data/evolutions.js';
 import { AFFIXES, ENHANCE, QUENCH } from '../data/forge.js';
+import { STARFORGE, MUTATIONS } from '../data/starforge.js';
 import { RESONANCE } from '../data/resonance.js';
 import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
@@ -165,6 +166,14 @@ export function buildEntries(discovered = { grafts: [] }) {
     lines: [`At the forge, ${QUENCH.cost} starsteel gives a weapon Quench charges: 3 at +4 to +9, 2 at +10 to +12, 1 at +13 or +14.`,
       'A charge makes the next enhance attempt succeed, with no roll and no downgrade. The ore is still paid.',
       'Charges stay on the weapon, carry through evolving, join the host in a graft, and are lost if the weapon is salvaged.'], builds: [],
+  });
+
+  out.push({
+    tab: 'forge', id: 'starforge', name: 'Starforge', glyph: '✦', rarity: 'epic', elements: [], cat: 'Forge', classes: [],
+    summary: `Spend ${STARFORGE.cost} starsteel to give a maxed weapon a mutation.`,
+    lines: [`At the forge, a weapon at its maximum level can be starforged once for ${STARFORGE.cost} starsteel. It gains one mutation set by how it attacks, drawn in cyan.`,
+      ...Object.entries(MUTATIONS).map(([b, m]) => `${b[0].toUpperCase()}${b.slice(1)} weapons: ${m.name}. ${m.desc}`),
+      'It works on evolved and grafted weapons too. The star survives evolving, a graft passes it to the host (two stars become one), and salvaging loses it.'], builds: [],
   });
 
   const found = new Set(discovered.grafts || []);

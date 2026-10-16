@@ -163,5 +163,10 @@ function drawChips(ctx, chips, x, y) {
     ctx.font = '600 8px system-ui, sans-serif';
     ctx.fillStyle = '#ffd34d';
     ctx.fillText(c.level, cx + size - 5, y + size - 5);
+    if (c.star) {                                                              // a starforged weapon carries a cyan star
+      ctx.fillStyle = '#7fe9ff';
+      ctx.font = '700 10px system-ui, sans-serif';
+      ctx.fillText('✦', cx + size - 5, y + 6);
+    }
   }
 }
