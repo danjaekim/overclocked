@@ -209,9 +209,9 @@ export function drawEnemies(ctx, view, run) {
   for (let i = 0; i < list.length; i++) {
     const e = list[i];
     if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
-    const spr = getSprite(e.defId, e.flash > 0);
+    const spr = getSprite(e.defId, e.flash > 0, e.status);
     if (!spr) { discs = true; continue; }
-    const w = e.r * SPRITE_K;
+    const w = e.r * SPRITE_K * (spr.pad || 1);       // status looks are drawn padded so their outlines fit
     const cy = e.y - e.r * LIFT_K;
     if (px < e.x) {                               // they all walk at the player, so face that way
       ctx.save();
@@ -250,7 +250,7 @@ export function drawEnemies(ctx, view, run) {
     ctx.fill();
   }
 
-  drawStatusRings(ctx, list, x0, x1, y0, y1);
+  if (discs) drawStatusRings(ctx, list, x0, x1, y0, y1);        // the tint shows a status on a sprite; plain discs (no art) keep rings
   drawEliteMarks(ctx, list, x0, x1, y0, y1, run.time);
   drawWards(ctx, list, x0, x1, y0, y1);
 }
