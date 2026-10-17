@@ -1,0 +1,144 @@
+{
+ "mode": "bots",
+ "classes": [
+  "archer"
+ ],
+ "policies": [
+  "plain",
+  "smart"
+ ],
+ "spend": "all",
+ "variants": [
+  {
+   "name": "current"
+  },
+  {
+   "name": "pierce+1",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "pierce",
+       "op": "flat",
+       "value": 1,
+       "tags": [
+        "ranged"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "pierce+2",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "pierce",
+       "op": "flat",
+       "value": 2,
+       "tags": [
+        "ranged"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "rain-frac0.85",
+   "classOverride": {
+    "archer": {
+     "trait": {
+      "rain": {
+       "every": 3,
+       "arrows": 6,
+       "perProj": 2,
+       "max": 18,
+       "spread": 60,
+       "radius": 26,
+       "frac": 0.85,
+       "delay": 0.45,
+       "stagger": 0.04,
+       "reach": 240
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "rain-every2",
+   "classOverride": {
+    "archer": {
+     "trait": {
+      "rain": {
+       "every": 2,
+       "arrows": 6,
+       "perProj": 2,
+       "max": 18,
+       "spread": 60,
+       "radius": 26,
+       "frac": 0.55,
+       "delay": 0.45,
+       "stagger": 0.04,
+       "reach": 240
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "rain-both",
+   "classOverride": {
+    "archer": {
+     "trait": {
+      "rain": {
+       "every": 2.5,
+       "arrows": 6,
+       "perProj": 2,
+       "max": 18,
+       "spread": 60,
+       "radius": 26,
+       "frac": 0.8,
+       "delay": 0.45,
+       "stagger": 0.04,
+       "reach": 240
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "pierce+1,rain-both",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "pierce",
+       "op": "flat",
+       "value": 1,
+       "tags": [
+        "ranged"
+       ]
+      }
+     ],
+     "trait": {
+      "rain": {
+       "every": 2.5,
+       "arrows": 6,
+       "perProj": 2,
+       "max": 18,
+       "spread": 60,
+       "radius": 26,
+       "frac": 0.8,
+       "delay": 0.45,
+       "stagger": 0.04,
+       "reach": 240
+      }
+     }
+    }
+   }
+  }
+ ]
+}
