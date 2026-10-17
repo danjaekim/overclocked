@@ -1,7 +1,8 @@
 // Forge overlay: one card per owned weapon with Enhance / Reforge / Salvage. The run is frozen
 // while it is open. Rules live in game/forge.js; this file only shows state and forwards taps.
 
-import { ENHANCE, AFFIXES, QUENCH } from '../data/forge.js';
+import { ENHANCE, AFFIXES, QUENCH, LEGENDARY, LEGENDARIES } from '../data/forge.js';
+import { legendaryBlocker, legendaryCost, rollLegendary, applyLegendary, keepLegendary } from '../game/legendary.js';
 import { STARFORGE } from '../data/starforge.js';
 import { mutationOf, starforgeBlocker, starforge } from '../game/starforge.js';
 import { RARITIES } from '../data/rarities.js';
@@ -63,6 +64,10 @@ export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = ()
     const starRow = !mut ? ''
       : inst.star ? `<div class="fstar"><b>✦ ${mut.name}</b> ${mut.desc}</div>`
       : `<div class="frow"><button class="fbtn starforge" data-act="sfg:${inst.instanceId}" ${why ? 'disabled' : ''}>Starforge: ${mut.name}<small>${why || `${STARFORGE.cost} starsteel`}</small></button></div><div class="fstar dim">${mut.desc}</div>`;
+    const lg = inst.legendary ? LEGENDARIES[inst.legendary] : null;
+    const lwhy = legendaryBlocker(run, inst);
+    const lgRow = inst.enhance < LEGENDARY.unlockEnhance && !lg ? ''
+      : `${lg ? `<div class="flegend"><b>★ ${lg.name}</b> ${lg.desc}</div>` : ''}<div class="frow"><button class="fbtn legend" data-act="lgd:${inst.instanceId}" ${lwhy ? 'disabled' : ''}>${lg ? 'Reroll legendary' : 'Legendary'}<small>${lwhy || `${legendaryCost(inst)} starsteel`}</small></button></div>`;
     const salLabel = confirming === inst.instanceId
       ? 'Sure?'
       : `Salvage<small>+${salvageValue(inst)} ore</small>`;
@@ -92,6 +97,7 @@ export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = ()
       </div>
       ${quenchRow}
       ${starRow}
+      ${lgRow}
       ${evo}
     </div>`;
   }
@@ -107,6 +113,13 @@ export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = ()
           return `<button class="fopt" style="--c:${RARITIES[a.rarity].color}" data-act="rfp:${inst.instanceId}:${i}"><b>${a.name}</b><span>${a.desc}</span></button>`;
         }).join('');
         return `<div class="fmodal"><div class="fpick"><div class="fpick-top">${name}: choose an effect</div>${opts}<button class="fbtn" data-act="rfk:${inst.instanceId}">Keep current</button></div></div>`;
+      }
+      if (inst.pendingLegendary) {
+        const opts = inst.pendingLegendary.options.map((id, i) => {
+          const l = LEGENDARIES[id];
+          return `<button class="fopt" style="--c:${RARITIES.legendary.color}" data-act="lgp:${inst.instanceId}:${i}"><b>★ ${l.name}</b><span>${l.desc}</span></button>`;
+        }).join('');
+        return `<div class="fmodal"><div class="fpick legend"><div class="fpick-top">${name}: choose a legendary</div>${opts}<button class="fbtn" data-act="lgk:${inst.instanceId}">${inst.legendary ? 'Keep current' : 'Keep none'}</button></div></div>`;
       }
       if (inst.pendingTemper) {
         const opts = temperOptions(inst, inst.pendingTemper).map((t, i) => `<button class="fopt" style="--c:#ffb45e" data-act="tmp:${inst.instanceId}:${i}"><b>${t.name}</b><span>${t.desc}</span></button>`).join('');
@@ -196,6 +209,16 @@ export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = ()
     } else if (kind === 'sfg') {
       const r = starforge(run, inst);
       if (r.ok) { sfx('evolve'); message = `${r.mutation.name}: ${r.mutation.desc}`; tone = 'star'; }
+    } else if (kind === 'lgd') {
+      const r = rollLegendary(run, inst);
+      if (r.ok) { sfx('evolve'); message = 'Pick one of the three legendaries.'; tone = 'star'; }
+    } else if (kind === 'lgp') {
+      const r = applyLegendary(run, inst, Number(extra));
+      if (r.ok) { sfx('evolve'); message = `${LEGENDARIES[r.legendary].name}: ${LEGENDARIES[r.legendary].desc}`; tone = 'star'; }
+    } else if (kind === 'lgk') {
+      keepLegendary(inst);
+      message = 'Kept what you had.';
+      tone = '';
     } else if (kind === 'qch') {
       const r = quench(run, inst);
       if (r.ok) {

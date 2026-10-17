@@ -28,9 +28,11 @@ function fireList(run, list, on, src, x, y, depth, ang = 0, target = null) {
 // `every: n` makes it fire on every nth attack (the count lives in inst.trigT, beside the interval
 // timers). (x, y) is where the attack was aimed; ang is its direction in radians.
 export function attackTriggers(run, inst, x, y, ang) {
+  inst.wellCut = 0;                                          // Wellspring's per-cooldown budget starts over
   if (inst.armed) {                                          // the attack Echoing / Overcharged prepared: spend it, count nothing
     run.player.stats.removeBySource(inst.armed);
     inst.armed = null;
+    if (inst.cdKeep >= 0) { inst.cd = inst.cdKeep; inst.cdKeep = -1; }
     return;
   }
   if (inst.fusion && inst.fusion.payload) inst.payloadArmed = true;     // this attack's first hit carries the payload
@@ -61,6 +63,19 @@ export function attackTriggers(run, inst, x, y, ang) {
 
 // Time-driven triggers, called once per weapon per tick.
 export function updateIntervalTriggers(run, inst, dt) {
+  if (inst.twinT > 0) {                                      // Twinned: the repeat leaves now, at its reduced damage
+    inst.twinT -= dt;
+    if (inst.twinT <= 0) {
+      inst.twinT = 0;
+      if (!inst.armed) {
+        const source = `forge:${inst.instanceId}:affix:armed:`;
+        for (const m of inst.twinMods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source });
+        inst.armed = source;
+        inst.cdKeep = inst.cd;
+        inst.cd = 0;
+      }
+    }
+  }
   const list = inst.def.triggers;
   for (let i = 0; i < list.length; i++) {
     const t = list[i];

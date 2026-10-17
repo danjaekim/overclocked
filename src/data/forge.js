@@ -210,3 +210,29 @@ export const TEMPERS_BY_BEHAVIOR = {
   boomerang: ORDNANCE,
   judge: ORDNANCE,
 };
+
+// Legendary tier (M45d, docs/design-m45.md): one build-defining effect per weapon, bought with starsteel at +10.
+// You see `options` legendaries that fit the weapon's shape and pick one; paying `reroll` starsteel shows three new ones
+// (a rolled-but-unpicked set can be kept as is). Fusing keeps the host's legendary; the donor's is lost with it.
+export const LEGENDARY = { unlockEnhance: 10, cost: 2, reroll: 1, options: 3 };
+const ANY_ATTACK = ECHO_SHAPES;                              // weapons that attack on a cooldown
+const NOT_AREA = ['projectile', 'orbit', 'arc', 'slam', 'nova', 'bolt', 'chain', 'mortar', 'judge', 'pulse', 'summon', 'boomerang'];
+export const LEGENDARIES = {
+  wellspring: { name: 'Wellspring', desc: 'Each kill cuts the weapon\'s current cooldown by 10% (at most half per cooldown)',
+                triggers: [{ on: 'kill', effect: 'wellspring', params: { frac: 0.1, cap: 0.5 } }], requires: ANY_ATTACK },
+  overflow:   { name: 'Overflow', desc: 'A kill carries its overkill (at least 30% of the killing blow) to the nearest enemy',
+                triggers: [{ on: 'kill', effect: 'overflow', params: { range: 170, floor: 0.3 } }] },
+  starfall:   { name: 'Starfall', desc: 'Every 10th attack calls a falling star onto the thickest crowd',
+                triggers: [{ on: 'attack', every: 10, effect: 'starfall', params: { radius: 85, tele: 0.55, damageFrac: 3 } }], requires: ANY_ATTACK },
+  bloodpact:  { name: 'Bloodpact', desc: '50% more damage; every attack costs 1 HP (never kills you)',
+                mods: [{ stat: 'damage', op: 'more', value: 0.5 }],
+                triggers: [{ on: 'attack', effect: 'bloodpact', params: { hp: 1 } }], requires: ANY_ATTACK },
+  twinned:    { name: 'Twinned', desc: 'The whole attack fires again 0.3 s later at 50% damage',
+                triggers: [{ on: 'attack', effect: 'twinned', params: { delay: 0.3, mods: [{ stat: 'damage', op: 'more', value: -0.5 }] } }], requires: ANY_ATTACK },
+  sovereign:  { name: 'Sovereign', desc: '25% more damage, 25% more area, -10% cooldown',
+                mods: [{ stat: 'damage', op: 'more', value: 0.25 }, { stat: 'area', op: 'more', value: 0.25 }, { stat: 'cooldown', op: 'inc', value: -0.1 }] },
+  multitude:  { name: 'Multitude', desc: '+2 projectiles / blades / swings / minions, 15% more damage',
+                mods: [{ stat: 'projectiles', op: 'flat', value: 2 }, { stat: 'damage', op: 'more', value: 0.15 }], requires: NOT_AREA },
+  stormcaller: { name: 'Stormcaller', desc: 'Becomes a storm weapon: +25% shock chance, +1 chain, 15% more damage',
+                 addTags: ['storm'], mods: [{ stat: 'shockChance', op: 'flat', value: 0.25 }, { stat: 'chains', op: 'flat', value: 1 }, { stat: 'damage', op: 'more', value: 0.15 }] },
+};

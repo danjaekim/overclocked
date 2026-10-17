@@ -144,6 +144,8 @@ export function flushDamage(run) {
       const thr = run.player.stats.getFor('executeBelow', src.tags);
       if (thr > 0 && (e.hp - amount) / e.maxHp < thr) amount = e.hp;
     }
+    run.overkill = amount > e.hp ? amount - e.hp : 0;          // for Overflow
+    run.killBlow = amount;
     const dealt = amount < e.hp ? amount : e.hp;          // overkill is not damage dealt
     recordDamage(run, src, q.cause[i], dealt > 0 ? dealt : 0, q.crit[i] === 1);
     run.hitFrozen = (e.status & ST.FROZEN) !== 0;           // for Glacier Maul's shatter

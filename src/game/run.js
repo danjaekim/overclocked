@@ -53,6 +53,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     titles: [],             // earned titles { id, def, level: '' }
     boss: null,
     toast: null,            // { text, ttl }: a short banner under the timer
+    overkill: 0,            // damage beyond the last kill (Overflow)
+    killBlow: 0,            // the last hit's full damage
     shrines: [],            // active anvil shrines { x, y, ttl, maxTtl, progress }
     pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
     chestsOpened: 0,

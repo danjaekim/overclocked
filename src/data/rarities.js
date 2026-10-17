@@ -7,5 +7,6 @@ export const RARITIES = {
   uncommon: { name: 'Uncommon', weight: 60,  luckScale: 0.10, color: '#5bc07a' },
   rare:     { name: 'Rare',     weight: 30,  luckScale: 0.20, color: '#4f9bff' },
   epic:     { name: 'Epic',     weight: 12,  luckScale: 0.30, color: '#b56bff' },
+  legendary: { name: 'Legendary', weight: 0, luckScale: 0, color: '#ffd24a' },   // forge legendaries (M45d): never offered in level-ups
   evolved:  { name: 'Evolved',  weight: 0,   luckScale: 0,    color: '#ff9a3c' },
 };

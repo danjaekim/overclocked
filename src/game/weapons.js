@@ -39,6 +39,10 @@ export function addWeapon(run, weaponId) {
     star: false,            // starforged: one behavior mutation (game/starforge.js)
     quench: 0,              // Star Quench charges: each makes the next enhance attempt certain (game/forge.js)
     affixes: [],            // affix ids rolled by the forge
+    legendary: null,        // legendary id (M45d), or null
+    pendingLegendary: null, // { options: [ids] } while the player is choosing
+    cdKeep: -1,             // cooldown to restore after an Echoing / Twinned repeat (-1 = none)
+    twinT: 0,               // Twinned: seconds until the repeat attack
     armed: null,            // source prefix of the temporary modifiers Echoing / Overcharged put on the next attack
     extraTriggers: [],      // triggers granted by affixes
     reforges: 0,
@@ -92,6 +96,6 @@ export function updateWeapons(run, dt) {
   for (let i = 0; i < ws.length; i++) {
     const inst = ws[i];
     BEHAVIORS[inst.def.behavior].update(inst, dt, run);
-    if (inst.trigT.length) updateIntervalTriggers(run, inst, dt);
+    if (inst.trigT.length || inst.twinT > 0) updateIntervalTriggers(run, inst, dt);
   }
 }

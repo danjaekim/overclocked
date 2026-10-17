@@ -21,11 +21,71 @@ function armNext(run, t, src) {
   const source = `forge:${src.instanceId}:affix:armed:`;
   for (const m of t.params.mods) run.player.stats.add({ ...m, tags: [src.instanceTag], source });
   src.armed = source;
-  if (t.params.echo) src.cd = 0;
+  if (t.params.echo) { src.cdKeep = src.cd; src.cd = 0; }      // the repeat is free: the normal cooldown resumes after it
+}
+
+// Wellspring: a kill cuts the weapon's current cooldown.
+function wellspring(run, t, src) {
+  if (!(src.cd > 0)) return;
+  const cap = param(run, src, 'cooldown') * t.params.cap;               // a slam that kills a crowd cannot skip its own cooldown
+  const cut = Math.min(param(run, src, 'cooldown') * t.params.frac, cap - (src.wellCut || 0));
+  if (cut > 0) { src.cd -= cut; src.wellCut = (src.wellCut || 0) + cut; }
 }
 
 export const EFFECTS = {
   armNext,
+  wellspring,
+  // Overflow: the damage a kill did beyond the enemy's remaining hp carries to the nearest other enemy.
+  overflow(run, t, src, x, y, depth) {
+    const over = Math.max(run.overkill, run.killBlow * t.params.floor);
+    if (!(over > 0) || depth + 1 > MAX_TRIGGER_DEPTH) return;
+    const w = run.world;
+    const n = w.hash.queryRadius(x, y, t.params.range, w.scratch);
+    let best = null;
+    let bd = Infinity;
+    for (let i = 0; i < n; i++) {
+      const e = w.scratch[i];
+      if (!e.alive || e.hp <= 0 || e.prop === 1) continue;
+      const d = (e.x - x) * (e.x - x) + (e.y - y) * (e.y - y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (best) {
+      queueDamage(run, best, over, false, 0, 0, depth + 1, src, KIND_PROC);
+      addPuff(run, best.x, best.y, 14, '#ffd24a');
+    }
+  },
+  // Starfall: a star falls on the enemy with the most neighbours within the blast radius.
+  starfall(run, t, src, x, y, depth) {
+    if (depth + 1 > MAX_TRIGGER_DEPTH) return;
+    const w = run.world;
+    const r = t.params.radius * run.player.stats.getFor('area', src.tags);
+    const n = w.hash.queryRadius(run.player.x, run.player.y, 420, w.scratch);
+    let best = null;
+    let bc = -1;
+    const cand = Math.min(n, 40);
+    for (let i = 0; i < cand; i++) {
+      const a = w.scratch[i];
+      if (!a.alive || a.prop === 1) continue;
+      let c = 0;
+      for (let j = 0; j < cand; j++) {
+        const b = w.scratch[j];
+        if (b.alive && (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) < r * r) c++;
+      }
+      if (c > bc) { bc = c; best = a; }
+    }
+    if (best) addBlast(run, src, best.x, best.y, r, t.params.tele, param(run, src, 'damage') * t.params.damageFrac, depth + 1, {}, undefined);
+  },
+  // Bloodpact: every attack costs hp, but never the last point.
+  bloodpact(run, t) {
+    const p = run.player;
+    if (p.hp > 1) p.hp = Math.max(1, p.hp - t.params.hp);
+  },
+  // Twinned: schedule the repeat; game/triggers.js (updateIntervalTriggers) fires it.
+  twinned(run, t, src) {
+    if (src.twinT > 0) return;
+    src.twinT = t.params.delay;
+    src.twinMods = t.params.mods;
+  },
   // A chance on hit to stagger the target (Staggering; bosses take half).
   staggerHit(run, t, src, x, y, depth, ang, target) {
     if (target && target.alive) stagger(target, t.params.t);

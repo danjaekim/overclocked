@@ -9,7 +9,7 @@
 // INVARIANT (tested): no outcome of a failed enhance removes the weapon. Only salvage does.
 
 import { markGone } from './run-stats.js';
-import { ENHANCE, REFORGE, SALVAGE, AFFIXES, QUENCH, TEMPERS_BY_BEHAVIOR } from '../data/forge.js';
+import { ENHANCE, REFORGE, SALVAGE, AFFIXES, QUENCH, TEMPERS_BY_BEHAVIOR, LEGENDARIES } from '../data/forge.js';
 import { instanceTagSet } from './weapons.js';
 import { refreshResonance } from './resonance.js';
 import { RARITIES } from '../data/rarities.js';
@@ -108,6 +108,7 @@ export function chooseTemper(run, inst, index) {
 export function syncTags(run, inst) {
   const tags = [];
   for (const id of inst.affixes) for (const t of AFFIXES[id].addTags || []) tags.push(t);
+  if (inst.legendary) for (const t of LEGENDARIES[inst.legendary].addTags || []) tags.push(t);
   for (const t of Object.values(inst.tempers)) for (const x of t.addTags || []) tags.push(x);
   if (inst.fusion) tags.push(...inst.fusion.tags);                 // the donor's elements
   inst.addTags = [...new Set(tags)];
@@ -181,12 +182,18 @@ export function rebuildAffixes(run, inst) {
   const stats = run.player.stats;
   stats.removeBySource(`forge:${inst.instanceId}:affix:`);
   inst.armed = null;
+  inst.cdKeep = -1;
   inst.extraT = [];
   inst.extraTriggers = inst.fusion ? [...inst.fusion.triggers] : [];     // a fusion's triggers survive a reforge
   for (const id of inst.affixes) {
     const a = AFFIXES[id];
     for (const m of a.mods || []) stats.add({ ...m, tags: [inst.instanceTag], source: `forge:${inst.instanceId}:affix:${id}:` });
     if (a.triggers) inst.extraTriggers.push(...a.triggers);
+  }
+  const lg = inst.legendary ? LEGENDARIES[inst.legendary] : null;          // the legendary rides with the affixes: same prefix, same rebuild
+  if (lg) {
+    for (const m of lg.mods || []) stats.add({ ...m, tags: [inst.instanceTag], source: `forge:${inst.instanceId}:affix:legendary:` });
+    if (lg.triggers) inst.extraTriggers.push(...lg.triggers);
   }
   syncTags(run, inst);
 }

@@ -33,6 +33,7 @@ import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { enhance, canEnhance, chooseTemper, quench, canQuench, temperOptions, rebuildAffixes, eligibleAffixes } from '../src/game/forge.js';
 import { canStarforge, starforge } from '../src/game/starforge.js';
+import { legendaryEligible } from '../src/game/legendary.js';
 import { MUTATIONS } from '../src/data/starforge.js';
 if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(process.env.SF_OVERRIDE))) Object.assign(MUTATIONS[b], o);   // tuning sweeps without editing data
 if (process.env.CLASS_OVERRIDE) for (const [c, o] of Object.entries(JSON.parse(process.env.CLASS_OVERRIDE))) {   // class tuning sweeps: {"archer":{"addMods":[{"stat":"maxHp","op":"flat","value":30}],"trait":{"dodge":{"chance":0.3}},"startWeapon":"x"}}
@@ -550,12 +551,13 @@ if (flag('--affixes')) {
   console.log(`\nAFFIXES  (DPS relative to the bare weapon; mean of ${nSeeds} seeds; single / held / live)`);
   for (const id of ids) {
     const meas = (affix) => ['single', 'held', 'flow'].map((mode) => seeds.reduce((a, sd) => a + starDps(id, false, mode, sd, (run, inst) => {
-      if (affix) { inst.affixes = [affix]; rebuildAffixes(run, inst); }
+      if (affix && flag('--legendary')) { inst.legendary = affix; rebuildAffixes(run, inst); }
+      else if (affix) { inst.affixes = [affix]; rebuildAffixes(run, inst); }
     }), 0) / seeds.length);
     const base = meas(null);
     const probe = loneWeaponRun(id, 99).inst;
     console.log(`${id}`);
-    for (const a of eligibleAffixes(probe)) {
+    for (const a of (flag('--legendary') ? legendaryEligible(probe) : eligibleAffixes(probe))) {
       const r = meas(a);
       console.log('  ' + pad(a, 14) + r.map((v, i) => (base[i] > 0 ? v / base[i] : 0).toFixed(2)).join(' '));
     }

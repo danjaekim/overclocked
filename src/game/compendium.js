@@ -10,7 +10,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { PERKS } from '../data/perks.js';
 import { PASSIVES } from '../data/passives.js';
 import { EVOLUTIONS } from '../data/evolutions.js';
-import { AFFIXES, ENHANCE, QUENCH, TEMPERS_BY_BEHAVIOR } from '../data/forge.js';
+import { AFFIXES, ENHANCE, QUENCH, TEMPERS_BY_BEHAVIOR, LEGENDARY, LEGENDARIES } from '../data/forge.js';
 import { STARFORGE, MUTATIONS } from '../data/starforge.js';
 import { RESONANCE } from '../data/resonance.js';
 import { CLASSES } from '../data/classes.js';
@@ -162,6 +162,13 @@ export function buildEntries(discovered = { fusions: [] }) {
       });
     }
   }
+  for (const [id, l] of Object.entries(LEGENDARIES)) {
+    out.push({
+      tab: 'forge', id: `legendary:${id}`, name: l.name, glyph: '★', rarity: 'epic', elements: elementsOf(l.addTags || []),
+      cat: 'Legendary', classes: [], summary: l.desc,
+      lines: [l.desc, l.requires ? `Only on ${l.requires.map(cap).join(', ')} weapons.` : 'Any weapon.', `At +${LEGENDARY.unlockEnhance} a weapon can buy a legendary for ${LEGENDARY.cost} starsteel: you see ${LEGENDARY.options} that fit it and pick one. Rerolling costs ${LEGENDARY.reroll}.`], builds: [],
+    });
+  }
   const seenTemper = new Set();
   for (const [beh, tp] of Object.entries(TEMPERS_BY_BEHAVIOR)) {
     for (const lvl of Object.keys(tp)) {
@@ -207,7 +214,7 @@ export function buildEntries(discovered = { fusions: [] }) {
     glyph: '✦', rarity: 'epic', elements: [], cat: 'Guide', classes: [],
     summary: `At the forge, fuse one evolved weapon into another for ${FUSION.cost} starsteel.`,
     lines: [`Fuse one evolved weapon (the donor) into another (the host) for ${FUSION.cost} starsteel. The donor is consumed and frees its slot.`,
-      'The host keeps its level, enhancement and effects, gains the donor\'s elements, and gets a fusion effect. A weapon takes one fusion.',
+      'The host keeps its level, enhancement and effects, gains the donor\'s elements, and gets a fusion effect. A weapon takes one fusion. The host keeps its legendary; the donor\'s is lost with it.',
       'Most pairs give a payload: the first hit of every attack the host makes also does something shaped like the donor\'s attack.',
       ...Object.entries(SHAPE_PAYLOAD).map(([shape, id]) => `${SHAPE_LABEL[shape] || shape} donor: ${PAYLOADS[id].text} (${Math.round(PAYLOADS[id].frac * 100)}%).`),
       'Some pairs are masterworks with an effect of their own. Find them by trying.'], builds: [],

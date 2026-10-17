@@ -14,7 +14,7 @@ import { EFFECTS } from '../effects/index.js';
 import { MASTERWORKS, PAYLOADS, SHAPE_PAYLOAD } from './fusions.js';
 import { RUN, WAVES, EVENTS } from './waves.js';
 import { RUN_EVENTS } from '../game/run-events.js';
-import { ENHANCE, REFORGE, AFFIXES, SHRINE, TEMPERS_BY_BEHAVIOR } from './forge.js';
+import { ENHANCE, REFORGE, AFFIXES, SHRINE, TEMPERS_BY_BEHAVIOR, LEGENDARIES, LEGENDARY } from './forge.js';
 import { ORES } from './ores.js';
 import { EVOLUTIONS } from './evolutions.js';
 import { TITLES } from './titles.js';
@@ -189,6 +189,14 @@ export function validateData() {
   for (const [id, w] of Object.entries(WEAPONS)) {
     const bps = (w.forge && w.forge.breakpoints) || {};
     for (const [lvl, mods] of Object.entries(bps)) checkMods(mods, `weapon ${id} forge breakpoint ${lvl}`, problems);
+  }
+  if (!(LEGENDARY.cost > 0 && LEGENDARY.reroll > 0 && LEGENDARY.options >= 2)) problems.push('LEGENDARY needs positive costs and at least 2 options');
+  for (const [id, l] of Object.entries(LEGENDARIES)) {
+    const at = `legendary ${id}`;
+    if (!l.name || !l.desc) problems.push(`${at}: needs name and desc`);
+    if (!l.mods && !l.triggers) problems.push(`${at}: needs mods or triggers`);
+    if (l.mods) checkMods(l.mods, `${at} mods`, problems);
+    for (const t of l.triggers || []) if (!EFFECTS[t.effect]) problems.push(`${at}: unknown trigger effect "${t.effect}"`);
   }
   if (!(REFORGE.cost > 0)) problems.push('REFORGE.cost must be > 0');
   if (!(SHRINE.radius > 0 && SHRINE.channel > 0 && SHRINE.ttl > 0)) problems.push('SHRINE radius, channel and ttl must be > 0');
