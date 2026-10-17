@@ -1,0 +1,101 @@
+{
+ "mode": "bots",
+ "classes": [
+  "archer"
+ ],
+ "policies": [
+  "plain",
+  "smart"
+ ],
+ "spend": "all",
+ "variants": [
+  {
+   "name": "hp+20",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "hp+30 (as Smith)",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 30
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "regen 0.5",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "regen",
+       "op": "flat",
+       "value": 0.5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "hp+20,regen 0.3",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 20
+      },
+      {
+       "stat": "regen",
+       "op": "flat",
+       "value": 0.3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "armor+2",
+   "classOverride": {
+    "archer": {
+     "addMods": [
+      {
+       "stat": "armor",
+       "op": "flat",
+       "value": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "dodge 35%",
+   "classOverride": {
+    "archer": {
+     "trait": {
+      "dodge": {
+       "chance": 0.35,
+       "grace": 0.25
+      }
+     }
+    }
+   }
+  }
+ ]
+}
