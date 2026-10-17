@@ -83,7 +83,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44d** *(done)* | Area effects you can see (v0.44.3) | Explosions, Chain Reaction, Overload, Shatter, Quench, Thunderclap, Forked Strikes, Wildfire, Spellburst and rain landings each get a flash, a ring to their real radius and their own mark. |
 | **M44e** *(done)* | Status looks (v0.44.4) | Enemies are shaded in their top status's colour with the others as outlines, instead of coloured circles. |
 | **M44f** *(done)* | Melee looks (v0.44.5) | Axes swing as a real axe with a smear trail, Whirlwind Cleaver spins three axes, hammer slams drop a maul and leave a crater. |
-| **M44g** *(done)* | Damage number scale (v0.44.6) | `?numscale=N` and `?numfx=1` to test whether bigger shown numbers feel better. Display only. |
+| **M44g** *(done)* | Damage number scale (v0.44.7) | Shown damage numbers are x30 with bigger, longer-lived text by default, to test whether bigger numbers feel better; `?numscale=1&numfx=0` for true values. Display only. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
