@@ -478,3 +478,92 @@ function ribbon(ctx, px, py, pw, scale) {
   ctx.arc(px[0], py[0], pw[0] * scale, Math.atan2(R[1] - py[0], R[0] - px[0]), Math.atan2(L[1] - py[0], L[0] - px[0]), true);
   ctx.closePath();
 }
+
+// ---- ground shockwave (Quakebreaker's cross, Fault Line, any wave) ----
+// A curved crest ploughing along the ground: a crescent with a bright lip, a jagged crack left down its whole path,
+// rubble thrown up behind the crest, and dust at its shoulders. (x0, y0) is where it started; (x, y) the crest; `r` its half-width.
+export function drawWave(ctx, h, k) {
+  const dx = h.dx, dy = h.dy;
+  const nx = -dy, ny = dx;
+  const run = Math.hypot(h.x - h.x0, h.y - h.y0);
+  const fade = Math.min(1, k * 3);
+  const s0 = seedOf(h.x0, h.y0);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (run > 4) {                                        // the crack down the path: dark with a hot core, fading toward its start
+    const seg = 7;
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.strokeStyle = pass ? '#ffd9a0' : '#0d0905';
+      ctx.lineWidth = pass ? 2.4 : 6;
+      ctx.globalAlpha = (pass ? 0.95 : 0.55) * fade;
+      ctx.beginPath();
+      for (let i = 0; i <= seg; i++) {
+        const f = i / seg;
+        const d = run * f;
+        const j = Math.sin(i * 2.3 + s0 * 20) * h.r * 0.12 * (0.3 + f);
+        const px = h.x0 + dx * d + nx * j, py = h.y0 + dy * d + ny * j;
+        if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+      }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#0d0905';                        // two side fractures splitting off the main crack
+    ctx.lineWidth = 2.6;
+    ctx.globalAlpha = 0.5 * fade;
+    ctx.beginPath();
+    for (let side = -1; side <= 1; side += 2) {
+      for (let i = 1; i <= 2; i++) {
+        const d = run * (0.35 * i + 0.1 * s0);
+        const bx = h.x0 + dx * d, by = h.y0 + dy * d;
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + (dx * 0.5 + nx * side) * h.r * 0.45, by + (dy * 0.5 + ny * side) * h.r * 0.45);
+      }
+    }
+    ctx.stroke();
+  }
+  const R = h.r * 1.7;                                  // the crest: a crescent bulging forward
+  const half = Math.asin(Math.min(1, h.r / R));
+  const ang = Math.atan2(dy, dx);
+  const cx = h.x - dx * (R - h.r * 0.45), cy = h.y - dy * (R - h.r * 0.45);
+  ctx.globalAlpha = 0.5 * fade;
+  ctx.fillStyle = '#d9b888';
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, ang - half, ang + half);
+  ctx.arc(cx - dx * h.r * 0.5, cy - dy * h.r * 0.5, R * 0.98, ang + half, ang - half, true);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#fff1d6';                          // the lip catching light
+  ctx.lineWidth = 3.2;
+  ctx.globalAlpha = 0.95 * fade;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, ang - half * 0.92, ang + half * 0.92);
+  ctx.stroke();
+  ctx.strokeStyle = '#e8c690';
+  ctx.lineWidth = 1.6;
+  ctx.globalAlpha = 0.7 * fade;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 0.9, ang - half * 0.8, ang + half * 0.8);
+  ctx.stroke();
+  ctx.fillStyle = '#e8d2ab';                            // rubble thrown up behind the crest, falling back
+  ctx.globalAlpha = 0.9 * fade;
+  for (let i = 0; i < 12; i++) {
+    const sd = frac(Math.sin(i * 17.31 + s0 * 91) * 43758.5);
+    const back = h.r * (0.15 + 1.6 * frac(sd * 7.7));
+    const side = (sd - 0.5) * 2 * h.r * 0.9;
+    const arcLift = Math.sin(Math.min(1, back / (h.r * 1.75)) * Math.PI) * h.r * (0.35 + 0.3 * frac(sd * 3.1));
+    const px = h.x - dx * back + nx * side, py = h.y - dy * back + ny * side - arcLift;
+    const sz = 2 + 2.4 * frac(sd * 5.3);
+    ctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
+  }
+  ctx.fillStyle = '#cdb690';                            // dust at the shoulders
+  for (let side = -1; side <= 1; side += 2) {
+    for (let i = 0; i < 3; i++) {
+      const back = i * h.r * 0.5;
+      ctx.globalAlpha = (0.18 - i * 0.05) * fade;
+      ctx.beginPath();
+      ctx.arc(h.x - dx * back + nx * side * h.r * 0.95, h.y - dy * back + ny * side * h.r * 0.95, h.r * (0.16 + i * 0.07), 0, TAU);
+      ctx.fill();
+    }
+  }
+  ctx.lineCap = 'butt';
+  ctx.globalAlpha = 1;
+}

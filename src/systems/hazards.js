@@ -11,7 +11,7 @@ import { applyBurn, applyChill, applyShock, forkChain } from './status.js';
 import { resolveHit } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff, addArc } from '../render/fx.js';
-import { drawLightRing, drawPillar, drawPatchMarks, drawPatchChains } from '../render/auras.js';
+import { drawLightRing, drawPillar, drawPatchMarks, drawPatchChains, drawWave } from '../render/auras.js';
 
 export const HAZARD_CAP = 90;
 
@@ -95,7 +95,7 @@ export function addPillar(run, src, x, y, radius, tele, dmg, depth, cause, star 
   return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: life, tele, life, dmg, depth, done: false, net: !!wr, cause, star });
 }
 export function addWave(run, src, x, y, dx, dy, speed, range, width, dmg, depth) {
-  return add(run, { kind: WAVE, src, x, y, dx, dy, speed, left: range, r: width, ttl: range / speed + 0.2, life: range / speed + 0.2, dmg, depth, hit: new Set() });
+  return add(run, { kind: WAVE, src, x, y, x0: x, y0: y, dx, dy, speed, left: range, r: width, ttl: range / speed + 0.2, life: range / speed + 0.2, dmg, depth, hit: new Set() });
 }
 
 // A telegraphed burst that also lays statuses on everything it hits (Thunderscythe's storm shells).
@@ -529,17 +529,7 @@ export function drawHazards(ctx, run) {
     } else if (h.kind === PILLAR) {
       drawPillar(ctx, h, h.life - h.ttl, t, h.net);
     } else {
-      ctx.globalAlpha = Math.min(1, k * 3) * 0.55;
-      ctx.strokeStyle = '#ffe3a3';
-      ctx.lineWidth = 6;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      const nx = -h.dy * h.r * 0.9;
-      const ny = h.dx * h.r * 0.9;
-      ctx.moveTo(h.x + nx - h.dx * 14, h.y + ny - h.dy * 14);
-      ctx.lineTo(h.x - nx - h.dx * 14, h.y - ny - h.dy * 14);
-      ctx.stroke();
-      ctx.lineCap = 'butt';
+      drawWave(ctx, h, k);
     }
   }
   const links = run.netLinks;
