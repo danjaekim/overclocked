@@ -4,6 +4,7 @@
 import { drawHud, drawStick } from './hud.js';
 import { getSprite } from './sprites.js';
 import { drawGround } from './ground.js';
+import { drawShield } from './shield.js';
 // Floor: the forest by default; ?ground=forge|frost|cinder|ruins|crystal|catacomb tries the others, ?ground=grid is the old grid.
 const GROUND = new URLSearchParams(location.search).get('ground') || 'forest';
 
@@ -111,15 +112,7 @@ function drawEvolvedGlow(p, t, front) {
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (p.shield > 0) {
-      ctx.strokeStyle = '#6ec5ff';
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.5 + 0.5 * Math.min(1, p.shield / 20);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r + 5, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
+    drawShield(ctx, p, t, SPRITE_LIFT);
     if (!spr) {                                  // facing tick (the sprites show it themselves)
       ctx.strokeStyle = 'rgba(0,0,0,0.5)';
       ctx.lineWidth = 3;
