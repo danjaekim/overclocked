@@ -1,20 +1,28 @@
-// The music row shown on the title and pause screens: an on/off button and a volume slider.
-// The slider uses `input` events (live volume) and `change` (saved), so it is bound after the
-// overlay is mounted; the overlay helper only knows about data-act clicks.
+// The sound rows shown on the title and pause screens: a volume slider for sound effects, then the
+// music on/off button with its own slider. Sliders use `input` events (live volume) and `change`
+// (saved), so they are bound after the overlay is mounted; the overlay helper only knows data-act clicks.
 
-export function musicControlsHtml({ music, volume }) {
-  const pct = Math.round(volume * 100);
-  return `<button class="btn" data-act="music">Music: ${music ? 'On' : 'Off'}</button>
-     <label class="mvol"><span>Volume</span><input type="range" min="0" max="100" step="5" value="${pct}" aria-label="Music volume"><output>${pct}</output></label>`;
+const slider = (label, value, kind) => {
+  const pct = Math.round(value * 100);
+  return `<label class="mvol"><span>${label}</span><input type="range" min="0" max="100" step="5" value="${pct}" data-vol="${kind}" aria-label="${label} volume"><output>${pct}</output></label>`;
+};
+
+export function musicControlsHtml({ music, volume, sfxVolume = 1 }) {
+  return `${slider('Effects', sfxVolume, 'sfx')}
+     <button class="btn" data-act="music">Music: ${music ? 'On' : 'Off'}</button>
+     ${slider('Music', volume, 'music')}`;
 }
 
-export function bindMusicControls(el, { onVolume, onCommit }) {
-  const range = el && el.querySelector('input[type=range]');
-  if (!range) return;
-  const out = el.querySelector('.mvol output');
-  range.addEventListener('input', () => {
-    if (out) out.textContent = range.value;
-    onVolume(range.value / 100);
-  });
-  range.addEventListener('change', () => onCommit(range.value / 100));
+export function bindMusicControls(el, { onVolume, onCommit, onSfxVolume, onSfxCommit }) {
+  if (!el) return;
+  const handlers = { music: [onVolume, onCommit], sfx: [onSfxVolume, onSfxCommit] };
+  for (const range of el.querySelectorAll('input[type=range][data-vol]')) {
+    const [live, commit] = handlers[range.dataset.vol] || [];
+    const out = range.parentElement.querySelector('output');
+    range.addEventListener('input', () => {
+      if (out) out.textContent = range.value;
+      if (live) live(range.value / 100);
+    });
+    range.addEventListener('change', () => { if (commit) commit(range.value / 100); });
+  }
 }

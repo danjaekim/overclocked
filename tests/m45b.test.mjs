@@ -22,7 +22,7 @@ const newRun = () => {
   return run;
 };
 
-test('version bumped', () => assert.ok(/^0\.(45\.[2-9]|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
+test('version bumped', () => assert.ok(/^0\.(45\.([2-9]|\d\d)|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
 
 test('every behavior has a shape pair; every weapon is offered two valid tempers at +5 and +10', () => {
   assert.deepEqual(validateData(), []);

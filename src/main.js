@@ -36,7 +36,7 @@ preloadSprites();
 let game;
 const input = createInput(canvas, { onPause: () => game && game.togglePause(), onBuild: () => game && game.openBuild() });
 const save = createSave(browserStorage());
-const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume });
+const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume, sfxVolume: save.data.sfxVolume });
 debug.audioState = () => audio.state;
 const runSave = createRunSave(browserStorage());
 game = createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio });

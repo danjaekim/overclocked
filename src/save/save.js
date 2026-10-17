@@ -17,6 +17,7 @@ export const DEFAULTS = {
   sound: true,
   music: true,                        // music on/off (the sound toggle mutes everything)
   musicVolume: 0.6,                   // 0..1
+  sfxVolume: 1,                       // sound effects, 0..1 (1 = the original level)
   history: [],                        // finished runs, oldest first (see entryFromSummary), capped
   discovered: { fusions: [] },         // masterwork ids found at the forge (v3)
 };
@@ -108,6 +109,7 @@ export function normalize(raw) {
   if (typeof raw.sound === 'boolean') out.sound = raw.sound;
   if (typeof raw.music === 'boolean') out.music = raw.music;
   if (Number.isFinite(raw.musicVolume)) out.musicVolume = Math.min(1, Math.max(0, raw.musicVolume));
+  if (Number.isFinite(raw.sfxVolume)) out.sfxVolume = Math.min(1, Math.max(0, raw.sfxVolume));
   const found = raw.discovered && (Array.isArray(raw.discovered.fusions) ? raw.discovered.fusions : raw.discovered.grafts);   // saves from before the rename say "grafts"
   if (Array.isArray(found)) {
     out.discovered.fusions = [...new Set(found.filter((x) => typeof x === 'string'))].slice(0, 100);
@@ -159,6 +161,11 @@ export function createSave(storage) {
 
     setMusicVolume(v) {
       data.musicVolume = Math.min(1, Math.max(0, Number(v) || 0));
+      persist();
+    },
+
+    setSfxVolume(v) {
+      data.sfxVolume = Math.min(1, Math.max(0, Number(v) || 0));
       persist();
     },
 

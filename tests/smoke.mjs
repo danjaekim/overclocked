@@ -122,7 +122,7 @@ if (flag('--music')) {                                           // music scenes
   await page.waitForTimeout(400);
   console.log('title music:', await mus(), 'audio:', await page.evaluate(() => window.__overforged.audio.state));
   await shotM('music-title');
-  await page.evaluate(() => { const r = document.querySelector('.mvol input'); r.value = 30; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); });
+  await page.evaluate(() => { const r = document.querySelector('input[data-vol=music]'); r.value = 30; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); });
   console.log('saved volume:', await page.evaluate(() => window.__overforged.save.data.musicVolume));
   await page.tap('[data-act=play]');
   await page.tap('[data-act="class:smith"]');

@@ -1,6 +1,6 @@
 import { musicControlsHtml, bindMusicControls } from './music-controls.js';
 
-export function showPause(overlays, { onResume, onBuild, onCompendium, onQuit, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit }) {
+export function showPause(overlays, { onResume, onBuild, onCompendium, onQuit, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit, onSfxVolume, onSfxCommit }) {
   const el = overlays.show(
     `<h2>Paused</h2>
      <button class="btn primary" data-act="resume">Resume</button>
@@ -18,5 +18,5 @@ export function showPause(overlays, { onResume, onBuild, onCompendium, onQuit, o
       else if (act === 'quit') onQuit();
     }
   );
-  bindMusicControls(el, { onVolume: onMusicVolume, onCommit: onMusicCommit });
+  bindMusicControls(el, { onVolume: onMusicVolume, onCommit: onMusicCommit, onSfxVolume, onSfxCommit });
 }

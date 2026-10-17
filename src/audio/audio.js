@@ -6,7 +6,9 @@
 import { createMusic } from './music.js';
 import { createSfx, SFX_NAMES } from './sfx.js';
 
-export function createAudio({ enabled = true, music: musicOn = true, musicVolume = 0.6 } = {}) {
+export function createAudio({ enabled = true, music: musicOn = true, musicVolume = 0.6, sfxVolume = 1 } = {}) {
+  const MASTER = 0.7;                    // the effects bus level at full volume
+  let sfxVol = sfxVolume;
   let ctx = null;
   let master = null;
   let sfx = null;
@@ -22,7 +24,7 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
     try {
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.7;
+      master.gain.value = MASTER * sfxVol;
       master.connect(ctx.destination);
       sfx = createSfx(ctx, master);
       music.attach(ctx, ctx.destination);
@@ -40,6 +42,8 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
     get musicEnabled() { return mOn; },
     setMusicEnabled(v) { mOn = !!v; music.setEnabled(on && mOn); },
     setMusicVolume(v) { music.setVolume(v); },
+    get sfxVolume() { return sfxVol; },
+    setSfxVolume(v) { sfxVol = Math.min(1, Math.max(0, v)); if (master) master.gain.value = MASTER * sfxVol; },
 
     // Call from a user gesture handler so iOS lets the context start.
     unlock() {

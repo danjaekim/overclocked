@@ -30,7 +30,7 @@ const withAffix = (id, ...affixes) => {
 };
 const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
 
-test('version bumped', () => assert.ok(/^0\.(45\.[3-9]|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
+test('version bumped', () => assert.ok(/^0\.(45\.([3-9]|\d\d)|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
 
 test('data: Brutal and Shoving are gone, Keen is merged, new affixes validate', () => {
   assert.deepEqual(validateData(), []);

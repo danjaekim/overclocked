@@ -40,7 +40,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
 
   // What the title and pause screens pass for the music row.
   const musicUi = (redraw) => ({
-    music: { music: save.data.music, volume: save.data.musicVolume },
+    music: { music: save.data.music, volume: save.data.musicVolume, sfxVolume: save.data.sfxVolume },
     onToggleMusic() {
       save.setMusic(!save.data.music);
       if (audio) audio.setMusicEnabled(save.data.music);
@@ -48,6 +48,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     },
     onMusicVolume: (v) => { if (audio) audio.setMusicVolume(v); },
     onMusicCommit: (v) => save.setMusicVolume(v),
+    onSfxVolume: (v) => { if (audio) audio.setSfxVolume(v); },
+    onSfxCommit: (v) => { save.setSfxVolume(v); if (audio) audio.play('gem'); },      // a blip on release, so you hear the level
   });
   const scene = (id) => { if (audio) audio.music.play(id); };
 
@@ -91,6 +93,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     audio.setEnabled(save.data.sound);
     audio.setMusicEnabled(save.data.music);
     audio.setMusicVolume(save.data.musicVolume);
+    audio.setSfxVolume(save.data.sfxVolume);
   }
 
   function openBackup() {

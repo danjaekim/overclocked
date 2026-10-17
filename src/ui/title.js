@@ -3,7 +3,7 @@ import { fmtTime } from './overlay.js';
 import { VERSION } from '../version.js';
 import { musicControlsHtml, bindMusicControls } from './music-controls.js';
 
-export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit, bests, runs }) {
+export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit, onSfxVolume, onSfxCommit, bests, runs }) {
   const best = runs > 0
     ? `<p class="hint">Best: ${fmtTime(bests.time)} · ${bests.kills} kills · level ${bests.level}</p>`
     : '<p class="hint">Drag anywhere to move. Weapons fire automatically.</p>';
@@ -27,5 +27,5 @@ export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleS
     },
     'title'
   );
-  bindMusicControls(el, { onVolume: onMusicVolume, onCommit: onMusicCommit });
+  bindMusicControls(el, { onVolume: onMusicVolume, onCommit: onMusicCommit, onSfxVolume, onSfxCommit });
 }
