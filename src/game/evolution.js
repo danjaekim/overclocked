@@ -82,9 +82,9 @@ export function recipeProgress(run, recipe) {
   const rows = [];
   if (recipe.with) {
     const lack = [!a && A, !b && B].filter(Boolean);
-    rows.push({ text: `Own ${A} and ${B}`, state: lack.length ? 'missing' : 'ok', note: lack.length ? `need ${lack.join(' and ')}` : '' });
+    rows.push({ text: `Own ${A} and ${B}`, state: lack.length ? 'missing' : 'ok', note: lack.length ? `need ${lack.join(' and ')}` : '', links: [[A, recipe.from], [B, recipe.with]] });
   } else {
-    rows.push({ text: `Own ${A}`, state: a ? 'ok' : 'missing', note: a ? '' : 'not owned' });
+    rows.push({ text: `Own ${A}`, state: a ? 'ok' : 'missing', note: a ? '' : 'not owned', links: [[A, recipe.from]] });
   }
   for (const req of recipe.requires) {
     const text = describe(req, recipe);
@@ -114,7 +114,7 @@ export function recipeProgress(run, recipe) {
     } else if (req.title) {
       state = hasTitle(run, req.title) ? 'ok' : 'missing';
     }
-    rows.push({ text, state, note });
+    rows.push({ text, state, note, links: req.perk ? [[null, req.perk]] : req.passive ? [[null, req.passive]] : [] });
   }
   const met = rows.filter((r) => r.state === 'ok').length;
   return { rows, met, total: rows.length, own: !!a && (!recipe.with || !!b), ready: met === rows.length };

@@ -24,3 +24,25 @@ test('history keeps per-weapon forge marks and shows tier, type and marks; old e
   const old = normalize({ history: [{ ...entry, gear: undefined }] }).history[0];
   assert.equal(weaponTiles(old)[0].star, false);
 });
+
+import { buildEntries } from '../src/game/compendium.js';
+
+test('compendium cross-links: every link target is a real entry', () => {
+  const entries = buildEntries({ fusions: ['thunderscythe'] });
+  const ids = new Set(entries.map((e) => e.id));
+  const refs = [];
+  for (const e of entries) {
+    for (const r of e.buildRefs || []) refs.push([e.id, r.id]);
+    for (const s of e.sections || []) {
+      for (const r of s.refs || []) refs.push([e.id, r.id]);
+      for (const row of s.rows || []) if (Array.isArray(row[1])) for (const r of row[1]) refs.push([e.id, r.id]);
+    }
+  }
+  assert.ok(refs.length > 30, `${refs.length} links`);
+  for (const [from, to] of refs) assert.ok(ids.has(to), `${from} links to missing ${to}`);
+  const axe = entries.find((e) => e.id === 'reaper_axe');                            // an evolved weapon links the fusion rules and a found masterwork it takes part in
+  const fusion = axe.sections.find((s) => s.kind === 'chips' && s.title === 'Fusion');
+  assert.deepEqual(fusion.refs.map((r) => r.id), ['fusion:rules', 'fusion:thunderscythe']);
+  const hidden = buildEntries({ fusions: [] }).find((e) => e.id === 'reaper_axe').sections.find((s) => s.title === 'Fusion');
+  assert.deepEqual(hidden.refs.map((r) => r.id), ['fusion:rules']);                  // an undiscovered masterwork is not given away
+});

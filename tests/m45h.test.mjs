@@ -12,7 +12,7 @@ import { EVOLUTIONS } from '../src/data/evolutions.js';
 test('every entry has sections of a known kind', () => {
   for (const e of buildEntries()) {
     assert.ok(e.sections && e.sections.length, e.id);
-    for (const s of e.sections) assert.ok(['text', 'facts', 'levels', 'list', 'recipes', 'evolinks'].includes(s.kind), `${e.id} ${s.kind}`);
+    for (const s of e.sections) assert.ok(['text', 'facts', 'levels', 'list', 'recipes', 'evolinks', 'chips'].includes(s.kind), `${e.id} ${s.kind}`);
   }
 });
 

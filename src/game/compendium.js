@@ -80,13 +80,15 @@ const facts = (title, rows) => ({ kind: 'facts', title, rows });          // row
 const levels = (title, rows) => ({ kind: 'levels', title, rows });         // rows: [badge, text]
 const bullets = (title, items) => ({ kind: 'list', title, items });
 const evolinks = (title, items) => ({ kind: 'evolinks', title, items });   // items: recipe ids; each links to its Evolve entry
+const chips = (title, refs) => ({ kind: 'chips', title, refs });             // refs: { id, text }: each links to that entry
+const ref = (id, text) => ({ id, text });
 const recipes = (title, items) => ({ kind: 'recipes', title, items });     // items: { id, role: 'made' | 'next' }
 
 function recipeLines(recipe) {
   return recipe.requires.map((r) => describeReq(r, recipe));
 }
 
-function weaponEntry(id, def, buildsFor) {
+function weaponEntry(id, def, buildsFor, buildRefs, foundMasterworks) {
   const evolved = def.pool === false;
   const lines = [def.desc];
   for (const r of EVOLUTIONS.filter((x) => x.into === id)) {
@@ -113,12 +115,16 @@ function weaponEntry(id, def, buildsFor) {
   if (def.levelText.length) sections.push(levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 2}`, t])));
   if (def.baseMods && def.baseMods.length) sections.push(text('Comes with a built-in elemental effect.'));
   if (next.length) sections.push(evolinks('Evolution', next.map((x) => x.id)));
+  if (evolved) {                                  // evolved weapons can be fused: link the rules and any masterwork found with this weapon
+    const mine = MASTERWORKS.filter((m) => (m.host === id || m.donor === id) && foundMasterworks.has(m.id)).map((m) => ref(`fusion:${m.id}`, m.name));
+    sections.push(chips('Fusion', [ref('fusion:rules', 'How fusion works'), ...mine]));
+  }
   if (def.forge && def.forge.tempers) sections.push(facts('Tempers', Object.keys(def.forge.tempers).map((lvl) => [`+${lvl}`, def.forge.tempers[lvl].map((t) => t.name).join(' or ')])));
   return {
     tab: evolved ? 'evolve' : 'weapons', id, name: def.name, glyph: def.glyph, rarity: def.rarity,
     elements: elementsOf(def.tags),
     cat: def.tags.includes('close') ? 'Close range' : def.behavior === 'summon' ? 'Summon' : 'Ranged',
-    classes, summary: def.desc, lines, sections, builds: buildsFor('weapon', id),
+    classes, summary: def.desc, lines, sections, builds: buildsFor('weapon', id), buildRefs: buildRefs('weapon', id),
     recipeIds: [...made, ...next].map((x) => x.id), madeIds: made.map((x) => x.id),
   };
 }
@@ -140,9 +146,10 @@ export function buildEntries(discovered = { fusions: [] }) {
   const foundIds = new Set(discovered.fusions || []);
   const visibleBuilds = BUILDS.filter((b) => buildVisible(b, foundIds));
   const buildsFor = (kind, id) => visibleBuilds.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
+  const buildRefs = (kind, id) => visibleBuilds.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => ref(`build:${b.id}`, b.name));
   const out = [];
 
-  for (const [id, def] of Object.entries(WEAPONS)) out.push(weaponEntry(id, def, buildsFor));
+  for (const [id, def] of Object.entries(WEAPONS)) out.push(weaponEntry(id, def, buildsFor, buildRefs, foundIds));
 
   for (const [id, def] of Object.entries(PERKS)) {
     const lines = [def.desc, `Offered when: ${requiresText(def.requires)}.`];
@@ -150,7 +157,7 @@ export function buildEntries(discovered = { fusions: [] }) {
     out.push({
       tab: 'techniques', id, name: def.name, glyph: def.glyph, rarity: def.rarity,
       elements: perkElements(id, def), cat: perkCategory(id, def), classes: [],
-      summary: def.desc, lines, builds: buildsFor('perk', id),
+      summary: def.desc, lines, builds: buildsFor('perk', id), buildRefs: buildRefs('perk', id),
       sections: [text(def.desc), facts('Offered when', [['', requiresText(def.requires)]]), levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 1}`, t]))],
     });
   }
@@ -163,7 +170,7 @@ export function buildEntries(discovered = { fusions: [] }) {
     out.push({
       tab: 'passives', id, name: def.name, glyph: def.glyph || def.name[0], rarity: def.rarity,
       elements: [], cat: cap(def.tags[0] || 'general'), classes: [], summary: def.desc, lines, builds: [],
-      sections: [text(def.desc), levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 1}`, t])), ...(evo.length ? [bullets('Needed to evolve', evo.map((r) => WEAPONS[r.from].name))] : [])],
+      sections: [text(def.desc), levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 1}`, t])), ...(evo.length ? [chips('Needed to evolve', evo.map((r) => ref(r.into, `${WEAPONS[r.from].name} › ${WEAPONS[r.into].name}`)))] : [])],
     });
   }
 
@@ -268,7 +275,7 @@ export function buildEntries(discovered = { fusions: [] }) {
       lines: ok ? [m.desc, `Host: ${WEAPONS[m.host].name}. Donor: ${WEAPONS[m.donor].name}. Either order works; the host is fixed.`]
         : [`Something is waiting to be fused into the ${WEAPONS[m.host].name}.`], builds: [],
       masterwork: m.id,
-      sections: ok ? [text(m.desc), facts('', [['Host', WEAPONS[m.host].name], ['Donor', WEAPONS[m.donor].name]]), text('Either order works; the host is fixed.')]
+      sections: ok ? [text(m.desc), facts('', [['Host', [ref(m.host, WEAPONS[m.host].name)]], ['Donor', [ref(m.donor, WEAPONS[m.donor].name)]]]), text('Either order works; the host is fixed.')]
         : [text(`Something is waiting to be fused into the ${WEAPONS[m.host].name}.`)],
     });
   }
@@ -287,10 +294,10 @@ export function buildEntries(discovered = { fusions: [] }) {
         `Techniques: ${b.perks.map((p) => PERKS[p].name).join(', ')}.`, b.tips],
       builds: [], parts, buildWeapons: b.weapons,
       sections: [text(b.idea),
-        facts('', [['Weapons', b.weapons.map((w) => WEAPONS[w].name).join(', ')],
-          ...(b.end ? [['Finished', `${b.end.weapons.map((w) => WEAPONS[w].name).join(', ')}${b.end.fuse ? `, fusion: ${masterworkFor(b.end.fuse[0], b.end.fuse[1]).name}` : ''}`]] : []),
-          ...(b.passives && b.passives.length ? [['Passives', b.passives.map((p) => PASSIVES[p].name).join(', ')]] : []),
-          ['Techniques', b.perks.map((p) => PERKS[p].name).join(', ')]]),
+        facts('', [['Weapons', b.weapons.map((w) => ref(w, WEAPONS[w].name))],
+          ...(b.end ? [['Finished', [...b.end.weapons.map((w) => ref(w, WEAPONS[w].name)), ...(b.end.fuse ? [ref(`fusion:${masterworkFor(b.end.fuse[0], b.end.fuse[1]).id}`, `Fusion: ${masterworkFor(b.end.fuse[0], b.end.fuse[1]).name}`)] : [])]]] : []),
+          ...(b.passives && b.passives.length ? [['Passives', b.passives.map((p) => ref(p, PASSIVES[p].name))]] : []),
+          ['Techniques', b.perks.map((p) => ref(p, PERKS[p].name))]]),
         text(b.tips)],
     });
   }
@@ -344,8 +351,8 @@ export function fusionProgress(run, host, donor) {
   const h = ownedWeapon(run, host);
   const d = ownedWeapon(run, donor);
   const rows = [
-    { text: `Own ${WEAPONS[host].name} (host)`, state: h ? 'ok' : 'missing', note: h ? '' : 'evolve it first' },
-    { text: `Own ${WEAPONS[donor].name} (donor)`, state: d ? 'ok' : 'missing', note: d ? '' : 'evolve it first' },
+    { text: `Own ${WEAPONS[host].name} (host)`, state: h ? 'ok' : 'missing', note: h ? '' : 'evolve it first', links: [[WEAPONS[host].name, host]] },
+    { text: `Own ${WEAPONS[donor].name} (donor)`, state: d ? 'ok' : 'missing', note: d ? '' : 'evolve it first', links: [[WEAPONS[donor].name, donor]] },
     { text: `${FUSION.cost} starsteel`, state: run.starsteel >= FUSION.cost ? 'ok' : (run.starsteel > 0 ? 'short' : 'missing'), note: run.starsteel >= FUSION.cost ? '' : `you have ${run.starsteel}` },
   ];
   const met = rows.filter((r) => r.state === 'ok').length;

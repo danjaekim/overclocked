@@ -14,7 +14,25 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Survives closing and reopening within a session, so you land where you left off.
 const state = { tab: 'weapons', filters: {}, q: '', open: new Set(), previewId: null, previewLevel: 0, filtersOpen: false };
+
+// A link to another entry (a weapon, evolution, fusion, build, technique or passive); plain text when there is none.
+const xl = (id, text) => (entryIndex.has(id) ? `<span class="xlink" role="button" data-act="go:${id}">${text}</span>` : text);
+const pill = (id, text) => (entryIndex.has(id) ? `<span class="clink" role="button" data-act="go:${id}">${text} &rsaquo;</span>` : `<span class="clink dead">${text}</span>`);
+const refText = (r) => (typeof r === 'string' ? r : xl(r.id, r.text));
+
+// A requirement row's text with its weapon, technique or passive names turned into links.
+function rowText(r) {
+  let t = r.text;
+  for (const [name, id] of r.links || []) {
+    if (!entryIndex.has(id)) continue;
+    if (name === null) return xl(id, t);
+    t = t.replace(name, xl(id, name));
+  }
+  return t;
+}
 let entries = null;
+let entryIndex = new Map();                      // id -> entry, for links (the first entry with an id wins)
+const trail = [];                                // where each link jump came from, so Back can return
 let liveRun = null;                              // the run in progress, when opened from one: drives sorting and progress
 
 function chipLabel(key, v) {
@@ -26,7 +44,7 @@ function chipLabel(key, v) {
 const ICON = { ok: '&#10003;', short: '&#9650;', missing: '&#10007;', plain: '&#8226;' };
 
 function reqRows(rows) {
-  return `<ul class="creq">${rows.map((r) => `<li class="${r.state}"><i>${ICON[r.state]}</i><span>${r.text}${r.note ? `<small>${r.note}</small>` : ''}</span></li>`).join('')}</ul>`;
+  return `<ul class="creq">${rows.map((r) => `<li class="${r.state}"><i>${ICON[r.state]}</i><span>${rowText(r)}${r.note ? `<small>${r.note}</small>` : ''}</span></li>`).join('')}</ul>`;
 }
 
 function recipeHtml(item) {
@@ -34,9 +52,12 @@ function recipeHtml(item) {
   const from = WEAPONS[r.from].name;
   const into = WEAPONS[r.into].name;
   const partner = r.with ? WEAPONS[r.with].name : '';
+  const F = xl(r.from, from);
+  const W = r.with ? xl(r.with, partner) : '';
+  const I = xl(r.into, into);
   const head = item.role === 'made'
-    ? (r.with ? `Combine ${from} with ${partner}` : `Evolve ${from}`)
-    : (r.with ? `Combine ${from} with ${partner} into ${into}` : `Evolves into ${into}`);
+    ? (r.with ? `Combine ${F} with ${W}` : `Evolve ${F}`)
+    : (r.with ? `Combine ${F} with ${W} into ${I}` : `Evolves into ${I}`);
   if (!liveRun) return `<div class="crecipe"><div class="crhead">${head}</div>${reqRows(r.requires.map((q) => ({ text: describeReq(q, r), state: 'plain', note: '' })))}</div>`;
   const pr = recipeProgress(liveRun, r);
   const tone = pr.ready ? ' ready' : pr.own ? ' near' : '';
@@ -48,12 +69,13 @@ function sectionHtml(sec) {
   const title = sec.title ? `<h4>${sec.title}</h4>` : '';
   if (sec.kind === 'text') return `<p class="ctext">${sec.text}</p>`;
   if (sec.kind === 'facts') {
-    return `<div class="csec">${title}<dl>${sec.rows.map(([k, v]) => `<div class="cfact${k ? '' : ' solo'}">${k ? `<dt>${k}</dt>` : ''}<dd>${v}</dd></div>`).join('')}</dl></div>`;
+    return `<div class="csec">${title}<dl>${sec.rows.map(([k, v]) => `<div class="cfact${k ? '' : ' solo'}">${k ? `<dt>${k}</dt>` : ''}<dd>${Array.isArray(v) ? v.map(refText).join(', ') : v}</dd></div>`).join('')}</dl></div>`;
   }
   if (sec.kind === 'levels') {
     return `<div class="csec">${title}<ol class="clv">${sec.rows.map(([k, v]) => `<li><b>${k}</b><span>${v}</span></li>`).join('')}</ol></div>`;
   }
   if (sec.kind === 'list') return `<div class="csec">${title}<ul class="cbul">${sec.items.map((x) => `<li>${x}</li>`).join('')}</ul></div>`;
+  if (sec.kind === 'chips') return `<div class="csec">${title}<div class="clinks">${sec.refs.map((r) => pill(r.id, r.text)).join('')}</div></div>`;
   if (sec.kind === 'evolinks') {
     return `<div class="csec">${title}<div class="clinks">${sec.items.map((rid) => {
       const r = evolutionById(rid);
@@ -71,7 +93,7 @@ function fusionHtml(e) {
   const m = liveRun && e.fusePair && MASTERWORKS.find((x) => `fusion:${x.id}` === e.id);
   if (!m) return '';
   const pr = fusionProgress(liveRun, m.host, m.donor);
-  return `<div class="csec"><h4>Your forge</h4><div class="crecipe${pr.ready ? ' ready' : pr.own ? ' near' : ''}"><div class="crhead">Fuse ${WEAPONS[m.donor].name} into ${WEAPONS[m.host].name}<em>${pr.met} / ${pr.total}</em></div>${reqRows(pr.rows)}${pr.ready ? '<div class="crfoot">Ready: fuse them at the forge.</div>' : ''}</div></div>`;
+  return `<div class="csec"><h4>Your forge</h4><div class="crecipe${pr.ready ? ' ready' : pr.own ? ' near' : ''}"><div class="crhead">Fuse ${xl(m.donor, WEAPONS[m.donor].name)} into ${xl(m.host, WEAPONS[m.host].name)}<em>${pr.met} / ${pr.total}</em></div>${reqRows(pr.rows)}${pr.ready ? '<div class="crfoot">Ready: fuse them at the forge.</div>' : ''}</div></div>`;
 }
 
 function entryHtml({ entry: e, status: st }) {
@@ -80,7 +102,7 @@ function entryHtml({ entry: e, status: st }) {
   const open = state.open.has(e.id);
   const sections = e.sections ? e.sections.map((x) => sectionHtml({ ...x, self: e.id })).join('') : e.lines.map((l) => `<p class="ctext">${l}</p>`).join('');
   const body = open
-    ? `<div class="cbody">${previewHtml(e)}${sections}${fusionHtml(e)}${e.builds.length ? `<div class="csec"><h4>Used in builds</h4><div class="cchips">${e.builds.map((b) => `<span>${b}</span>`).join('')}</div></div>` : ''}</div>`
+    ? `<div class="cbody">${previewHtml(e)}${sections}${fusionHtml(e)}${e.builds.length ? `<div class="csec"><h4>Used in builds</h4><div class="clinks">${(e.buildRefs || []).map((r) => pill(r.id, r.text)).join('')}</div></div>` : ''}</div>`
     : `${st && st.need ? `<div class="cneed">${st.need}</div>` : ''}<div class="bsub">${e.summary}</div>`;
   const links = st && st.chips && st.chips.length && !open
     ? `<span class="clinks">${st.chips.map((c) => `<span class="clink${c.tone ? ' ' + c.tone : ''}" role="button" data-act="go:${c.id}">${c.label} ${c.progress} &rsaquo;</span>`).join('')}</span>` : '';
@@ -130,6 +152,9 @@ export function showCompendium(overlays, { onClose, discovered, run = null, focu
     state.tab = 'evolve'; state.filters = {}; state.q = ''; state.open.add(focus); state.previewId = focus; state.previewLevel = 0;
   }
   entries = buildEntries(discovered);           // rebuilt on open so new discoveries show
+  entryIndex = new Map();
+  for (const x of entries) if (!entryIndex.has(x.id)) entryIndex.set(x.id, x);
+  trail.length = 0;
 
   function render() {
     const facets = facetsFor(state.tab, entries);
@@ -142,6 +167,7 @@ export function showCompendium(overlays, { onClose, discovered, run = null, focu
     }).join('')}</div>`).join('');
     const el = overlays.show(
       `<h2>Compendium</h2>
+       ${trail.length ? `<button class="cback" data-act="cback">&lsaquo; Back${trail[trail.length - 1].name ? ` to ${trail[trail.length - 1].name}` : ''}</button>` : ''}
        <div class="ctabs">${tabs}</div>
        <div class="csrow">
          <input class="csearch" type="search" placeholder="Search" value="${state.q.replace(/"/g, '&quot;')}" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -189,6 +215,7 @@ export function showCompendium(overlays, { onClose, discovered, run = null, focu
     if (act === 'noop') return;
     const [kind, a, b] = act.split(':');
     if (kind === 'ct') {
+      trail.length = 0;
       state.tab = a;
       state.filters = {};
       state.q = '';
@@ -196,15 +223,28 @@ export function showCompendium(overlays, { onClose, discovered, run = null, focu
     } else if (kind === 'ftog') {
       state.filtersOpen = !state.filtersOpen;
       render();
-    } else if (kind === 'go') {                                // a chip: jump to that weapon's entry on the Evolve tab
-      state.tab = 'evolve';
+    } else if (kind === 'go') {                                // a link: jump to that entry (on whichever tab it lives), with Back to return
+      const id = act.slice(3);
+      const target = entryIndex.get(id);
+      if (!target) return;
+      const list = document.querySelector('.clist');
+      const from = state.previewId && entryIndex.get(state.previewId);
+      trail.push({ tab: state.tab, filters: { ...state.filters }, q: state.q, open: [...state.open], previewId: state.previewId, scroll: list ? list.scrollTop : 0, name: from ? from.name : '' });
+      state.tab = target.tab;
       state.filters = {};
       state.q = '';
-      state.open.add(a);
-      state.previewId = a;
+      state.open.add(id);
+      state.previewId = id;
       state.previewLevel = 0;
       render();
-      alignToTop(a);
+      alignToTop(id);
+    } else if (kind === 'cback') {
+      const t = trail.pop();
+      if (!t) return;
+      state.tab = t.tab; state.filters = t.filters; state.q = t.q; state.open = new Set(t.open); state.previewId = t.previewId; state.previewLevel = 0;
+      render();
+      const list = document.querySelector('.clist');
+      if (list) list.scrollTop = t.scroll;
     } else if (kind === 'cf') {
       state.filters[a] = state.filters[a] === b ? undefined : b;
       render();

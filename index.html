@@ -113,6 +113,9 @@
     .cftoggle.on { color: var(--ink); border-color: #4a4f66; }
     .cftoggle i { font-style: normal; display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 4px; border-radius: 8px; background: var(--ember); color: #1a1205; font-size: 11px; }
     .clinks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .xlink { color: #9ec8ff; text-decoration: underline; text-decoration-color: #3b5f8f; text-underline-offset: 2px; touch-action: manipulation; }
+    .clink.dead { opacity: 0.5; }
+    .cback { align-self: flex-start; min-height: 36px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 600; color: #9ec8ff; background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; touch-action: manipulation; max-width: 400px; width: 100%; text-align: left; }
     .clink { padding: 4px 10px; border-radius: 12px; background: #262a38; color: #dcdde4; font-size: 12px; font-weight: 600; touch-action: manipulation; }
     .clink.near { background: #3a2f17; color: #ffc766; } .clink.ready { background: #7be0a6; color: #0e1a13; }
     .csearch { width: 100%; max-width: 400px; min-height: 42px; box-sizing: border-box; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; }
@@ -183,9 +186,15 @@
     .hitems span { display: inline-block; margin-right: 14px; }
     .hitems.stack span { display: block; margin-right: 0; padding: 1px 0; }
     .hw { font-size: 13px; display: flex; align-items: center; gap: 8px; padding: 3px 0; }
-    .hwi { flex: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: 1.5px solid var(--t); background: color-mix(in srgb, var(--t) 18%, #14161d); color: var(--t); }
-    .hwi svg { width: 16px; height: 16px; fill: currentColor; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    .hwi svg path { fill: none; } .hwi svg path:last-child:not(:only-child) { }
+    .hleg { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 11px; color: #9aa0b0; margin: 8px 0; }
+    .hleg > span { display: inline-flex; align-items: center; gap: 4px; }
+    .hleg .hwi { width: 16px; height: 16px; border-radius: 4px; } .hleg .hwi svg { width: 12px; height: 12px; }
+    .hleg-t i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .hwi { flex: none; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: 1.5px solid var(--t); background: color-mix(in srgb, var(--t) 18%, #14161d); color: var(--t); }
+    .hwi { --eye: #14161d; }
+    .hwi svg { width: 20px; height: 20px; fill: currentColor; stroke: none; stroke-linecap: round; stroke-linejoin: round; }
+    .hwi svg .s { fill: none; stroke: currentColor; stroke-width: 1.8; } .hwi svg .sl { stroke-width: 1; }
+    .hwi svg .eye { fill: var(--eye); } .hwi svg .eyes { stroke: var(--eye); stroke-width: 1; }
     .hwn { flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; }
     .hwn small { color: var(--dim); font-size: 12px; }
     .hwm { flex: none; display: inline-flex; gap: 8px; }

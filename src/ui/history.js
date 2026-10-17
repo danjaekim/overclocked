@@ -10,9 +10,9 @@ const state = { cls: null, winsOnly: false, open: new Set() };
 
 // Weapon type icons: a sword for close range, an arrow for ranged, a paw for summons. Tier sets the colour.
 const ICON = {
-  close: '<path d="M3 13 L12 4 M10 2.5 L13.5 6 M4.5 9.5 L7 12" />',
-  ranged: '<path d="M3 13 L12 4 M12.5 3.5 L8.5 4 M12.5 3.5 L12 7.5 M3 13 L2.5 10 M3 13 L6 12.5" />',
-  summon: '<circle cx="4.5" cy="6.5" r="1.4"/><circle cx="8" cy="4.5" r="1.4"/><circle cx="11.5" cy="6.5" r="1.4"/><path d="M5 12 C5 9.5 6.5 8.8 8 8.8 C9.5 8.8 11 9.5 11 12 Z"/>',
+  close: '<g transform="rotate(45 12 12)"><path d="M12 1.5 L14.2 4 V14 H9.8 V4Z"/><rect x="6" y="14" width="12" height="2.2" rx="1"/><rect x="10.8" y="16" width="2.4" height="4"/><circle cx="12" cy="21" r="1.6"/></g>',
+  ranged: '<path class="s" d="M8 2.5 Q22 12 8 21.5"/><path class="s sl" d="M8 2.5 L8 21.5"/><path class="s" d="M3 12 H18"/><path d="M20 12 L15.5 9 V15Z"/>',
+  summon: '<path d="M12 2.5 C7 2.5 4 6 4 10.5 C4 13.5 5.5 15 7 16 V20.5 H17 V16 C18.5 15 20 13.5 20 10.5 C20 6 17 2.5 12 2.5Z"/><circle class="eye" cx="8.8" cy="11" r="2.2"/><circle class="eye" cx="15.2" cy="11" r="2.2"/><path class="eye" d="M12 13.5 L10.8 16 H13.2Z"/><path class="s eyes" d="M10 17.5 V20.5 M12 17.5 V20.5 M14 17.5 V20.5"/>',
 };
 const TIER_COLOR = { common: '#9aa0b0', uncommon: '#5bc07a', rare: '#4f9bff', epic: '#b56bff', evolved: '#ff9a3c', fused: '#b56bff' };
 const ELEMENT_COLOR = { fire: '#ff7a3c', frost: '#8fd8ff', storm: '#ffd34d' };
@@ -21,9 +21,17 @@ function weaponLine(w) {
   const c = TIER_COLOR[w.tier] || TIER_COLOR.common;
   const marks = `${w.enhance ? `<b class="hm enh">+${w.enhance}</b>` : ''}${w.star ? '<b class="hm star" title="Starforged">&#10022;</b>' : ''}${w.legendary ? '<b class="hm lgd" title="Legendary">&#9733;</b>' : ''}`;
   const dots = w.elements.map((el) => `<i class="cdot" style="background:${ELEMENT_COLOR[el]}"></i>`).join('');
-  return `<div class="hw"><span class="hwi" style="--t:${c}" title="${w.tier} ${w.type}"><svg viewBox="0 0 16 16" aria-hidden="true">${ICON[w.type]}</svg></span>
+  return `<div class="hw"><span class="hwi" style="--t:${c}" title="${w.tier} ${w.type}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[w.type]}</svg></span>
     <span class="hwn">${esc(w.name)} <small>Lv ${w.lvl}</small>${dots}</span>${marks ? `<span class="hwm">${marks}</span>` : ''}</div>`;
 }
+
+const icon = (type, c) => `<span class="hwi" style="--t:${c}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[type]}</svg></span>`;
+// One-line key for the weapon tiles in open rows.
+const LEGEND = `<div class="hleg">
+  <span>${icon('close', '#9aa0b0')}Close</span><span>${icon('ranged', '#9aa0b0')}Ranged</span><span>${icon('summon', '#9aa0b0')}Summon</span>
+  <span class="hleg-t"><i style="background:${TIER_COLOR.common}"></i><i style="background:${TIER_COLOR.uncommon}"></i><i style="background:${TIER_COLOR.rare}"></i><i style="background:${TIER_COLOR.epic}"></i><i style="background:${TIER_COLOR.evolved}"></i>Tier</span>
+  <span><b class="hm enh">+N</b>Forged</span><span><b class="hm star">&#10022;</b>Starforged</span><span><b class="hm lgd">&#9733;</b>Legendary</span>
+</div>`;
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const pct = (x) => Math.round(x * 100) + '%';
@@ -89,6 +97,7 @@ export function showHistory(overlays, { history, totals, isUnlocked, onReplay, o
        ${head}
        ${chips}
        ${filtered}
+       ${history.length ? LEGEND : ''}
        <div class="clist">${rows}</div>
        <div class="lu-tools"><button class="btn small" data-act="backup">Export / import</button><button class="btn small primary" data-act="close">Close</button></div>`,
       onAct,
