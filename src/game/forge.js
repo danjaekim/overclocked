@@ -180,6 +180,8 @@ export function eligibleAffixes(inst) {
 export function rebuildAffixes(run, inst) {
   const stats = run.player.stats;
   stats.removeBySource(`forge:${inst.instanceId}:affix:`);
+  inst.armed = null;
+  inst.extraT = [];
   inst.extraTriggers = inst.fusion ? [...inst.fusion.triggers] : [];     // a fusion's triggers survive a reforge
   for (const id of inst.affixes) {
     const a = AFFIXES[id];

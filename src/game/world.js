@@ -28,7 +28,7 @@ function makeEnemy() {
     chill: 0, chillT: 0, freezeT: 0, freezeImm: 0,
     shockT: 0,
     slowMul: 1,            // movement multiplier from chill
-    sunderT: 0, blessT: 0, stunT: 0, // armour stripped / marked for extra damage, seconds left (effects/index.js)
+    sunderT: 0, blessT: 0, markT: 0, stunT: 0, // armour stripped / marked for extra damage, seconds left (effects/index.js)
     armor: 0,              // flat damage taken off every non-DoT hit (data/enemies.js armor, scaled with hp)
   };
 }
@@ -40,7 +40,7 @@ function makeProjectile() {
     r: 4, ttl: 0, dmg: 0, pierce: 0,
     hx: NaN, hy: NaN,                            // where the last enemy it hit stood (a rod plants there)
     chain: 0, ci: 0,                             // visual: the ribbon this projectile's trail patches are drawn in
-    sub: false, depth: 0, trailD: 0,             // distance since the last trail patch (weapons with base.trail)
+    sub: false, depth: 0, trailD: 0, homing: 0,             // distance since the last trail patch (weapons with base.trail)
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
     look: 0,                                // how it is drawn (render/shots.js): 0 the weapon's own shape, 1 saw disc, 2 shard, 3 soul (Summoner), 4 arrow (fusion volleys), 5 blade (Bladestorm)
     hits: new Int32Array(16), nh: 0,    // uids already hit

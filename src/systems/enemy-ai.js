@@ -165,6 +165,7 @@ export function updateEnemies(run, dt) {
     if (e.flash > 0) e.flash -= dt;
     if (e.sunderT > 0) e.sunderT -= dt;
     if (e.blessT > 0) e.blessT -= dt;
+    if (e.markT > 0) e.markT -= dt;
     if (e.wardT > 0) e.wardT -= dt;
     if (e.def.ward) {                                     // Shaman: everything near it takes half damage while it lives
       e.aiCd -= dt;

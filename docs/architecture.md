@@ -523,7 +523,7 @@ export const SHRINE = {
 // A weapon may override breakpoints with `forge: { breakpoints: { 5: [...] } }` on its WEAPONS entry
 // (e.g. a melee arc gets +area at +5 instead of +1 projectile). Overrides replace that level only.
 export const AFFIXES = {
-  keen:     { rarity: 'common', mods: [{ stat: 'critChance', op: 'flat', value: 0.05 }] },
+  keen:     { rarity: 'common', mods: [{ stat: 'critChance', op: 'flat', value: 0.08 }, { stat: 'critMult', op: 'flat', value: 0.4 }] },
   swift:    { rarity: 'common', mods: [{ stat: 'cooldown',   op: 'inc',  value: -0.08 }] },
   volatile: { rarity: 'rare',   triggers: [{ on: 'kill', chance: 0.1, effect: 'explode', params: { radius: 50, damageFrac: 0.4 } }] },
   // ...
@@ -679,7 +679,7 @@ Each milestone ends playable, is one or a few commits, and has a clear done-chec
 | **M44r** *(done)* | Masterwork builds stay hidden until the masterwork is found (v0.44.19) | A build whose `end.fuse` is a masterwork named its pair, so the Builds tab gave away undiscovered masterworks. `compendium.js` `buildVisible` hides those builds (and their "Used in" lines on weapon and technique entries) until the masterwork is in `discovered.fusions`; builds with no fusion always show (9 of 20 at the start). Test in `m44c.test.mjs` checks no masterwork name appears in the builds text before discovery. |
 | **M45a** *(done, v0.45.1)* | Retune the generic tempers | Honed raised from 20% to 30% more damage. `bench.mjs --tempers` (one weapon per behavior) shows Honed 30% and Hasted -20% about even (1.30 vs 1.28 single, 1.28 vs 1.23 live); Mighty and Vast already split single-target vs crowd. Spec: `docs/design-m45.md`. |
 | **M45b** *(done, v0.45.2)* | Tempers by weapon shape | Every behavior gets its own +5 and +10 temper pair (projectile Longshot/Barrage, slam Crushing/Flurry, orbit, aura, summon, bolt, trail/mortar...) so each choice is a playstyle, not a flat bump. Spec: `docs/design-m45.md`. |
-| **M45c** *(planned)* | Affix cleanup and new affixes | Merge Keen and Brutal, replace Shoving with Staggering, make Heavy a `more` bonus. New: Lingering, Broad, Swiftshot, Bane, Seeking, Packmaster, and unconditional epics Echoing, Overcharged, Hunter's Mark, Prismatic. Spec: `docs/design-m45.md`. |
+| **M45c** *(done, v0.45.3)* | Affix cleanup and new affixes | Merge Keen and Brutal, replace Shoving with Staggering, make Heavy a `more` bonus. New: Lingering, Broad, Swiftshot, Bane, Seeking, Packmaster, and unconditional epics Echoing, Overcharged, Hunter's Mark, Prismatic. Spec: `docs/design-m45.md`. |
 | **M45d** *(planned)* | Legendary tier | One legendary slot per weapon at +10, bought with starsteel, pick 1 of 3 by shape: Wellspring, Overflow, Starfall, Bloodpact, Twinned. Spec: `docs/design-m45.md`. |
 | **M45e** *(planned)* | Forge review | Bot bench before and after M45a-d for every class; tune costs, not power, if win rates rise more than about 5 points. Update the playbook and build tips. Spec: `docs/design-m45.md`. |
 

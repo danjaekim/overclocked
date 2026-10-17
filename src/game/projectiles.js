@@ -32,6 +32,7 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.bounce = Math.round(stats.getFor('ricochet', inst.tags));
   pr.split = Math.round(stats.getFor('split', inst.tags));
   pr.splitFrac = stats.getFor('splitDamage', inst.tags);
+  pr.homing = stats.mods.homing.length > 0 ? stats.getFor('homing', inst.tags) : 0;      // Seeking
   return pr;
 }
 

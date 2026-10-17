@@ -20,6 +20,7 @@ const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
 const HIT_FLASH = 0.08;
 const WARD_MULT = 0.5;     // damage taken inside a Shaman's ward
+const MARK_MULT = 1.2;     // damage taken by an enemy marked by Hunter's Mark
 const BLESS_MULT = 1.1;    // damage taken by a blessed enemy
 const ARMOR_FLOOR = 0.4;   // armor never takes more than 60% off a hit
 
@@ -127,6 +128,8 @@ export function flushDamage(run) {
     const ey = e.y;
     let amount = q.amount[i] * targetMult(run, e, src);
     if (e.blessT > 0) amount *= BLESS_MULT;                   // Radiant Halo's mark
+    if (e.markT > 0) amount *= MARK_MULT;                     // Hunter's Mark
+    if (src && (e.elite || e.def.boss) && run.player.stats.mods.vsElite.length > 0) amount *= run.player.stats.getFor('vsElite', src.tags);   // Bane
     if (e.armor > 0 && e.sunderT <= 0 && kind !== KIND_DOT) {                  // armour: flat loss per hit, so heavy hits and burns beat it
       const left = amount - e.armor;
       amount = left > amount * ARMOR_FLOOR ? left : amount * ARMOR_FLOOR;

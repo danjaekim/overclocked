@@ -9,10 +9,32 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff, addBurst, elementColor, BURST_PLAIN } from '../render/fx.js';
 import { addPatch, addVortex, addPillar, addWave, addBlast } from '../systems/hazards.js';
 import { spawnProjectile } from '../game/projectiles.js';
+import { stagger } from '../systems/status.js';
 
 export const MAX_TRIGGER_DEPTH = 3;
 
+// Arms the weapon's NEXT attack with temporary modifiers (Echoing, Overcharged). The mods live under the weapon's affix
+// source prefix, so a reforge or salvage clears them; game/triggers.js removes them when that attack ends. `echo`
+// also makes the weapon fire again at once. The armed attack does not count toward any trigger counter.
+function armNext(run, t, src) {
+  if (src.armed) return;
+  const source = `forge:${src.instanceId}:affix:armed:`;
+  for (const m of t.params.mods) run.player.stats.add({ ...m, tags: [src.instanceTag], source });
+  src.armed = source;
+  if (t.params.echo) src.cd = 0;
+}
+
 export const EFFECTS = {
+  armNext,
+  // A chance on hit to stagger the target (Staggering; bosses take half).
+  staggerHit(run, t, src, x, y, depth, ang, target) {
+    if (target && target.alive) stagger(target, t.params.t);
+  },
+  // Hunter's Mark: the weapon's hit marks an unmarked enemy; every weapon then hits it harder (systems/damage.js).
+  huntersMark(run, t, src, x, y, depth, ang, target) {
+    if (target && target.alive && !(target.markT > 0)) target.markT = t.params.t;
+  },
+
   // Burst of damage around (x, y): damageFrac of the weapon's own damage, radius scaled by area.
   explode(run, t, src, x, y, depth) {
     if (!src || depth + 1 > MAX_TRIGGER_DEPTH) return;

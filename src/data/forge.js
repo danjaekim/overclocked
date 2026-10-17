@@ -67,14 +67,19 @@ export const SHRINE = {
 //   requires  the weapon must carry at least one of these tags (its own, or ones it gained)
 //   addTags   the weapon gains these tags while it has the affix (infusions: it joins that element's perks and sets)
 //   infusion  a weapon can hold only one infusion at a time
+// Behaviors that attack on a cooldown: Echoing and Overcharged act on the next attack, so they need one.
+const ECHO_SHAPES = ['projectile', 'arc', 'slam', 'nova', 'bolt', 'chain', 'mortar', 'judge', 'pulse', 'rod', 'boomerang'];
+
 export const AFFIXES = {
-  keen:     { name: 'Keen',     rarity: 'common',   desc: '+5% crit chance',      mods: [{ stat: 'critChance', op: 'flat', value: 0.05 }] },
+  keen:     { name: 'Keen',     rarity: 'common',   desc: '+8% crit chance, +0.4 crit multiplier', mods: [{ stat: 'critChance', op: 'flat', value: 0.08 }, { stat: 'critMult', op: 'flat', value: 0.4 }] },
   swift:    { name: 'Swift',    rarity: 'common',   desc: '-8% cooldown',         mods: [{ stat: 'cooldown', op: 'inc', value: -0.08 }] },
-  heavy:    { name: 'Heavy',    rarity: 'common',   desc: '+12% damage',          mods: [{ stat: 'damage', op: 'inc', value: 0.12 }] },
-  wide:     { name: 'Wide',     rarity: 'common',   desc: '+15% area',            mods: [{ stat: 'area', op: 'inc', value: 0.15 }] },
-  shoving:  { name: 'Shoving',  rarity: 'common',   desc: '+50% knockback',       mods: [{ stat: 'knockback', op: 'inc', value: 0.5 }] },
+  heavy:    { name: 'Heavy',    rarity: 'common',   desc: '10% more damage',      mods: [{ stat: 'damage', op: 'more', value: 0.1 }] },
+  wide:     { name: 'Wide',     rarity: 'common',   desc: '+15% area (and projectile size)', mods: [{ stat: 'area', op: 'inc', value: 0.15 }] },
+  staggering: { name: 'Staggering', rarity: 'common', desc: '10% chance on a hit to stagger for 0.4 s',
+                triggers: [{ on: 'hit', chance: 0.1, direct: true, effect: 'staggerHit', params: { t: 0.4 } }] },
   piercing: { name: 'Piercing', rarity: 'uncommon', desc: '+1 pierce',            mods: [{ stat: 'pierce', op: 'flat', value: 1 }], requires: ['projectile'] },
-  brutal:   { name: 'Brutal',   rarity: 'uncommon', desc: '+0.3 crit multiplier', mods: [{ stat: 'critMult', op: 'flat', value: 0.3 }] },
+  lingering: { name: 'Lingering', rarity: 'uncommon', desc: '+50% duration (trails last longer), 10% more damage', mods: [{ stat: 'duration', op: 'inc', value: 0.5 }, { stat: 'damage', op: 'more', value: 0.1 }], requires: ['trail'] },
+  swiftshot: { name: 'Swiftshot', rarity: 'uncommon', desc: '+40% projectile speed, +1 pierce', mods: [{ stat: 'projSpeed', op: 'inc', value: 0.4 }, { stat: 'pierce', op: 'flat', value: 1 }], requires: ['projectile', 'nova', 'rod'] },
   ember_touched: { name: 'Ember-touched', rarity: 'uncommon', infusion: true, addTags: ['fire'],
                    desc: 'Becomes a fire weapon: +25% burn chance', mods: [{ stat: 'burnChance', op: 'flat', value: 0.25 }] },
   rime_touched:  { name: 'Rime-touched',  rarity: 'uncommon', infusion: true, addTags: ['frost'],
@@ -82,6 +87,9 @@ export const AFFIXES = {
   storm_touched: { name: 'Storm-touched', rarity: 'uncommon', infusion: true, addTags: ['storm'],
                    desc: 'Becomes a storm weapon: +20% shock chance', mods: [{ stat: 'shockChance', op: 'flat', value: 0.20 }] },
   twin:     { name: 'Twin',     rarity: 'rare',     desc: '+1 projectile/blade/swing/slam', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }], requires: ['projectile', 'orbit', 'arc'] },
+  packmaster: { name: 'Packmaster', rarity: 'rare', desc: '+1 minion', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }], requires: ['summon'] },
+  bane:     { name: 'Bane',     rarity: 'rare',     desc: '30% more damage to elites and bosses', mods: [{ stat: 'vsElite', op: 'more', value: 0.3 }] },
+  seeking:  { name: 'Seeking',  rarity: 'rare',     desc: 'Projectiles curve toward the nearest enemy', mods: [{ stat: 'homing', op: 'flat', value: 5 }], requires: ['projectile', 'nova', 'rod'] },
   volatile: { name: 'Volatile', rarity: 'rare',     desc: '10% of kills explode',
               triggers: [{ on: 'kill', chance: 0.1, effect: 'explode', params: { radius: 50, damageFrac: 0.4 } }] },
   ricocheting: { name: 'Ricocheting', rarity: 'rare', desc: '+2 bounces', mods: [{ stat: 'ricochet', op: 'flat', value: 2 }], requires: ['projectile'] },
@@ -91,7 +99,17 @@ export const AFFIXES = {
   vampiric:    { name: 'Vampiric',    rarity: 'rare', desc: '+2% lifesteal', mods: [{ stat: 'lifesteal', op: 'flat', value: 0.02 }] },
   executioner: { name: 'Executioner', rarity: 'epic', desc: 'Crits execute non-bosses under 15% HP', mods: [{ stat: 'executeBelow', op: 'flat', value: 0.15 }] },
   colossal:    { name: 'Colossal',    rarity: 'epic', desc: '30% more area', mods: [{ stat: 'area', op: 'more', value: 0.3 }] },
+  echoing:     { name: 'Echoing',     rarity: 'epic', desc: 'Every 4th attack repeats at 80% damage',
+                 triggers: [{ on: 'attack', every: 3, effect: 'armNext', params: { echo: true, mods: [{ stat: 'damage', op: 'more', value: -0.2 }] } }], requires: ECHO_SHAPES },
+  overcharged: { name: 'Overcharged', rarity: 'epic', desc: 'Every 3rd attack deals double damage with 30% more area',
+                 triggers: [{ on: 'attack', every: 2, effect: 'armNext', params: { mods: [{ stat: 'damage', op: 'more', value: 1 }, { stat: 'area', op: 'more', value: 0.3 }] } }], requires: ECHO_SHAPES },
+  hunters_mark: { name: "Hunter's Mark", rarity: 'epic', desc: "The weapon's first hit on an enemy marks it for 4 s: marked enemies take 20% more damage from all your weapons",
+                  triggers: [{ on: 'hit', direct: true, effect: 'huntersMark', params: { t: 4 } }] },
+  prismatic:   { name: 'Prismatic',   rarity: 'epic', infusion: true, addTags: ['fire', 'frost', 'storm'],
+                 desc: 'Counts as a fire, frost and storm weapon: +10% chance of each status',
+                 mods: [{ stat: 'burnChance', op: 'flat', value: 0.1 }, { stat: 'chillChance', op: 'flat', value: 0.1 }, { stat: 'shockChance', op: 'flat', value: 0.1 }] },
 };
+
 
 // Default tempers by weapon behavior (M45b, docs/design-m45.md). Lookup order: a weapon's own `forge.tempers`, then its
 // behavior's pair here, then ENHANCE.tempers (Honed/Hasted, Mighty/Vast). Keyed by behavior id, then +5 / +10.

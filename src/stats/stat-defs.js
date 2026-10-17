@@ -43,6 +43,8 @@ export const STATS = {
   split:          { base: 0,   min: 0,             fmt: 'int' },   // (M11a) child projectiles on first hit
   splitDamage:    { base: 0.4, min: 0,             fmt: 'pct' },   // (M11a) child damage, share of the parent's
   lowHpDamage:    { base: 0,   min: 0,             fmt: 'pct' },   // (M26) extra damage multiplier that grows as your hp falls (full at 25% hp)
+  homing:         { base: 0,   min: 0,             fmt: 'dec' },   // (M45c) radians per second a projectile curves toward the nearest enemy
+  vsElite:        { base: 1,   min: 0,             fmt: 'pct' },   // (M45c) damage multiplier against elites and bosses
   stagger:        { base: 0,   min: 0,             fmt: 'dec' },   // (M45b) seconds every direct hit staggers its target (bosses take half)
   executeBelow:   { base: 0,   min: 0, max: 0.5,   fmt: 'pct' },   // (M11b) crits kill non-bosses under this hp fraction
 };

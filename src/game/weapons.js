@@ -39,6 +39,7 @@ export function addWeapon(run, weaponId) {
     star: false,            // starforged: one behavior mutation (game/starforge.js)
     quench: 0,              // Star Quench charges: each makes the next enhance attempt certain (game/forge.js)
     affixes: [],            // affix ids rolled by the forge
+    armed: null,            // source prefix of the temporary modifiers Echoing / Overcharged put on the next attack
     extraTriggers: [],      // triggers granted by affixes
     reforges: 0,
     tempers: {},            // chosen tempers by enhance level: { 5: temperDef } (game/forge.js)

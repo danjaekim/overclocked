@@ -28,6 +28,11 @@ function fireList(run, list, on, src, x, y, depth, ang = 0, target = null) {
 // `every: n` makes it fire on every nth attack (the count lives in inst.trigT, beside the interval
 // timers). (x, y) is where the attack was aimed; ang is its direction in radians.
 export function attackTriggers(run, inst, x, y, ang) {
+  if (inst.armed) {                                          // the attack Echoing / Overcharged prepared: spend it, count nothing
+    run.player.stats.removeBySource(inst.armed);
+    inst.armed = null;
+    return;
+  }
   if (inst.fusion && inst.fusion.payload) inst.payloadArmed = true;     // this attack's first hit carries the payload
   const list = inst.def.triggers;
   for (let i = 0; i < list.length; i++) {

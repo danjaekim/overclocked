@@ -4,11 +4,36 @@ import { addPatch, plantRod, newChain, linkPatch } from './hazards.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile, turnBack } from '../game/projectiles.js';
 
+// Seeking: curve toward the nearest enemy within 240, turning at most `homing` radians per second.
+function seek(run, pr, dt) {
+  const w = run.world;
+  const n = w.hash.queryRadius(pr.x, pr.y, 240, w.scratch);
+  let best = null;
+  let bd = Infinity;
+  for (let k = 0; k < n; k++) {
+    const e = w.scratch[k];
+    if (!e.alive || e.prop === 1) continue;
+    const d = (e.x - pr.x) * (e.x - pr.x) + (e.y - pr.y) * (e.y - pr.y);
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (!best) return;
+  const sp = Math.hypot(pr.vx, pr.vy) || 1;
+  const cur = Math.atan2(pr.vy, pr.vx);
+  let d = Math.atan2(best.y - pr.y, best.x - pr.x) - cur;
+  d -= Math.PI * 2 * Math.round(d / (Math.PI * 2));
+  const turn = Math.max(-pr.homing * dt, Math.min(pr.homing * dt, d));
+  pr.dx = Math.cos(cur + turn);
+  pr.dy = Math.sin(cur + turn);
+  pr.vx = pr.dx * sp;
+  pr.vy = pr.dy * sp;
+}
+
 export function updateProjectiles(run, dt) {
   const store = run.world.projectiles;
   const list = store.active;
   for (let i = list.length - 1; i >= 0; i--) {
     const pr = list[i];
+    if (pr.homing > 0) seek(run, pr, dt);
     pr.x += pr.vx * dt;
     pr.y += pr.vy * dt;
     pr.ttl -= dt;

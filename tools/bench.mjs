@@ -31,7 +31,7 @@ import { ENEMIES } from '../src/data/enemies.js';
 import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
-import { enhance, canEnhance, chooseTemper, quench, canQuench, temperOptions } from '../src/game/forge.js';
+import { enhance, canEnhance, chooseTemper, quench, canQuench, temperOptions, rebuildAffixes, eligibleAffixes } from '../src/game/forge.js';
 import { canStarforge, starforge } from '../src/game/starforge.js';
 import { MUTATIONS } from '../src/data/starforge.js';
 if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(process.env.SF_OVERRIDE))) Object.assign(MUTATIONS[b], o);   // tuning sweeps without editing data
@@ -434,7 +434,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--tempers') && !flag('--lib')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--tempers') && !flag('--affixes') && !flag('--lib')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -541,6 +541,27 @@ if (flag('--tempers') && flag('--real')) {
   }
 }
 
+// Affix value (M45c): every eligible affix on a few weapons, DPS relative to the bare weapon (single / held / live).
+// Bane only shows on elites and bosses, which this bench does not spawn, so it reads 1.00 here.
+if (flag('--affixes')) {
+  const nSeeds = numArg('--seeds', 2);
+  const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
+  const ids = process.env.AFFIX_IDS ? process.env.AFFIX_IDS.split(',') : ['storm_volley', 'reaper_axe', 'cinder_mortar', 'bone_call', 'static_rod'];
+  console.log(`\nAFFIXES  (DPS relative to the bare weapon; mean of ${nSeeds} seeds; single / held / live)`);
+  for (const id of ids) {
+    const meas = (affix) => ['single', 'held', 'flow'].map((mode) => seeds.reduce((a, sd) => a + starDps(id, false, mode, sd, (run, inst) => {
+      if (affix) { inst.affixes = [affix]; rebuildAffixes(run, inst); }
+    }), 0) / seeds.length);
+    const base = meas(null);
+    const probe = loneWeaponRun(id, 99).inst;
+    console.log(`${id}`);
+    for (const a of eligibleAffixes(probe)) {
+      const r = meas(a);
+      console.log('  ' + pad(a, 14) + r.map((v, i) => (base[i] > 0 ? v / base[i] : 0).toFixed(2)).join(' '));
+    }
+  }
+}
+
 if (flag('--starforge')) {
   const seeds = [1, 2, 3, 4, 5];
   const avg = (id, star, mode) => seeds.reduce((a, sd) => a + starDps(id, star, mode, sd), 0) / seeds.length;
@@ -624,7 +645,7 @@ if (flag('--masterworks')) {
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--tempers') && !flag('--lib')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--tempers') && !flag('--affixes') && !flag('--lib')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
