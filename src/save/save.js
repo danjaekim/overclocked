@@ -66,6 +66,14 @@ function cleanEntry(e) {
   };
 }
 
+// Two entries identical in everything but the timestamp (class, seed, length, kills, level, damage and
+// the whole build) are one run recorded twice: real play never lands on identical totals.
+function sameRun(a, b) {
+  const { t: ta, ...ra } = a;
+  const { t: tb, ...rb } = b;
+  return JSON.stringify(ra) === JSON.stringify(rb);
+}
+
 function clone(o) {
   return JSON.parse(JSON.stringify(o));
 }
@@ -84,10 +92,22 @@ export function normalize(raw) {
   for (const k of ['runs', 'wins', 'bossKills']) {
     if (Number.isFinite(raw[k]) && raw[k] >= 0) out[k] = Math.floor(raw[k]);
   }
+  // A run recorded twice (an update landing between runs, say) is counted once: drop the copies and take them off the counters.
+  if (Array.isArray(raw.history)) {
+    const kept = [];
+    for (const e of raw.history.map(cleanEntry).filter(Boolean)) {
+      const twin = kept.find((k) => sameRun(k, e));
+      if (twin) {
+        out.runs = Math.max(0, out.runs - 1);
+        if (e.won) out.wins = Math.max(0, out.wins - 1);
+        if (e.boss) out.bossKills = Math.max(0, out.bossKills - 1);
+      } else kept.push(e);
+    }
+    out.history = kept.slice(-HISTORY_CAP);
+  }
   if (typeof raw.sound === 'boolean') out.sound = raw.sound;
   if (typeof raw.music === 'boolean') out.music = raw.music;
   if (Number.isFinite(raw.musicVolume)) out.musicVolume = Math.min(1, Math.max(0, raw.musicVolume));
-  if (Array.isArray(raw.history)) out.history = raw.history.map(cleanEntry).filter(Boolean).slice(-HISTORY_CAP);
   const found = raw.discovered && (Array.isArray(raw.discovered.fusions) ? raw.discovered.fusions : raw.discovered.grafts);   // saves from before the rename say "grafts"
   if (Array.isArray(found)) {
     out.discovered.fusions = [...new Set(found.filter((x) => typeof x === 'string'))].slice(0, 100);
@@ -152,6 +172,8 @@ export function createSave(storage) {
 
     // Records a finished run and returns { newBests: ['time', ...] }.
     recordRun(summary, now = Date.now()) {
+      const entry = entryFromSummary(summary, now);
+      if (data.history.some((e) => sameRun(e, entry))) return { newBests: [] };      // already recorded
       data.runs++;
       if (summary.won) data.wins++;
       if (summary.bossKilled) data.bossKills++;
@@ -162,7 +184,7 @@ export function createSave(storage) {
           newBests.push(k);
         }
       }
-      data.history.push(entryFromSummary(summary, now));
+      data.history.push(entry);
       if (data.history.length > HISTORY_CAP) data.history.splice(0, data.history.length - HISTORY_CAP);
       persist();
       return { newBests };

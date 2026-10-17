@@ -22,3 +22,18 @@ test('Return to battle asks first while something is affordable', () => {
   const fg = readFileSync(new URL('../src/ui/forge.js', import.meta.url), 'utf8');
   assert.ok(/You can still afford/.test(fg) && /Leave anyway/.test(fg));
 });
+
+import { createSave, normalize } from '../src/save/save.js';
+
+test('a run recorded twice counts once; an existing duplicate is cleaned on load', () => {
+  const mem = {}; const storage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; } };
+  const save = createSave(storage);
+  const sum = { classId: 'archer', won: true, time: 600, kills: 5300, level: 32, seed: 17, bossKilled: true, stats: { total: 227000, avgDps: 379 }, build: {}, titleIds: [] };
+  save.recordRun(sum, 1000); save.recordRun(sum, 1001);
+  assert.equal(save.data.runs, 1); assert.equal(save.data.history.length, 1);
+  save.recordRun({ ...sum, seed: 18 }, 2000);
+  assert.equal(save.data.history.length, 2);
+  const raw = JSON.parse(JSON.stringify(save.data)); raw.history.push({ ...raw.history[0], t: 5 }); raw.runs++; raw.wins++; raw.bossKills++;
+  const n = normalize(raw);
+  assert.equal(n.history.length, 2); assert.equal(n.runs, 2); assert.equal(n.wins, 2); assert.equal(n.bossKills, 2);
+});
