@@ -95,6 +95,11 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44p** *(done)* | Builds for every class (v0.44.17) | 20 builds across all six classes, each leading through evolutions and fusions. |
 | **M44q** *(done)* | Masterworks that every class can make (v0.44.18) | Stormfall, Seraph Titan and Stormfangs replace Eventide Volley, Familiars and Sanctum Titan. |
 | **M44r** *(done)* | No masterwork spoilers in builds (v0.44.19) | Builds that end in a masterwork appear once you have found it. |
+| **M45a** *(planned)* | Retune the generic tempers | Hasted (-20% cooldown) beats Honed (20% more damage) and also multiplies every per-attack proc, so it is always picked. Bench one weapon per behavior and retune so neither option wins both single-target and crowd. Spec: `docs/design-m45.md`. |
+| **M45b** *(planned)* | Tempers by weapon shape | Every behavior gets its own +5 and +10 temper pair (projectile Longshot/Barrage, slam Crushing/Flurry, orbit, aura, summon, bolt, trail/mortar...) so each choice is a playstyle, not a flat bump. Spec: `docs/design-m45.md`. |
+| **M45c** *(planned)* | Affix cleanup and new affixes | Merge Keen and Brutal, replace Shoving with Staggering, make Heavy a `more` bonus. New: Lingering, Broad, Swiftshot, Bane, Seeking, Packmaster, and unconditional epics Echoing, Overcharged, Hunter's Mark, Prismatic. Spec: `docs/design-m45.md`. |
+| **M45d** *(planned)* | Legendary tier | One legendary slot per weapon at +10, bought with starsteel, pick 1 of 3 by shape: Wellspring, Overflow, Starfall, Bloodpact, Twinned. Spec: `docs/design-m45.md`. |
+| **M45e** *(planned)* | Forge review | Bot bench before and after M45a-d for every class; tune costs, not power, if win rates rise more than about 5 points. Update the playbook and build tips. Spec: `docs/design-m45.md`. |
 | **M26–M28** *(planned)* | Evolution branches and fusions | Two evolutions per starter weapon, fusing one evolved weapon into another (12 named masterworks plus a generic echo fusion), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
