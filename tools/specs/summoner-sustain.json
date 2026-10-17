@@ -1,0 +1,110 @@
+{
+ "mode": "bots",
+ "classes": [
+  "summoner"
+ ],
+ "policies": [
+  "plain",
+  "smart"
+ ],
+ "spend": "all",
+ "variants": [
+  {
+   "name": "current"
+  },
+  {
+   "name": "hp+10 (no penalty)",
+   "classOverride": {
+    "summoner": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 10
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "hp+30",
+   "classOverride": {
+    "summoner": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 30
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "regen 0.3",
+   "classOverride": {
+    "summoner": {
+     "addMods": [
+      {
+       "stat": "regen",
+       "op": "flat",
+       "value": 0.3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "regen 0.5",
+   "classOverride": {
+    "summoner": {
+     "addMods": [
+      {
+       "stat": "regen",
+       "op": "flat",
+       "value": 0.5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "hp+10,regen 0.3",
+   "classOverride": {
+    "summoner": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 10
+      },
+      {
+       "stat": "regen",
+       "op": "flat",
+       "value": 0.3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "hp+30,regen 0.3",
+   "classOverride": {
+    "summoner": {
+     "addMods": [
+      {
+       "stat": "maxHp",
+       "op": "flat",
+       "value": 30
+      },
+      {
+       "stat": "regen",
+       "op": "flat",
+       "value": 0.3
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
