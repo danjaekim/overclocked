@@ -70,6 +70,18 @@ export const ENEMIES = {
     charge: { every: 5, windup: 0.9, speed: 340, time: 0.7 },
     color: '#c0392b',
   },
+  // The late boss: stands off and calls down Meteor Fall (systems/boss-zones.js). Below `rageAt` of its hp it
+  // casts faster and drops more circles.
+  seer: {
+    name: 'Ashen Seer',
+    hp: 3500, speed: 70, damage: 30, radius: 36,
+    xp: 200,
+    ore: { chance: 1, type: 'starsteel', count: 3 },
+    ai: 'boss_caster',
+    boss: true,
+    caster: { range: 300, every: 4.2, windup: 0.8, count: 4, countRage: 7, rageAt: 0.5, rageSpeed: 1.5, radius: 58, spread: 170, fuse: 1.15, stagger: 0.12, lead: 0.35, damage: 18 },
+    color: '#7a4fa0',
+  },
 };
 
 // Props: breakable things that live in the enemy pool, so every weapon, swing and blast hits them with

@@ -5,8 +5,9 @@
 
 import { SPRITE_ART as BASE_ART } from './sprite-art.js';
 import { ELITE_ART } from './elite-art.js';
+import { BOSS_ART } from './boss-art.js';
 
-const SPRITE_ART = { ...BASE_ART, ...ELITE_ART };          // the generated art plus the hand-drawn elite bodies
+const SPRITE_ART = { ...BASE_ART, ...ELITE_ART, ...BOSS_ART };          // the generated art plus the hand-drawn elite bodies
 import { ST } from '../data/statuses.js';
 
 const SIZE = 192;                       // raster size in pixels; plenty for a ~56 unit sprite at phone scale

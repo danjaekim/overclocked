@@ -4,6 +4,7 @@
 import { randomPerimeterPoint } from '../game/director.js';
 import { affixDefs } from '../data/elites.js';
 import { spawnEnemyShot } from './enemy-shots.js';
+import { castMeteors } from './boss-zones.js';
 
 const SEP_RADIUS = 2.2;       // x enemy radius
 const SEP_MAX_NEIGHBOURS = 4;
@@ -35,6 +36,24 @@ function bossStep(e, p, dt) {
     e.aiT -= dt;
     if (e.aiT <= 0) { e.ai = AI_CHASE; e.aiCd = c.every; }
   }
+}
+
+// Caster boss: keeps its distance (backs off inside 0.75 x range, closes beyond range), and every `every`
+// seconds stands still and flashes for `windup` before calling down the meteors. Returns the
+// speed multiplier along the line to the player: negative backs away, 0 stands.
+function casterStep(run, e, d, dt) {
+  const c = e.def.caster;
+  const rage = e.hp <= e.maxHp * c.rageAt;
+  if (e.ai === AI_CHASE) {
+    e.aiCd -= dt * (rage ? c.rageSpeed : 1);
+    if (e.aiCd <= 0) { e.ai = AI_WINDUP; e.aiT = c.windup; }
+  } else {
+    e.aiT -= dt;
+    e.flash = 0.05;
+    if (e.aiT <= 0) { castMeteors(run, e); e.ai = AI_CHASE; e.aiCd = c.every; }
+  }
+  if (e.ai === AI_WINDUP) return 0;
+  return d < c.range * 0.75 ? -1 : d > c.range ? 1 : 0;
 }
 
 // Ranged: once inside `range` it stops, counts down, flashes through the windup and throws.
@@ -109,12 +128,15 @@ export function updateEnemies(run, dt) {
     const stunned = e.stunT > 0;                        // staggered by a slam: no moving, shooting or charging
     if (stunned) e.stunT -= dt;
     if (e.def.charge && !stunned) bossStep(e, p, dt);
+    let casterMode = 1;
+    if (e.def.caster && !stunned && e.slowMul > 0) casterMode = casterStep(run, e, Math.sqrt(d2), dt);
     const d = Math.sqrt(d2);
     const inv = d > 1e-3 ? 1 / d : 0;
     const sp = e.speed * e.slowMul;                     // chill slows; frozen sets slowMul to 0
     let vx = dx * inv * sp;
     let vy = dy * inv * sp;
     if (stunned) { vx = 0; vy = 0; }
+    else if (e.def.caster) { vx *= casterMode; vy *= casterMode; }
     else if (e.def.ranged && rangedStep(run, e, d, dt)) { vx = 0; vy = 0; }
     if (e.def.charge && !stunned) {
       if (e.ai === AI_WINDUP) { vx = 0; vy = 0; }

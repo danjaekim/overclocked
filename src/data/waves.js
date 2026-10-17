@@ -27,15 +27,16 @@ export const EVENTS = [
   { at: 165, event: 'elite', enemy: 'brute' },
   { at: 205, event: 'crate' },
   { at: 240, event: 'shrine' },
-  { at: 240, event: 'elite', enemy: 'brute' },
+  { at: 240, event: 'boss', enemy: 'warlord' },   // its death also drops a shrine and a 5-roll chest
+  { at: 270, event: 'elite', enemy: 'brute' },
   { at: 280, event: 'crate' },
-  { at: 300, event: 'boss', enemy: 'warlord' },   // its death also drops a shrine and a 5-roll chest
   { at: 345, event: 'elite', enemy: 'brute' },
   { at: 365, event: 'crate' },
   { at: 390, event: 'shrine' },
+  { at: 405, event: 'warparty' },                  // two Shieldbearer elites and a pack of Slingers
   { at: 420, event: 'elite', enemy: 'brute' },
   { at: 445, event: 'crate' },
-  { at: 480, event: 'warparty' },                  // two Shieldbearer elites and a pack of Slingers
+  { at: 480, event: 'boss', enemy: 'seer' },      // the late boss: Meteor Fall
   { at: 495, event: 'elite', enemy: 'brute' },
   { at: 510, event: 'shrine' },
   { at: 525, event: 'crate' },

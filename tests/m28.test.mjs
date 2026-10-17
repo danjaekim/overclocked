@@ -105,7 +105,7 @@ import { validateData } from '../src/data/validate.js';
 test('M28b data validates; the last wave is tougher and a war party is scheduled', () => {
   assert.deepEqual(validateData(), []);
   assert.equal(WAVES[WAVES.length - 1].hpScale, 2.6);
-  assert.ok(EVENTS.some((e) => e.event === 'warparty' && e.at === 480));
+  assert.ok(EVENTS.some((e) => e.event === 'warparty' && e.at === 405));
 });
 
 test('an armoured elite has armour on top of its body; a second affix stacks', () => {

@@ -139,7 +139,9 @@ test('every sound effect plays on a fake context, is rate limited, and gems clim
 });
 
 test('every class and enemy has sprite art, well-formed, with no baked-in hounds', async () => {
-  const { SPRITE_ART } = await import('../src/render/sprite-art.js');
+  const { SPRITE_ART: BASE } = await import('../src/render/sprite-art.js');
+  const { BOSS_ART } = await import('../src/render/boss-art.js');
+  const SPRITE_ART = { ...BASE, ...BOSS_ART };
   const { CLASSES } = await import('../src/data/classes.js');
   const { ENEMIES } = await import('../src/data/enemies.js');
   const LOOT = ['gem0', 'gem1', 'gem2', 'gem3', 'ore_iron', 'ore_starsteel', 'chest', 'bosschest', 'shrine'];

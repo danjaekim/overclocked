@@ -50,7 +50,7 @@ export const RUN_EVENTS = {
     run.toast = { text: 'A war party approaches!', ttl: 3.5 };
   },
 
-  // The boss enters from the view edge. Its hp is not scaled by the wave hpScale.
+  // A boss enters from the view edge. Its hp is not scaled by the wave hpScale.
   boss(run, ev) {
     randomPerimeterPoint(run, tmp);
     const e = spawnEnemy(run, ev.enemy, tmp.x, tmp.y);

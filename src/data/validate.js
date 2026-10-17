@@ -208,6 +208,9 @@ export function validateData() {
       problems.push(`enemy ${id}: ranged needs ranged { range, cooldown, windup, shotSpeed, shotDamage, shotTtl }`);
     }
     if (e.armor !== undefined && !(e.armor >= 0)) problems.push(`enemy ${id}: armor must be >= 0`);
+    if (e.ai === 'boss_caster' && !(e.caster && e.caster.range > 0 && e.caster.every > 0 && e.caster.windup > 0 && e.caster.count > 0 && e.caster.radius > 0 && e.caster.fuse > 0 && e.caster.damage > 0)) {
+      problems.push(`enemy ${id}: boss_caster needs caster { range, every, windup, count, radius, fuse, damage }`);
+    }
     if (e.ai === 'boss_charge' && !(e.charge && e.charge.every > 0 && e.charge.windup > 0 && e.charge.speed > 0 && e.charge.time > 0)) {
       problems.push(`enemy ${id}: boss_charge needs charge { every, windup, speed, time }`);
     }

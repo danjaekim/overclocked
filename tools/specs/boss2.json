@@ -1,0 +1,6 @@
+{
+  "mode": "bots",
+  "classes": ["archer", "mage", "smith", "summoner", "berserker"],
+  "policies": ["plain", "smart"],
+  "variants": [ { "name": "seer-tuned" } ]
+}

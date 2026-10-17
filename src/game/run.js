@@ -17,6 +17,7 @@ import { updateStatuses } from '../systems/status.js';
 import { updateShrines } from '../systems/shrines.js';
 import { updateHazards, drawHazards } from '../systems/hazards.js';
 import { updateEnemyShots } from '../systems/enemy-shots.js';
+import { updateBossZones, drawBossZones } from '../systems/boss-zones.js';
 import { updateFx, drawFx } from '../render/fx.js';
 import { drawGems, drawOre, drawChests, drawHearts, drawMagnets, drawEnemies, drawProjectiles, drawEnemyShots } from '../render/entities.js';
 import { drawShrines } from '../render/shrines.js';
@@ -59,6 +60,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     grafts: [],             // grafts made this run { id, name, masterwork } (game/graft.js)
     hitFrozen: false,       // set by flushDamage: the enemy being hit was already frozen
     hazards: [],            // fire patches, vortices, pillars, shockwaves (systems/hazards.js)
+    bossZones: [],          // Ashen Seer's marked circles (systems/boss-zones.js)
     enemyShots: [],         // slinger shots in flight (systems/enemy-shots.js)
     stats: createStats(),   // damage by weapon and cause, per-second timeline (game/run-stats.js)
     forgeReady: false,      // a shrine was channelled: game.js opens the forge next
@@ -79,6 +81,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       updateClassTrait(run, dt);                                // 3b class trait timers (Frenzy, Holy Nova)
       updateEnemies(run, dt);                                   // 4 enemy AI
       updateProjectiles(run, dt);                               // 5 projectile movement
+      updateBossZones(run, dt);                                 // 5a boss meteor circles
       updateEnemyShots(run, dt);                                // 5b slinger shots
       w.hash.rebuild(w.enemies.active, w.enemies.count);        // 6 spatial hash
       updateCollision(run);                                     // 7 collisions (queue damage)
@@ -115,6 +118,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       drawHearts(ctx, view, run);
       drawMagnets(ctx, view, run);
       drawHazards(ctx, run);
+      drawBossZones(ctx, run);
       drawClassTrait(ctx, run);                                 // Rain of Arrows
       drawEnemies(ctx, view, run);
       drawEnemyShots(ctx, run);

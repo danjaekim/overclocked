@@ -26,6 +26,7 @@ import { WEAPONS } from '../src/data/weapons.js';
 import { WAVES } from '../src/data/waves.js';
 import { BUILDS as SHARED_BUILDS } from '../src/data/builds.js';
 import { CLASSES } from '../src/data/classes.js';
+import { ENEMIES } from '../src/data/enemies.js';
 import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
@@ -39,6 +40,9 @@ if (process.env.CLASS_OVERRIDE) for (const [c, o] of Object.entries(JSON.parse(p
   if (o.mods) CLASSES[c].mods = o.mods;
   if (o.dropTrait) for (const k of o.dropTrait) delete CLASSES[c].trait[k];
   if (o.startWeapon) CLASSES[c].startWeapon = o.startWeapon;
+}
+if (process.env.ENEMY_OVERRIDE) for (const [id, o] of Object.entries(JSON.parse(process.env.ENEMY_OVERRIDE))) {   // {"seer":{"hp":4000,"caster":{"damage":30}}}: one level of nesting is merged
+  for (const [k, v] of Object.entries(o)) ENEMIES[id][k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...ENEMIES[id][k], ...v } : v;
 }
 if (process.env.WEAPON_OVERRIDE) for (const [id, o] of Object.entries(JSON.parse(process.env.WEAPON_OVERRIDE))) {   // {"ember_bow":{"base":{"cooldown":0.7},"triggers":[...],"levels":[...]}}
   const w = WEAPONS[id];

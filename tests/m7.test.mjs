@@ -168,9 +168,9 @@ test('killing the boss: drops starsteel, a long-lived shrine on the spot (even w
   assert.ok(chest && chest.value === 1, 'a boss chest dropped');
 });
 
-test('the timeline brings the boss at 5:00', () => {
+test('the timeline brings the Warlord at 4:00', () => {
   const run = newRun();
-  run.time = 299;
+  run.time = 239;
   tick(run, 0.5);
   assert.equal(run.bossAlive, false);
   tick(run, 1.5);
@@ -262,4 +262,23 @@ test('a strong auto-played run: the boss arrives, can be killed, and the run is 
   assert.equal(run.won, true);
   assert.ok(run.starsteel >= 0 && Number.isFinite(run.ore));
   assert.equal(run.world.dmg.dropped, 0);
+});
+
+test('the Ashen Seer arrives at 8:00, keeps its distance, and its meteors mark circles that blast the player', () => {
+  const run = createRun({ seed: 1, view: VIEW, debug: { god: false }, classId: 'archer' });
+  run.time = 479;
+  tick(run, 1.5);
+  assert.equal(run.bossAlive, true);
+  assert.equal(run.boss.defId, 'seer');
+  const e = run.boss;
+  run.player.hp = run.player.maxHp = 5000;
+  e.x = run.player.x + 120; e.y = run.player.y;          // inside 0.75 x range: it backs away
+  const d0 = Math.hypot(e.x - run.player.x, e.y - run.player.y);
+  tick(run, 0.5);
+  assert.ok(Math.hypot(e.x - run.player.x, e.y - run.player.y) > d0 - 1, 'it does not close in');
+  for (let i = 0; i < 60 * 5 && run.bossZones.length === 0; i++) tick(run, 1 / 60);
+  assert.ok(run.bossZones.length >= 4, 'a cast marks several circles');
+  const hp = run.player.hp;
+  for (let i = 0; i < 60 * 2; i++) { run.player.iframes = 0; tick(run, 1 / 60); }
+  assert.ok(run.player.hp < hp, 'standing still gets hit');
 });

@@ -49,8 +49,9 @@ for (const v of spec.variants) {
     CLASS_OVERRIDE: v.classOverride ? JSON.stringify(v.classOverride) : '',
     WEAPON_OVERRIDE: v.weaponOverride ? JSON.stringify(v.weaponOverride) : '',
     SF_OVERRIDE: v.sfOverride ? JSON.stringify(v.sfOverride) : '',
+    ENEMY_OVERRIDE: v.enemyOverride ? JSON.stringify(v.enemyOverride) : '',
   };
-  for (const k of ['CLASS_OVERRIDE', 'WEAPON_OVERRIDE', 'SF_OVERRIDE']) if (!env[k]) delete env[k];
+  for (const k of ['CLASS_OVERRIDE', 'WEAPON_OVERRIDE', 'SF_OVERRIDE', 'ENEMY_OVERRIDE']) if (!env[k]) delete env[k];
   if (mode === 'dps') {
     tasks.push({ v, key: v.name, args: ['--dps', '--json', '--seeds', String(seeds)], env: { ...env, DPS_IDS: (spec.weapons || []).join(',') || undefined } });
     if (!tasks[tasks.length - 1].env.DPS_IDS) delete tasks[tasks.length - 1].env.DPS_IDS;
