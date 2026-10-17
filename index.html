@@ -179,8 +179,18 @@
     .hsum { margin: 0; max-width: 400px; }
     .hrow .cbody { padding: 0 12px 12px; }
     .hrow .csec { border-top: 0; margin-top: 2px; padding-top: 0; }
+    .hrow .csec + .csec { border-top: 1px solid #2a2d3b; margin-top: 8px; padding-top: 8px; }
     .hitems span { display: inline-block; margin-right: 14px; }
     .hitems.stack span { display: block; margin-right: 0; padding: 1px 0; }
+    .hw { font-size: 13px; display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+    .hwi { flex: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: 1.5px solid var(--t); background: color-mix(in srgb, var(--t) 18%, #14161d); color: var(--t); }
+    .hwi svg { width: 16px; height: 16px; fill: currentColor; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .hwi svg path { fill: none; } .hwi svg path:last-child:not(:only-child) { }
+    .hwn { flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; }
+    .hwn small { color: var(--dim); font-size: 12px; }
+    .hwm { flex: none; display: inline-flex; gap: 8px; }
+    .hm { font-size: 12px; font-weight: 700; }
+    .hm.enh { color: #ffc766; } .hm.star { color: #7fe9ff; } .hm.lgd { color: #ffd24a; }
     .hseed { color: var(--dim); font-size: 12px; }
     .hsame { margin-top: 10px; width: 100%; }
     .hrow.won { --c: #6ec36e; } .hrow.lost { --c: #6a4a4a; }

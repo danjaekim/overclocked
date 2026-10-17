@@ -45,12 +45,19 @@ export function entryFromSummary(summary, now = Date.now()) {
     boss: !!summary.bossKilled,
     dmg: Math.round(summary.stats ? summary.stats.total : 0),
     dps: Math.round(summary.stats ? summary.stats.avgDps : 0),
+    gear: cleanGear(b.gear),
     weapons: pairs(b.weapons),
     passives: pairs(b.passives),
     perks: pairs(b.perks),
     fusions: cleanFusions(b.fusions),
     titles: Array.isArray(summary.titleIds) ? summary.titleIds.map(String) : [],
   };
+}
+
+// Per-weapon forge marks, aligned with `weapons`: [enhance, starforged, tempers, effects, legendary]. Old entries have none.
+function cleanGear(g) {
+  if (!Array.isArray(g)) return [];
+  return g.slice(0, 12).map((x) => (Array.isArray(x) ? [0, 1, 2, 3, 4].map((i) => Math.max(0, Math.min(99, Math.floor(Number(x[i])) || 0))) : [0, 0, 0, 0, 0]));
 }
 
 // Keeps a stored history entry only if it has the right shape (a hand-edited or imported blob can be anything).
@@ -62,6 +69,7 @@ function cleanEntry(e) {
     t: e.t, cls: e.cls, won: !!e.won, time: Math.floor(e.time), kills: Math.floor(e.kills), level: Math.floor(e.level),
     seed: Number.isFinite(e.seed) ? e.seed : 0, boss: !!e.boss,
     dmg: Number.isFinite(e.dmg) ? e.dmg : 0, dps: Number.isFinite(e.dps) ? e.dps : 0,
+    gear: cleanGear(e.gear),
     weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks), fusions: cleanFusions(e.fusions || e.grafts),
     titles: Array.isArray(e.titles) ? e.titles.filter((x) => typeof x === 'string').slice(0, 12) : [],
   };

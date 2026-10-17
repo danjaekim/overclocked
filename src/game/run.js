@@ -193,6 +193,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         titleIds: run.titles.map((t) => t.id),
         build: {                                     // ids and levels, for the run history
           weapons: run.player.weapons.map((w) => [w.weaponId, w.level]),
+          gear: run.player.weapons.map((w) => [w.enhance || 0, w.star ? 1 : 0, Object.keys(w.tempers || {}).length, (w.affixes || []).length, w.legendary ? 1 : 0]),   // per weapon: +level, starforged, tempers, effects, legendary
           passives: run.player.passives.map((i) => [i.id, i.level]),
           perks: run.player.perks.map((i) => [i.id, i.level]),
           fusions: run.fusions.map((g) => [g.host, g.donor, g.id, g.name]),

@@ -34,6 +34,30 @@ export function summarize(list) {
   };
 }
 
+const ELEMENTS = ['fire', 'frost', 'storm'];
+
+// Each weapon of an entry for display: tier (rarity) and type decide its icon colour and shape; the forge marks
+// (+level, starforged, legendary) come from the stored gear, if the entry has it.
+export function weaponTiles(e) {
+  const left = (e.fusions || []).slice();
+  return e.weapons.map(([id, lvl], i) => {
+    const def = WEAPONS[id];
+    const fi = left.findIndex((g) => g[0] === id);
+    const fused = fi >= 0 ? left.splice(fi, 1)[0] : null;
+    const g = (e.gear && e.gear[i]) || [0, 0, 0, 0, 0];
+    const tags = def ? def.tags : [];
+    return {
+      id, lvl,
+      name: fused ? fused[3] : def ? def.name : id,
+      glyph: def ? def.glyph : '?',
+      tier: fused ? 'fused' : def ? def.rarity : 'common',
+      type: tags.includes('close') ? 'close' : def && def.behavior === 'summon' ? 'summon' : 'ranged',
+      elements: ELEMENTS.filter((x) => tags.includes(x)),
+      enhance: g[0], star: !!g[1], tempers: g[2], effects: g[3], legendary: !!g[4],
+    };
+  });
+}
+
 const nameOf = (table, id) => (table[id] ? table[id].name : id);
 
 export function className(id) {
