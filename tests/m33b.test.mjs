@@ -60,15 +60,14 @@ test('every masterwork fusions, runs 6 s in a crowd, and deals more than its hos
   }
 });
 
-test('Sanctum Titan: the colossus sends out blessing rings of light (the Radiant Pulse it carries)', () => {
-  const m = MASTERWORKS.find((x) => x.id === 'sanctum_titan');
-  assert.ok(m.hooks.minionPulse && !m.hooks.minionAura);
+test('Seraph Titan: the colossus wears a wheel of blades that bless what they cut', () => {
+  const m = MASTERWORKS.find((x) => x.id === 'seraph_titan');
+  assert.ok(m.hooks.minionBlades && !m.hooks.minionAura);
   const { run } = make(m);
   const es = crowd(run);
-  let rings = 0;
-  for (let i = 0; i < 180; i++) { run.update(STEP, { x: 0, y: 0 }); rings = Math.max(rings, run.hazards.filter((h) => h.kind === 6).length); }
-  assert.ok(rings >= 1, 'a ring went out');
-  assert.ok(es.some((e) => e.blessT > 0), 'and blessed what it passed');
+  for (let i = 0; i < 360; i++) run.update(STEP, { x: 0, y: 0 });
+  assert.ok(es.some((e) => e.hp < e.maxHp), 'the blades cut');
+  assert.ok(es.some((e) => e.blessT > 0), 'and blessed what they cut');
 });
 
 test('Comet bursts its ice shards at the last enemy the arrow pierced, not off-screen', () => {
@@ -88,15 +87,13 @@ test('Comet bursts its ice shards at the last enemy the arrow pierced, not off-s
   assert.ok(shards.every((p) => p.depth === 1), 'shards never set off the arrow\'s own shatter');
 });
 
-test('Familiars: each hound bolt strikes two enemies', () => {
-  const m = MASTERWORKS.find((x) => x.id === 'familiars');
-  assert.equal(m.hooks.familiars.targets, 2);
+test('Stormfangs: the hounds fire piercing lances', () => {
+  const m = MASTERWORKS.find((x) => x.id === 'stormfangs');
+  assert.ok(m.hooks.minionLance.pierce >= 2);
   const { run, h } = make(m);
-  h.cd = 1e9;                                              // only the hounds cast
   const a = spawnEnemy(run, 'goblin', 120, 0); a.hp = a.maxHp = 1e9; a.speed = 0;
-  const b = spawnEnemy(run, 'goblin', 170, 0); b.hp = b.maxHp = 1e9; b.speed = 0;
-  tick(run, 2.5);
-  assert.ok(a.hp < a.maxHp && b.hp < b.maxHp);
+  tick(run, 6);
+  assert.ok(h.minions.length >= 1 && a.hp < a.maxHp, 'a lance landed');
 });
 
 test('Bladestorm flings blades on every spin; Hellhounds wear a wider aura', () => {

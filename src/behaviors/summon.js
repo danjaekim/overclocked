@@ -11,7 +11,7 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
 import { queueDamage, KIND_PROC } from '../systems/damage-queue.js';
 import { applyBurn } from '../systems/status.js';
-import { addRing } from '../systems/hazards.js';
+import { spawnProjectile } from '../game/projectiles.js';
 import { activeMutation } from '../game/starforge.js';
 import { STARFORGE } from '../data/starforge.js';
 
@@ -39,8 +39,9 @@ export default {
     const leash = param(run, inst, 'range');
     const radius = param(run, inst, 'radius');
     const dmg = param(run, inst, 'damage');
-    const aura = inst.fusion && inst.fusion.hooks.minionAura;   // Hellhounds
-    const pulse = inst.fusion && inst.fusion.hooks.minionPulse; // Sanctum Titan
+    const hooks = inst.fusion && inst.fusion.hooks;
+    const aura = hooks && (hooks.minionAura || hooks.minionBlades);   // Hellhounds: a burning aura; Seraph Titan: a wheel of blades
+    const lance = hooks && hooks.minionLance;                          // Stormfangs
     const tickEvery = inst.def.base.tickEvery;
     inst.t += dt;
 
@@ -82,7 +83,7 @@ export default {
 
       if (m.stomp > 0) m.stomp -= dt;
       if (aura) auraTick(run, inst, m, aura, dt, dmg);
-      if (pulse) pulseTick(run, inst, m, pulse, dt, dmg);
+      if (lance) lanceTick(run, inst, m, lance, dt, dmg);
       let bit = false;
       const big = star && i === 0;                         // the star-touched one: bigger and harder-hitting
       const mr = big ? radius * star.size : radius;
@@ -112,6 +113,8 @@ export default {
   },
 
   draw(inst, ctx, run) {
+    const blades = inst.fusion && inst.fusion.hooks.minionBlades;
+    if (blades) drawBlades(ctx, inst, blades, run.time);
     const aura = inst.fusion && inst.fusion.hooks.minionAura;
     if (aura) {                                            // the halo each minion carries
       ctx.strokeStyle = aura.color;
@@ -165,14 +168,38 @@ export default {
 
 function isAlive(o) { return o.alive; }
 
-// Sanctum Titan: every `every` seconds each minion sends out a ring of light (the Radiant Pulse it
-// carries) that hurts and blesses everything it passes and mends you a little per enemy.
-function pulseTick(run, inst, m, pl, dt, dmg) {
-  m.pulseT = (m.pulseT === undefined ? pl.every * 0.5 : m.pulseT) - dt;
-  if (m.pulseT > 0) return;
-  m.pulseT += pl.every;
-  addRing(run, inst, m.x, m.y, pl.range * run.player.stats.getFor('area', inst.tags), pl.speed, dmg * pl.damageFrac, 0,
-    { status: 'bless', heal: pl.heal, color: pl.color, thick: 6 });
+// Stormfangs: every `every` seconds each hound fires a piercing lance at the nearest enemy near it.
+function lanceTick(run, inst, m, l, dt, dmg) {
+  m.lanceT = (m.lanceT === undefined ? l.every * (0.3 + 0.2 * (m.slot || 0)) : m.lanceT) - dt;
+  if (m.lanceT > 0) return;
+  const e = run.world.hash.queryNearest(m.x, m.y, l.range, isAlive);
+  if (!e) { m.lanceT = 0.2; return; }
+  m.lanceT += l.every;
+  const d = Math.hypot(e.x - m.x, e.y - m.y) || 1;
+  const pr = spawnProjectile(run, inst, m.x, m.y, (e.x - m.x) / d, (e.y - m.y) / d, l.speed, dmg * l.damageFrac, l.ttl, l.radius, l.pierce);
+  if (pr) { pr.sub = true; pr.look = 4; }
+}
+
+// Seraph Titan: a wheel of blades turning round each minion.
+function drawBlades(ctx, inst, b, time) {
+  ctx.fillStyle = b.color;
+  ctx.strokeStyle = '#8a6a2a';
+  ctx.lineWidth = 1.2;
+  for (const m of inst.minions) {
+    for (let k = 0; k < b.count; k++) {
+      const a = time * b.spin + (k * TAU) / b.count;
+      const x = m.x + Math.cos(a) * b.radius;
+      const y = m.y + Math.sin(a) * b.radius;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a + 1.57) * 11, y + Math.sin(a + 1.57) * 11);
+      ctx.lineTo(x + Math.cos(a) * 4, y + Math.sin(a) * 4);
+      ctx.lineTo(x - Math.cos(a + 1.57) * 11, y - Math.sin(a + 1.57) * 11);
+      ctx.lineTo(x - Math.cos(a) * 4, y - Math.sin(a) * 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
 }
 
 // A minion's burning aura: every `tick` seconds everything within `radius` of it takes a share of the
@@ -192,5 +219,6 @@ function auraTick(run, inst, m, a, dt, dmg) {
     if (dx * dx + dy * dy > rr * rr) continue;
     queueDamage(run, e, dmg * a.damageFrac, false, 0, 0, 1, inst, KIND_PROC);
     if (a.burn) applyBurn(run, e, inst, dmg * a.damageFrac, 1);
+    if (a.bless) e.blessT = Math.max(e.blessT, 1.5);                    // Seraph Titan's blades mark what they cut
   }
 }

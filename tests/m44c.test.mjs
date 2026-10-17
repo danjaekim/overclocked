@@ -64,3 +64,15 @@ test('every class has at least three builds', async () => {
   const { CLASSES } = await import('../src/data/classes.js');
   for (const c of Object.keys(CLASSES)) assert.ok(BUILDS.filter((b) => b.cls === c).length >= 3, c);
 });
+
+test('every masterwork can be made by at least one class (no pair needs weapons from two different classes)', async () => {
+  const { WEAPONS } = await import('../src/data/weapons.js');
+  const { CLASSES } = await import('../src/data/classes.js');
+  const { EVOLUTIONS } = await import('../src/data/evolutions.js');
+  const okw = (id, c) => WEAPONS[id].class == null || WEAPONS[id].class === c;
+  const reach = (id, c) => (WEAPONS[id].rarity !== 'evolved' ? okw(id, c)
+    : EVOLUTIONS.some((r) => r.into === id && reach(r.from, c) && (!r.with || reach(r.with, c))));
+  for (const m of MASTERWORKS) {
+    assert.ok(Object.keys(CLASSES).some((c) => reach(m.host, c) && reach(m.donor, c)), `${m.id}: no class can make ${m.host} + ${m.donor}`);
+  }
+});

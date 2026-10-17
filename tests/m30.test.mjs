@@ -96,7 +96,7 @@ test('the minimum gap stops a fast weapon spamming the payload', () => {
 });
 
 test('payload hits are PROC damage credited to Fusion and never fire another payload', () => {
-  const { run, h } = fused('storm_volley', 'stormshell_mortar');      // blast
+  const { run, h } = fused('sunpiercer', 'stormshell_mortar');      // blast
   assert.equal(h.fusion.payload, 'blast');
   const a = dummy(run, 300, 0);
   const near = dummy(run, 320, 0);
@@ -134,7 +134,7 @@ test('each payload reaches an enemy next to the target and not one far away', ()
 });
 
 test('payload damage follows the host damage stat', () => {
-  const { run, h } = fused('storm_volley', 'stormshell_mortar');
+  const { run, h } = fused('sunpiercer', 'stormshell_mortar');
   const a = dummy(run, 300, 0);
   const n1 = dummy(run, 320, 0);
   rehash(run);
@@ -142,7 +142,7 @@ test('payload damage follows the host damage stat', () => {
   hit(run, h, a);
   tick(run, 0.6);
   const base = dealt(n1);
-  const { run: r2, h: h2 } = fused('storm_volley', 'stormshell_mortar');
+  const { run: r2, h: h2 } = fused('sunpiercer', 'stormshell_mortar');
   r2.player.stats.add({ stat: 'damage', op: 'more', value: 1, tags: [h2.instanceTag], source: 'test' });
   const a2 = dummy(r2, 300, 0);
   const n2 = dummy(r2, 320, 0);

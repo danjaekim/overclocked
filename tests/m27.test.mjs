@@ -127,17 +127,17 @@ test('Glacier Maul freezes, and a hit on a frozen enemy shatters', () => {
   assert.ok(shatters >= 1, 'the second slam shattered it');
 });
 
-test('Eventide Volley opens a vortex every 4th volley and its arrows bend toward it', () => {
+test('Stormfall: every 3rd volley drops a storm shell on its target and a ring around it', () => {
   const run = newRun();
-  const { h, d } = pair(run, 'storm_volley', 'singularity');
+  const { h, d } = pair(run, 'storm_volley', 'stormshell_mortar');
   fuse(run, h, d);
   const e = spawnEnemy(run, 'brute', 160, 0);
   e.speed = 0;
   e.maxHp = e.hp = 1e7;
-  let vort = 0;
-  for (let i = 0; i < 60 * 6; i++) { run.update(STEP, { x: 0, y: 0 }); if (run.hazards.some((x) => x.pull)) vort++; }
-  assert.ok(vort > 0, 'a vortex opened');
-  assert.ok(h.fusion.hooks.bend);
+  let most = 0;
+  for (let i = 0; i < 60 * 8; i++) { run.update(STEP, { x: 0, y: 0 }); most = Math.max(most, run.hazards.filter((x) => x.kind === 4).length); }
+  assert.ok(most >= 5, `a shell on the target and four around it (saw ${most})`);
+  assert.ok(e.hp < e.maxHp);
 });
 
 test('Hellhounds burn what is near each hound', () => {
@@ -160,9 +160,9 @@ test('Spear Wheel launches its blades out and back', () => {
   assert.equal(h.launchPhase === 0 || h.launchPhase === 1 || h.launchPhase === 2, true);
 });
 
-test('Sanctum Titan heals on kills', () => {
+test('Seraph Titan heals on kills', () => {
   const run = newRun();
-  const { h, d } = pair(run, 'bone_colossus', 'radiant_halo');
+  const { h, d } = pair(run, 'bone_colossus', 'seraph_blades');
   fuse(run, h, d);
   run.player.maxHp = 200;
   run.player.hp = 50;

@@ -29,6 +29,10 @@ export const BUILDS = [
     end: { weapons: ['sunpiercer', 'stormfrost_lance'] },
     idea: 'Chill and shock the same enemy and it always crits.',
     tips: 'Needs a frost source and a storm source before Superconduct is offered. Combine the javelin with the shards into Stormfrost Lance, which chills and shocks in one hit. Keen Eye turns the bow into Sunpiercer.', bench: true },
+  { id: 'stormfall', name: 'Stormfall', cls: 'archer', weapons: ['ember_bow', 'cinder_mortar', 'static_rod', 'cinder_ward'], perks: ['static_charge', 'kindling', 'fan_the_flames', 'overload', 'volley'], passives: ['wind_sigil'],
+    end: { weapons: ['storm_volley', 'stormshell_mortar', 'pyre_crown'], fuse: ['storm_volley', 'stormshell_mortar'] },
+    idea: 'Every other volley the sky answers: storm shells fall on the target and in a ring around it.',
+    tips: 'Wind Sigil turns the bow into Storm Volley; combine Cinder Mortar with Static Rod into Stormshell Mortar and fuse the two for Stormfall. Add Cinder Ward (Fan the Flames 2 makes Pyre Crown) for the burning crowd the shells feed on. Volley and shock perks make the shells chain.', bench: true },
 
   // ---- Smith
   { id: 'steam engine', name: 'Steam Engine', cls: 'smith', weapons: ['forge_hammer', 'cinder_ward', 'rime_orbs'], perks: ['kindling', 'frostbite', 'quench', 'long_reach'], passives: [],
@@ -89,6 +93,14 @@ export const BUILDS = [
     end: { weapons: ['grave_legion', 'thunder_lance', 'tempest'], fuse: ['thunder_lance', 'tempest'] },
     idea: 'The hounds hold the crowd while planted rods fork lightning through it.',
     tips: 'Fleet Greaves 2 for Grave Legion, then Arc Conductor 2 and Static Charge 2 for Thunder Lance and Tempest, which fuse into Stormspire. The Summoner stays at range while the pack works.', bench: true },
+  { id: 'stormfangs', name: 'Stormfangs', cls: 'summoner', weapons: ['bone_call', 'storm_javelin', 'rime_shards'], perks: ['frostbite', 'static_charge', 'superconduct', 'volley'], passives: ['fleet_greaves'],
+    end: { weapons: ['grave_legion', 'stormfrost_lance'], fuse: ['grave_legion', 'stormfrost_lance'] },
+    idea: 'Every hound fires piercing frost-and-lightning lances, so chilled and shocked enemies always crit.',
+    tips: 'Fleet Greaves 2 for Grave Legion; combine Storm Javelin with Rime Shards into Stormfrost Lance, then fuse the two for Stormfangs. Superconduct rewards enemies that are both chilled and shocked, which the lances do in one hit.', bench: true },
+  { id: 'seraph titan', name: 'Seraph Titan', cls: 'summoner', weapons: ['bone_call', 'spirit_blades'], perks: ['long_reach', 'echo_strike', 'bloodletting'], passives: ['tempered_core'],
+    end: { weapons: ['bone_colossus', 'seraph_blades'], fuse: ['bone_colossus', 'seraph_blades'] },
+    idea: 'One huge spirit in a wheel of blades: it cuts and blesses everything near it and its kills heal you.',
+    tips: 'Tempered Core 2 evolves Bone Call into Bone Colossus and Long Reach 2 evolves the blades into Seraph Blades; fuse them for Seraph Titan. Bloodletting and the kill heal make the frail Summoner much harder to kill.', bench: true },
 
   // ---- Saint
   { id: 'sun saint', name: 'Sun Saint', cls: 'saint', weapons: ['halo', 'cinder_ward'], perks: ['long_reach', 'bloodletting', 'kindling', 'fan_the_flames'], passives: ['tempered_core'],

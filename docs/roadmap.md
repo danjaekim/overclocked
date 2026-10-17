@@ -93,6 +93,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44n** *(done)* | Grafts renamed to Fusions (v0.44.15) | Grafting is now fusing everywhere. The old two-base-weapon evolutions that were called fusions are now called combos. Old saves still load. |
 | **M44o** *(done)* | Fusion previews (v0.44.16) | Discovered masterwork fusions can be watched in action in the compendium, like weapons. |
 | **M44p** *(done)* | Builds for every class (v0.44.17) | 20 builds across all six classes, each leading through evolutions and fusions. |
+| **M44q** *(done)* | Masterworks that every class can make (v0.44.18) | Stormfall, Seraph Titan and Stormfangs replace Eventide Volley, Familiars and Sanctum Titan. |
 | **M26–M28** *(planned)* | Evolution branches and fusions | Two evolutions per starter weapon, fusing one evolved weapon into another (12 named masterworks plus a generic echo fusion), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
@@ -141,6 +142,5 @@ damage (chain, ricochet, split), which matters more than the starting buff.
 
 ## Open design notes (builds review, v0.44.17)
 
-- **Three masterworks cannot be made by any class**: Eventide Volley (Storm Volley is Archer only, Singularity Mage only), Familiars (Prismatic Bolt Mage only, Grave Legion Summoner only) and Sanctum Titan (Bone Colossus Summoner only, Radiant Halo Saint only). Options: let a class offer one other class's evolved weapon, change a donor to a shared weapon, or rework those three.
-- **Smith, Berserker, Summoner and Saint have only three builds**, because the strong partners are the shared weapons (Cinder Ward, Rime Orbs, Storm Javelin, Static Rod, Cinder Mortar, Rime Shards, Spirit Blades, Chakram) and every build leans on the same few. The Summoner in particular has one summon weapon, so its builds differ only in the partner. Consider shared weapons or techniques that suit melee, summon and aura classes (heavier physical options, summon-tagged partners), so a fourth distinct build exists for each.
+- **Smith, Berserker and Saint have only three builds each** (the Summoner and Archer have five since v0.44.18), because the strong partners are the shared weapons (Cinder Ward, Rime Orbs, Storm Javelin, Static Rod, Cinder Mortar, Rime Shards, Spirit Blades, Chakram) and every build leans on the same few. The Summoner in particular has one summon weapon, so its builds differ only in the partner. Consider shared weapons or techniques that suit melee, summon and aura classes (heavier physical options, summon-tagged partners), so a fourth distinct build exists for each.
 - **Melee and aura classes look weak on the single-target bench** (Smith and Saint cannot kill the 20000 hp boss in 60 s even finished), though their bot win rates are high. Worth checking in real play before treating it as a balance problem.

@@ -10,14 +10,13 @@
 //   triggers  extra triggers (data/weapons.js shape; effects in effects/index.js)
 //   hooks     behaviour switches read by the host's behaviour or by projectile movement:
 //             minionAura { radius, tick, damageFrac, burn, color }  each summon minion burns what is near it
-//             minionPulse { every, range, speed, damageFrac, heal, color }  each minion sends out blessing rings of light
+//             minionBlades { count, radius, tick, damageFrac, spin, bless, color }  each minion wears a wheel of blades that cut (and bless) what is near it
+//             minionLance { every, damageFrac, range, speed, ttl, radius, pierce }  each minion fires a piercing lance at the nearest enemy
 //             launch { every, dist, speed }                         orbit blades shoot out and come back
-//             bend                                                  the host's projectiles curve toward vortices
 //             burnVortex { patchTtl }                               vortices burn what they pull and collapse into fire
 //             crack { every, radius, ttl, tick, damageFrac }        shockwaves leave burning, shocking cracks
 //             wrath { stay, linkFrac }                              pillars linger and are joined by lightning
 //             endBurst { count, speed, ttl, pierce, damageFrac }    a projectile that runs out bursts into a ring of shards
-//             familiars { count, every, damageFrac, targets, range } the host gains hounds that cast its attack
 //             aurora { every, rings, gap, range, speed, damageFrac, heal } trail patches bless; every nth is a ring beacon
 //             millstone { radius, damageFrac, stun }               a parked boomerang ends in a slam on its spot
 //             bounceRod { radius, ttl, every, zaps, frac, max, link } each boomerang bounce plants a rod
@@ -84,11 +83,11 @@ export const MASTERWORKS = [
     hooks: {},
   },
   {
-    id: 'eventide_volley', host: 'storm_volley', donor: 'singularity', name: 'Eventide Volley',
-    desc: 'Every 4th volley opens a vortex on its target, and your arrows bend toward vortices in flight.',
-    mods: [],
-    triggers: [{ on: 'attack', every: 4, effect: 'vortex', params: { radius: 95, ttl: 1.5, pull: 150, damageFrac: 3 } }],
-    hooks: { bend: true },
+    id: 'stormfall', host: 'storm_volley', donor: 'stormshell_mortar', name: 'Stormfall',
+    desc: 'Every other volley calls a storm shell down on its target and a ring of them around it. They burst 0.45 s later, burning and shocking.',
+    mods: [{ stat: 'shockChance', op: 'flat', value: 0.2 }],
+    triggers: [{ on: 'attack', every: 2, effect: 'stormfall', params: { ring: 4, dist: 58, tele: 0.45, radius: 56, damageFrac: 3 } }],
+    hooks: {},
   },
   {
     id: 'hellhounds', host: 'grave_legion', donor: 'pyre_crown', name: 'Hellhounds',
@@ -105,11 +104,11 @@ export const MASTERWORKS = [
     hooks: { launch: { every: 3, dist: 300, speed: 900 } },
   },
   {
-    id: 'sanctum_titan', host: 'bone_colossus', donor: 'radiant_halo', name: 'Sanctum Titan',
-    desc: 'The colossus carries the halo: it sends out rings of light that bless and burn everything they pass and mend you a little for each. Its kills heal you.',
-    mods: [{ stat: 'lifesteal', op: 'flat', value: 0.015 }, { stat: 'burnChance', op: 'flat', value: 0.3 }],
+    id: 'seraph_titan', host: 'bone_colossus', donor: 'seraph_blades', name: 'Seraph Titan',
+    desc: 'The colossus wears a wheel of seraph blades. They cut and bless everything near it, and its kills heal you.',
+    mods: [{ stat: 'lifesteal', op: 'flat', value: 0.015 }],
     triggers: [{ on: 'kill', effect: 'heal', params: { amount: 2 } }],
-    hooks: { minionPulse: { every: 0.9, range: 130, speed: 300, damageFrac: 0.9, heal: 0.3, color: '#ffe9a0' } },
+    hooks: { minionBlades: { count: 5, radius: 62, tick: 0.35, damageFrac: 1.8, spin: 3, bless: true, color: '#ffe9a0' } },
   },
   {
     id: 'black_sun', host: 'singularity', donor: 'pyre_crown', name: 'Black Sun',
@@ -147,11 +146,11 @@ export const MASTERWORKS = [
     hooks: { wrath: { stay: 1.5, linkFrac: 0.25 } },
   },
   {
-    id: 'familiars', host: 'prismatic_bolt', donor: 'grave_legion', name: 'Familiars',
-    desc: 'Three spirit hounds hover beside you. Every 1.2 s each casts a prismatic bolt that strikes two enemies.',
-    mods: [],
+    id: 'stormfangs', host: 'grave_legion', donor: 'stormfrost_lance', name: 'Stormfangs',
+    desc: 'Every hound fires a piercing lance at the nearest enemy every 1.2 s. The lances chill and shock.',
+    mods: [{ stat: 'chillChance', op: 'flat', value: 0.25 }, { stat: 'shockChance', op: 'flat', value: 0.25 }],
     triggers: [],
-    hooks: { familiars: { count: 3, every: 1.2, damageFrac: 1.0, targets: 2, range: 260 } },
+    hooks: { minionLance: { every: 1.2, damageFrac: 2.2, range: 300, speed: 520, ttl: 0.7, radius: 9, pierce: 3 } },
   },
 ];
 

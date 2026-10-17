@@ -1,6 +1,6 @@
 // Projectile integration (step 5 of the tick). Enemies move in enemy-ai.js.
 
-import { addPatch, nearestVortex, plantRod, newChain, linkPatch } from './hazards.js';
+import { addPatch, plantRod, newChain, linkPatch } from './hazards.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile, turnBack } from '../game/projectiles.js';
 
@@ -9,19 +9,6 @@ export function updateProjectiles(run, dt) {
   const list = store.active;
   for (let i = list.length - 1; i >= 0; i--) {
     const pr = list[i];
-    if (pr.inst && pr.inst.fusion && pr.inst.fusion.hooks.bend && run.hazards.length) {   // Eventide Volley: arrows curve toward a vortex
-      const v = nearestVortex(run, pr.x, pr.y, 260);
-      if (v) {
-        const sp = Math.hypot(pr.vx, pr.vy) || 1;
-        const want = Math.atan2(v.y - pr.y, v.x - pr.x);
-        const cur = Math.atan2(pr.vy, pr.vx);
-        let d = want - cur;
-        d -= Math.PI * 2 * Math.round(d / (Math.PI * 2));
-        const turn = Math.max(-7 * dt, Math.min(7 * dt, d));
-        pr.vx = Math.cos(cur + turn) * sp;
-        pr.vy = Math.sin(cur + turn) * sp;
-      }
-    }
     pr.x += pr.vx * dt;
     pr.y += pr.vy * dt;
     pr.ttl -= dt;

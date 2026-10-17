@@ -1,4 +1,4 @@
-// M28a: masterworks 7-12 (Black Sun, Bladestorm, Comet, Fault Line, Wrath, Familiars).
+// M28a: masterworks 7-12 (Black Sun, Bladestorm, Comet, Fault Line, Wrath, Stormfangs).
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
@@ -84,13 +84,13 @@ test('Wrath: pillars linger and lightning links them', () => {
   assert.ok(mid.shockT > 0 || mid.hp < mid.maxHp, 'the link hurt what stood on it');
 });
 
-test('Familiars: three hounds each cast a bolt', () => {
+test('Stormfangs: every hound fires a lance at the nearest enemy', () => {
   const run = newRun();
-  const h = fused(run, 'prismatic_bolt', 'grave_legion');
+  const h = fused(run, 'grave_legion', 'stormfrost_lance');
   const e = dummy(run, 120, 0);
-  tick(run, 4);
-  assert.equal(h.fam.length, 3);
-  assert.ok(e.hp < e.maxHp);
+  tick(run, 6);
+  assert.ok(h.minions.length >= 1);
+  assert.ok(e.hp < e.maxHp, 'a lance landed');
 });
 
 // ---- M28b: difficulty ----

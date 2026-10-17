@@ -137,6 +137,21 @@ export const EFFECTS = {
     }
   },
 
+  // Stormfall: a storm shell on the target and `ring` more around it (the ring turns each time), bursting after `tele`.
+  stormfall(run, t, src, x, y, depth) {
+    if (!src || depth + 1 > MAX_TRIGGER_DEPTH) return;
+    const p = t.params;
+    const dmg = param(run, src, 'damage') * p.damageFrac;
+    const rad = p.radius * area(run, src);
+    const flags = { burn: true, shock: true };
+    addBlast(run, src, x, y, rad, p.tele, dmg, depth, flags);
+    src.stormA = (src.stormA || 0) + 0.7;
+    for (let k = 0; k < p.ring; k++) {
+      const a = src.stormA + (k * Math.PI * 2) / p.ring;
+      addBlast(run, src, x + Math.cos(a) * p.dist, y + Math.sin(a) * p.dist, rad, p.tele, dmg, depth, flags);
+    }
+  },
+
   // Glacier Maul: a hit on an enemy that was already frozen shatters into a ring of ice shards.
   // Only direct hits (depth 0) shatter, so a shatter never sets off more shatters.
   shatter(run, t, src, x, y, depth) {
