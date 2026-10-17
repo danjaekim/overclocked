@@ -11,8 +11,10 @@ import { applyBurn, applyChill, applyShock, forkChain } from './status.js';
 import { resolveHit } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff, addArc } from '../render/fx.js';
+import { drawLightRing, drawPillar, drawPatchMarks, drawPatchChains } from '../render/auras.js';
 
 export const HAZARD_CAP = 90;
+
 const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7;
 const TAU = Math.PI * 2;
 
@@ -34,6 +36,15 @@ function add(run, h) {
 // direct: the patch is the weapon's own attack (Frost Wake): its ticks are real weapon hits (crit,
 // knockback, the weapon's own status chances, hit triggers, graft payloads) instead of PROC damage, and
 // `look` picks the colours. look: 'burn' | 'chill' | 'steam' | 'shock' | 'bless' | 'none'.
+// Patches dropped one after another along a path share a `chain` id and an index `ci`; render/auras.js draws a chain as one
+// organic ribbon instead of a string of discs. `link` extends the caller's chain (or starts one when `next` is false).
+let chainSeq = 0;
+export const newChain = () => ++chainSeq;
+export function linkPatch(patch, chain, ci) {
+  if (patch) { patch.chain = chain; patch.ci = ci; }
+  return patch;
+}
+
 export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth, shock = false, status = null, cause, direct = false, look = null) {
   return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, shock, status, cause, direct, look });
 }
@@ -271,7 +282,7 @@ export function updateHazards(run, dt) {
         h.cd = (h.cd || 0) + step;
         while (h.cd >= ck.every) {
           h.cd -= ck.every;
-          addPatch(run, h.src, h.x - h.dx * h.cd, h.y - h.dy * h.cd, ck.radius, ck.ttl, ck.tick, h.dmg * ck.damageFrac, h.depth, true);
+          linkPatch(addPatch(run, h.src, h.x - h.dx * h.cd, h.y - h.dy * h.cd, ck.radius, ck.ttl, ck.tick, h.dmg * ck.damageFrac, h.depth, true), h.chain || (h.chain = newChain()), h.ci = (h.ci || 0) + 1);
         }
       }
       const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
@@ -429,9 +440,11 @@ export function drawHazards(ctx, run) {
     }
     ctx.globalAlpha = 1;
   }
+  drawPatchChains(ctx, list, t, PATCH, PATCH_COLORS);
   for (let i = 0; i < list.length; i++) {
     const h = list[i];
     const k = h.ttl / h.life;                                // 1 -> 0
+    if (h.kind === PATCH && h.chain) { drawPatchMarks(ctx, h, h.look || h.status || 'burn', k, t); continue; }
     if (h.kind === SPIN) {
       ctx.strokeStyle = '#fff1c4';
       ctx.lineWidth = 4.5;
@@ -447,12 +460,7 @@ export function drawHazards(ctx, run) {
       ctx.stroke();
       ctx.lineCap = 'butt';
     } else if (h.kind === RING) {
-      ctx.strokeStyle = h.color;
-      ctx.lineWidth = h.thick * (1 - 0.6 * (h.rr / h.rMax));
-      ctx.globalAlpha = 0.75 * (1 - 0.7 * (h.rr / h.rMax));
-      ctx.beginPath();
-      ctx.arc(h.x, h.y, Math.max(1, h.rr), 0, TAU);
-      ctx.stroke();
+      drawLightRing(ctx, h.x, h.y, h.rr, h.rMax, h.thick, h.color, t);
     } else if (h.kind === PATCH) {
       const col = PATCH_COLORS[h.look || h.status || 'burn'] || PATCH_COLORS.burn;
       ctx.globalAlpha = Math.min(1, k * 2) * 0.28;
@@ -460,10 +468,11 @@ export function drawHazards(ctx, run) {
       ctx.beginPath();
       ctx.arc(h.x, h.y, h.r * (0.9 + 0.1 * Math.sin(t * 9 + h.x)), 0, TAU);
       ctx.fill();
-      ctx.globalAlpha = Math.min(1, k * 2) * 0.5;
+      ctx.globalAlpha = Math.min(1, k * 2) * (h.look === 'chill' || h.look === 'steam' ? 0.16 : 0.5);   // trail patches overlap: a faint rim lets them read as one band
       ctx.strokeStyle = col[1];
       ctx.lineWidth = 1.5;
       ctx.stroke();
+      drawPatchMarks(ctx, h, h.look || h.status || 'burn', k, t);
     } else if (h.kind === ROD) {
       const grow = Math.min(1, (h.life - h.ttl) * 8);            // the rod drops in
       ctx.globalAlpha = Math.min(1, k * 3) * 0.22;
@@ -518,24 +527,7 @@ export function drawHazards(ctx, run) {
         ctx.fill();
       }
     } else if (h.kind === PILLAR) {
-      const age = h.life - h.ttl;
-      if (age < h.tele) {                                    // telegraph: a ring closing in
-        ctx.globalAlpha = 0.6;
-        ctx.strokeStyle = h.star ? '#7fe9ff' : '#fff3b0';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(h.x, h.y, h.r * (1.4 - 0.4 * (age / h.tele)), 0, TAU);
-        ctx.stroke();
-      } else {
-        const f = h.net ? Math.max(0.3, 1 - (age - h.tele) / 0.3) * Math.min(1, h.ttl * 2) : 1 - (age - h.tele) / 0.3;
-        ctx.globalAlpha = 0.75 * f;
-        ctx.fillStyle = h.star ? '#9ff0ff' : '#fff3b0';
-        ctx.fillRect(h.x - h.r * 0.5, h.y - 260, h.r, 260);
-        ctx.globalAlpha = 0.45 * f;
-        ctx.beginPath();
-        ctx.arc(h.x, h.y, h.r, 0, TAU);
-        ctx.fill();
-      }
+      drawPillar(ctx, h, h.life - h.ttl, t, h.net);
     } else {
       ctx.globalAlpha = Math.min(1, k * 3) * 0.55;
       ctx.strokeStyle = '#ffe3a3';

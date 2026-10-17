@@ -8,6 +8,7 @@ import { addRing } from '../systems/hazards.js';
 import { attackTriggers } from '../game/triggers.js';
 import { activeMutation } from '../game/starforge.js';
 import { STARFORGE } from '../data/starforge.js';
+import { drawHaloCharm } from '../render/auras.js';
 
 const RING_GAP = 0.2;
 
@@ -46,6 +47,11 @@ export default {
     const star = activeMutation(inst);
     if (star) for (let i = 1; i <= star.echoes; i++) (inst.echoQ || (inst.echoQ = [])).push(star.gap * i);
     attackTriggers(run, inst, p.x, p.y, 0);
+  },
+
+  draw(inst, ctx, run) {
+    const cdMax = param(run, inst, 'cooldown');
+    drawHaloCharm(ctx, run.player, run.time, Math.max(0, Math.min(1, 1 - inst.cd / cdMax)), inst.def.base.color || '#ffe28a');
   },
 
   ring(inst, run, echo) {

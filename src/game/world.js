@@ -39,6 +39,7 @@ function makeProjectile() {
     x: 0, y: 0, dx: 0, dy: 0, vx: 0, vy: 0,
     r: 4, ttl: 0, dmg: 0, pierce: 0,
     hx: NaN, hy: NaN,                            // where the last enemy it hit stood (a rod plants there)
+    chain: 0, ci: 0,                             // visual: the ribbon this projectile's trail patches are drawn in
     sub: false, depth: 0, trailD: 0,             // distance since the last trail patch (weapons with base.trail)
     bounce: 0, split: 0, splitFrac: 0.4,   // ricochet / split perks, read at spawn
     look: 0,                                // how it is drawn (render/shots.js): 0 the weapon's own shape, 1 saw disc, 2 shard, 3 soul (Summoner), 4 arrow (graft volleys), 5 blade (Bladestorm)

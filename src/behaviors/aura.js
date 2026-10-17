@@ -2,6 +2,7 @@
 
 import { param } from '../game/weapon-params.js';
 import { drawAxeSpin } from '../render/melee.js';
+import { drawEmberWard } from '../render/auras.js';
 import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
@@ -63,20 +64,6 @@ export default {
       drawAxeSpin(ctx, p, run.time * 9, inst.auraR, 3, inst.pulse > 0, el);
       return;
     }
-    ctx.strokeStyle = el ? el.main : '#ff7a3c';
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.18;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, inst.auraR, 0, Math.PI * 2);
-    ctx.stroke();
-    if (inst.pulse > 0) {
-      const u = 1 - inst.pulse / PULSE_TIME;
-      ctx.globalAlpha = 0.5 * (1 - u);
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, inst.auraR * (0.6 + 0.4 * u), 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
+    drawEmberWard(ctx, p, inst.auraR, run.time, inst.pulse > 0 ? 1 - inst.pulse / PULSE_TIME : -1, inst.def.base.range > 100, el);
   },
 };

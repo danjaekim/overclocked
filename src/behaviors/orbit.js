@@ -3,6 +3,7 @@
 
 import { param } from '../game/weapon-params.js';
 import { elementOf } from '../render/elements.js';
+import { drawOrbit, drawBlade } from '../render/melee.js';
 import { strike } from '../game/hit.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -93,17 +94,8 @@ export default {
     const out = launchRadius(inst);
     const el = elementOf(inst);
     const star = activeMutation(inst);
-    ctx.fillStyle = el ? (inst.launchU > 0 ? el.light : el.main) : inst.launchU > 0 ? '#fff8dc' : '#ffe28a';   // no element: light blades are gold
     if (!star) {
-      ctx.beginPath();
-      for (let b = 0; b < inst.blades; b++) {
-        const a = inst.angle + (b * TAU) / inst.blades;
-        const bx = p.x + Math.cos(a) * out;
-        const by = p.y + Math.sin(a) * out;
-        ctx.moveTo(bx + inst.bladeR, by);
-        ctx.arc(bx, by, inst.bladeR, 0, TAU);
-      }
-      ctx.fill();
+      drawOrbit(ctx, p, inst.angle, out, inst.bladeR, inst.blades, inst.launchU, el, inst.def.rarity === 'evolved');
       return;
     }
     // Binary Stars: each blade is a pair circling a shared centre, joined by a faint cyan orbit.
@@ -122,35 +114,16 @@ export default {
     }
     ctx.stroke();
     ctx.globalAlpha = 1;
-    ctx.beginPath();
+    const col = { main: STARFORGE.color, light: STARFORGE.light };
     for (let b = 0; b < inst.blades; b++) {
       const a = inst.angle + (b * TAU) / inst.blades;
       const cx = p.x + Math.cos(a) * out;
       const cy = p.y + Math.sin(a) * out;
       for (let k = 0; k < 2; k++) {
         const s2 = inst.pair + k * Math.PI;
-        const bx = cx + Math.cos(s2) * sep;
-        const by = cy + Math.sin(s2) * sep;
-        ctx.moveTo(bx + r, by);
-        ctx.arc(bx, by, r, 0, TAU);
+        drawBlade(ctx, cx + Math.cos(s2) * sep, cy + Math.sin(s2) * sep, s2 + Math.PI / 2, r * 2.6, r * 1.0, col, 1);
       }
     }
-    ctx.fill();
-    ctx.fillStyle = STARFORGE.light;
-    ctx.beginPath();
-    for (let b = 0; b < inst.blades; b++) {
-      const a = inst.angle + (b * TAU) / inst.blades;
-      const cx = p.x + Math.cos(a) * out;
-      const cy = p.y + Math.sin(a) * out;
-      for (let k = 0; k < 2; k++) {
-        const s2 = inst.pair + k * Math.PI;
-        const bx = cx + Math.cos(s2) * sep;
-        const by = cy + Math.sin(s2) * sep;
-        ctx.moveTo(bx + r * 0.4, by);
-        ctx.arc(bx, by, r * 0.4, 0, TAU);
-      }
-    }
-    ctx.fill();
   },
 };
 

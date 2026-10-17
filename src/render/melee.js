@@ -173,3 +173,66 @@ export function drawHammer(ctx, x, y, r, u, el) {
   ctx.globalAlpha = 1;
   ctx.lineCap = 'butt';
 }
+
+// One orbiting light blade: a glowing dagger at (x, y) pointing along `ang`. `len` is its length, `wid` its width.
+export function drawBlade(ctx, x, y, ang, len, wid, col, alpha) {
+  const c = Math.cos(ang), s = Math.sin(ang);
+  const P = (u, v) => [x + c * u - s * v, y + s * u + c * v];
+  const pt = P(len * 0.6, 0);
+  const sh1 = P(-len * 0.02, -wid * 0.5), sh2 = P(-len * 0.02, wid * 0.5);
+  const tl = P(-len * 0.38, 0);
+  const g1 = P(-len * 0.12, -wid * 0.28), g2 = P(-len * 0.12, wid * 0.28);
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = alpha * 0.16;                       // glow
+  ctx.fillStyle = col.main;
+  ctx.beginPath();
+  ctx.arc(x, y, len * 0.38, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = col.main;
+  ctx.strokeStyle = col.dark || '#5a3d0c';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(pt[0], pt[1]);
+  ctx.lineTo(sh1[0], sh1[1]);
+  ctx.lineTo(g1[0], g1[1]);
+  ctx.lineTo(tl[0], tl[1]);
+  ctx.lineTo(g2[0], g2[1]);
+  ctx.lineTo(sh2[0], sh2[1]);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = col.light;                           // the fuller: a bright line down the blade
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  const f0 = P(-len * 0.1, 0), f1 = P(len * 0.5, 0);
+  ctx.moveTo(f0[0], f0[1]);
+  ctx.lineTo(f1[0], f1[1]);
+  ctx.stroke();
+}
+
+// Orbiting blades (Spirit/Seraph Blades): each blade points the way it is travelling and drags a tapered smear along its
+// orbit. `launch` 0..1 turns them outward as Spear Wheel throws them. `angle` is the wheel's turn.
+export function drawOrbit(ctx, p, angle, out, bladeR, n, launch, el, grand, spinDir = 1) {
+  const col = el ? { main: el.main, light: el.light, dark: el.dark } : grand ? { main: '#fff0a8', light: '#ffffff' } : { main: '#ffe28a', light: '#fffbe0' };
+  const len = bladeR * (grand ? 4.0 : 3.6);
+  const wid = bladeR * (grand ? 0.95 : 0.85);
+  if (grand) {                                          // Seraph: a faint wheel of light the blades ride on
+    ctx.strokeStyle = col.main;
+    ctx.globalAlpha = 0.22;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, out, 0, TAU);
+    ctx.stroke();
+  }
+  for (let b = 0; b < n; b++) {
+    const a = angle + (b * TAU) / n;
+    drawSmear(ctx, p.x, p.y, a, spinDir, 0.55 + 0.2 * (n < 3 ? 1 : 0), out - bladeR * 0.4, out + bladeR * 0.4, col, 0.55);
+  }
+  for (let b = 0; b < n; b++) {
+    const a = angle + (b * TAU) / n;
+    const dirAng = a + spinDir * (Math.PI / 2) * (1 - launch);
+    drawBlade(ctx, p.x + Math.cos(a) * out, p.y + Math.sin(a) * out, dirAng, len, wid, col, 1);
+  }
+  ctx.globalAlpha = 1;
+}

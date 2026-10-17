@@ -1,6 +1,6 @@
 // Projectile integration (step 5 of the tick). Enemies move in enemy-ai.js.
 
-import { addPatch, nearestVortex, plantRod } from './hazards.js';
+import { addPatch, nearestVortex, plantRod, newChain, linkPatch } from './hazards.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile, turnBack } from '../game/projectiles.js';
 
@@ -30,7 +30,7 @@ export function updateProjectiles(run, dt) {
       pr.trailD += Math.hypot(pr.vx, pr.vy) * dt;
       while (pr.trailD >= tr.every) {
         pr.trailD -= tr.every;
-        addPatch(run, pr.inst, pr.x, pr.y, tr.radius, tr.ttl, tr.tick, param(run, pr.inst, 'damage') * tr.damageFrac, 0);
+        linkPatch(addPatch(run, pr.inst, pr.x, pr.y, tr.radius, tr.ttl, tr.tick, param(run, pr.inst, 'damage') * tr.damageFrac, 0), pr.chain || (pr.chain = newChain()), pr.ci = (pr.ci || 0) + 1);
       }
     }
     if (pr.ttl <= 0 && pr.ret === 1) turnBack(run, pr);      // Return Orbit: turn around and fly back through the crowd

@@ -3,6 +3,7 @@
 // normal weapon hit, so burn and shock land on all of them. Area scales both reach and blast.
 
 import { param } from '../game/weapon-params.js';
+import { drawShell, drawShellMark } from '../render/auras.js';
 import { elementOf, accentOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
 import { addPuff } from '../render/fx.js';
@@ -41,7 +42,7 @@ export default {
         const count = Math.max(1, Math.round(param(run, inst, 'count')));
         for (let k = 0; k < count && shells.length < MAX_SHELLS; k++) {
           const e = w.scratch[Math.floor(run.rng.next() * live)];
-          shells.push({ x: e.x, y: e.y, t: fuse });
+          shells.push({ x: e.x, y: e.y, t: fuse, ox: p.x, oy: p.y });
         }
         inst.cd += param(run, inst, 'cooldown');
         attackTriggers(run, inst, p.x, p.y, 0);
@@ -103,21 +104,17 @@ export default {
         continue;
       }
       const u = 1 - s.t / fuse;
-      ctx.globalAlpha = 0.25 + 0.4 * u;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, blast * (1.15 - 0.15 * u), 0, Math.PI * 2);
-      ctx.stroke();
+      const col = el ? { main: el.main, light: el.light } : { main: '#ff8a3c', light: '#ffd9a0' };
+      drawShellMark(ctx, s.x, s.y, blast, u, col, run.time);
       if (ac) {                                          // second element: an inner ring in its colour
         ctx.strokeStyle = ac.main;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.25 + 0.4 * u;
         ctx.beginPath();
         ctx.arc(s.x, s.y, blast * 0.7 * (1.15 - 0.15 * u), 0, Math.PI * 2);
         ctx.stroke();
-        ctx.strokeStyle = el ? el.main : '#ff8a3c';
       }
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, 4 + 4 * u, 0, Math.PI * 2);
-      ctx.fillStyle = el ? el.light : '#ffb347';
-      ctx.fill();
+      if (s.ox !== undefined) drawShell(ctx, s.ox, s.oy, s.x, s.y, u, col, run.time);
     }
     ctx.globalAlpha = 1;
   },
