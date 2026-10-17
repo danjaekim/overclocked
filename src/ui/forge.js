@@ -24,13 +24,14 @@ function outcomeText(r) {
   return `Failed. ${r.cost} ore lost.`;
 }
 
-export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = () => {} }) {
+export function showForge(overlays, run, { onDone, onBuild, onCompendium, onFusion = () => {}, sfx = () => {} }) {
   let message = '';
   let tone = '';
   let confirming = null;                       // instanceId awaiting a second tap to salvage
   let confirmingFusion = null;                  // 'host:donor' awaiting a second tap to fuse
   let tab = 'weapons';                         // 'weapons' | 'fusion': fusing has its own tab so it is never off-screen
   let announced = false;
+  let leaving = false;                         // the first tap on Return with spending left asked; the second leaves
 
   function weaponCard(inst) {
     const def = inst.def;
@@ -171,10 +172,14 @@ export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = ()
     const el = overlays.show(
       `<h2>Forge</h2>
        <p class="sub">Ore <b class="ore">${run.ore}</b> · Starsteel <b class="ore">${run.starsteel}</b></p>
+       <div class="lu-links">
+         ${onBuild ? '<button class="btn small ghost" data-act="build">Build</button>' : ''}
+         ${onCompendium ? '<button class="btn small ghost" data-act="guide">Compendium</button>' : ''}
+       </div>
        <p class="fmsg ${tone}">${message || '&nbsp;'}</p>
        ${tabs}
        <div class="forge-list">${tab === 'fusion' ? fusionPanel(opts) : run.player.weapons.map(weaponCard).join('')}</div>
-       <button class="btn primary" data-act="done">Return to battle</button>
+       <button class="btn primary${leaving ? ' leaving' : ''}" data-act="done">${leaving ? 'Leave anyway' : 'Return to battle'}</button>
        ${pickModal()}`,
       onAct,
       'forge'
@@ -183,12 +188,41 @@ export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = ()
     if (list) list.scrollTop = scroll;
   }
 
+  // What you could still buy right now, as short labels. Salvage is not a purchase.
+  function affordable() {
+    const out = [];
+    const add = (label) => { if (!out.includes(label)) out.push(label); };
+    for (const inst of run.player.weapons) {
+      if (inst.pendingReforge || inst.pendingLegendary || inst.pendingTemper) { add('a pending choice'); continue; }
+      if (canEnhance(run, inst)) add('Enhance');
+      if (canReforge(run, inst) && reforgeSlots(inst).length) add('Reforge');
+      if (canQuench(run, inst)) add('Star Quench');
+      if (mutationOf(inst) && !inst.star && !starforgeBlocker(run, inst)) add('Starforge');
+      if ((inst.enhance >= LEGENDARY.unlockEnhance || inst.legendary) && !legendaryBlocker(run, inst)) add('Legendary');
+      if (recipesFor(inst).some((r) => canEvolve(run, inst, r))) add('an evolution');
+    }
+    if (fusionOpts().some((o) => o.ok)) add('Fusion');
+    return out;
+  }
+
   function find(id) {
     return run.player.weapons.find((w) => w.instanceId === Number(id));
   }
 
   function onAct(act) {
-    if (act === 'done') return onDone();
+    if (act === 'done') {
+      const left = affordable();
+      if (left.length && !leaving) {
+        leaving = true;
+        message = `You can still afford: ${left.join(', ')}.`;
+        tone = 'warn';
+        return render();
+      }
+      return onDone();
+    }
+    if (leaving) { leaving = false; message = ''; tone = ''; }
+    if (act === 'build') return onBuild && onBuild(render);
+    if (act === 'guide') return onCompendium && onCompendium(render);
     const [kind, id, extra] = act.split(':');
     if (kind === 'tab') {
       tab = id;

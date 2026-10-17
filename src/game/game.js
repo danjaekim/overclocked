@@ -225,6 +225,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const show = () => showLevelUp(overlays, {
       level,
       getBuild: () => buildHtml(run),
+      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered }),
       owned: ownedLine(run),
       offers,
       rerolls: run.rerolls,
@@ -283,6 +284,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     input.reset();
     showForge(overlays, run, {
       sfx,
+      onBuild: (back) => showBuild(overlays, run, { onBack: back, backLabel: 'Back to forge' }),
+      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered }),
       onFusion(res) {                                           // a masterwork found for the first time gets a banner
         if (res.masterwork && save.discoverFusion(res.masterwork.id)) {
           run.toast = { text: `Masterwork discovered: ${res.name}!`, ttl: 4.5 };

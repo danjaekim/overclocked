@@ -111,12 +111,13 @@ export const CLASSES = {
     startWeapon: 'bone_call',
     mods: [
       { stat: 'maxHp', op: 'flat', value: -10 },
+      { stat: 'regen', op: 'flat', value: 0.3 },
       { stat: 'damage', op: 'more', value: 0.15, tags: ['summon'] },
       { stat: 'projectiles', op: 'flat', value: 1, tags: ['summon'] },
     ],
     trait: {
       name: 'Soul Harvest',
-      text: ['Every kill releases a soul that flies at one of the enemies closest to you', 'Summons deal 15% more damage, and you call one more'],
+      text: ['Every kill releases a soul that flies at one of the enemies closest to you', 'Summons deal 15% more damage, and you call one more', 'Slowly regenerates health'],
       souls: { base: 12, perLevel: 3, speed: 400, range: 220, max: 24 },
     },
     unlocked: false,
