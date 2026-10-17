@@ -9,6 +9,7 @@
 //   node tools/bench.mjs --masterworks   each masterwork at +15 with and without its star (MW_ONLY=id,id narrows it)
 //   node tools/bench.mjs --classes       the same builds played by every class (class identity)
 //   node tools/bench.mjs --dps          max-level DPS per weapon, single / pinned crowd / live crowd (DPS_IDS=id,id narrows it)
+//   node tools/bench.mjs --tempers      generic temper DPS vs none, one weapon per behavior (M45a; TEMPER_SET / TEMPER_IDS)
 //   --lib                                imported by another script (tools/*.mjs): run nothing, use the exports
 //   node tools/bench.mjs --json          machine-readable output
 //
@@ -433,7 +434,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--tempers') && !flag('--lib')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -472,6 +473,48 @@ if (flag('--dps')) {
     console.log(`\nWEAPON DPS  (max level, no star; mean of ${nSeeds} seeds)`);
     console.log(pad('weapon', 18) + pad('behavior', 11) + pad('single', 9) + pad('held', 9) + pad('live', 9));
     for (const r of rows) console.log(pad(r.id, 18) + pad(r.behavior, 11) + pad(num(r.single), 9) + pad(num(r.held), 9) + pad(num(r.flow), 9));
+  }
+}
+
+// Generic temper balance (M45a): one weapon per behavior, each temper applied alone on a max-level weapon.
+// Reports DPS relative to no temper in single / held / live modes. Candidates are listed here so numbers can be
+// swept without editing data; TEMPER_IDS=id,id narrows the weapons. Pairs: honed vs hasted (+5), mighty vs vast (+10).
+if (flag('--tempers')) {
+  const nSeeds = numArg('--seeds', 3);
+  const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
+  const ids = process.env.TEMPER_IDS ? process.env.TEMPER_IDS.split(',') : ['storm_volley', 'colossus_maul', 'spirit_blades', 'cinder_ward', 'thunder_lance', 'rime_shards', 'reaper_axe', 'static_rod', 'chakram', 'rime_orbs', 'cinder_mortar', 'prismatic_bolt', 'bone_call', 'halo', 'judgement'];
+  const cands = process.env.TEMPER_SET ? JSON.parse(process.env.TEMPER_SET) : {
+    none: [],
+    'honed20': [{ stat: 'damage', op: 'more', value: 0.2 }],
+    'honed30': [{ stat: 'damage', op: 'more', value: 0.3 }],
+    'hasted20': [{ stat: 'cooldown', op: 'inc', value: -0.2 }],
+    'hasted15': [{ stat: 'cooldown', op: 'inc', value: -0.15 }],
+    'mighty30': [{ stat: 'damage', op: 'more', value: 0.3 }],
+    'vast': [{ stat: 'area', op: 'more', value: 0.3 }, { stat: 'projectiles', op: 'flat', value: 1 }],
+  };
+  const rows = [];
+  for (const id of ids) {
+    const base = {};
+    for (const [name, mods] of Object.entries(cands)) {
+      const r = {};
+      for (const mode of ['single', 'held', 'flow']) {
+        r[mode] = seeds.reduce((a, sd) => a + starDps(id, false, mode, sd, (run, inst) => {
+          for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: 'bench:temper' });
+        }), 0) / seeds.length;
+      }
+      if (name === 'none') Object.assign(base, r);
+      rows.push({ id, name, ...r, rel: { single: r.single / (base.single || 1), held: r.held / (base.held || 1), flow: r.flow / (base.flow || 1) } });
+    }
+  }
+  if (flag('--json')) out.tempers = rows;
+  else {
+    console.log(`\nTEMPERS  (DPS relative to no temper; mean of ${nSeeds} seeds; columns single / held / live)`);
+    const names = Object.keys(cands).filter((n) => n !== 'none');
+    console.log(pad('weapon', 16) + names.map((n) => pad(n, 17)).join(''));
+    for (const id of ids) {
+      const f = (r) => `${r.rel.single.toFixed(2)} ${r.rel.held.toFixed(2)} ${r.rel.flow.toFixed(2)}`;
+      console.log(pad(id, 16) + names.map((n) => pad(f(rows.find((r) => r.id === id && r.name === n)), 17)).join(''));
+    }
   }
 }
 
@@ -558,7 +601,7 @@ if (flag('--masterworks')) {
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--tempers') && !flag('--lib')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
