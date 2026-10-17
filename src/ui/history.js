@@ -26,14 +26,19 @@ function rowHtml(e, canReplay) {
   let body = '';
   if (open) {
     const b = buildNames(e);
-    const line = (label, items) => (items.length ? `<p><span class="hlab">${label}</span>${items.map(esc).join(' · ')}</p>` : '');
+    const fact = (label, items, stack = false) => (items.length ? `<div class="cfact"><dt>${label}</dt><dd class="hitems${stack ? ' stack' : ''}">${items.map((x) => `<span>${esc(x)}</span>`).join('')}</dd></div>` : '');
     body = `<div class="cbody">
-      ${line('Weapons', b.weapons)}${line('Fusions', b.fusions)}${line('Passives', b.passives)}${line('Techniques', b.perks)}${line('Titles', b.titles)}
-      <p><span class="hlab">Run</span>${fmtNum(e.dps)} avg DPS${e.boss ? ' · Warlord slain' : ''} · seed ${e.seed}</p>
-      ${canReplay ? `<button class="btn small" data-act="hs:${e.t}">Same seed</button>` : ''}
+      <div class="csec"><dl>
+        ${fact('Weapons', b.weapons, true)}${fact('Fusions', b.fusions, true)}${fact('Passives', b.passives)}${fact('Techniques', b.perks)}${fact('Titles', b.titles)}
+        <div class="cfact"><dt>Run</dt><dd>${fmtNum(e.dps)} avg DPS${e.boss ? ' · Warlord slain' : ''}<br><small class="hseed">seed ${e.seed}</small></dd></div>
+      </dl></div>
+      ${canReplay ? `<button class="btn small hsame" data-act="hs:${e.t}">Same seed</button>` : ''}
     </div>`;
   }
-  return `<div class="centry hrow ${e.won ? 'won' : 'lost'}${open ? ' open' : ''}" data-act="hx:${e.t}">${head}${body}</div>`;
+  // Same shape as a compendium entry: only the title row toggles, and it stays pinned while the details scroll.
+  return `<div class="centry hrow ${e.won ? 'won' : 'lost'}${open ? ' open' : ''}" data-id="${e.t}">
+    <button class="chead" data-act="hx:${e.t}">${head}</button>${body}
+  </div>`;
 }
 
 export function showHistory(overlays, { history, totals, isUnlocked, onReplay, onBackup, onClose }) {
