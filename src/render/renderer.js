@@ -3,6 +3,9 @@
 
 import { drawHud, drawStick } from './hud.js';
 import { getSprite } from './sprites.js';
+import { drawGround } from './ground.js';
+// Floor: the forest by default; ?ground=forge|frost|cinder|ruins|crystal|catacomb tries the others, ?ground=grid is the old grid.
+const GROUND = new URLSearchParams(location.search).get('ground') || 'forest';
 
 const GRID = 64;
 const SPRITE_W = 68;                     // world units; the hitbox stays the player's r
@@ -139,7 +142,7 @@ function drawEvolvedGlow(p, t, front) {
     const ox = run ? run.cam.ox : 0;     // screen shake offset
     const oy = run ? run.cam.oy : 0;
     ctx.setTransform(s, 0, 0, s, (view.w / 2 - cam.x + ox) * s, (view.h / 2 - cam.y + oy) * s);
-    drawGrid(cam);
+    if (!(GROUND && drawGround(ctx, cam, view, GROUND, run ? run.time : 0))) drawGrid(cam);
     if (run) {
       if (run.drawWorld) run.drawWorld(ctx, view);
       drawPlayer(run.player, run.time);
