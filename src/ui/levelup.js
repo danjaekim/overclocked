@@ -23,8 +23,15 @@ export function showLevelUp(overlays, { level, offers, rerolls = 0, banishes = 0
   function render(locked) {
     if (viewBuild) {
       overlays.show(
-        `<h2>Your build</h2><div class="build-wrap">${getBuild()}</div><button class="btn primary" data-act="back">Back to choices</button>`,
-        (act) => { if (act === 'back') { viewBuild = false; render(false); } },
+        `<h2>Your build</h2><div class="build-wrap">${getBuild()}</div>
+         <div class="brow-btns">${onCompendium ? '<button class="btn" data-act="guide">Compendium</button>' : ''}<button class="btn primary" data-act="back">Back to choices</button></div>`,
+        (act) => {
+          if (act === 'back') { viewBuild = false; render(false); return; }
+          if (!onCompendium || !(act === 'guide' || act.startsWith('bgo:'))) return;
+          const wrap = document.querySelector('.build-wrap');
+          const sc = wrap ? wrap.scrollTop : 0;
+          onCompendium(() => { viewBuild = true; render(false); const w = document.querySelector('.build-wrap'); if (w) w.scrollTop = sc; }, act === 'guide' ? null : act.slice(4));
+        },
         'build'
       );
       return;
@@ -60,7 +67,7 @@ export function showLevelUp(overlays, { level, offers, rerolls = 0, banishes = 0
       (act) => {
         if (act === 'reroll') return onReroll && onReroll();
         if (act === 'build') { viewBuild = true; return render(false); }
-        if (act === 'guide') return onCompendium && onCompendium(() => render(false));
+        if (act === 'guide') return onCompendium && onCompendium(() => render(false), null);
         if (act === 'banish') { banishMode = !banishMode; return render(false); }
         if (!act.startsWith('pick:')) return;
         const offer = offers[Number(act.slice(5))];

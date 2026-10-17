@@ -8,6 +8,9 @@ import { RESONANCE } from '../data/resonance.js';
 import { reforgeSlots } from '../game/forge.js';
 import { statsSnapshot } from '../game/run-stats.js';
 import { weaponName } from '../game/weapons.js';
+import { EVOLUTIONS } from '../data/evolutions.js';
+import { WEAPONS } from '../data/weapons.js';
+import { recipeProgress } from '../game/evolution.js';
 
 export function fmtNum(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
@@ -34,7 +37,17 @@ function keyStats(run) {
   return `<div class="bstats">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;
 }
 
-function weaponRow(inst, rec, time) {
+// One chip per evolution this weapon can take, with how many requirements are met; each opens its Evolve entry.
+function evoChips(run, inst) {
+  const chips = EVOLUTIONS.filter((r) => r.from === inst.weaponId || r.with === inst.weaponId).map((r) => {
+    const pr = recipeProgress(run, r);
+    const tone = pr.ready ? ' ready' : pr.own ? ' near' : '';
+    return `<span class="clink${tone}" role="button" data-act="bgo:${r.into}">${WEAPONS[r.into].name} ${pr.met}/${pr.total} &rsaquo;</span>`;
+  });
+  return chips.length ? `<div class="clinks">${chips.join('')}</div>` : '';
+}
+
+function weaponRow(run, inst, rec, time) {
   const color = RARITIES[inst.def.rarity].color;
   const tags = ['fire', 'frost', 'storm', 'close'].filter((t) => inst.tags.set.has(t));
   const extra = [
@@ -48,6 +61,7 @@ function weaponRow(inst, rec, time) {
     <div class="btop"><b>${weaponName(inst)}</b><em>Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
     <div class="bsub">${tags.join(' · ')}${extra.length ? (tags.length ? ' · ' : '') + extra.join(', ') : ''}</div>
     ${perf}
+    ${evoChips(run, inst)}
   </div>`;
 }
 
@@ -66,7 +80,7 @@ export function buildHtml(run, { withDamage = true } = {}) {
   const p = run.player;
   const snap = withDamage ? statsSnapshot(run) : null;
   const byId = snap ? new Map([...run.stats.src.entries()]) : new Map();
-  const weapons = p.weapons.map((w) => weaponRow(w, byId.get(w.instanceId), run.time)).join('');
+  const weapons = p.weapons.map((w) => weaponRow(run, w, byId.get(w.instanceId), run.time)).join('');
   const passives = p.passives.map((it) => itemRow(it, it.def.levelText[it.level - 1] || it.def.desc)).join('');
   const perks = p.perks.map((it) => itemRow(it, it.def.levelText[it.level - 1] || it.def.desc)).join('');
   const titles = run.titles.map((t) => `<div class="brow slim"><div class="btop"><b>${t.def.name}</b></div><div class="bsub">${t.def.desc}</div></div>`).join('');
@@ -102,14 +116,28 @@ export function resultsDamageHtml(stats) {
   </div>`;
 }
 
-export function showBuild(overlays, run, { onBack, backLabel = 'Back' }) {
-  overlays.show(
+// onCompendium(focusId | null, reopen): opens the compendium (on that weapon's Evolve entry when given);
+// `reopen` brings this screen back at the same scroll position.
+export function showBuild(overlays, run, opts) {
+  const { onBack, backLabel = 'Back', onCompendium, scroll = 0 } = opts;
+  const el = overlays.show(
     `<h2>Your build</h2>
      <div class="build-wrap">${buildHtml(run)}</div>
-     <button class="btn primary" data-act="back">${backLabel}</button>`,
-    (act) => { if (act === 'back') onBack(); },
+     <div class="brow-btns">
+       ${onCompendium ? '<button class="btn" data-act="guide">Compendium</button>' : ''}
+       <button class="btn primary" data-act="back">${backLabel}</button>
+     </div>`,
+    (act) => {
+      if (act === 'back') return onBack();
+      const wrap = document.querySelector('.build-wrap');
+      const reopen = () => showBuild(overlays, run, { ...opts, scroll: wrap ? wrap.scrollTop : 0 });
+      if (act === 'guide' && onCompendium) onCompendium(null, reopen);
+      else if (act.startsWith('bgo:') && onCompendium) onCompendium(act.slice(4), reopen);
+    },
     'build'
   );
+  const wrap = el && el.querySelector('.build-wrap');
+  if (wrap && scroll) wrap.scrollTop = scroll;
 }
 
 // One compact line of what you own with levels, for the level-up screen ("Ember Bow 3 · Keen Whetstone 2 ...").

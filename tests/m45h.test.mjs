@@ -58,3 +58,12 @@ test('open compendium entries toggle only from the pinned title row', () => {
   assert.ok(/class="chead" data-act="cx:/.test(ui) && !/class="cbody"[^>]*data-act/.test(ui));
   assert.ok(/\.centry\.open > \.chead \{ position: sticky/.test(css));
 });
+
+import { buildHtml } from '../src/ui/build.js';
+
+test('the build screen shows one evolution chip per evolution a weapon can take', () => {
+  const run = createRun({ seed: 3, view: { w: 480, h: 1040 }, classId: 'smith' });
+  const html = buildHtml(run);
+  assert.equal((html.match(/data-act="bgo:/g) || []).length, 2);          // the Forge Hammer: Colossus Maul and Quakebreaker
+  assert.ok(/Colossus Maul \d\/\d/.test(html));
+});

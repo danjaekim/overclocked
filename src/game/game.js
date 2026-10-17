@@ -153,19 +153,28 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     openPause(openBuild);
   }
 
+  // The build screen's options: Back, and the compendium (optionally on one weapon's Evolve entry) that returns to it.
+  function buildOpts(back, backLabel) {
+    return {
+      onBack: back,
+      backLabel,
+      onCompendium: (focus, reopen) => showCompendium(overlays, { onClose: reopen, discovered: save.data.discovered, run: game.run, focus }),
+    };
+  }
+
   function openPause(openBuild = false) {
     input.reset();
     if (audio) audio.music.duck(true);
     const show = () => showPause(overlays, {
       ...musicUi(show),
       onResume: resume,
-      onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
+      onBuild: () => showBuild(overlays, game.run, buildOpts(show, 'Back')),
       onCompendium: () => showCompendium(overlays, { onClose: show, discovered: save.data.discovered, run: game.run }),
       onQuit: () => { if (runSave) runSave.clear(); toTitle(); },
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
     });
-    if (openBuild) showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' });
+    if (openBuild) showBuild(overlays, game.run, buildOpts(show, 'Back'));
     else show();
   }
 
@@ -225,7 +234,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const show = () => showLevelUp(overlays, {
       level,
       getBuild: () => buildHtml(run),
-      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered, run }),
+      onCompendium: (back, focus) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered, run, focus }),
       owned: ownedLine(run),
       offers,
       rerolls: run.rerolls,
@@ -284,7 +293,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     input.reset();
     showForge(overlays, run, {
       sfx,
-      onBuild: (back) => showBuild(overlays, run, { onBack: back, backLabel: 'Back to forge' }),
+      onBuild: (back) => showBuild(overlays, run, buildOpts(back, 'Back to forge')),
       onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered, run }),
       onFusion(res) {                                           // a masterwork found for the first time gets a banner
         if (res.masterwork && save.discoverFusion(res.masterwork.id)) {

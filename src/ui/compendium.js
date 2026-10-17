@@ -124,8 +124,11 @@ function listHtml() {
   return rows.map(entryHtml).join('');
 }
 
-export function showCompendium(overlays, { onClose, discovered, run = null }) {
+export function showCompendium(overlays, { onClose, discovered, run = null, focus = null }) {
   liveRun = run;
+  if (focus) {                                  // open straight onto a weapon's Evolve entry
+    state.tab = 'evolve'; state.filters = {}; state.q = ''; state.open.add(focus); state.previewId = focus; state.previewLevel = 0;
+  }
   entries = buildEntries(discovered);           // rebuilt on open so new discoveries show
 
   function render() {
@@ -222,4 +225,5 @@ export function showCompendium(overlays, { onClose, discovered, run = null }) {
   }
 
   render();
+  if (focus) alignToTop(focus);
 }
