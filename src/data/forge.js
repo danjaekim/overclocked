@@ -15,7 +15,7 @@ export const ENHANCE = {
   // A weapon's own `forge.tempers` replaces an entry. `addTags` gives the weapon an element tag.
   tempers: {
     5: [
-      { id: 'honed',  name: 'Honed',  desc: '20% more damage',          mods: [{ stat: 'damage', op: 'more', value: 0.2 }] },
+      { id: 'honed',  name: 'Honed',  desc: '30% more damage',          mods: [{ stat: 'damage', op: 'more', value: 0.3 }] },
       { id: 'hasted', name: 'Hasted', desc: '-20% cooldown',            mods: [{ stat: 'cooldown', op: 'inc', value: -0.2 }] },
     ],
     10: [
