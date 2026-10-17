@@ -1,9 +1,9 @@
-// Grafts (docs/design-m26-m28.md §4): at the forge, one evolved weapon (the donor) is consumed into
+// Fusions (docs/design-m26-m28.md §4): at the forge, one evolved weapon (the donor) is consumed into
 // another (the host). The host keeps its behaviour, level, enhance and affixes and gains the donor's
-// element tags plus a graft effect. Named pairs are "masterworks" with their own effect (twelve from
+// element tags plus a fusion effect. Named pairs are "masterworks" with their own effect (twelve from
 // M27, four more from M34); every other pair gets a generic PAYLOAD (below): the first hit of every attack
 // the host makes also fires an effect shaped like the donor's attack.
-// Data only; rules in game/graft.js.
+// Data only; rules in game/fusion.js.
 //
 // A masterwork: { id, host, donor, name, desc, mods, triggers, hooks }
 //   mods      stat modifiers applied to the host (scoped to its instance tag)
@@ -23,12 +23,12 @@
 //             bounceRod { radius, ttl, every, zaps, frac, max, link } each boomerang bounce plants a rod
 //             rodFork { gens, falloff, jump, boost }               every rod zap forks on as a branching chain
 
-export const GRAFT = {
+export const FUSION = {
   cost: 1,                        // starsteel
-  payloadMinGap: 0.15,            // a grafted weapon fires its payload at most this often (s), so fast auras and orbits cannot spam it
+  payloadMinGap: 0.15,            // a fused weapon fires its payload at most this often (s), so fast auras and orbits cannot spam it
 };
 
-// Generic graft payloads (docs/design-m30-m33.md §3). The donor's behavior picks one. `frac` is the
+// Generic fusion payloads (docs/design-m30-m33.md §3). The donor's behavior picks one. `frac` is the
 // share of the HOST's damage the payload deals (per shot, tick or target); `gap` overrides the
 // minimum gap; `text` finishes the sentence "Every attack's first hit ...". Effects: effects/payloads.js.
 export const PAYLOADS = {

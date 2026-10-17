@@ -1,12 +1,12 @@
-// M30: graft payloads. A generic graft makes the first hit of every host attack fire an effect shaped
+// M30: fusion payloads. A generic fusion makes the first hit of every host attack fire an effect shaped
 // like the donor's attack (docs/design-m30-m33.md §3).
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
-import { graft, previewGraft } from '../src/game/graft.js';
-import { GRAFT, PAYLOADS, SHAPE_PAYLOAD, payloadFor } from '../src/data/grafts.js';
+import { fuse, previewFusion } from '../src/game/fusion.js';
+import { FUSION, PAYLOADS, SHAPE_PAYLOAD, payloadFor } from '../src/data/fusions.js';
 import { BEHAVIORS } from '../src/behaviors/index.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
@@ -28,12 +28,12 @@ const tick = (run, s) => { for (let i = 0; i < Math.round(s / STEP); i++) run.up
 const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
 const rehash = (run) => run.world.hash.rebuild(run.world.enemies.active, run.world.enemies.count);
 const dealt = (e) => e.maxHp - e.hp;
-// A grafted host (never fires on its own: cooldown huge) so a test controls every attack.
-const grafted = (host, donor) => {
+// A fused host (never fires on its own: cooldown huge) so a test controls every attack.
+const fused = (host, donor) => {
   const run = newRun();
   const h = addWeapon(run, host);
   const d = addWeapon(run, donor);
-  assert.ok(graft(run, h, d).ok);
+  assert.ok(fuse(run, h, d).ok);
   h.cd = 1e9;
   return { run, h };
 };
@@ -47,18 +47,18 @@ test('m30 data validates; every behavior has a payload and every payload is defi
   assert.equal(payloadFor(WEAPONS.pyre_crown), 'imprint');
 });
 
-test('a generic graft has a payload and no echo; a masterwork has neither', () => {
-  const { h } = grafted('reaper_axe', 'glacial_bloom');
-  assert.equal(h.graft.payload, 'burst');
-  assert.deepEqual(h.graft.triggers, []);
-  assert.deepEqual(h.graft.elements, ['frost']);
-  assert.match(previewGraft(h, h).desc, /first hit/);
-  const { h: m } = grafted('colossus_maul', 'glacial_bloom');
-  assert.equal(m.graft.payload, null);
+test('a generic fusion has a payload and no echo; a masterwork has neither', () => {
+  const { h } = fused('reaper_axe', 'glacial_bloom');
+  assert.equal(h.fusion.payload, 'burst');
+  assert.deepEqual(h.fusion.triggers, []);
+  assert.deepEqual(h.fusion.elements, ['frost']);
+  assert.match(previewFusion(h, h).desc, /first hit/);
+  const { h: m } = fused('colossus_maul', 'glacial_bloom');
+  assert.equal(m.fusion.payload, null);
 });
 
 test('one attack arms the payload, its first hit fires it, the second hit does not, the next attack fires again', () => {
-  const { run, h } = grafted('reaper_axe', 'glacial_bloom');
+  const { run, h } = fused('reaper_axe', 'glacial_bloom');
   const a = dummy(run, 300, 0);
   const b = dummy(run, 340, 0);
   rehash(run);
@@ -81,8 +81,8 @@ test('one attack arms the payload, its first hit fires it, the second hit does n
 });
 
 test('the minimum gap stops a fast weapon spamming the payload', () => {
-  const { run, h } = grafted('pyre_crown', 'glacial_bloom');
-  h.graft.payload = 'burst';
+  const { run, h } = fused('pyre_crown', 'glacial_bloom');
+  h.fusion.payload = 'burst';
   const a = dummy(run, 300, 0);
   rehash(run);
   let fired = 0;
@@ -92,12 +92,12 @@ test('the minimum gap stops a fast weapon spamming the payload', () => {
     for (let i = 0; i < 10; i++) { attackTriggers(run, h, 0, 0, 0); run.time += 0.03; hit(run, h, a); }
   } finally { PAYLOAD_FX.burst = orig; }
   assert.ok(fired >= 1 && fired <= 3, `fired ${fired} in 0.3 s`);
-  assert.ok(GRAFT.payloadMinGap >= 0.1);
+  assert.ok(FUSION.payloadMinGap >= 0.1);
 });
 
-test('payload hits are PROC damage credited to Graft and never fire another payload', () => {
-  const { run, h } = grafted('storm_volley', 'stormshell_mortar');      // blast
-  assert.equal(h.graft.payload, 'blast');
+test('payload hits are PROC damage credited to Fusion and never fire another payload', () => {
+  const { run, h } = fused('storm_volley', 'stormshell_mortar');      // blast
+  assert.equal(h.fusion.payload, 'blast');
   const a = dummy(run, 300, 0);
   const near = dummy(run, 320, 0);
   rehash(run);
@@ -105,8 +105,8 @@ test('payload hits are PROC damage credited to Graft and never fire another payl
   hit(run, h, a);
   tick(run, 0.6);
   assert.ok(dealt(near) > 0, 'the blast reached the neighbour');
-  assert.equal(CAUSE_NAMES[CAUSE.GRAFT], 'Graft');
-  assert.ok(run.statsSnapshot().causes.some((c) => c.name === 'Graft'));
+  assert.equal(CAUSE_NAMES[CAUSE.FUSION], 'Fusion');
+  assert.ok(run.statsSnapshot().causes.some((c) => c.name === 'Fusion'));
   assert.equal(h.payloadArmed, false, 'the payload disarmed and was not re-armed by its own hits');
 });
 
@@ -114,7 +114,7 @@ test('each payload reaches an enemy next to the target and not one far away', ()
   const donors = { projectile: 'storm_volley', arc: 'reaper_axe', slam: 'colossus_maul', rod: 'thunder_lance', orbit: 'seraph_blades', aura: 'pyre_crown', bolt: 'singularity',
     nova: 'glacial_bloom', mortar: 'stormshell_mortar', summon: 'bone_colossus', judge: 'judgement' };
   for (const [shape, donorId] of Object.entries(donors)) {
-    const { run, h } = grafted('prismatic_bolt', donorId);
+    const { run, h } = fused('prismatic_bolt', donorId);
     assert.equal(SHAPE_PAYLOAD[shape], SHAPE_PAYLOAD[WEAPONS[donorId].behavior]);
     const t = dummy(run, 200, 0);
     const near = dummy(run, 235, 5);
@@ -128,13 +128,13 @@ test('each payload reaches an enemy next to the target and not one far away', ()
       tick(run, 0.7);
       if (dealt(near) > 0) break;
     }
-    assert.ok(dealt(near) > 0 || dealt(t) > 0, `${shape} (${h.graft.payload}) did nothing`);
+    assert.ok(dealt(near) > 0 || dealt(t) > 0, `${shape} (${h.fusion.payload}) did nothing`);
     assert.equal(dealt(far), 0, shape);
   }
 });
 
 test('payload damage follows the host damage stat', () => {
-  const { run, h } = grafted('storm_volley', 'stormshell_mortar');
+  const { run, h } = fused('storm_volley', 'stormshell_mortar');
   const a = dummy(run, 300, 0);
   const n1 = dummy(run, 320, 0);
   rehash(run);
@@ -142,7 +142,7 @@ test('payload damage follows the host damage stat', () => {
   hit(run, h, a);
   tick(run, 0.6);
   const base = dealt(n1);
-  const { run: r2, h: h2 } = grafted('storm_volley', 'stormshell_mortar');
+  const { run: r2, h: h2 } = fused('storm_volley', 'stormshell_mortar');
   r2.player.stats.add({ stat: 'damage', op: 'more', value: 1, tags: [h2.instanceTag], source: 'test' });
   const a2 = dummy(r2, 300, 0);
   const n2 = dummy(r2, 320, 0);
@@ -153,20 +153,20 @@ test('payload damage follows the host damage stat', () => {
   assert.ok(dealt(n2) > base * 1.6, `${dealt(n2)} vs ${base}`);
 });
 
-test('a grafted weapon still fights: a whole run with each shape of donor does not throw', () => {
+test('a fused weapon still fights: a whole run with each shape of donor does not throw', () => {
   for (const donorId of ['storm_volley', 'colossus_maul', 'singularity', 'bone_colossus', 'judgement', 'stormshell_mortar', 'seraph_blades', 'pyre_crown', 'glacial_bloom', 'thunder_lance', 'whirlwind_cleaver']) {
     const run = newRun(11);
     const h = addWeapon(run, 'prismatic_bolt');
     const d = addWeapon(run, donorId);
-    assert.ok(graft(run, h, d).ok, donorId);
+    assert.ok(fuse(run, h, d).ok, donorId);
     for (let i = 0; i < 30; i++) { const e = spawnEnemy(run, 'goblin', Math.cos(i) * (80 + i * 6), Math.sin(i) * (80 + i * 6)); e.speed = 0; }
     tick(run, 4);
     assert.ok(run.kills >= 0);
   }
 });
 
-test('the compendium graft rules describe payloads, and the forge preview names the payload', () => {
-  const rules = buildEntries({ grafts: [] }).find((e) => e.id === 'graft:rules');
+test('the compendium fusion rules describe payloads, and the forge preview names the payload', () => {
+  const rules = buildEntries({ fusions: [] }).find((e) => e.id === 'fusion:rules');
   assert.ok(rules.lines.some((l) => /payload/.test(l)));
   assert.ok(rules.lines.some((l) => /Hound donor/.test(l)));
   assert.ok(!rules.lines.some((l) => /echo/i.test(l)));

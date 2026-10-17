@@ -57,7 +57,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     pendingChests: [],      // tiers of chests collected but not yet opened (0 elite, 1 boss)
     chestsOpened: 0,
     eliteKills: 0,          // elites killed so far (the first always drops starsteel)
-    grafts: [],             // grafts made this run { id, name, masterwork } (game/graft.js)
+    fusions: [],             // fusions made this run { id, name, masterwork } (game/fusion.js)
     hitFrozen: false,       // set by flushDamage: the enemy being hit was already frozen
     hazards: [],            // fire patches, vortices, pillars, shockwaves (systems/hazards.js)
     bossZones: [],          // Ashen Seer's marked circles (systems/boss-zones.js)
@@ -163,8 +163,8 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
 
     debugLines() {
       const w = run.world;
-      // a grafted weapon shows its graft name and both parents, e.g. "Quakebreaker of Saws (quakebreaker+ricochet_saw) L6"
-      const ws = run.player.weapons.map((i) => (i.graft ? `${i.graft.name} (${i.weaponId}+${i.graft.donorId})` : i.weaponId) + ` L${i.level}`).join(', ');
+      // a fused weapon shows its fusion name and both parents, e.g. "Quakebreaker of Saws (quakebreaker+ricochet_saw) L6"
+      const ws = run.player.weapons.map((i) => (i.fusion ? `${i.fusion.name} (${i.weaponId}+${i.fusion.donorId})` : i.weaponId) + ` L${i.level}`).join(', ');
       const ps = run.player.passives.map((i) => `${i.id} L${i.level}`).join(', ');
       return [
         `enemies ${w.enemies.count}  proj ${w.projectiles.count}  gems ${w.pickups.count}  fx ${w.fx.count}`,
@@ -186,14 +186,14 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, classId: run.player.classId,
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
         weapons: run.player.weapons.map((w) => weaponName(w)),
-        grafts: run.grafts.map((g) => g.name),
-        graftList: run.grafts.map((g) => ({ ...g })),          // with host and donor weapon ids, for results and history
+        fusions: run.fusions.map((g) => g.name),
+        fusionList: run.fusions.map((g) => ({ ...g })),          // with host and donor weapon ids, for results and history
         titleIds: run.titles.map((t) => t.id),
         build: {                                     // ids and levels, for the run history
           weapons: run.player.weapons.map((w) => [w.weaponId, w.level]),
           passives: run.player.passives.map((i) => [i.id, i.level]),
           perks: run.player.perks.map((i) => [i.id, i.level]),
-          grafts: run.grafts.map((g) => [g.host, g.donor, g.id, g.name]),
+          fusions: run.fusions.map((g) => [g.host, g.donor, g.id, g.name]),
         },
         stats: statsSnapshot(run),
       };

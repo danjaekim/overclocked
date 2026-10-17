@@ -1,11 +1,11 @@
-// Masterwork review (M33b): each masterwork vs its host alone, both weapons kept, and the generic payload graft.
+// Masterwork review (M33b): each masterwork vs its host alone, both weapons kept, and the generic payload fusion.
 // Two scenes: a pinned ring of 24 dummies (dps; inflated for freeze-shatter effects) and a 30 s walking horde
 // (kills). Usage: node tools/masterwork-review.mjs [id,id,...]
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
-import { graft } from '../src/game/graft.js';
-import { MASTERWORKS } from '../src/data/grafts.js';
+import { fusion } from '../src/game/fusion.js';
+import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 
 const STEP = 1 / 60;
@@ -20,7 +20,7 @@ function setup(hostId, donorId, mode) {
   while (host.level < 6 && canLevelUp(host)) levelUpWeapon(run, host);
   let removed = null;
   if (mode === 'generic') { const i = MASTERWORKS.findIndex((m) => m.host === hostId && m.donor === donorId); removed = MASTERWORKS.splice(i, 1)[0]; }
-  if (mode !== 'alone') { const d = addWeapon(run, donorId); while (d.level < 6 && canLevelUp(d)) levelUpWeapon(run, d); if (mode !== 'both' && !graft(run, host, d).ok) throw new Error('graft failed'); }
+  if (mode !== 'alone') { const d = addWeapon(run, donorId); while (d.level < 6 && canLevelUp(d)) levelUpWeapon(run, d); if (mode !== 'both' && !fuse(run, host, d).ok) throw new Error('fusion failed'); }
   if (removed) MASTERWORKS.push(removed);
   return run;
 }

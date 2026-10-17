@@ -1,6 +1,6 @@
 // M40: Starforge. 2 starsteel, once per weapon, at max weapon level: one mutation set by the weapon's behavior
 // (see data/starforge.js). The star survives evolving,
-// passes from a graft donor to the host, and is lost on salvage.
+// passes from a fusion donor to the host, and is lost on salvage.
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
@@ -9,7 +9,7 @@ import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
 import { STARFORGE, MUTATIONS } from '../src/data/starforge.js';
 import { validateData } from '../src/data/validate.js';
 import { mutationOf, canStarforge, starforge, starforgeBlocker, activeMutation } from '../src/game/starforge.js';
-import { graft } from '../src/game/graft.js';
+import { fuse } from '../src/game/fusion.js';
 import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { evolve, canEvolve } from '../src/game/evolution.js';
 import { addPassive, findPassive, levelUpPassive } from '../src/game/passives.js';
@@ -189,7 +189,7 @@ test('m40 double return: a starred disc flies out a second time at 80% and an un
   assert.equal(s.mult, MUTATIONS.boomerang.frac);
 });
 
-test('m40 a star survives evolving and is lost on salvage; a graft passes it to the host', () => {
+test('m40 a star survives evolving and is lost on salvage; a fusion passes it to the host', () => {
   const run = newRun('archer');
   run.starsteel = 6;
   const bow = maxed(run, 'ember_bow');
@@ -209,7 +209,7 @@ test('m40 a star survives evolving and is lost on salvage; a graft passes it to 
   const donor = addWeapon(run, 'glacial_bloom');
   donor.star = true;
   run.starsteel = 2;
-  assert.ok(graft(run, host, donor).ok);
+  assert.ok(fuse(run, host, donor).ok);
   assert.ok(host.star, 'the donor\'s star passed to the host');
 });
 

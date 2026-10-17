@@ -1,7 +1,7 @@
 // trail: a wake of ground you leave behind as you move (Frost Wake, Steam Wake). Every `spacing` units
 // walked drops a patch under you; standing still drops one every `cooldown` seconds, so the weapon
 // never goes dead. A patch is the weapon's own attack: each tick is a real weapon hit (crit, status
-// chances, hit triggers, graft payloads). docs/design-m30-m33.md §4.1.
+// chances, hit triggers, fusion payloads). docs/design-m30-m33.md §4.1.
 
 import { param } from '../game/weapon-params.js';
 import { addPatch, addRing, newChain, linkPatch } from '../systems/hazards.js';
@@ -25,7 +25,7 @@ export default {
 
   update(inst, dt, run) {
     const p = run.player;
-    const au = inst.graft && inst.graft.hooks.aurora;
+    const au = inst.fusion && inst.fusion.hooks.aurora;
     if (au && inst.beacons.length) beaconStep(inst, dt, run, au);
     inst.moved += Math.hypot(p.x - inst.lastX, p.y - inst.lastY);
     inst.lastX = p.x;

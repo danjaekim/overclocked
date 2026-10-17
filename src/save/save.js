@@ -18,13 +18,13 @@ export const DEFAULTS = {
   music: true,                        // music on/off (the sound toggle mutes everything)
   musicVolume: 0.6,                   // 0..1
   history: [],                        // finished runs, oldest first (see entryFromSummary), capped
-  discovered: { grafts: [] },         // masterwork ids found at the forge (v3)
+  discovered: { fusions: [] },         // masterwork ids found at the forge (v3)
 };
 
 export const HISTORY_CAP = 100;
 
-// Grafts made in a run: [hostWeaponId, donorWeaponId, graftId, name] (strings only).
-function cleanGrafts(l) {
+// Fusions made in a run: [hostWeaponId, donorWeaponId, fusionId, name] (strings only).
+function cleanFusions(l) {
   if (!Array.isArray(l)) return [];
   return l.filter((x) => Array.isArray(x) && x.length >= 4 && x.slice(0, 4).every((v) => typeof v === 'string')).slice(0, 6).map((x) => [x[0], x[1], x[2], x[3].slice(0, 40)]);
 }
@@ -47,7 +47,7 @@ export function entryFromSummary(summary, now = Date.now()) {
     weapons: pairs(b.weapons),
     passives: pairs(b.passives),
     perks: pairs(b.perks),
-    grafts: cleanGrafts(b.grafts),
+    fusions: cleanFusions(b.fusions),
     titles: Array.isArray(summary.titleIds) ? summary.titleIds.map(String) : [],
   };
 }
@@ -61,7 +61,7 @@ function cleanEntry(e) {
     t: e.t, cls: e.cls, won: !!e.won, time: Math.floor(e.time), kills: Math.floor(e.kills), level: Math.floor(e.level),
     seed: Number.isFinite(e.seed) ? e.seed : 0, boss: !!e.boss,
     dmg: Number.isFinite(e.dmg) ? e.dmg : 0, dps: Number.isFinite(e.dps) ? e.dps : 0,
-    weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks), grafts: cleanGrafts(e.grafts),
+    weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks), fusions: cleanFusions(e.fusions || e.grafts),
     titles: Array.isArray(e.titles) ? e.titles.filter((x) => typeof x === 'string').slice(0, 12) : [],
   };
 }
@@ -88,8 +88,9 @@ export function normalize(raw) {
   if (typeof raw.music === 'boolean') out.music = raw.music;
   if (Number.isFinite(raw.musicVolume)) out.musicVolume = Math.min(1, Math.max(0, raw.musicVolume));
   if (Array.isArray(raw.history)) out.history = raw.history.map(cleanEntry).filter(Boolean).slice(-HISTORY_CAP);
-  if (raw.discovered && Array.isArray(raw.discovered.grafts)) {
-    out.discovered.grafts = [...new Set(raw.discovered.grafts.filter((x) => typeof x === 'string'))].slice(0, 100);
+  const found = raw.discovered && (Array.isArray(raw.discovered.fusions) ? raw.discovered.fusions : raw.discovered.grafts);   // saves from before the rename say "grafts"
+  if (Array.isArray(found)) {
+    out.discovered.fusions = [...new Set(found.filter((x) => typeof x === 'string'))].slice(0, 100);
   }
   return out;
 }
@@ -142,9 +143,9 @@ export function createSave(storage) {
     },
 
     // Marks a masterwork as found. Returns true the first time.
-    discoverGraft(id) {
-      if (data.discovered.grafts.includes(id)) return false;
-      data.discovered.grafts.push(id);
+    discoverFusion(id) {
+      if (data.discovered.fusions.includes(id)) return false;
+      data.discovered.fusions.push(id);
       persist();
       return true;
     },

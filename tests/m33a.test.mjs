@@ -10,7 +10,7 @@ import { addPerk, findPerk, levelUpPerk } from '../src/game/perks.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { WEAPONS } from '../src/data/weapons.js';
-import { SHAPE_PAYLOAD } from '../src/data/grafts.js';
+import { SHAPE_PAYLOAD } from '../src/data/fusions.js';
 import { validateData } from '../src/data/validate.js';
 import { VERSION } from '../src/version.js';
 

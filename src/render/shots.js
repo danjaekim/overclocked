@@ -2,7 +2,7 @@
 //
 // SHAPE comes from the weapon: a weapon's `shot` ('arrow' | 'javelin' | 'shard' | 'disc' | 'blade'), else its behavior
 // (projectile -> arrow, rod -> javelin, nova -> shard, boomerang -> disc), else a blade. A few shots are fixed by a `look`
-// the code that spawned them sets: 1 disc (saw), 2 shard, 3 soul, 4 arrow (graft volleys), 5 blade (Bladestorm).
+// the code that spawned them sets: 1 disc (saw), 2 shard, 3 soul, 4 arrow (fusion volleys), 5 blade (Bladestorm).
 // Shafts, fletching and blade bodies stay neutral steel and wood, so the silhouette reads the same whatever the element.
 //
 // SKIN comes from the elements the weapon carries, and from Starforge:

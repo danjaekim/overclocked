@@ -6,7 +6,7 @@
 //   { starsteel: n }                 starsteel in the stash; spent when combining
 //   { title: id }                    the player holds that title
 //   { perk: id, minLevel: n }        the player owns that perk (technique) at this level or higher
-// A recipe with `with: <weaponId>` is a FUSION: it needs one instance of `from` AND one of `with`
+// A recipe with `with: <weaponId>` is a COMBO: it needs one instance of `from` AND one of `with`
 // (weaponLevel then applies to both). The `from` instance becomes `into` and keeps its enhance
 // level and affixes; the `with` instance is consumed.
 // Evolving keeps the instance (so enhance level and affixes carry over) and resets it to
@@ -67,7 +67,7 @@ export const EVOLUTIONS = [
   { id: 'gyre', from: 'chakram', into: 'gyre',
     requires: [{ weaponLevel: 6 }, { passive: 'wind_sigil', minLevel: 2 }, { starsteel: 1 }] },
 
-  // ---- fusions: two element weapons become one that carries both ----
+  // ---- combos: two element weapons become one that carries both ----
   { id: 'vapor_wheel', from: 'cinder_ward', with: 'rime_orbs', into: 'vapor_wheel',
     requires: [{ weaponLevel: 6 }, { starsteel: 1 }] },
   { id: 'stormshell_mortar', from: 'cinder_mortar', with: 'static_rod', into: 'stormshell_mortar',

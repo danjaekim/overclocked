@@ -145,7 +145,7 @@ export function chainArc(run, from, src, hitAmount, depth, hopsOverride = -1, dm
     if (!best) break;
     visited[nv++] = best.uid;
     addArc(run, cx, cy, best.x, best.y, cause === CAUSE.FORK ? ARC_FORK : undefined);
-    if (shock === null ? cause !== CAUSE.FORK && cause !== CAUSE.GRAFT : shock) applyShock(run, best, src);      // a fork or a graft arc is plain damage unless told to shock
+    if (shock === null ? cause !== CAUSE.FORK && cause !== CAUSE.FUSION : shock) applyShock(run, best, src);      // a fork or a fusion arc is plain damage unless told to shock
     const d = Math.sqrt(bestD) || 1;
     queueDamage(run, best, dmg, false, ((best.x - cx) / d) * 30, ((best.y - cy) / d) * 30, depth + 1, src, KIND_PROC, cause);
     if (run.rules.overload && (best.status & ST.BURN)) overload(run, best, src, dmg, depth);

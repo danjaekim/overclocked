@@ -154,8 +154,8 @@ function drawChips(ctx, chips, x, y) {
     const cx = x + i * (size + 4);
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(cx, y, size, size);
-    ctx.strokeStyle = c.graft ? '#ffd34d' : RARITIES[c.def.rarity].color;     // a graft earns a gold rim
-    ctx.lineWidth = c.graft ? 3 : 2;
+    ctx.strokeStyle = c.fusion ? '#ffd34d' : RARITIES[c.def.rarity].color;     // a fusion earns a gold rim
+    ctx.lineWidth = c.fusion ? 3 : 2;
     ctx.strokeRect(cx + 1, y + 1, size - 2, size - 2);
     ctx.fillStyle = '#e8e6df';
     ctx.font = '700 12px system-ui, sans-serif';

@@ -7,11 +7,11 @@ const BEST_LABEL = { time: 'time', kills: 'kills', level: 'level' };
 
 const wname = (id) => (WEAPONS[id] ? WEAPONS[id].name : id);
 
-// One line per graft: its name and the two weapons that went into it.
-function graftsHtml(summary) {
-  const list = summary.graftList || [];
+// One line per fusion: its name and the two weapons that went into it.
+function fusionsHtml(summary) {
+  const list = summary.fusionList || [];
   if (!list.length) return '';
-  return `<div class="rgrafts">${list.map((g) => `<p class="unlock">${g.masterwork ? '✦ ' : ''}<b>${g.name}</b> <span class="rg-from">${wname(g.host)} + ${wname(g.donor)}</span></p>`).join('')}</div>`;
+  return `<div class="rfusions">${list.map((g) => `<p class="unlock">${g.masterwork ? '✦ ' : ''}<b>${g.name}</b> <span class="rg-from">${wname(g.host)} + ${wname(g.donor)}</span></p>`).join('')}</div>`;
 }
 
 export function showResults(overlays, summary, { onAgain, onTitle, newBests = [], unlocked = [] }) {
@@ -28,7 +28,7 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
      </div>
      ${summary.bossKilled ? '<p class="sub">The Warlord is slain.</p>' : ''}
      ${unlocked.length ? `<p class="unlock">Unlocked: ${unlocked.join(', ')}!</p>` : ''}
-     ${graftsHtml(summary)}
+     ${fusionsHtml(summary)}
      ${summary.titles.length ? `<p class="sub">Titles: ${summary.titles.join(', ')}</p>` : ''}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>

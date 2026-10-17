@@ -38,7 +38,7 @@ test('entries have unique ids per tab, a name, rarity and some detail text', () 
 });
 
 test('evolved weapons say how to make them; weapons list what they evolve into', () => {
-  assert.ok(entries.find((e) => e.id === 'vapor_wheel').lines.some((l) => l.startsWith('Made by fusing')));
+  assert.ok(entries.find((e) => e.id === 'vapor_wheel').lines.some((l) => l.startsWith('Made by combining')));
   assert.ok(entries.find((e) => e.id === 'reaper_axe').lines.some((l) => l.includes('Keen Eye')));
   assert.ok(entries.find((e) => e.id === 'rending_axe').lines.some((l) => l.startsWith('Evolves into Reaper Axe')));
 });

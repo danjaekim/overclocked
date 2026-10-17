@@ -17,7 +17,7 @@ import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
 import { RARITIES } from '../data/rarities.js';
 import { describe as describeReq } from './evolution.js';
-import { MASTERWORKS, GRAFT, PAYLOADS, SHAPE_PAYLOAD } from '../data/grafts.js';
+import { MASTERWORKS, FUSION, PAYLOADS, SHAPE_PAYLOAD } from '../data/fusions.js';
 
 export const ELEMENTS = ['fire', 'frost', 'storm'];
 export const TABS = [
@@ -25,7 +25,7 @@ export const TABS = [
   { id: 'evolve', label: 'Evolve' },
   { id: 'techniques', label: 'Techniques' },
   { id: 'passives', label: 'Passives' },
-  { id: 'grafts', label: 'Grafts' },
+  { id: 'fusions', label: 'Fusions' },
   { id: 'forge', label: 'Forge' },
   { id: 'builds', label: 'Builds' },
 ];
@@ -79,7 +79,7 @@ function weaponEntry(id, def, buildsFor) {
   const lines = [def.desc];
   for (const r of EVOLUTIONS.filter((x) => x.into === id)) {
     lines.push(r.with
-      ? `Made by fusing ${WEAPONS[r.from].name} with ${WEAPONS[r.with].name}: ${recipeLines(r).join(', ')}.`
+      ? `Made by combining ${WEAPONS[r.from].name} with ${WEAPONS[r.with].name}: ${recipeLines(r).join(', ')}.`
       : `Made by evolving ${WEAPONS[r.from].name}: ${recipeLines(r).join(', ')}.`);
   }
   def.levelText.forEach((t, i) => lines.push(`Level ${i + 2}: ${t}`));
@@ -87,7 +87,7 @@ function weaponEntry(id, def, buildsFor) {
   for (const r of EVOLUTIONS.filter((x) => x.from === id || x.with === id)) {
     const into = WEAPONS[r.into].name;
     lines.push(r.with
-      ? `Fuses with ${WEAPONS[r.with === id ? r.from : r.with].name} into ${into}: ${recipeLines(r).join(', ')}.`
+      ? `Combines with ${WEAPONS[r.with === id ? r.from : r.with].name} into ${into}: ${recipeLines(r).join(', ')}.`
       : `Evolves into ${into}: ${recipeLines(r).join(', ')}.`);
   }
   if (def.forge && def.forge.tempers) {
@@ -102,13 +102,13 @@ function weaponEntry(id, def, buildsFor) {
   };
 }
 
-// Plain names for the donor shapes, for the Grafts tab.
+// Plain names for the donor shapes, for the Fusions tab.
 const SHAPE_LABEL = {
   projectile: 'Arrow', arc: 'Melee swing', orbit: 'Orbiting', aura: 'Ring', bolt: 'Bolt', nova: 'Shard burst', mortar: 'Mortar',
   summon: 'Hound', judge: 'Pillar', boomerang: 'Thrown disc', trail: 'Trail', pulse: 'Pulse', slam: 'Slam', chain: 'Chain lightning', rod: 'Planted rod',
 };
 
-export function buildEntries(discovered = { grafts: [] }) {
+export function buildEntries(discovered = { fusions: [] }) {
   const buildsFor = (kind, id) => BUILDS.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
   const out = [];
 
@@ -165,7 +165,7 @@ export function buildEntries(discovered = { grafts: [] }) {
     summary: `Spend ${QUENCH.cost} starsteel to make several enhance attempts certain.`,
     lines: [`At the forge, ${QUENCH.cost} starsteel gives a weapon Quench charges: 3 at +4 to +9, 2 at +10 to +12, 1 at +13 or +14.`,
       'A charge makes the next enhance attempt succeed, with no roll and no downgrade. The ore is still paid.',
-      'Charges stay on the weapon, carry through evolving, join the host in a graft, and are lost if the weapon is salvaged.'], builds: [],
+      'Charges stay on the weapon, carry through evolving, join the host in a fusion, and are lost if the weapon is salvaged.'], builds: [],
   });
 
   out.push({
@@ -173,16 +173,16 @@ export function buildEntries(discovered = { grafts: [] }) {
     summary: `Spend ${STARFORGE.cost} starsteel to give a maxed weapon a mutation.`,
     lines: [`At the forge, a weapon at its maximum level can be starforged once for ${STARFORGE.cost} starsteel. It gains one mutation set by how it attacks, drawn in cyan.`,
       ...Object.entries(MUTATIONS).map(([b, m]) => `${b[0].toUpperCase()}${b.slice(1)} weapons: ${m.name}. ${m.desc}`),
-      'It works on evolved and grafted weapons too. The star survives evolving, a graft passes it to the host (two stars become one), and salvaging loses it.'], builds: [],
+      'It works on evolved and fused weapons too. The star survives evolving, a fusion passes it to the host (two stars become one), and salvaging loses it.'], builds: [],
   });
 
-  const found = new Set(discovered.grafts || []);
+  const found = new Set(discovered.fusions || []);
   out.push({
-    tab: 'grafts', id: 'graft:rules', name: `Masterworks found ${MASTERWORKS.filter((m) => found.has(m.id)).length} / ${MASTERWORKS.length}`,
+    tab: 'fusions', id: 'fusion:rules', name: `Masterworks found ${MASTERWORKS.filter((m) => found.has(m.id)).length} / ${MASTERWORKS.length}`,
     glyph: '✦', rarity: 'epic', elements: [], cat: 'Guide', classes: [],
-    summary: `At the forge, graft one evolved weapon into another for ${GRAFT.cost} starsteel.`,
-    lines: [`Graft one evolved weapon (the donor) into another (the host) for ${GRAFT.cost} starsteel. The donor is consumed and frees its slot.`,
-      'The host keeps its level, enhancement and effects, gains the donor\'s elements, and gets a graft effect. A weapon takes one graft.',
+    summary: `At the forge, fuse one evolved weapon into another for ${FUSION.cost} starsteel.`,
+    lines: [`Fuse one evolved weapon (the donor) into another (the host) for ${FUSION.cost} starsteel. The donor is consumed and frees its slot.`,
+      'The host keeps its level, enhancement and effects, gains the donor\'s elements, and gets a fusion effect. A weapon takes one fusion.',
       'Most pairs give a payload: the first hit of every attack the host makes also does something shaped like the donor\'s attack.',
       ...Object.entries(SHAPE_PAYLOAD).map(([shape, id]) => `${SHAPE_LABEL[shape] || shape} donor: ${PAYLOADS[id].text} (${Math.round(PAYLOADS[id].frac * 100)}%).`),
       'Some pairs are masterworks with an effect of their own. Find them by trying.'], builds: [],
@@ -190,12 +190,12 @@ export function buildEntries(discovered = { grafts: [] }) {
   for (const m of MASTERWORKS) {
     const ok = found.has(m.id);
     out.push({
-      tab: 'grafts', id: `graft:${m.id}`, name: ok ? m.name : `${WEAPONS[m.host].name} + ???`, glyph: ok ? '✦' : '?', rarity: ok ? 'epic' : 'common',
+      tab: 'fusions', id: `fusion:${m.id}`, name: ok ? m.name : `${WEAPONS[m.host].name} + ???`, glyph: ok ? '✦' : '?', rarity: ok ? 'epic' : 'common',
       elements: ok ? ELEMENTS.filter((e) => WEAPONS[m.host].tags.includes(e) || WEAPONS[m.donor].tags.includes(e)) : [],
       cat: 'Masterwork', classes: [],
-      summary: ok ? m.desc : 'Not found yet. Graft the right weapon into this one.',
+      summary: ok ? m.desc : 'Not found yet. Fuse the right weapon into this one.',
       lines: ok ? [m.desc, `Host: ${WEAPONS[m.host].name}. Donor: ${WEAPONS[m.donor].name}. Either order works; the host is fixed.`]
-        : [`Something is waiting to be grafted into the ${WEAPONS[m.host].name}.`], builds: [],
+        : [`Something is waiting to be fused into the ${WEAPONS[m.host].name}.`], builds: [],
     });
   }
 
@@ -221,7 +221,7 @@ export function facetsFor(tab, entries) {
   const list = entries.filter((e) => e.tab === tab);
   const uniq = (f) => [...new Set(list.flatMap(f))];
   const facets = [];
-  if (['weapons', 'evolve', 'techniques', 'forge', 'builds', 'grafts'].includes(tab)) {
+  if (['weapons', 'evolve', 'techniques', 'forge', 'builds', 'fusions'].includes(tab)) {
     const els = uniq((e) => e.elements);
     if (els.length) facets.push({ key: 'element', label: 'Element', options: ELEMENTS.filter((e) => els.includes(e)) });
   }

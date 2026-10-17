@@ -1,11 +1,11 @@
-// Graft payloads (docs/design-m30-m33.md §3): what a generic graft adds to every attack of its host.
+// Fusion payloads (docs/design-m30-m33.md §3): what a generic fusion adds to every attack of its host.
 // The host's first hit of an attack calls firePayload (game/triggers.js), which runs the payload the
-// donor's shape picked (data/grafts.js SHAPE_PAYLOAD). Every payload hit is PROC damage at depth + 1
-// credited to the cause "Graft", and its projectiles resolve at depth 1, so a payload never fires a
+// donor's shape picked (data/fusions.js SHAPE_PAYLOAD). Every payload hit is PROC damage at depth + 1
+// credited to the cause "Fusion", and its projectiles resolve at depth 1, so a payload never fires a
 // payload. Damage is the payload's frac x the host's own current damage.
 
 import { param } from '../game/weapon-params.js';
-import { PAYLOADS, GRAFT } from '../data/grafts.js';
+import { PAYLOADS, FUSION } from '../data/fusions.js';
 import { queueDamage, KIND_PROC, CAUSE } from '../systems/damage-queue.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { addPuff, addArc } from '../render/fx.js';
@@ -51,7 +51,7 @@ function circleHits(run, src, x, y, radius, dmg, depth, kb, filter) {
     if (dx * dx + dy * dy > rr * rr) continue;
     if (filter && !filter(dx, dy)) continue;
     const d = Math.hypot(dx, dy) || 1;
-    queueDamage(run, o, dmg, false, (dx / d) * kb, (dy / d) * kb, depth + 1, src, KIND_PROC, CAUSE.GRAFT);
+    queueDamage(run, o, dmg, false, (dx / d) * kb, (dy / d) * kb, depth + 1, src, KIND_PROC, CAUSE.FUSION);
   }
 }
 
@@ -84,16 +84,16 @@ const FX = {
   },
 
   spin(run, src, e, dmg, depth) {
-    addSpin(run, src, e, 34 * area(run, src), 1.2, 0.2, dmg, depth, CAUSE.GRAFT);
+    addSpin(run, src, e, 34 * area(run, src), 1.2, 0.2, dmg, depth, CAUSE.FUSION);
   },
 
   imprint(run, src, e, dmg, depth) {
-    const g = src.graft;
-    addPatch(run, src, e.x, e.y, 42 * area(run, src), 2, 0.4, dmg, depth, false, statusOf(g), CAUSE.GRAFT);
+    const g = src.fusion;
+    addPatch(run, src, e.x, e.y, 42 * area(run, src), 2, 0.4, dmg, depth, false, statusOf(g), CAUSE.FUSION);
   },
 
   arc(run, src, e, dmg, depth, hops) {
-    chainArc(run, e, src, dmg, depth, hops, 1, CAUSE.GRAFT, src.graft.elements.includes('storm'));
+    chainArc(run, e, src, dmg, depth, hops, 1, CAUSE.FUSION, src.fusion.elements.includes('storm'));
   },
 
   burst(run, src, e, dmg) {
@@ -103,8 +103,8 @@ const FX = {
   },
 
   blast(run, src, e, dmg, depth) {
-    const st = statusOf(src.graft);
-    addBlast(run, src, e.x, e.y, 55 * area(run, src), 0.3, dmg, depth, { burn: st === 'burn', shock: st === 'shock', chill: st === 'chill' }, CAUSE.GRAFT);
+    const st = statusOf(src.fusion);
+    addBlast(run, src, e.x, e.y, 55 * area(run, src), 0.3, dmg, depth, { burn: st === 'burn', shock: st === 'shock', chill: st === 'chill' }, CAUSE.FUSION);
   },
 
   pounce(run, src, e, dmg, depth) {
@@ -115,7 +115,7 @@ const FX = {
   },
 
   smite(run, src, e, dmg, depth) {
-    addPillar(run, src, e.x, e.y, 45 * area(run, src), 0.25, dmg, depth, CAUSE.GRAFT);
+    addPillar(run, src, e.x, e.y, 45 * area(run, src), 0.25, dmg, depth, CAUSE.FUSION);
   },
 
   // Two saw discs leave the target for the nearest other enemies and keep hopping (never to one they
@@ -136,12 +136,12 @@ const FX = {
   },
 
   frost_step(run, src, e, dmg, depth) {
-    addPatch(run, src, e.x, e.y, 30 * area(run, src), 1.5, 0.4, dmg, depth, false, 'chill', CAUSE.GRAFT);
+    addPatch(run, src, e.x, e.y, 30 * area(run, src), 1.5, 0.4, dmg, depth, false, 'chill', CAUSE.FUSION);
   },
 
   ripple(run, src, e, dmg, depth) {
-    const st = src.graft.light ? 'bless' : null;
-    addRing(run, src, e.x, e.y, 70 * area(run, src), 220, dmg, depth, { status: st, heal: 0.5, cause: CAUSE.GRAFT, color: '#fff3b0' });
+    const st = src.fusion.light ? 'bless' : null;
+    addRing(run, src, e.x, e.y, 70 * area(run, src), 220, dmg, depth, { status: st, heal: 0.5, cause: CAUSE.FUSION, color: '#fff3b0' });
   },
 
   quake(run, src, e, dmg, depth) {
@@ -151,7 +151,7 @@ const FX = {
   },
 
   spark(run, src, e, dmg, depth) {
-    addPatch(run, src, e.x, e.y, 40 * area(run, src), 1.2, 0.4, dmg, depth, true, 'shock', CAUSE.GRAFT);
+    addPatch(run, src, e.x, e.y, 40 * area(run, src), 1.2, 0.4, dmg, depth, true, 'shock', CAUSE.FUSION);
   },
 };
 
@@ -190,11 +190,11 @@ function nearStun(run, e, r) {
 
 // Called by game/triggers.js for the first hit of an armed attack. Returns true if it fired.
 export function firePayload(run, src, target, depth) {
-  const g = src.graft;
+  const g = src.fusion;
   if (!g || !g.payload || depth + 1 > MAX_TRIGGER_DEPTH) return false;
   const spec = PAYLOADS[g.payload];
   const gap = spec.gap !== undefined ? spec.gap : 0;
-  if (run.time - (src.payloadAt === undefined ? -1e9 : src.payloadAt) < Math.max(gap, GRAFT.payloadMinGap)) return false;
+  if (run.time - (src.payloadAt === undefined ? -1e9 : src.payloadAt) < Math.max(gap, FUSION.payloadMinGap)) return false;
   src.payloadAt = run.time;
   const dmg = param(run, src, 'damage') * spec.frac;
   if (g.payload === 'arc') FX.arc(run, src, target, dmg, depth, 1);

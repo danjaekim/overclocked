@@ -55,8 +55,8 @@ const STAR_ONLY = process.env.STAR_ONLY ? process.env.STAR_ONLY.split(',') : nul
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
-import { graft } from '../src/game/graft.js';
-import { MASTERWORKS } from '../src/data/grafts.js';
+import { fusion } from '../src/game/fusion.js';
+import { MASTERWORKS } from '../src/data/fusions.js';
 
 const args = process.argv.slice(2);
 const SPEND = process.env.BOT_SPEND || 'all';        // what the bot buys with starsteel at the forge: 'none' | 'quench' | 'all' (Quench and Starforge)
@@ -118,9 +118,9 @@ function crowdClear(weaponId, level) {
   return { kills10: clearedAt !== null && clearedAt < 10 ? 20 : at10, kills20: run.kills, clearedAt };
 }
 
-// Graft value (docs/design-m30-m33.md §3.4): crowd damage per second of an evolved host alone and with a
-// donor of each shape grafted in. Tough dummies in a ring so nothing dies and the count stays constant.
-function graftCrowdDps(hostId, donorId) {
+// Fusion value (docs/design-m30-m33.md §3.4): crowd damage per second of an evolved host alone and with a
+// donor of each shape fused in. Tough dummies in a ring so nothing dies and the count stays constant.
+function fusionCrowdDps(hostId, donorId) {
   const run = createRun({ seed: 1, view: VIEW, debug: { god: true }, classId: 'archer' });
   run.player.stats.removeBySource(`weapon:${run.player.weapons[0].instanceId}:`);
   run.player.weapons.length = 0;
@@ -128,7 +128,7 @@ function graftCrowdDps(hostId, donorId) {
   run.starsteel = 3;
   const host = addWeapon(run, hostId);
   while (host.level < 6 && canLevelUp(host)) levelUpWeapon(run, host);
-  if (donorId) { const d = addWeapon(run, donorId); if (!graft(run, host, d).ok) return null; }
+  if (donorId) { const d = addWeapon(run, donorId); if (!fuse(run, host, d).ok) return null; }
   const dummies = [];
   for (let i = 0; i < 24; i++) {
     const a = (i / 24) * Math.PI * 2;
@@ -153,7 +153,7 @@ function graftCrowdDps(hostId, donorId) {
 function starDps(weaponId, star, mode, seed, prep) {
   const { run, inst: inst0 } = loneWeaponRun(weaponId, 99, process.env.BENCH_CLASS || 'none', seed);
   let inst = inst0;
-  if (prep) inst = prep(run, inst0) || inst0;      // e.g. enhance to +15 and graft a donor on (--masterworks)
+  if (prep) inst = prep(run, inst0) || inst0;      // e.g. enhance to +15 and fusion a donor on (--masterworks)
   if (star) inst.star = true;
   const seconds = mode === 'single' ? 20 : 15;
   const HP = 2500;
@@ -399,7 +399,7 @@ const out = { weapons: {}, bots: {} };
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v, d = 0) => (typeof v === 'number' ? v.toFixed(d) : '-');
 
-if (!flag('--bots') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
+if (!flag('--bots') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
   const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].pool !== false || WEAPONS[id].rarity === 'evolved');
   if (!flag('--json')) {
     console.log('\nWEAPONS  (single-target dps | crowd of 20: kills after 10 s / 20 s)');
@@ -484,7 +484,7 @@ if (argv.includes('--hp') || argv.includes('--rate') || argv.includes('--speed')
   }
 }
 
-// ---- masterworks (M42 balance): a host at max level and +15, with and without its masterwork graft and its star ----
+// ---- masterworks (M42 balance): a host at max level and +15, with and without its masterwork fusion and its star ----
 function to15(run, inst) {
   run.ore = 1e9;
   for (let g = 0; g < 200 && inst.enhance < 15; g++) {
@@ -500,12 +500,12 @@ if (flag('--masterworks')) {
   const only = process.env.MW_ONLY ? process.env.MW_ONLY.split(',') : null;
   const avg = (f) => seeds.reduce((a, sd) => a + f(sd), 0) / seeds.length;
   const plain = (run, inst) => { to15(run, inst); return inst; };
-  const grafted = (donorId) => (run, inst) => {
+  const fused = (donorId) => (run, inst) => {
     to15(run, inst);
     run.starsteel = 10;
     const d = addWeapon(run, donorId);
-    const r = graft(run, inst, d);
-    if (!r.ok) throw new Error('graft failed ' + inst.def.name + '<' + donorId);
+    const r = fuse(run, inst, d);
+    if (!r.ok) throw new Error('fusion failed ' + inst.def.name + '<' + donorId);
     return inst;
   };
   const pct = (a, b) => (b > 0 ? `${a / b >= 1 ? '+' : ''}${Math.round((a / b - 1) * 100)}%` : 'n/a');
@@ -516,15 +516,15 @@ if (flag('--masterworks')) {
     const cells = ['single', 'held', 'flow'].map((mode) => {
       const a = avg((sd) => starDps(mw.host, false, mode, sd, plain));
       const b = avg((sd) => starDps(mw.host, true, mode, sd, plain));
-      const c = avg((sd) => starDps(mw.host, false, mode, sd, grafted(mw.donor)));
-      const d = avg((sd) => starDps(mw.host, true, mode, sd, grafted(mw.donor)));
+      const c = avg((sd) => starDps(mw.host, false, mode, sd, fused(mw.donor)));
+      const d = avg((sd) => starDps(mw.host, true, mode, sd, fused(mw.donor)));
       return pad(`${num(a)}/${num(b)}/${num(c)}/${num(d)}  ${pct(c, a)} ${pct(d, a)}`, 44);
     });
     console.log(pad(mw.id, 16) + pad(`${mw.host}<${mw.donor}`, 36) + cells.join(''));
   }
 }
 
-if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
+if (!flag('--weapons') && !flag('--builds') && !flag('--fusions') && !flag('--classes') && !flag('--starforge') && !flag('--masterworks') && !flag('--dps') && !flag('--lib')) {
   const nSeeds = numArg('--seeds', flag('--quick') ? 3 : 6);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const classes = argv.includes('--class') ? [argv[argv.indexOf('--class') + 1]] : Object.keys(CLASSES);
@@ -549,14 +549,14 @@ if (!flag('--weapons') && !flag('--builds') && !flag('--grafts') && !flag('--cla
   }
 }
 
-if (flag('--grafts')) {
+if (flag('--fusions')) {
   const hosts = ['storm_volley', 'colossus_maul', 'seraph_blades', 'pyre_crown', 'prismatic_bolt', 'grave_legion'];
   const donors = ['thunder_lance', 'reaper_axe', 'seraph_blades', 'pyre_crown', 'singularity', 'glacial_bloom', 'stormshell_mortar', 'bone_colossus', 'judgement'];
-  console.log('\nGRAFT VALUE  (crowd dps, host at level 6, 24 dummies; generic payload target: +35% to +60%; "m" = masterwork)');
+  console.log('\nFUSION VALUE  (crowd dps, host at level 6, 24 dummies; generic payload target: +35% to +60%; "m" = masterwork)');
   for (const h of hosts) {
-    const base = graftCrowdDps(h, null);
+    const base = fusionCrowdDps(h, null);
     const cells = donors.filter((d) => d !== h).map((d) => {
-      const v = graftCrowdDps(h, d);
+      const v = fusionCrowdDps(h, d);
       if (v === null) return `${WEAPONS[d].behavior}:-`;
       const mw = MASTERWORKS.some((m) => (m.host === h && m.donor === d));
       return `${WEAPONS[d].behavior}:${v >= base ? '+' : ''}${Math.round((v / base - 1) * 100)}%${mw ? 'm' : ''}`;

@@ -29,7 +29,7 @@ function standIn(id, name, tags) {
     instanceId: id, weaponId: '', level: 1, enhance: 0,
     def: { name, behavior: 'trait', rarity: 'trait', base: {}, triggers: [], tags },
     tags: makeTags(tags), instanceTag: `trait:${id}`,
-    extraTriggers: [], addTags: [], affixes: [], graft: null, trigT: [],
+    extraTriggers: [], addTags: [], affixes: [], fusion: null, trigT: [],
   };
 }
 

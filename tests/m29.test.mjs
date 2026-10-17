@@ -97,34 +97,34 @@ test('Broad Strokes adds area; Shatter is offered without a frost weapon and chi
   approx(run.player.stats.get('chillChance') - before2, 0.08, 1e-9);
 });
 
-// ---- grafts in the results summary and the run history -------------------------------------------
+// ---- fusions in the results summary and the run history -------------------------------------------
 import { addWeapon } from '../src/game/weapons.js';
-import { graft } from '../src/game/graft.js';
+import { fuse } from '../src/game/fusion.js';
 import { entryFromSummary, normalize } from '../src/save/save.js';
 import { buildNames } from '../src/game/history.js';
 
-test('a graft is recorded with its host and donor, in the summary, the history entry and the history text', () => {
+test('a fusion is recorded with its host and donor, in the summary, the history entry and the history text', () => {
   const run = createRun({ seed: 7, view: { w: 480, h: 1040 }, debug: { god: true }, classId: 'smith' });
   run.director.update = () => {};
   run.player.weapons.length = 0;
   run.starsteel = 2;
   const h = addWeapon(run, 'glacial_bloom');
   const d = addWeapon(run, 'stormshell_mortar');
-  assert.ok(graft(run, h, d).ok);
+  assert.ok(fuse(run, h, d).ok);
   const sum = run.summary();
-  assert.equal(sum.graftList.length, 1);
-  assert.ok(sum.graftList[0].host && sum.graftList[0].donor);
+  assert.equal(sum.fusionList.length, 1);
+  assert.ok(sum.fusionList[0].host && sum.fusionList[0].donor);
   const entry = entryFromSummary(sum, 1000);
-  assert.equal(entry.grafts.length, 1);
+  assert.equal(entry.fusions.length, 1);
   const names = buildNames(entry);
-  assert.equal(names.grafts.length, 1);
-  assert.ok(names.grafts[0].includes('+'), names.grafts[0]);
-  assert.ok(names.weapons.some((w) => w.startsWith(sum.grafts[0])), 'the grafted weapon is listed under its graft name');
+  assert.equal(names.fusions.length, 1);
+  assert.ok(names.fusions[0].includes('+'), names.fusions[0]);
+  assert.ok(names.weapons.some((w) => w.startsWith(sum.fusions[0])), 'the fused weapon is listed under its fusion name');
   assert.ok(!names.weapons.some((w) => w.startsWith('Stormshell Mortar')), 'the consumed donor is not listed');
-  // survives a save round trip, and old entries without grafts load as empty
-  const back = normalize({ history: [entry, { ...entry, t: 2, grafts: undefined }] });
-  assert.equal(back.history[0].grafts.length, 1);
-  assert.deepEqual(back.history[1].grafts, []);
+  // survives a save round trip, and old entries without fusions load as empty
+  const back = normalize({ history: [entry, { ...entry, t: 2, fusions: undefined }] });
+  assert.equal(back.history[0].fusions.length, 1);
+  assert.deepEqual(back.history[1].fusions, []);
 });
 
 test('the version is x.y.z and appears on the title screen', async () => {
@@ -139,7 +139,7 @@ test('the version is x.y.z and appears on the title screen', async () => {
 test('the results screen scrolls and keeps its buttons in a pinned bar', async () => {
   const { showResults } = await import('../src/ui/results.js');
   let html = '', cls = '';
-  showResults({ show: (h, _f, c) => { html = h; cls = c; } }, { classId: 'smith', won: true, time: 600, kills: 1, level: 5, titles: [], seed: 1, stats: null, graftList: [] }, { onAgain() {}, onTitle() {} });
+  showResults({ show: (h, _f, c) => { html = h; cls = c; } }, { classId: 'smith', won: true, time: 600, kills: 1, level: 5, titles: [], seed: 1, stats: null, fusionList: [] }, { onAgain() {}, onTitle() {} });
   assert.equal(cls, 'results');
   assert.ok(/class="rbar"[\s\S]*data-act="again"[\s\S]*data-act="title"/.test(html));
 });

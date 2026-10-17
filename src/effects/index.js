@@ -19,7 +19,7 @@ export const EFFECTS = {
     const w = run.world;
     const area = run.player.stats.getFor('area', src.tags);
     const radius = t.params.radius * area;
-    const dmg = t.params.dmg !== undefined ? t.params.dmg : param(run, src, 'damage') * t.params.damageFrac;   // dmg: absolute (the graft echo)
+    const dmg = t.params.dmg !== undefined ? t.params.dmg : param(run, src, 'damage') * t.params.damageFrac;   // dmg: absolute (the fusion echo)
     const n = w.hash.queryRadius(x, y, radius + MAX_ENEMY_RADIUS, w.scratch);
     for (let i = 0; i < n; i++) {
       const e = w.scratch[i];
@@ -117,7 +117,7 @@ export const EFFECTS = {
     if (src) src.frenzyT = t.params.dur;
   },
 
-  // ---- M27: graft effects ----
+  // ---- M27: fusion effects ----
 
   // Thunderscythe: `perSwing` storm shells along the edge of each swing's arc.
   shells(run, t, src, x, y, depth, ang) {

@@ -39,8 +39,8 @@ export default {
     const leash = param(run, inst, 'range');
     const radius = param(run, inst, 'radius');
     const dmg = param(run, inst, 'damage');
-    const aura = inst.graft && inst.graft.hooks.minionAura;   // Hellhounds
-    const pulse = inst.graft && inst.graft.hooks.minionPulse; // Sanctum Titan
+    const aura = inst.fusion && inst.fusion.hooks.minionAura;   // Hellhounds
+    const pulse = inst.fusion && inst.fusion.hooks.minionPulse; // Sanctum Titan
     const tickEvery = inst.def.base.tickEvery;
     inst.t += dt;
 
@@ -112,7 +112,7 @@ export default {
   },
 
   draw(inst, ctx, run) {
-    const aura = inst.graft && inst.graft.hooks.minionAura;
+    const aura = inst.fusion && inst.fusion.hooks.minionAura;
     if (aura) {                                            // the halo each minion carries
       ctx.strokeStyle = aura.color;
       ctx.lineWidth = 2;

@@ -113,7 +113,7 @@ export function buildCandidates(state) {
 
 // What the evolutions in reach still need from a level-up: a map of 'weapon:id' / 'passive:id' /
 // 'perk:id' to the name of the weapon it leads to. A recipe is in reach when you own its weapon (both
-// for a fusion) and it is within EVO_CLOSE levels of the level the recipe asks for. Enhance level,
+// for a combo) and it is within EVO_CLOSE levels of the level the recipe asks for. Enhance level,
 // starsteel and titles cannot come from a level-up, so they are not listed.
 export function evoNeeds(state) {
   const need = new Map();
@@ -140,9 +140,9 @@ export function evoNeeds(state) {
   return need;
 }
 
-// Fusions (evolution recipes with `with`) where you hold one half: a map of the MISSING half's weapon id
+// Combos (evolution recipes with `with`) where you hold one half: a map of the MISSING half's weapon id
 // to the name of the weapon the pair makes. Only halves you could actually be offered count.
-export function fusionPartners(state) {
+export function comboPartners(state) {
   const out = new Map();
   const owned = new Set(state.weapons.map((w) => w.weaponId));
   for (const r of EVOLUTIONS) {
@@ -172,11 +172,11 @@ export function generateOffers(state, rng, count = LEVELUP.offers) {
     const into = fam && need.get(fam + ':' + c.id);
     if (into) { c.evo = into; c.boost = (c.boost || 1) * EVO_BOOST; }
   }
-  const partners = state.weapons.length < SLOTS.weapons ? fusionPartners(state) : null;
-  if (partners && partners.size) {              // the missing half of a fusion: a little more likely, and marked
+  const partners = state.weapons.length < SLOTS.weapons ? comboPartners(state) : null;
+  if (partners && partners.size) {              // the missing half of a combo: a little more likely, and marked
     for (const c of pool) {
       if (c.kind !== 'weapon_new' || !partners.has(c.id)) continue;
-      c.boost = (c.boost || 1) * LEVELUP.fusionPartnerBoost;
+      c.boost = (c.boost || 1) * LEVELUP.comboPartnerBoost;
       if (!c.evo) c.evo = partners.get(c.id);
     }
   }

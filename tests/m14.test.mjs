@@ -1,4 +1,4 @@
-// M14: new weapon behaviors (bolt, boomerang, mortar), perk-gated evolutions and fusions.
+// M14: new weapon behaviors (bolt, boomerang, mortar), perk-gated evolutions and combos.
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
@@ -33,7 +33,7 @@ function lone(id, level = 1) {
 }
 const dummy = (run, x, y, hp = 1e6) => { const e = spawnEnemy(run, 'brute', x, y); e.hp = e.maxHp = hp; e.slowMul = 0; return e; };
 
-test('m14 data validates; every starting weapon has an evolution; 3 fusions exist', () => {
+test('m14 data validates; every starting weapon has an evolution; 3 combos exist', () => {
   assert.deepEqual(validateData(), []);
   for (const c of Object.values(CLASSES)) assert.ok(EVOLUTIONS.some((r) => r.from === c.startWeapon && !r.with), `${c.startWeapon} evolves`);
   assert.ok(EVOLUTIONS.length >= 10);
@@ -119,7 +119,7 @@ test('chest blockers include a perk that is one level short of a recipe', () => 
   assert.ok(evolutionBlockers(run).has('perk_up:keen_eye'));
 });
 
-test('fusion: needs both weapons at level 6, consumes the partner, keeps enhance and affixes', () => {
+test('combo: needs both weapons at level 6, consumes the partner, keeps enhance and affixes', () => {
   const run = newRun();
   const ward = addWeapon(run, 'cinder_ward');
   const orbs = addWeapon(run, 'rime_orbs');
@@ -149,7 +149,7 @@ test('fusion: needs both weapons at level 6, consumes the partner, keeps enhance
   assert.equal(statsSnapshot(run).weapons.find((w) => w.gone) === undefined, false, 'the consumed weapon is marked gone');
 });
 
-test('a chest never auto-fuses (fusion consumes a weapon): the jackpot skips fusion recipes', () => {
+test('a chest never auto-fuses (combo consumes a weapon): the jackpot skips combo recipes', () => {
   const run = newRun();
   const a = addWeapon(run, 'cinder_mortar');
   const b = addWeapon(run, 'static_rod');
@@ -161,7 +161,7 @@ test('a chest never auto-fuses (fusion consumes a weapon): the jackpot skips fus
   assert.equal(run.player.weapons.length, 3);
 });
 
-test('fusion needs the partner in hand', () => {
+test('combo needs the partner in hand', () => {
   const run = newRun();
   const ward = addWeapon(run, 'cinder_ward');
   while (ward.level < 6) levelUpWeapon(run, ward);

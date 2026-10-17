@@ -1,7 +1,7 @@
 # Balance playbook
 
 How to find and fix a balance problem in Overforged, for a class, a weapon (including its evolutions), a Starforge
-mutation or a masterwork graft. Written after the Archer rework (M43, M43b in `docs/architecture.md`), which is the
+mutation or a masterwork fusion. Written after the Archer rework (M43, M43b in `docs/architecture.md`), which is the
 worked example: read those two rows before starting.
 
 The rule that matters most: **fix the cause, not the symptom.** A flat "+20% damage" usually makes the numbers
@@ -16,7 +16,7 @@ All headless, deterministic, no dependencies. Run from the repo root.
 |---|---|
 | `node tools/bench.mjs --bots --class <id> --seeds N [--json]` | Bot win rate, level, kills, level and hp at 5:00, death times, the bot's build at 5:00 and at the end |
 | `node tools/bench.mjs --dps` | Max-level DPS per weapon: single target, pinned crowd of 24, live crowd of 40 walking goblins. `DPS_IDS=a,b` narrows it |
-| `node tools/bench.mjs --starforge` / `--masterworks` | A weapon (or masterwork graft at +15) with and without its Starforge mutation. `STAR_ONLY=`, `MW_ONLY=` narrow them |
+| `node tools/bench.mjs --starforge` / `--masterworks` | A weapon (or masterwork fusion at +15) with and without its Starforge mutation. `STAR_ONLY=`, `MW_ONLY=` narrow them |
 | `node tools/bench.mjs --classes` | The same four builds played by every class: a class's damage multiplier on equal footing |
 | `node tools/diag-class.mjs <class> [seeds]` | How a class's damage actually lands in bot play: enemies hit per arrow, distance of hits (Long Shot), time moving (Fleet), damage by source and cause, deaths. `DIAG_END=600` for the whole run (default first 300 s) |
 | `node tools/variants.mjs <spec.json> [--seeds N]` | Runs any set of variants (data overrides) in parallel and prints one table, with standard errors on win rates. Specs live in `tools/specs/` |
@@ -59,7 +59,7 @@ For weapon work use `"mode": "dps"` and `"weapons": ["ember_bow", "storm_volley"
   mechanic, not damage.
 - **Starforge mutations.** About +20-40% crowd damage on its weapon; none more than 2x the median.
 - **Masterworks.** A star multiplies a masterwork by about 1.0-1.6x; more than that means the mutation is feeding the
-  graft's triggers (see M42b, Glacier Maul).
+  fusion's triggers (see M42b, Glacier Maul).
 
 ## 3. Procedure for a class
 
@@ -115,9 +115,9 @@ For weapon work use `"mode": "dps"` and `"weapons": ["ember_bow", "storm_volley"
   Quiver and Rain of Arrows every weapon number moved. They now run with no class.
 - **Off-screen effects.** The play area is a phone (480 wide in the benches). An effect that reaches further than
   about 240 from the player happens where the player cannot see it, and kills there drop gems out of magnet reach.
-- **The bot's blind spots.** It forges only its first weapon, never grafts, cannot dodge and kites with every
+- **The bot's blind spots.** It forges only its first weapon, never fusions, cannot dodge and kites with every
   non-melee class. Results are comparisons between classes and variants, not absolute difficulty.
-- **Second-order hits.** A mutation or effect that re-hits enemies can re-fire grafts' hit triggers (Aftershock and
+- **Second-order hits.** A mutation or effect that re-hits enemies can re-fire fusions' hit triggers (Aftershock and
   Glacier Maul's shatter, M42b). Secondary hits should resolve at depth 1 or more.
 - **Forcing a status in a test.** `e.status` is rebuilt from the timers (`burnT`, `chill`/`chillT`, `shockT`) every tick;
   set the timers too, or the mask is wiped before the kill is processed (M44 test).

@@ -5,8 +5,8 @@ import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
-import { graft, masterworkFor } from '../src/game/graft.js';
-import { MASTERWORKS } from '../src/data/grafts.js';
+import { fuse, masterworkFor } from '../src/game/fusion.js';
+import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
 import { VERSION } from '../src/version.js';
@@ -24,12 +24,12 @@ const make = (host, donor) => {
   const run = newRun();
   const h = addWeapon(run, host);
   const d = addWeapon(run, donor);
-  const r = graft(run, h, d);
+  const r = fuse(run, h, d);
   assert.ok(r.ok && r.masterwork, `${host} + ${donor}`);
   return { run, h };
 };
 
-test('m34 data: four new masterworks, valid pairs of graftable (evolved) weapons, in either order', () => {
+test('m34 data: four new masterworks, valid pairs of fusionable (evolved) weapons, in either order', () => {
   assert.deepEqual(validateData(), []);
   for (const id of ['aurora_wake', 'millstone', 'storm_saw', 'stormspire']) {
     const m = MASTERWORKS.find((x) => x.id === id);

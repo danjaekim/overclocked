@@ -5,7 +5,7 @@
 import { CHEST } from '../data/elites.js';
 import { WEAPONS } from '../data/weapons.js';
 import { SLOTS } from '../data/progression.js';
-import { buildCandidates, offerWeight, fusionPartners } from './upgrades.js';
+import { buildCandidates, offerWeight, comboPartners } from './upgrades.js';
 import { offerState, applyOffer } from './apply-offer.js';
 import { recipesFor, canEvolve, evolve, pair } from './evolution.js';
 import { findPassive } from './passives.js';
@@ -26,7 +26,7 @@ export function evolutionBlockers(run) {
   const keys = new Set();
   for (const inst of run.player.weapons) {
     for (const recipe of recipesFor(inst)) {
-      if (recipe.with) { const { a, b } = pair(run, recipe); if (!a || !b) continue; }   // a fusion needs both parts in hand
+      if (recipe.with) { const { a, b } = pair(run, recipe); if (!a || !b) continue; }   // a combo needs both parts in hand
       for (const req of recipe.requires) {
         if (req.weaponLevel !== undefined && inst.level < req.weaponLevel) keys.add(`weapon_up:${inst.instanceId}`);
         if (req.passive) {
@@ -55,12 +55,12 @@ export function pickChestItem(state, rng, blockers, wantNew) {
 
   if (wantNew) {
     const owned = new Set(state.ownedTags || []);
-    const partners = fusionPartners(state);
+    const partners = comboPartners(state);
     const news = cands.filter((c) => c.kind === 'weapon_new');
     if (news.length) {
       const weight = (c) => {
         const shares = WEAPONS[c.id].tags.some((t) => (t === 'fire' || t === 'frost' || t === 'storm') && owned.has(t));
-        return offerWeight(c, luck) * (shares ? CHEST.newWeaponTagBoost : 1) * (partners.has(c.id) ? CHEST.fusionPartnerBoost : 1);   // the missing half of a fusion
+        return offerWeight(c, luck) * (shares ? CHEST.newWeaponTagBoost : 1) * (partners.has(c.id) ? CHEST.comboPartnerBoost : 1);   // the missing half of a combo
       };
       return rng.weighted(news, weight);
     }
@@ -73,7 +73,7 @@ export function pickChestItem(state, rng, blockers, wantNew) {
 // A ready evolution (every requirement met, starsteel included), if any weapon has one.
 function findJackpot(run) {
   for (const inst of run.player.weapons) {
-    const ready = recipesFor(inst).filter((r) => !r.with && canEvolve(run, inst, r));   // fusions consume a weapon, so they stay a choice at the forge
+    const ready = recipesFor(inst).filter((r) => !r.with && canEvolve(run, inst, r));   // combos consume a weapon, so they stay a choice at the forge
     if (ready.length === 1) return { inst, recipe: ready[0] };      // two ready branches are a choice, so the player makes it at the forge
   }
   return null;
@@ -94,7 +94,7 @@ export function openChest(run, tier) {
   let gaveNew = false;
   while (rolls.length < count) {
     const idx = rolls.length;
-    const partner = fusionPartners(offerState(run)).size > 0;                    // a fusion half is missing: new weapons get likelier
+    const partner = comboPartners(offerState(run)).size > 0;                    // a combo half is missing: new weapons get likelier
     const wantNew = !gaveNew && (count >= 5 || (partner && count >= 3)) && idx >= 1 && p.weapons.length < SLOTS.weapons
       && run.rng.next() < (partner ? CHEST.fusionNewChance : CHEST.newWeaponChance);
     const offer = pickChestItem(offerState(run), run.rng, evolutionBlockers(run), wantNew);

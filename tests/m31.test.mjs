@@ -7,7 +7,7 @@ import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
-import { SHAPE_PAYLOAD } from '../src/data/grafts.js';
+import { SHAPE_PAYLOAD } from '../src/data/fusions.js';
 import { BEHAVIORS } from '../src/behaviors/index.js';
 import { VERSION } from '../src/version.js';
 

@@ -17,7 +17,7 @@ export default {
     inst.cd = 0.4;
     inst.picked = new Array(12).fill(0);   // uids already struck this volley
     inst.nPicked = 0;
-    inst.fam = null;                       // Familiars: the hounds (graft hook)
+    inst.fam = null;                       // Familiars: the hounds (fusion hook)
   },
 
   draw(inst, ctx, run) {
@@ -38,7 +38,7 @@ export default {
   },
 
   update(inst, dt, run) {
-    const fam = inst.graft && inst.graft.hooks.familiars;
+    const fam = inst.fusion && inst.fusion.hooks.familiars;
     if (fam) familiarStep(inst, dt, run, fam);
     inst.cd -= dt;
     if (inst.cd > 0) return;
@@ -95,7 +95,7 @@ function picked(inst, e) {
   return false;
 }
 
-// Familiars (graft hook): hounds that hover around the player and each cast a small bolt on a timer.
+// Familiars (fusion hook): hounds that hover around the player and each cast a small bolt on a timer.
 function familiarStep(inst, dt, run, fam) {
   const p = run.player;
   const w = run.world;

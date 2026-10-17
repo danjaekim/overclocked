@@ -199,3 +199,10 @@ test('index.html links the manifest and apple icon; the service worker is regist
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.ok(main.includes("serviceWorker.register('./sw.js'"), 'main.js registers the worker');
 });
+
+test('saves from before the graft-to-fusion rename still load: discovered masterworks and history lines', () => {
+  const old = { discovered: { grafts: ['mw_a', 'mw_b'] }, history: [{ t: 1, cls: 'archer', won: true, time: 600, kills: 5, level: 3, grafts: [['a', 'b', 'c', 'Old Name']] }] };
+  const out = normalize(old);
+  assert.deepEqual(out.discovered.fusions, ['mw_a', 'mw_b']);
+  assert.equal(out.history[0].fusions[0][3], 'Old Name');
+});

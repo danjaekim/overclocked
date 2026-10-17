@@ -1,4 +1,4 @@
-// M35b: graft payload audit. The Saws payload was nearly invisible (a 0.27 s yellow dash, ~4% of a slam's
+// M35b: fusion payload audit. The Saws payload was nearly invisible (a 0.27 s yellow dash, ~4% of a slam's
 // damage); it is now two real hopping saw discs. Shards got the same visual treatment.
 // tools/payload-audit.mjs measures every payload's share of the damage dealt.
 
@@ -7,7 +7,7 @@ import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
 import { PAYLOAD_FX } from '../src/effects/payloads.js';
-import { PAYLOADS } from '../src/data/grafts.js';
+import { PAYLOADS } from '../src/data/fusions.js';
 import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
@@ -17,7 +17,7 @@ function crowd(hostId, payload, ticks, pin = true) {
   run.player.weapons.length = 0;
   run.director.update = () => {};
   const h = addWeapon(run, hostId);
-  if (payload) h.graft = { id: 'echo', name: 't', desc: '', donorId: 'x', tags: [], triggers: [], payload, elements: [], light: false, hooks: {} };
+  if (payload) h.fusion = { id: 'echo', name: 't', desc: '', donorId: 'x', tags: [], triggers: [], payload, elements: [], light: false, hooks: {} };
   const homes = [];
   for (let k = 0; k < 14; k++) {
     const a = k * 0.9;
@@ -66,7 +66,7 @@ test('m35b: Shards are drawn as shards (look 2) and pierce', () => {
 
 test('m35b: a payload shot never leaves a stale look on a reused projectile', () => {
   const run = crowd('quakebreaker', 'saw', 60 * 4);
-  for (const p of run.world.projectiles.active) assert.ok(p.look === 1 || p.look === 0 || p.look === 2 || p.look === 4);   // 4: a graft volley's arrow (M44b)
+  for (const p of run.world.projectiles.active) assert.ok(p.look === 1 || p.look === 0 || p.look === 2 || p.look === 4);   // 4: a fusion volley's arrow (M44b)
   const w = run.world.projectiles;
   for (const p of [...w.active]) w.release(p);
   const e = run.world.enemies.active[0];

@@ -22,9 +22,9 @@ Contents
 Dan, 2026-10-16: *"I usually end up with a surplus of starsteel by the end of a run. I'd like to
 brainstorm other uses for this currency. Could it be used to empower or alter weapons?"* and, on the
 plan: *"Consider multiple enhance levels or variable number of levels per starsteel since it's such a rare
-resource. Also will starforge be possible on any weapon including evos and grafts?"*
+resource. Also will starforge be possible on any weapon including evos and fusions?"*
 
-Today starsteel has two uses: evolutions (1 each, 22 recipes) and grafts (1 each, once per weapon).
+Today starsteel has two uses: evolutions (1 each, 22 recipes) and fusions (1 each, once per weapon).
 Both run out early, so the rest piles up. Two new sinks:
 
 - **Star Quench** (M39): starsteel buys guaranteed enhance attempts, so the enhance track past +10 is
@@ -43,7 +43,7 @@ From `node tools/bench.mjs --bots --seeds 20` (6 classes, winning runs; the metr
 
 - Starsteel: about 9 elites per run (the first always drops 1, later ones 50%) plus the boss's 2 at 5:00.
   The first arrives around 2:20. Every class earns 6.2 to 6.9.
-- Bots spend only about 1.4 (they rarely evolve). A person doing 2–3 evolutions and one graft spends
+- Bots spend only about 1.4 (they rarely evolve). A person doing 2–3 evolutions and one fusion spends
   3–4, so the **realistic surplus is about 3**.
 - Bots also end with 150–380 iron unspent, so iron is in surplus too.
 
@@ -109,7 +109,7 @@ What that costs:
 **Details.**
 - Charges stay on the weapon until used (no expiry). They show as cyan pips on its forge card.
 - A temper pick at +5 or +10 still has to be made before the next attempt (as today).
-- Evolving keeps enhance, so it keeps charges. A graft adds the donor's charges to the host. Salvage
+- Evolving keeps enhance, so it keeps charges. A fusion adds the donor's charges to the host. Salvage
   loses them (the forge warns).
 - Data: a `QUENCH` table in `data/forge.js` (`cost: 1`, `bands: [[4, 3], [10, 2], [13, 1]]`). Rules in
   `game/forge.js` (`canQuench`, `quench`, and `enhance` reads `inst.quench`). `inst.quench` is a plain
@@ -126,7 +126,7 @@ weapon per run. Check the late screen-clear fraction (M38 `late` metric) and win
 **[bench]**; if +15 is too strong, trim the breakpoint, not the Quench price.
 
 - Tests: band lookup at each edge (+3, +4, +9, +10, +12, +13, +14, +15); a charged attempt always
-  succeeds and never downgrades at any rng; charges carry through evolve and graft, are lost on salvage;
+  succeeds and never downgrades at any rng; charges carry through evolve and fusion, are lost on salvage;
   snapshot round-trip keeps charges.
 - Done when: tests pass, the bench shows how often bots reach +15, and the forge panel is checked on a
   phone-sized screen.
@@ -137,19 +137,19 @@ weapon per run. Check the late screen-clear fraction (M38 `late` metric) and win
 at its max weapon level (8 for base weapons, 6 for evolutions).
 
 **Effect.** One mutation that changes how the weapon plays, keyed to its **behavior**: 15 behaviors
-cover all 36 weapons, base, evolved and grafted. Every mutation must be visible: it draws in the
+cover all 36 weapons, base, evolved and fused. Every mutation must be visible: it draws in the
 starsteel cyan (`#7fe9ff`) and the weapon's HUD and forge icons gain a small star.
 
 **Pricing.** With about 3 spare, a typical run picks one of: one Starforge and one Quench; three
-Quenches (one weapon to +15); more evolutions; or two Starforges by skipping a graft. At 1 starsteel
+Quenches (one weapon to +15); more evolutions; or two Starforges by skipping a fusion. At 1 starsteel
 everything gets starred; at 3, most runs cannot afford one.
 
-**Evolutions, grafts and salvage** (built in M40, since starred weapons will evolve and graft):
+**Evolutions, fusions and salvage** (built in M40, since starred weapons will evolve and fusion):
 - Evolving a Starforged weapon keeps the star. The mutation follows the new behavior. Three recipes
   change behavior: Rending Axe (arc) → Whirlwind Cleaver (aura), Halo (pulse) → Judgement (judge), and
   Cinder Ward (aura) + Rime Orbs → Vapor Wheel (trail). Starsteel is never wasted.
-- Grafts: the host keeps its behavior, so a starred host keeps its mutation. A starred donor grafted
-  into an unstarred host passes its star on. If both are starred, the donor's star is lost; the graft
+- Fusions: the host keeps its behavior, so a starred host keeps its mutation. A starred donor fused
+  into an unstarred host passes its star on. If both are starred, the donor's star is lost; the fusion
   screen warns first.
 - Salvage: no refund (the forge warns), so a star cannot be sold back for value.
 
@@ -168,7 +168,7 @@ everything gets starred; at 3, most runs cannot afford one.
 - Rules: `game/starforge.js` (`canStarforge`, `starforge`, `starOf(inst)`). `inst.star` is a
   boolean; the mutation is looked up from the weapon's current behavior, so evolution needs no
   migration.
-- Behaviors read `inst.star` and their `MUTATIONS` entry (the same pattern as graft `hooks`).
+- Behaviors read `inst.star` and their `MUTATIONS` entry (the same pattern as fusion `hooks`).
 - UI: a Starforge panel at the forge listing eligible weapons and showing the mutation text. The
   compendium entry for each behavior's weapons shows its star mutation.
 - Bench bot: Starforges its best weapon once it is at max level and it has 2 spare starsteel.
@@ -207,7 +207,7 @@ everything gets starred; at 3, most runs cannot afford one.
 **Balance pass.** Bench all 15 mutations with `--builds` (crowd clear and boss duel, starred against
 unstarred) and `--bots` (win rate and late screen-clear fraction). Target: a Starforge is worth about
 20–40% more crowd damage on its weapon, and no mutation is more than 2x the median. A Starforged
-masterwork graft at +15 is the strongest combination in the game; check it is not run-breaking.
+masterwork fusion at +15 is the strongest combination in the game; check it is not run-breaking.
 
 - Done when: all 15 mutations ship, the bench table is in `docs/architecture.md`, and outliers are trimmed.
 
@@ -226,6 +226,6 @@ masterwork graft at +15 is the strongest combination in the game; check it is no
 - Star Quench charges come in variable amounts per starsteel because a guarantee is worth 1 iron at +4
   and over 4,000 at +14.
 - Starforge is keyed to behavior, not weapon: 15 mutations instead of 36, and it works on evolutions and
-  grafts with no extra content.
+  fusions with no extra content.
 - Open: whether luck should also affect Quench (for example, a chance of a bonus charge). Left out for
   now.

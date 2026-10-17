@@ -5,8 +5,8 @@ import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
-import { graft } from '../src/game/graft.js';
-import { MASTERWORKS } from '../src/data/grafts.js';
+import { fuse } from '../src/game/fusion.js';
+import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { buildEntries } from '../src/game/compendium.js';
 import { PERKS } from '../src/data/perks.js';
@@ -38,14 +38,14 @@ const make = (m) => {
   const h = addWeapon(run, m.host);
   while (h.level < 4 && canLevelUp(h)) levelUpWeapon(run, h);
   const d = addWeapon(run, m.donor);
-  const r = graft(run, h, d);
+  const r = fuse(run, h, d);
   assert.ok(r.ok && r.masterwork && r.masterwork.id === m.id, m.id);
   return { run, h };
 };
 
 test('version bumped', () => assert.ok(/^0\.(33\.[1-9]|3[4-9]\.|[4-9]\d\.)/.test(VERSION), VERSION));
 
-test('every masterwork grafts, runs 6 s in a crowd, and deals more than its host alone', () => {
+test('every masterwork fusions, runs 6 s in a crowd, and deals more than its host alone', () => {
   for (const m of MASTERWORKS) {
     const alone = newRun();
     const a = addWeapon(alone, m.host);
@@ -104,11 +104,11 @@ test('Bladestorm flings blades on every spin; Hellhounds wear a wider aura', () 
   assert.ok(MASTERWORKS.find((x) => x.id === 'hellhounds').hooks.minionAura.radius >= 46);
 });
 
-test('text: Echo Strike mentions slams; the Grafts tab names the new shapes; masterwork text mentions no arc for the slam hosts', () => {
+test('text: Echo Strike mentions slams; the Fusions tab names the new shapes; masterwork text mentions no arc for the slam hosts', () => {
   assert.match(PERKS.echo_strike.desc, /slam/);
   const gm = MASTERWORKS.find((x) => x.id === 'glacier_maul');
   assert.ok(!/arc\b/.test(gm.desc) && WEAPONS[gm.host].behavior === 'slam');
-  const lines = buildEntries({ grafts: MASTERWORKS.map((x) => x.id) }).filter((e) => e.tab === 'grafts').flatMap((e) => e.lines).join(' ');
+  const lines = buildEntries({ fusions: MASTERWORKS.map((x) => x.id) }).filter((e) => e.tab === 'fusions').flatMap((e) => e.lines).join(' ');
   assert.match(lines, /Planted rod/);
   assert.match(lines, /Slam/);
 });

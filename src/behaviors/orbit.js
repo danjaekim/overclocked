@@ -38,10 +38,10 @@ export default {
     inst.angle = (inst.angle + param(run, inst, 'speed') * dt) % TAU;
     const star = activeMutation(inst);
     if (star) inst.pair = (inst.pair + star.spin * dt) % TAU;
-    const launch = inst.graft && inst.graft.hooks.launch;
+    const launch = inst.fusion && inst.fusion.hooks.launch;
     if (launch) launchStep(inst, dt, run, launch, count);
 
-    // Attack triggers (graft echoes) keep the old once-per-tick rhythm.
+    // Attack triggers (fusion echoes) keep the old once-per-tick rhythm.
     const every = inst.def.base.tickEvery * param(run, inst, 'cooldown');
     inst.tick -= dt;
     if (inst.tick <= 0) {
@@ -129,11 +129,11 @@ export default {
 
 // Current distance of the blades from the player (the orbit radius, or further out mid-launch).
 function launchRadius(inst) {
-  const l = inst.graft && inst.graft.hooks.launch;
+  const l = inst.fusion && inst.fusion.hooks.launch;
   return l ? inst.orbitR + (l.dist - inst.orbitR) * inst.launchU : inst.orbitR;
 }
 
-// Spear Wheel (graft hook): every `every` seconds the blades shoot out to `dist` and come back. They
+// Spear Wheel (fusion hook): every `every` seconds the blades shoot out to `dist` and come back. They
 // cut everything they pass, once per leg, checked every frame so a fast blade skips nothing.
 function launchStep(inst, dt, run, l, count) {
   const p = run.player;

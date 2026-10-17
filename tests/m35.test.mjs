@@ -4,7 +4,7 @@
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { addWeapon } from '../src/game/weapons.js';
-import { graft } from '../src/game/graft.js';
+import { fuse } from '../src/game/fusion.js';
 import { RUN_EVENTS } from '../src/game/run-events.js';
 import { snapshotRun, restoreRun, SNAPSHOT_FORMAT } from '../src/game/run-snapshot.js';
 import { createRunSave } from '../src/save/run-save.js';
@@ -69,7 +69,7 @@ test('m35: every weapon, all three classes, a long run (5 min): enemies, pickups
   }
 });
 
-test('m35: masterwork and generic grafts, a boss and elites in play restore exactly', () => {
+test('m35: masterwork and generic fusions, a boss and elites in play restore exactly', () => {
   const a = newRun(21);
   a.player.weapons.length = 0;
   a.starsteel = 9;
@@ -77,15 +77,15 @@ test('m35: masterwork and generic grafts, a boss and elites in play restore exac
   const donor = addWeapon(a, 'radiant_halo');
   const other = addWeapon(a, 'tempest');
   const donor2 = addWeapon(a, 'thunder_lance');
-  assert.ok(graft(a, host, donor).masterwork);
-  assert.ok(graft(a, other, donor2).ok);
+  assert.ok(fuse(a, host, donor).masterwork);
+  assert.ok(fuse(a, other, donor2).ok);
   play(a, 90 * 60);
   RUN_EVENTS.boss(a, { enemy: 'warlord' });
   RUN_EVENTS.elite(a, { enemy: 'brute' });
   play(a, 600, 90 * 60);
   assert.ok(a.bossAlive || a.world.enemies.count > 0);
   const b = assertContinues(a, 900, 90 * 60 + 600);
-  assert.equal(b.grafts.length, 2);
+  assert.equal(b.fusions.length, 2);
   assert.ok(b.player.weapons.every((w) => w.def === a.player.weapons.find((x) => x.weaponId === w.weaponId).def), 'defs are the shipped data, not copies');
 });
 

@@ -55,7 +55,7 @@
     .overlay.title > :last-child { margin-bottom: auto; }
     .overlay.title .btn { min-height: 48px; }
     .overlay.title .ver { margin: 4px 0 0; font-size: 12px; color: var(--dim); opacity: 0.7; letter-spacing: 0.05em; }
-    /* Results can be taller than the screen (grafts, titles, the damage breakdown): scroll, with the buttons pinned. */
+    /* Results can be taller than the screen (fusions, titles, the damage breakdown): scroll, with the buttons pinned. */
     .overlay.results { justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0; }
     .overlay.results > :first-child { margin-top: auto; }
     .overlay.results .rbar { position: sticky; bottom: 0; align-self: stretch; margin: auto -24px 0; padding: 12px 24px calc(env(safe-area-inset-bottom) + 14px); display: flex; flex-direction: column; align-items: center; gap: 8px; background: linear-gradient(to bottom, rgba(10, 11, 16, 0), rgba(10, 11, 16, 0.96) 22%); }
@@ -80,7 +80,7 @@
     @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateY(-70px); opacity: 0; } }
     @keyframes glowpulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
     @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-    @media (prefers-reduced-motion: reduce) { .ember, .glow, .rscene .gem, .ftab.graft.ready { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .ember, .glow, .rscene .gem, .ftab.fusion.ready { animation: none; } }
     .btn {
       min-width: 220px; min-height: 56px; padding: 0 24px;
       font: inherit; font-size: 18px; font-weight: 600; color: var(--ink);
@@ -179,17 +179,17 @@
     .ftabs { display: flex; gap: 6px; width: 100%; max-width: 400px; }
     .ftab { flex: 1; min-height: 44px; font: inherit; font-size: 15px; font-weight: 700; color: var(--dim); background: #171923; border: 1px solid #2c2f3d; border-radius: 10px; touch-action: manipulation; }
     .ftab.on { color: var(--ink); background: #252838; border-color: #5a6080; }
-    .ftab.graft.ready { color: #ffd34d; border-color: #ffd34d; animation: fpulse 1.6s ease-in-out infinite; }
-    .ftab.graft.ready.on { animation: none; background: rgba(255, 211, 77, 0.12); }
+    .ftab.fusion.ready { color: #ffd34d; border-color: #ffd34d; animation: fpulse 1.6s ease-in-out infinite; }
+    .ftab.fusion.ready.on { animation: none; background: rgba(255, 211, 77, 0.12); }
     .fbadge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: #ffd34d; color: #1d1713; font-size: 12px; font-style: normal; line-height: 18px; }
     .fdot { display: inline-block; width: 8px; height: 8px; margin-left: 4px; border-radius: 50%; background: #ffb45e; vertical-align: middle; }
     @keyframes fpulse { 50% { box-shadow: 0 0 10px rgba(255, 211, 77, 0.55); } }
     .fgnone { margin: 8px 0; font-size: 13px; color: var(--dim); }
-    .rgrafts p { margin: 0 0 4px; } .rg-from { display: block; font-size: 12px; font-weight: 500; color: var(--dim); }
-    .fgraft { font-size: 11px; color: #ffd34d; margin: 2px 0 4px; }
-    .fgraft-panel { margin: 4px 0; text-align: left; }
+    .rfusions p { margin: 0 0 4px; } .rg-from { display: block; font-size: 12px; font-weight: 500; color: var(--dim); }
+    .ffusion { font-size: 11px; color: #ffd34d; margin: 2px 0 4px; }
+    .ffusion-panel { margin: 4px 0; text-align: left; }
     .fgopt .fbtn { width: 100%; }
-    .fgraft-panel h3 { margin: 0 0 2px; font-size: 15px; color: #ffd34d; }
+    .ffusion-panel h3 { margin: 0 0 2px; font-size: 15px; color: #ffd34d; }
     .fghint { margin: 0 0 6px; font-size: 12px; color: var(--dim); }
     .fgopt { border: 1px solid #4a4538; border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; background: rgba(255,255,255,0.03); }
     .fgopt.master { border-color: #ffd34d; background: rgba(255, 211, 77, 0.07); }

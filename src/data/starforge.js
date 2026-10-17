@@ -1,6 +1,6 @@
 // Starforge (M40+, docs/design-m39-m42.md): spend starsteel to give a weapon at its maximum level ONE
 // mutation that changes how it plays. A mutation belongs to a BEHAVIOR, not a weapon, so it works on
-// base weapons, evolutions and grafted weapons alike, and a star survives evolving (the mutation follows
+// base weapons, evolutions and fused weapons alike, and a star survives evolving (the mutation follows
 // the weapon's current behavior). Data only; rules in game/starforge.js, effects in the behaviors.
 // Every mutation is drawn in STARFORGE.color so it reads on screen.
 

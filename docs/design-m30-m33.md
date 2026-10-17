@@ -1,4 +1,4 @@
-# Design spec: M30–M33 (graft payloads, distinct weapon shapes)
+# Design spec: M30–M33 (fusion payloads, distinct weapon shapes)
 
 Written 2026-10-14 after M29 (v0.29.4). This file is a **plan**. The source of truth stays
 `docs/architecture.md`, and each implementing commit updates it as usual. Every number here is a first
@@ -7,7 +7,7 @@ guess; anything marked **[bench]** is tuned with `node tools/bench.mjs` before a
 Contents
 1. Why: what is wrong today
 2. Shape, not element: the principle
-3. M30: graft payloads (replace the generic echo)
+3. M30: fusion payloads (replace the generic echo)
 4. M31: Frost Wake and Halo Pulse (trail and pulse shapes)
 5. M32: Slam, Chain Lightning, Lightning Rod (three more shapes)
 6. M33: Chakram branches and masterwork review
@@ -21,7 +21,7 @@ Contents
 Dan, 2026-10-14: *"Spirit Blades vs. Rime Orbs and Cinder Ward vs. Halo ... from a gameplay and visual
 standpoint they look identical. I want the weapons to feel different and for evolutions and
 combinations to feel interesting and novel. ... the generic combos where every x attacks it'll trigger
-the grafted weapon feels a little weak and uninspired. I'd prefer if every attack has the combined
+the fused weapon feels a little weak and uninspired. I'd prefer if every attack has the combined
 effect or something more noticeable/tangible."*
 
 The 33 weapons fall into a few shapes, and 5 of the 14 starters are recolours of another starter:
@@ -37,7 +37,7 @@ The 33 weapons fall into a few shapes, and 5 of the 14 starters are recolours of
 
 **Bold** = the starter that gets a new shape in M31/M32.
 
-The generic graft is a net loss: it destroys an evolved weapon and gives back that weapon's attack on
+The generic fusion is a net loss: it destroys an evolved weapon and gives back that weapon's attack on
 every 3rd host attack at 50% (about 17% of what was consumed). One cast every few seconds is also hard
 to see on a crowded screen.
 
@@ -49,10 +49,10 @@ So:
 - No two starters share a behavior. After M32 every starter has its own.
 - An evolution can share its starter's behavior (it is that weapon, grown up), but no two evolutions
   should look the same on screen. Branches add a mechanic, not just numbers.
-- A graft keeps the host's shape and adds the donor's **payload** on every attack (§3), so the donor's
+- A fusion keeps the host's shape and adds the donor's **payload** on every attack (§3), so the donor's
   shape is visible in the result.
 
-## 3. M30: graft payloads (replace the generic echo)
+## 3. M30: fusion payloads (replace the generic echo)
 
 ### 3.1 The rule
 
@@ -62,17 +62,17 @@ The host decides **where and when** it hits. The donor decides **what happens wh
   `attackTriggers`, `game/triggers.js`).
 - The **first enemy that attack hits** fires the payload at that enemy, then it disarms. So every attack
   carries the payload once, whatever the shape (a 12-arrow volley still fires one payload, not 12).
-- Floor: at most one payload per weapon per `GRAFT.payloadMinGap` (0.15 s), so fast auras and orbits
+- Floor: at most one payload per weapon per `FUSION.payloadMinGap` (0.15 s), so fast auras and orbits
   cannot spam it.
-- Payload damage = `GRAFT.payloadFrac[shape]` x the host's current per-hit damage
+- Payload damage = `FUSION.payloadFrac[shape]` x the host's current per-hit damage
   (`param(run, src, 'damage')`), so it scales with the host's levels, enhances and the player's stats.
-  It is queued as `KIND_PROC` at `depth + 1` with its own damage cause (`Graft`), so it shows in the
+  It is queued as `KIND_PROC` at `depth + 1` with its own damage cause (`Fusion`), so it shows in the
   results breakdown and cannot start an endless chain.
 - Element: the donor's element tags still move to the host (as today). Payload hits roll statuses as
   normal PROC hits.
 
-Replaces: `GRAFT.echoEvery`, `GRAFT.echoFrac` and the `cast` effect (`effects/index.js`), which only the
-generic graft uses. Masterworks are unchanged.
+Replaces: `FUSION.echoEvery`, `FUSION.echoFrac` and the `cast` effect (`effects/index.js`), which only the
+generic fusion uses. Masterworks are unchanged.
 
 ### 3.2 Payload per donor shape
 
@@ -98,8 +98,8 @@ wherever possible. Numbers are **[bench]**.
 | chain (M32) | `arc` | as bolt, but 2 jumps | 0.45 | |
 | rod (M32) | `spark` | plants a mini rod for 1.2 s that zaps 1 enemy within 90 every 0.4 s | 0.3 per zap | |
 
-Data: `data/grafts.js` gets `PAYLOADS = { [behavior]: { id, effect, params, name } }` (the table above)
-and `GRAFT.payloadFrac` folds into each entry's params. `validate.js` checks every behavior in
+Data: `data/fusions.js` gets `PAYLOADS = { [behavior]: { id, effect, params, name } }` (the table above)
+and `FUSION.payloadFrac` folds into each entry's params. `validate.js` checks every behavior in
 `BEHAVIORS` has a payload, so a new shape cannot ship without one.
 
 ### 3.3 Naming and text
@@ -108,14 +108,14 @@ and `GRAFT.payloadFrac` folds into each entry's params. `validate.js` checks eve
   (e.g. "Colossus Maul of Shrapnel", "Judgement of Hounds").
 - Description (forge card, Compendium): one plain sentence, e.g. *"Every attack's first hit bursts into
   6 ice shards (30% damage each)."* Built from the payload entry, not hand-written per pair.
-- The Compendium Grafts tab's rules entry is rewritten to describe payloads, with the table above as a
+- The Compendium Fusions tab's rules entry is rewritten to describe payloads, with the table above as a
   list (shape -> what it adds).
 
 ### 3.4 Value target **[bench]**
 
-New bench section `--grafts`: for each evolved host, crowd-clear DPS alone vs with each donor's payload.
-Target: a generic graft adds **+35% to +60%** to the host's crowd DPS. (The donor's slot is freed, so
-the graft does not need to replace all of the donor's damage.) Masterworks should land above the generic
+New bench section `--fusions`: for each evolved host, crowd-clear DPS alone vs with each donor's payload.
+Target: a generic fusion adds **+35% to +60%** to the host's crowd DPS. (The donor's slot is freed, so
+the fusion does not need to replace all of the donor's damage.) Masterworks should land above the generic
 range for their pair; if one does not, note it for M33.
 
 ### 3.5 Tests (`tests/m30.test.mjs`)
@@ -125,9 +125,9 @@ range for their pair; if one does not, note it for M33.
   fires again; the min gap holds for an aura ticking every 0.1 s.
 - Each payload id hits an enemy next to the target and not one far away; sub-projectiles do not fire
   payloads.
-- Payload damage scales with the host's damage stat; cause `Graft` appears in `run-stats`.
+- Payload damage scales with the host's damage stat; cause `Fusion` appears in `run-stats`.
 - A masterwork pair still gets the masterwork (no payload).
-- History/results still show generic grafts (the stored id becomes `payload:<id>`).
+- History/results still show generic fusions (the stored id becomes `payload:<id>`).
 
 Version: v0.30.x.
 
@@ -145,7 +145,7 @@ Weapon **ids stay the same** (saves, history, recipes and tests use them); names
   Level-ups: damage, longer patches, wider patches, chill stacks. `range` is unused; `area` scales
   patch radius.
 - **Visual:** pale blue frost discs that fade out, with a few sparkles; frozen enemies on it glint.
-- **Fusion:** Vapor Wheel (Cinder Ward + Rime Orbs) becomes **Steam Wake** (`trail`): the trail burns
+- **Combo:** Vapor Wheel (Cinder Ward + Rime Orbs) becomes **Steam Wake** (`trail`): the trail burns
   *and* chills, so Quench (perk) fires on its own. Keep the id `vapor_wheel`.
 - **Payload** (as a donor, after evolving into Steam Wake): `frost_step` (§3.2).
 
@@ -194,7 +194,7 @@ Version: v0.31.x.
 - **Mechanics:** first target = nearest in range; then up to `chains` (base 4) jumps within 140 each,
   -12% damage per jump, never the same enemy twice, shocks each. Uses `addArc` for the visual; stat
   `chains` from perks adds jumps. Level-ups: +1 jump twice, damage, cooldown, jump range.
-- **Fusion:** Stormshell Mortar (Cinder Mortar + Static Rod) unchanged.
+- **Combo:** Stormshell Mortar (Cinder Mortar + Static Rod) unchanged.
 - **Payload:** `arc` (2 jumps).
 
 ### 5.3 Storm Javelin -> **Lightning Rod** (new behavior `rod`)
@@ -205,7 +205,7 @@ Version: v0.31.x.
   becomes a hazard `ROD` (radius 100, ttl 3, zaps 2 enemies every 0.5 s for 40%, shocks). At most 3
   rods per weapon (the oldest goes). Level-ups: damage, +1 rod alive, zap radius, longer rods.
 - **Evolutions:** Thunder Lance -> twin javelins that plant twin rods, and rods arc to each other
-  (a damaging line between rods within 160, like Wrath's net). Stormfrost Lance (fusion) -> rods that
+  (a damaging line between rods within 160, like Wrath's net). Stormfrost Lance (combo) -> rods that
   also chill everything in the radius every second.
 - **Masterworks:** Spear Wheel (blades launch outward) and Wrath (pillars net to each other) use
   Thunder Lance as donor only through hooks; check both still work.
@@ -247,7 +247,7 @@ build) 2-3 new masterworks that show off the new shapes, for example:
 ### 6.2a Review results (M33b, v0.33.1)
 
 `node tools/masterwork-review.mjs` compares each masterwork with its host alone, with both weapons kept
-(no graft), and with the generic payload graft for the same pair. Ring = dps against 24 pinned dummies
+(no fusion), and with the generic payload fusion for the same pair. Ring = dps against 24 pinned dummies
 (inflated for freeze-shatter effects, whose dummies never die); horde = kills in a 30 s walking horde.
 
 | Masterwork | Before (ring / horde vs generic) | Change | After (ring MW vs generic, horde MW vs generic) |
@@ -266,13 +266,13 @@ build) 2-3 new masterworks that show off the new shapes, for example:
 | Familiars | **+9% vs +38%**, 187 vs 209 | hounds cast every 1.2 s (was 2) at 100% (was 60%), and each bolt strikes 2 enemies (`targets`) | +64% vs +38%, 245 vs 209 |
 
 All twelve read on screen (screenshots in the M33b report). Echo Strike and the Twin affix now say they
-add a slam; the Compendium's Grafts tab calls the rod shape "Planted rod" and the projectile shape "Arrow".
+add a slam; the Compendium's Fusions tab calls the rod shape "Planted rod" and the projectile shape "Arrow".
 
 ### 6.2b New masterworks (proposed in M33b, built in M34 / v0.34.0 with Stormspire = Thunder Lance + Tempest)
 
 The suggested Stormspire (Thunder Lance + Chain Lightning) cannot exist: Chain Lightning has no evolution,
-so it can never be grafted. Meteor Hammer (slam + mortar shells) repeats Thunderscythe and Fault Line.
-Three that use the new shapes and only weapons that can be grafted:
+so it can never be fused. Meteor Hammer (slam + mortar shells) repeats Thunderscythe and Fault Line.
+Three that use the new shapes and only weapons that can be fused:
 
 1. **Aurora Wake** (host Steam Wake, donor Radiant Pulse). Every 4th patch of your trail is a beacon that
    sends out two small rings of light, and every patch blesses what stands in it. The wake already burns
@@ -284,7 +284,7 @@ Three that use the new shapes and only weapons that can be grafted:
    struck; rods within reach link with Thunder Lance's lightning, so the saw's zig-zag path becomes a
    lightning fence for a moment. Shows: bounce + rod links.
 
-Also worth deciding: give Chain Lightning an evolution so the chain shape can take part in grafts.
+Also worth deciding: give Chain Lightning an evolution so the chain shape can take part in fusions.
 (Done in M33c, v0.33.2: **Tempest**, a branching chain. That opens a Stormspire-style pair again, e.g.
 Thunder Lance + Tempest: every rod zap starts a small fork.)
 
@@ -313,7 +313,7 @@ Version: v0.33.x.
 
 ## 8. Decisions
 
-Dan, 2026-10-14: go with graft payloads first, then the five shape changes, then Chakram and the
+Dan, 2026-10-14: go with fusion payloads first, then the five shape changes, then Chakram and the
 masterwork review. Sonnet implements; this spec is the brief.
 
 Open, to settle in playtest:

@@ -7,7 +7,7 @@ import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
-import { SHAPE_PAYLOAD } from '../src/data/grafts.js';
+import { SHAPE_PAYLOAD } from '../src/data/fusions.js';
 import { BEHAVIORS } from '../src/behaviors/index.js';
 import { stagger } from '../src/systems/status.js';
 import { VERSION } from '../src/version.js';
@@ -166,7 +166,7 @@ test('thunder lance rods link and hurt what stands on the line; stormfrost rods 
   assert.ok(dealt(mid) >= 0);
 });
 
-test('grafting a slam or rod donor gives the quake and spark payloads', () => {
+test('fusing a slam or rod donor gives the quake and spark payloads', () => {
   assert.equal(SHAPE_PAYLOAD[WEAPONS.colossus_maul.behavior], 'quake');
   assert.equal(SHAPE_PAYLOAD[WEAPONS.thunder_lance.behavior], 'spark');
   assert.equal(SHAPE_PAYLOAD[WEAPONS.static_rod.behavior], 'arc2');

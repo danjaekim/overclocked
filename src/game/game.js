@@ -283,8 +283,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     input.reset();
     showForge(overlays, run, {
       sfx,
-      onGraft(res) {                                           // a masterwork found for the first time gets a banner
-        if (res.masterwork && save.discoverGraft(res.masterwork.id)) {
+      onFusion(res) {                                           // a masterwork found for the first time gets a banner
+        if (res.masterwork && save.discoverFusion(res.masterwork.id)) {
           run.toast = { text: `Masterwork discovered: ${res.name}!`, ttl: 4.5 };
           sfx('evolve');
         }

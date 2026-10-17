@@ -14,12 +14,12 @@ import { PERKS } from '../data/perks.js';
 import { markGone } from './run-stats.js';
 import { hasTitle } from './titles.js';
 
-// Recipes this weapon takes part in: as the weapon that evolves, or (fusions) as the partner.
+// Recipes this weapon takes part in: as the weapon that evolves, or (combos) as the partner.
 export function recipesFor(inst) {
   return EVOLUTIONS.filter((r) => r.from === inst.weaponId || r.with === inst.weaponId);
 }
 
-// The instances a recipe works on: a is the `from` weapon, b the fusion partner (null otherwise).
+// The instances a recipe works on: a is the `from` weapon, b the combo partner (null otherwise).
 // Either is null when you don't own it.
 export function pair(run, recipe) {
   const ws = run.player.weapons;
@@ -65,7 +65,7 @@ function holds(run, inst, req, recipe) {
 // [{ text, ok }] for each requirement, for the forge UI.
 export function checklist(run, inst, recipe) {
   const list = recipe.requires.map((req) => ({ text: describe(req, recipe), ok: holds(run, inst, req, recipe) }));
-  if (recipe.with) {                                   // a fusion also needs both weapons in hand
+  if (recipe.with) {                                   // a combo also needs both weapons in hand
     const { a, b } = pair(run, recipe);
     list.unshift({ text: `Own ${WEAPONS[recipe.from].name} and ${WEAPONS[recipe.with].name}`, ok: !!a && !!b });
   }
@@ -89,7 +89,7 @@ export function evolve(run, clicked, recipe) {
   if (!canEvolve(run, clicked, recipe)) return { ok: false };
   const { a: inst, b: partner } = pair(run, recipe);
   for (const req of recipe.requires) if (req.starsteel !== undefined) run.starsteel -= req.starsteel;
-  if (partner) {                                       // fusion: the partner is consumed
+  if (partner) {                                       // combo: the partner is consumed
     const p = run.player;
     inst.star = inst.star || !!partner.star;
     inst.quench = (inst.quench || 0) + (partner.quench || 0);          // its Quench charges are kept

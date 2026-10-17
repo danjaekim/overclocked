@@ -107,7 +107,7 @@ export function syncTags(run, inst) {
   const tags = [];
   for (const id of inst.affixes) for (const t of AFFIXES[id].addTags || []) tags.push(t);
   for (const t of Object.values(inst.tempers)) for (const x of t.addTags || []) tags.push(x);
-  if (inst.graft) tags.push(...inst.graft.tags);                 // the donor's elements
+  if (inst.fusion) tags.push(...inst.fusion.tags);                 // the donor's elements
   inst.addTags = [...new Set(tags)];
   inst.tags = instanceTagSet(inst);
   refreshResonance(run);
@@ -178,7 +178,7 @@ export function eligibleAffixes(inst) {
 export function rebuildAffixes(run, inst) {
   const stats = run.player.stats;
   stats.removeBySource(`forge:${inst.instanceId}:affix:`);
-  inst.extraTriggers = inst.graft ? [...inst.graft.triggers] : [];     // a graft's triggers survive a reforge
+  inst.extraTriggers = inst.fusion ? [...inst.fusion.triggers] : [];     // a fusion's triggers survive a reforge
   for (const id of inst.affixes) {
     const a = AFFIXES[id];
     for (const m of a.mods || []) stats.add({ ...m, tags: [inst.instanceTag], source: `forge:${inst.instanceId}:affix:${id}:` });

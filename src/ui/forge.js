@@ -7,8 +7,8 @@ import { mutationOf, starforgeBlocker, starforge } from '../game/starforge.js';
 import { RARITIES } from '../data/rarities.js';
 import { WEAPONS } from '../data/weapons.js';
 import { recipesFor, checklist, canEvolve, evolve } from '../game/evolution.js';
-import { graftOptions, graft } from '../game/graft.js';
-import { GRAFT } from '../data/grafts.js';
+import { fusionOptions, fuse } from '../game/fusion.js';
+import { FUSION } from '../data/fusions.js';
 import { weaponName } from '../game/weapons.js';
 import {
   enhance, enhanceCost, enhanceOdds, canEnhance, downgradeChance, quench, quenchCharges, canQuench,
@@ -23,12 +23,12 @@ function outcomeText(r) {
   return `Failed. ${r.cost} ore lost.`;
 }
 
-export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () => {} }) {
+export function showForge(overlays, run, { onDone, onFusion = () => {}, sfx = () => {} }) {
   let message = '';
   let tone = '';
   let confirming = null;                       // instanceId awaiting a second tap to salvage
-  let confirmingGraft = null;                  // 'host:donor' awaiting a second tap to graft
-  let tab = 'weapons';                         // 'weapons' | 'graft': grafting has its own tab so it is never off-screen
+  let confirmingFusion = null;                  // 'host:donor' awaiting a second tap to fuse
+  let tab = 'weapons';                         // 'weapons' | 'fusion': fusing has its own tab so it is never off-screen
   let announced = false;
 
   function weaponCard(inst) {
@@ -73,7 +73,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
       const list = checklist(run, inst, r);
       const ready = canEvolve(run, inst, r);
       return `<div class="fevo${ready ? ' ready' : ''}">
-        <div class="fevo-top"><b>${r.with ? `Fuse with ${WEAPONS[r.with === inst.weaponId ? r.from : r.with].name}` : branches && !r.with ? 'Branch' : 'Evolve'}: ${WEAPONS[r.into].name}</b></div>
+        <div class="fevo-top"><b>${r.with ? `Combine with ${WEAPONS[r.with === inst.weaponId ? r.from : r.with].name}` : branches && !r.with ? 'Branch' : 'Evolve'}: ${WEAPONS[r.into].name}</b></div>
         <div class="fevo-desc">${WEAPONS[r.into].desc}</div>
         <ul>${list.map((c) => `<li class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'} ${c.text}</li>`).join('')}</ul>
         ${branches && !r.with ? '<div class="fevo-lock">Combining locks the other branch.</div>' : ''}
@@ -83,7 +83,7 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
 
     return `<div class="fcard" style="--c:${color}">
       <div class="ftop"><b>${inst.star ? '<span class="fq">✦</span> ' : ''}${weaponName(inst)}</b><em>${charged ? `<span class="fq" title="Star Quench charges">${'◆'.repeat(Math.min(inst.quench, 9))}</span> ` : ''}Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}</em></div>
-      ${inst.graft ? `<div class="fgraft">Grafted: ${inst.graft.desc}</div>` : ''}
+      ${inst.fusion ? `<div class="ffusion">Fused: ${inst.fusion.desc}</div>` : ''}
       ${chosen || tags ? `<div class="faff">${chosen}${tags}</div>` : ''}
       ${slots}
       <div class="frow">
@@ -116,17 +116,17 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     return '';
   }
 
-  // The Graft tab: every pair of evolved weapons you could combine, masterworks first.
-  function graftOpts() {
-    return graftOptions(run).sort((a, b) => (b.preview.masterwork ? 1 : 0) - (a.preview.masterwork ? 1 : 0));
+  // The Fusion tab: every pair of evolved weapons you could combine, masterworks first.
+  function fusionOpts() {
+    return fusionOptions(run).sort((a, b) => (b.preview.masterwork ? 1 : 0) - (a.preview.masterwork ? 1 : 0));
   }
 
-  function graftPanel(opts) {
+  function fusionPanel(opts) {
     const evolved = run.player.weapons.filter((w) => w.def.rarity === 'evolved').length;
-    const head = `<p class="fghint">Merge two evolved weapons into one stronger weapon. The second is consumed, costs ${GRAFT.cost} starsteel, and a weapon can be grafted once. Starsteel ${run.starsteel}.</p>`;
+    const head = `<p class="fghint">Merge two evolved weapons into one stronger weapon. The second is consumed, costs ${FUSION.cost} starsteel, and a weapon can be fused once. Starsteel ${run.starsteel}.</p>`;
     if (!opts.length) {
-      const why = evolved < 2 ? `You have ${evolved} evolved weapon${evolved === 1 ? '' : 's'}; grafting needs two.` : run.starsteel < GRAFT.cost ? 'You need starsteel.' : 'Every evolved weapon has already been grafted, or no pair fits.';
-      return `<div class="fgraft-panel">${head}<p class="fgnone">${why}</p></div>`;
+      const why = evolved < 2 ? `You have ${evolved} evolved weapon${evolved === 1 ? '' : 's'}; fusing needs two.` : run.starsteel < FUSION.cost ? 'You need starsteel.' : 'Every evolved weapon has already been fused, or no pair fits.';
+      return `<div class="ffusion-panel">${head}<p class="fgnone">${why}</p></div>`;
     }
     const cards = opts.map((o) => {
       const key = `${o.host.instanceId}:${o.donor.instanceId}`;
@@ -134,33 +134,33 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
       return `<div class="fgopt${m ? ' master' : ''}">
         <div class="fgtop"><b>${m ? '✦ ' : ''}${o.preview.name}</b></div>
         <div class="fgdesc">${o.preview.desc}</div>
-        <div class="fgnote">${o.host.def.name} takes in ${o.donor.def.name}, which is consumed. ${GRAFT.cost} starsteel.${o.donor.star ? (o.host.star ? ' Both are starforged: only one star is kept.' : ' Its star passes to the host.') : ''}</div>
-        <button class="fbtn${confirmingGraft === key ? ' warn' : ''}" data-act="gft:${o.host.instanceId}:${o.donor.instanceId}" ${o.ok ? '' : 'disabled'}>${confirmingGraft === key ? 'Sure?' : 'Graft'}</button>
+        <div class="fgnote">${o.host.def.name} takes in ${o.donor.def.name}, which is consumed. ${FUSION.cost} starsteel.${o.donor.star ? (o.host.star ? ' Both are starforged: only one star is kept.' : ' Its star passes to the host.') : ''}</div>
+        <button class="fbtn${confirmingFusion === key ? ' warn' : ''}" data-act="gft:${o.host.instanceId}:${o.donor.instanceId}" ${o.ok ? '' : 'disabled'}>${confirmingFusion === key ? 'Sure?' : 'Fusion'}</button>
       </div>`;
     }).join('');
-    return `<div class="fgraft-panel">${head}${cards}</div>`;
+    return `<div class="ffusion-panel">${head}${cards}</div>`;
   }
 
   function render() {
     const prev = document.querySelector('.forge-list');
     const scroll = prev ? prev.scrollTop : 0;
-    const opts = graftOpts();
-    const ready = opts.filter((o) => o.ok).length;                       // grafts you can make right now
+    const opts = fusionOpts();
+    const ready = opts.filter((o) => o.ok).length;                       // fusions you can make right now
     const evoReady = run.player.weapons.some((w) => recipesFor(w).some((r) => canEvolve(run, w, r)));
     if (!announced) {
       announced = true;
-      if (ready && !message) { message = ready === 1 ? 'A graft is possible: see the Graft tab.' : `${ready} grafts are possible: see the Graft tab.`; tone = 'good'; }
+      if (ready && !message) { message = ready === 1 ? 'A fusion is possible: see the Fusion tab.' : `${ready} fusions are possible: see the Fusion tab.`; tone = 'good'; }
     }
     const tabs = `<div class="ftabs">
         <button class="ftab${tab === 'weapons' ? ' on' : ''}" data-act="tab:weapons">Weapons${evoReady ? ' <i class="fdot"></i>' : ''}</button>
-        <button class="ftab graft${tab === 'graft' ? ' on' : ''}${ready ? ' ready' : ''}" data-act="tab:graft">Graft${ready ? ` <i class="fbadge">${ready}</i>` : ''}</button>
+        <button class="ftab fusion${tab === 'fusion' ? ' on' : ''}${ready ? ' ready' : ''}" data-act="tab:fusion">Fusion${ready ? ` <i class="fbadge">${ready}</i>` : ''}</button>
       </div>`;
     const el = overlays.show(
       `<h2>Forge</h2>
        <p class="sub">Ore <b class="ore">${run.ore}</b> · Starsteel <b class="ore">${run.starsteel}</b></p>
        <p class="fmsg ${tone}">${message || '&nbsp;'}</p>
        ${tabs}
-       <div class="forge-list">${tab === 'graft' ? graftPanel(opts) : run.player.weapons.map(weaponCard).join('')}</div>
+       <div class="forge-list">${tab === 'fusion' ? fusionPanel(opts) : run.player.weapons.map(weaponCard).join('')}</div>
        <button class="btn primary" data-act="done">Return to battle</button>
        ${pickModal()}`,
       onAct,
@@ -180,13 +180,13 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     if (kind === 'tab') {
       tab = id;
       confirming = null;
-      confirmingGraft = null;
+      confirmingFusion = null;
       return render();
     }
     const inst = find(id);
     if (!inst) return;
     if (kind !== 'sal') confirming = null;
-    if (kind !== 'gft') confirmingGraft = null;
+    if (kind !== 'gft') confirmingFusion = null;
     if (kind === 'enh') {
       const r = enhance(run, inst);
       message = outcomeText(r);
@@ -231,14 +231,14 @@ export function showForge(overlays, run, { onDone, onGraft = () => {}, sfx = () 
     } else if (kind === 'gft') {
       const donor = find(extra);
       const key = `${id}:${extra}`;
-      if (confirmingGraft !== key) {
-        confirmingGraft = key;
-        message = `Tap again to graft. ${donor ? donor.def.name : 'The donor'} is consumed.`;
+      if (confirmingFusion !== key) {
+        confirmingFusion = key;
+        message = `Tap again to fuse. ${donor ? donor.def.name : 'The donor'} is consumed.`;
         tone = 'bad';
       } else {
-        confirmingGraft = null;
-        const r = donor ? graft(run, inst, donor) : { ok: false };
-        if (r.ok) { sfx('evolve'); onGraft(r); }
+        confirmingFusion = null;
+        const r = donor ? fuse(run, inst, donor) : { ok: false };
+        if (r.ok) { sfx('evolve'); onFusion(r); }
         message = r.ok ? `${r.name}!` : '';
         tone = 'good';
       }

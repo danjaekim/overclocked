@@ -8,7 +8,7 @@ import { firePayload } from '../effects/payloads.js';
 // Event-driven triggers: src is the weapon instance whose hit caused the event.
 export function fireTriggers(run, on, src, x, y, depth, target) {
   if (!src) return;
-  // A generic graft's payload: the first direct hit after each attack fires it (game/graft.js, effects/payloads.js).
+  // A generic fusion's payload: the first direct hit after each attack fires it (game/fusion.js, effects/payloads.js).
   if (on === 'hit' && src.payloadArmed && depth === 0 && target && target.alive && firePayload(run, src, target, depth)) src.payloadArmed = false;
   fireList(run, src.def.triggers, on, src, x, y, depth, 0, target);
   if (src.extraTriggers.length) fireList(run, src.extraTriggers, on, src, x, y, depth, 0, target);   // forge affixes
@@ -28,7 +28,7 @@ function fireList(run, list, on, src, x, y, depth, ang = 0, target = null) {
 // `every: n` makes it fire on every nth attack (the count lives in inst.trigT, beside the interval
 // timers). (x, y) is where the attack was aimed; ang is its direction in radians.
 export function attackTriggers(run, inst, x, y, ang) {
-  if (inst.graft && inst.graft.payload) inst.payloadArmed = true;     // this attack's first hit carries the payload
+  if (inst.fusion && inst.fusion.payload) inst.payloadArmed = true;     // this attack's first hit carries the payload
   const list = inst.def.triggers;
   for (let i = 0; i < list.length; i++) {
     const t = list[i];

@@ -9,7 +9,7 @@ export function updateProjectiles(run, dt) {
   const list = store.active;
   for (let i = list.length - 1; i >= 0; i--) {
     const pr = list[i];
-    if (pr.inst && pr.inst.graft && pr.inst.graft.hooks.bend && run.hazards.length) {   // Eventide Volley: arrows curve toward a vortex
+    if (pr.inst && pr.inst.fusion && pr.inst.fusion.hooks.bend && run.hazards.length) {   // Eventide Volley: arrows curve toward a vortex
       const v = nearestVortex(run, pr.x, pr.y, 260);
       if (v) {
         const sp = Math.hypot(pr.vx, pr.vy) || 1;
@@ -36,7 +36,7 @@ export function updateProjectiles(run, dt) {
     if (pr.ttl <= 0 && pr.ret === 1) turnBack(run, pr);      // Return Orbit: turn around and fly back through the crowd
     if (pr.ttl <= 0) {
       plantRod(run, pr);
-      const eb = !pr.sub && pr.inst && pr.inst.graft && pr.inst.graft.hooks.endBurst;     // Comet: a ring of ice shards at the last enemy it pierced
+      const eb = !pr.sub && pr.inst && pr.inst.fusion && pr.inst.fusion.hooks.endBurst;     // Comet: a ring of ice shards at the last enemy it pierced
       if (eb) {
         const dmg = pr.dmg * eb.damageFrac;
         const bx = pr.hx === pr.hx ? pr.hx : pr.x;                // not off-screen where the arrow runs out

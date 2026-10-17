@@ -1,4 +1,4 @@
-// M33c: Chain Lightning's evolution, Tempest (a branching chain), so the chain shape can be grafted.
+// M33c: Chain Lightning's evolution, Tempest (a branching chain), so the chain shape can be fused.
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
@@ -6,7 +6,7 @@ import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, levelUpWeapon } from '../src/game/weapons.js';
 import { addPerk, findPerk, levelUpPerk } from '../src/game/perks.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
-import { graft, previewGraft } from '../src/game/graft.js';
+import { fuse, previewFusion } from '../src/game/fusion.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { validateData } from '../src/data/validate.js';
@@ -21,7 +21,7 @@ const newRun = () => {
 };
 const dummy = (run, x, y) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = 1e9; return e; };
 
-test('m33c data: Tempest is Chain Lightning\'s evolution (Static Charge 2); the Stormshell fusion stays', () => {
+test('m33c data: Tempest is Chain Lightning\'s evolution (Static Charge 2); the Stormshell combo stays', () => {
   assert.deepEqual(validateData(), []);
   assert.equal(WEAPONS.static_rod.evolvesInto, 'tempest');
   const r = EVOLUTIONS.find((x) => x.into === 'tempest');
@@ -73,17 +73,17 @@ test('a Chain Lightning line (the starter) still never forks', () => {
   assert.equal(es.filter((e) => e.hp < e.maxHp).length, 1 + WEAPONS.static_rod.base.chains + run.player.stats.getFor('chains', w.tags), 'first + 4 jumps + the chains stat (1, +1 for the Mage)');
 });
 
-test('Tempest can be grafted both ways: as a donor it gives Arcing x2, as a host it carries a payload', () => {
+test('Tempest can be fused both ways: as a donor it gives Arcing x2, as a host it carries a payload', () => {
   const run = newRun();
   run.starsteel = 3;
   const t = addWeapon(run, 'tempest');
   const v = addWeapon(run, 'storm_volley');
-  const pv = previewGraft(v, t);
+  const pv = previewFusion(v, t);
   assert.equal(pv.payload, 'arc2');
   const run2 = newRun();
   run2.starsteel = 3;
   const t2 = addWeapon(run2, 'tempest');
   const m = addWeapon(run2, 'stormshell_mortar');
-  assert.ok(graft(run2, t2, m).ok);
-  assert.equal(t2.graft.payload, 'blast');
+  assert.ok(fuse(run2, t2, m).ok);
+  assert.equal(t2.fusion.payload, 'blast');
 });

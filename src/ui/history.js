@@ -22,13 +22,13 @@ function dateText(t) {
 function rowHtml(e, canReplay) {
   const open = state.open.has(e.t);
   const head = `<span class="btop"><b>${esc(className(e.cls))}</b><em>${e.won ? 'Won' : 'Fell'} · ${fmtTime(e.time)}</em></span>
-    <span class="ccat">${dateText(e.t)} · Lv ${e.level} · ${fmtNum(e.kills)} kills · ${fmtNum(e.dmg)} dmg${e.grafts && e.grafts.length ? ` · ✦ ${e.grafts.length} graft${e.grafts.length === 1 ? '' : 's'}` : ''}</span>`;
+    <span class="ccat">${dateText(e.t)} · Lv ${e.level} · ${fmtNum(e.kills)} kills · ${fmtNum(e.dmg)} dmg${e.fusions && e.fusions.length ? ` · ✦ ${e.fusions.length} fusion${e.fusions.length === 1 ? '' : 's'}` : ''}</span>`;
   let body = '';
   if (open) {
     const b = buildNames(e);
     const line = (label, items) => (items.length ? `<p><span class="hlab">${label}</span>${items.map(esc).join(' · ')}</p>` : '');
     body = `<div class="cbody">
-      ${line('Weapons', b.weapons)}${line('Grafts', b.grafts)}${line('Passives', b.passives)}${line('Techniques', b.perks)}${line('Titles', b.titles)}
+      ${line('Weapons', b.weapons)}${line('Fusions', b.fusions)}${line('Passives', b.passives)}${line('Techniques', b.perks)}${line('Titles', b.titles)}
       <p><span class="hlab">Run</span>${fmtNum(e.dps)} avg DPS${e.boss ? ' · Warlord slain' : ''} · seed ${e.seed}</p>
       ${canReplay ? `<button class="btn small" data-act="hs:${e.t}">Same seed</button>` : ''}
     </div>`;

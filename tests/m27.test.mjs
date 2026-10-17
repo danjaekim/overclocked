@@ -1,12 +1,12 @@
-// M27: grafts. The rules (cost, consume, one per weapon, masterwork host fixed), the generic echo, the
+// M27: fusions. The rules (cost, consume, one per weapon, masterwork host fixed), the generic echo, the
 // six masterworks' effects, discovery in the save and the compendium.
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, weaponName } from '../src/game/weapons.js';
-import { masterworkFor, graftOptions, canGraft, graft, previewGraft } from '../src/game/graft.js';
-import { MASTERWORKS, GRAFT } from '../src/data/grafts.js';
+import { masterworkFor, fusionOptions, canFusion, fuse, previewFusion } from '../src/game/fusion.js';
+import { MASTERWORKS, FUSION } from '../src/data/fusions.js';
 import { validateData } from '../src/data/validate.js';
 import { createSave, normalize } from '../src/save/save.js';
 import { buildEntries } from '../src/game/compendium.js';
@@ -43,53 +43,53 @@ test('a masterwork pair works in either order and always has the same host', () 
   const { h, d } = pair(run, 'reaper_axe', 'stormshell_mortar');
   assert.equal(masterworkFor('reaper_axe', 'stormshell_mortar').id, 'thunderscythe');
   assert.equal(masterworkFor('stormshell_mortar', 'reaper_axe').id, 'thunderscythe');
-  const opts = graftOptions(run);
+  const opts = fusionOptions(run);
   assert.equal(opts.length, 1, 'listed once, from the masterwork host');
   assert.equal(opts[0].host, h);
-  // asking with the mortar as host still grafts into the axe
-  const r = graft(run, d, h);
+  // asking with the mortar as host still fusions into the axe
+  const r = fuse(run, d, h);
   assert.ok(r.ok);
   assert.equal(r.host, h);
   assert.equal(weaponName(h), 'Thunderscythe');
 });
 
-test('a graft costs 1 starsteel, consumes the donor, adds its elements, and is one per weapon', () => {
+test('a fusion costs 1 starsteel, consumes the donor, adds its elements, and is one per weapon', () => {
   const run = newRun();
   const { h, d } = pair(run, 'colossus_maul', 'glacial_bloom');
   const third = addWeapon(run, 'prismatic_bolt');
   const n = run.player.weapons.length;
-  assert.ok(canGraft(run, h, d));
+  assert.ok(canFusion(run, h, d));
   run.starsteel = 0;
-  assert.ok(!canGraft(run, h, d), 'needs starsteel');
+  assert.ok(!canFusion(run, h, d), 'needs starsteel');
   run.starsteel = 2;
-  const r = graft(run, h, d);
+  const r = fuse(run, h, d);
   assert.ok(r.ok);
-  assert.equal(run.starsteel, 2 - GRAFT.cost);
+  assert.equal(run.starsteel, 2 - FUSION.cost);
   assert.equal(run.player.weapons.length, n - 1, 'the donor slot is free');
   assert.ok(!run.player.weapons.includes(d));
   assert.ok(h.tags.set.has('frost'), 'gained the donor element');
-  assert.ok(!canGraft(run, h, third), 'a grafted weapon cannot be a host again');
-  assert.ok(!canGraft(run, third, h), 'or a donor');
-  assert.equal(run.grafts.length, 1);
-  assert.equal(run.summary().grafts[0], 'Glacier Maul');
+  assert.ok(!canFusion(run, h, third), 'a fused weapon cannot be a host again');
+  assert.ok(!canFusion(run, third, h), 'or a donor');
+  assert.equal(run.fusions.length, 1);
+  assert.equal(run.summary().fusions[0], 'Glacier Maul');
 });
 
 test('a pair without a masterwork gets a readable generic name', () => {
   const run = newRun();
   const { h, d } = pair(run, 'reaper_axe', 'glacial_bloom');
-  const pv = previewGraft(h, d);
+  const pv = previewFusion(h, d);
   assert.equal(pv.name, 'Reaper Axe of Frost');
   assert.equal(pv.masterwork, null);
   const { h: h2, d: d2 } = pair(run, 'grave_legion', 'judgement');
-  assert.equal(previewGraft(h2, d2).name, 'Grave Legion of Judgement');
+  assert.equal(previewFusion(h2, d2).name, 'Grave Legion of Judgement');
   const { h: h3, d: d3 } = pair(run, 'seraph_blades', 'vapor_wheel');
-  assert.equal(previewGraft(h3, d3).name, 'Seraph Blades of Fire and Frost');
+  assert.equal(previewFusion(h3, d3).name, 'Seraph Blades of Fire and Frost');
 });
 
-test('a reforge keeps the graft triggers', () => {
+test('a reforge keeps the fusion triggers', () => {
   const run = newRun();
   const { h, d } = pair(run, 'reaper_axe', 'stormshell_mortar');
-  graft(run, h, d);
+  fuse(run, h, d);
   assert.ok(h.extraTriggers.some((t) => t.effect === 'shells'));
   run.ore = 999;
   const r = rollReforge(run, h, 0);
@@ -100,7 +100,7 @@ test('a reforge keeps the graft triggers', () => {
 test('Thunderscythe plants storm shells that burn and shock', () => {
   const run = newRun();
   const { h, d } = pair(run, 'reaper_axe', 'stormshell_mortar');
-  graft(run, h, d);
+  fuse(run, h, d);
   const e = spawnEnemy(run, 'brute', 70, 0);
   e.speed = 0;
   e.maxHp = e.hp = 1e6;
@@ -113,7 +113,7 @@ test('Thunderscythe plants storm shells that burn and shock', () => {
 test('Glacier Maul freezes, and a hit on a frozen enemy shatters', () => {
   const run = newRun();
   const { h, d } = pair(run, 'colossus_maul', 'glacial_bloom');
-  graft(run, h, d);
+  fuse(run, h, d);
   const near = spawnEnemy(run, 'brute', 60, 0);
   const bystander = spawnEnemy(run, 'goblin', 100, 40);
   near.speed = bystander.speed = 0;
@@ -130,20 +130,20 @@ test('Glacier Maul freezes, and a hit on a frozen enemy shatters', () => {
 test('Eventide Volley opens a vortex every 4th volley and its arrows bend toward it', () => {
   const run = newRun();
   const { h, d } = pair(run, 'storm_volley', 'singularity');
-  graft(run, h, d);
+  fuse(run, h, d);
   const e = spawnEnemy(run, 'brute', 160, 0);
   e.speed = 0;
   e.maxHp = e.hp = 1e7;
   let vort = 0;
   for (let i = 0; i < 60 * 6; i++) { run.update(STEP, { x: 0, y: 0 }); if (run.hazards.some((x) => x.pull)) vort++; }
   assert.ok(vort > 0, 'a vortex opened');
-  assert.ok(h.graft.hooks.bend);
+  assert.ok(h.fusion.hooks.bend);
 });
 
 test('Hellhounds burn what is near each hound', () => {
   const run = newRun();
   const { h, d } = pair(run, 'grave_legion', 'pyre_crown');
-  graft(run, h, d);
+  fuse(run, h, d);
   swarm(run, 24);
   tick(run, 6);
   assert.ok(run.kills > 0);
@@ -153,7 +153,7 @@ test('Hellhounds burn what is near each hound', () => {
 test('Spear Wheel launches its blades out and back', () => {
   const run = newRun();
   const { h, d } = pair(run, 'seraph_blades', 'thunder_lance');
-  graft(run, h, d);
+  fuse(run, h, d);
   let maxU = 0;
   for (let i = 0; i < 60 * 8; i++) { run.update(STEP, { x: 0, y: 0 }); maxU = Math.max(maxU, h.launchU); }
   assert.ok(maxU >= 0.99, `blades flew out (${maxU})`);
@@ -163,7 +163,7 @@ test('Spear Wheel launches its blades out and back', () => {
 test('Sanctum Titan heals on kills', () => {
   const run = newRun();
   const { h, d } = pair(run, 'bone_colossus', 'radiant_halo');
-  graft(run, h, d);
+  fuse(run, h, d);
   run.player.maxHp = 200;
   run.player.hp = 50;
   swarm(run, 30);
@@ -176,12 +176,12 @@ test('discovery: the save keeps found masterworks and the compendium reveals the
   const st = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v) };
   const save = createSave(st);
   assert.equal(save.data.version, 3);
-  assert.equal(save.discoverGraft('thunderscythe'), true);
-  assert.equal(save.discoverGraft('thunderscythe'), false);
-  assert.deepEqual(createSave(st).data.discovered.grafts, ['thunderscythe']);
-  assert.deepEqual(normalize({ discovered: { grafts: ['a', 7, 'a'] } }).discovered.grafts, ['a']);
-  assert.deepEqual(normalize({ version: 2 }).discovered.grafts, []);
-  const entries = buildEntries(save.data.discovered).filter((e) => e.tab === 'grafts');
+  assert.equal(save.discoverFusion('thunderscythe'), true);
+  assert.equal(save.discoverFusion('thunderscythe'), false);
+  assert.deepEqual(createSave(st).data.discovered.fusions, ['thunderscythe']);
+  assert.deepEqual(normalize({ discovered: { fusions: ['a', 7, 'a'] } }).discovered.fusions, ['a']);
+  assert.deepEqual(normalize({ version: 2 }).discovered.fusions, []);
+  const entries = buildEntries(save.data.discovered).filter((e) => e.tab === 'fusions');
   assert.ok(entries.some((e) => e.name === 'Thunderscythe'));
   assert.ok(entries.some((e) => /\+ \?\?\?$/.test(e.name)), 'unfound ones are hidden');
   assert.ok(entries[0].name.includes('1 / 16'));

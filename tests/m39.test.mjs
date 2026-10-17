@@ -1,5 +1,5 @@
 // M39: Star Quench. Starsteel buys charges; a charge makes the next enhance attempt certain (no roll, no
-// downgrade) while the ore is still paid. Charges carry through evolving and grafting and are lost on salvage.
+// downgrade) while the ore is still paid. Charges carry through evolving and fusing and are lost on salvage.
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
@@ -7,7 +7,7 @@ import { addWeapon } from '../src/game/weapons.js';
 import { ENHANCE, QUENCH } from '../src/data/forge.js';
 import { validateData } from '../src/data/validate.js';
 import { enhance, quench, canQuench, quenchCharges, enhanceOdds, salvage } from '../src/game/forge.js';
-import { graft } from '../src/game/graft.js';
+import { fuse } from '../src/game/fusion.js';
 import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { evolve, canEvolve } from '../src/game/evolution.js';
 import { levelUpWeapon } from '../src/game/weapons.js';
@@ -108,14 +108,14 @@ test('m39 quenching all the way from +10 to +15 takes 3 starsteel', () => {
   assert.ok(!canQuench(run, inst), 'nothing to buy at max level');
 });
 
-test('m39 salvage drops the charges with the weapon; a graft passes the donor\'s charges to the host', () => {
+test('m39 salvage drops the charges with the weapon; a fusion passes the donor\'s charges to the host', () => {
   const run = newRun();
   run.starsteel = 5;
   const h = addWeapon(run, 'colossus_maul');
   const d = addWeapon(run, 'glacial_bloom');
   at(h, 8).quench = 1;
   at(d, 8).quench = 2;
-  const r = graft(run, h, d);
+  const r = fuse(run, h, d);
   assert.ok(r.ok);
   assert.equal(h.quench, 3);
   const other = addWeapon(run, 'prismatic_bolt');
@@ -135,7 +135,7 @@ test('m39 charges survive a snapshot and a resume', () => {
   assert.equal(b.player.weapons[0].quench, 2);
 });
 
-test('m39 charges survive evolving, and a fusion partner\'s charges join the survivor', () => {
+test('m39 charges survive evolving, and a combo partner\'s charges join the survivor', () => {
   const run = newRun('smith');
   run.player.weapons.length = 0;
   const a = addWeapon(run, 'cinder_ward');

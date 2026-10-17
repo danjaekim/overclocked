@@ -1,4 +1,4 @@
-# Design spec: M26–M28 (evolution branches, grafts)
+# Design spec: M26–M28 (evolution branches, fusions)
 
 Written 2026-10-14 after M25. This file is a **plan**. The source of truth stays `docs/architecture.md`,
 and each implementing commit updates it as usual. Every number here is a first guess, and the M9 bench
@@ -8,13 +8,13 @@ Contents
 1. Goals, and what is wrong today
 2. Shared effect vocabulary (M26a)
 3. Branches: two evolutions per starter weapon (M26b)
-4. Grafts: combining evolutions (M27, M28)
-5. Economy: can a run reach two evolutions and a graft?
+4. Fusions: combining evolutions (M27, M28)
+5. Economy: can a run reach two evolutions and a fusion?
 6. Difficulty with stronger builds
 7. Changes to existing weapons and evolutions
 8. Fit with existing code, file by file
 9. Tests and bench additions
-10. Apex grafts (later)
+10. Apex fusions (later)
 11. Decisions
 
 ---
@@ -30,7 +30,7 @@ What is wrong today:
 2. **Most evolutions are "the same weapon, bigger".** Radiant Halo is a bigger Halo. Grave Legion is more
    hounds. Pyre Crown is a bigger Cinder Ward. Bigger numbers feel good once and then never surprise you.
 3. **The engine's on-hit vocabulary is thin.** Triggers fire on `hit`, `crit`, `kill` and `interval`.
-   The only effects are `explode` and `shield`, plus the three statuses. Grafts need more verbs than that
+   The only effects are `explode` and `shield`, plus the three statuses. Fusions need more verbs than that
    to make combinations that feel different.
 
 Design rules for everything below:
@@ -41,24 +41,24 @@ Design rules for everything below:
   level-up picks steer you toward one. The M24 evolution hint then marks the cards for both.
 - **Choosing is permanent.** Combining into one branch removes the other, and the forge says so on the
   card.
-- **Grafts are named discoveries.** Twelve hand-made "masterwork" pairs each have their own name and
-  effect. Every other pair still works through a generic graft, so no combination is a dead end.
+- **Fusions are named discoveries.** Twelve hand-made "masterwork" pairs each have their own name and
+  effect. Every other pair still works through a generic fusion, so no combination is a dead end.
 
 ---
 
 ## 2. Shared effect vocabulary (M26a)
 
-These are built once and then reused by branches, grafts and later content. Each is an `EFFECTS` entry
-(`src/effects/index.js`), so any weapon, affix or graft can fire one from a trigger.
+These are built once and then reused by branches, fusions and later content. Each is an `EFFECTS` entry
+(`src/effects/index.js`), so any weapon, affix or fusion can fire one from a trigger.
 
 | Effect | What it does | Used by |
 |---|---|---|
-| `fire_patch` | Burning ground at a point: radius r, t seconds, ticks burn on anything standing in it. Pooled like fx, cap 40. | Sunpiercer, Pyre graft, Fault Line |
+| `fire_patch` | Burning ground at a point: radius r, t seconds, ticks burn on anything standing in it. Pooled like fx, cap 40. | Sunpiercer, Pyre fusion, Fault Line |
 | `vortex` | Pulls enemies within r toward a point for t seconds (bosses barely move), then bursts for damage. | Singularity, Black Sun, Eventide Volley |
 | `shockwave` | A wide, slow line projectile along the ground, pierces everything, travels range r. | Quakebreaker, Fault Line |
 | `pillar` | After a 0.35 s telegraph ring, a column of light hits everything in r. | Judgement, Wrath |
-| `sunder` | The target's armour is 0 for t seconds, shown as a cracked ring. | Bone Colossus, any graft from it |
-| `cast` | Fires the **donor weapon's own behaviour** once, at x% of its damage, aimed at a point. | Every generic graft (§4.3) |
+| `sunder` | The target's armour is 0 for t seconds, shown as a cracked ring. | Bone Colossus, any fusion from it |
+| `cast` | Fires the **donor weapon's own behaviour** once, at x% of its damage, aimed at a point. | Every generic fusion (§4.3) |
 
 New trigger fields, in `game/triggers.js`:
 
@@ -92,7 +92,7 @@ Notes:
 - Sunpiercer and Judgement are the first evolutions that **prefer elites and bosses**. That gives
   single-target builds a reason to exist now that late waves are denser.
 - Quakebreaker, Singularity and Bone Colossus each bring a **new verb** (line reach, grouping, armour
-  break). Those verbs are also what makes their grafts interesting.
+  break). Those verbs are also what makes their fusions interesting.
 - Whirlwind Cleaver is the only branch with **built-in risk**. That fits the Berserker, and the
   Bloodletting requirement gives it a way to stay alive.
 
@@ -107,19 +107,19 @@ Notes:
 
 ---
 
-## 4. Grafts: combining evolutions (M27, M28)
+## 4. Fusions: combining evolutions (M27, M28)
 
 ### 4.1 The rule
 
-At the forge, **graft** one evolved weapon (the *donor*) into another (the *host*):
+At the forge, **fusion** one evolved weapon (the *donor*) into another (the *host*):
 
 - **Cost:** 1 starsteel (decided). The donor is consumed too. **[bench]**
 - **Result:** the host keeps its behaviour, level, enhance and affixes. It gains the donor's element tags,
-  so cross-element perks (Overload, Quench, Superconduct) can start working, and it gains a graft effect
+  so cross-element perks (Overload, Quench, Superconduct) can start working, and it gains a fusion effect
   (§4.2 or §4.3).
-- **The donor is consumed**, and that frees a weapon slot. This is the loop that makes grafting feel good:
-  graft, pick up a new weapon, level it, evolve it, graft again.
-- **One graft per weapon.** The grafted weapon gets a gold rim and a new name.
+- **The donor is consumed**, and that frees a weapon slot. This is the loop that makes fusing feel good:
+  fusion, pick up a new weapon, level it, evolve it, fusion again.
+- **One fusion per weapon.** The fused weapon gets a gold rim and a new name.
 - Both orders (A into B, B into A) are offered when both are evolved. For a masterwork pair, the
   masterwork defines the host, so both orders give the same result.
 
@@ -151,9 +151,9 @@ side weapons you pick up have a reason to be evolved.
 Ship order: M27 ships #1–#6, so a playtest can show whether the system is fun before more art and code go
 in. M28 ships #7–#12.
 
-### 4.3 Generic graft: every other pair
+### 4.3 Generic fusion: every other pair
 
-Any two evolved weapons without a masterwork still graft. The host gets:
+Any two evolved weapons without a masterwork still fusion. The host gets:
 
 - the donor's element tags, and
 - ~~an echo: every 3rd attack casts the donor's behaviour at 50%~~ (replaced in M30) a **payload**: the
@@ -170,15 +170,15 @@ jackpots.
 
 ### 4.4 Discovery
 
-- The Compendium gets a **Grafts** page: "Masterworks found 3 / 12". Found ones are listed with their
+- The Compendium gets a **Fusions** page: "Masterworks found 3 / 12". Found ones are listed with their
   effect. Unfound ones show the host's name and "+ ???".
 - The first time a masterwork is made, a special banner shows ("Masterwork discovered: Thunderscythe") and
-  the `evolve` sfx plays an octave up. The results screen lists any grafts made that run.
-- Saved in `save.discovered.grafts` (save version 3, with a migration).
+  the `evolve` sfx plays an octave up. The results screen lists any fusions made that run.
+- Saved in `save.discovered.fusions` (save version 3, with a migration).
 
 ---
 
-## 5. Economy: can a run reach two evolutions and a graft?
+## 5. Economy: can a run reach two evolutions and a fusion?
 
 Starsteel per 10-minute run, after M25: the first elite always drops 1. Six more elites drop 1 at 50%
 each, so about 3 on average. The boss drops 2. That is about **6 per run** (at least 3).
@@ -187,11 +187,11 @@ each, so about 3 on average. The boss drops 2. That is about **6 per run** (at l
 |---|---|---|
 | 1st evolution | 1 | minute 2–3 (first elite at 1:30, weapon level 6) |
 | 2nd evolution | 1 | minute 4–6 |
-| Graft | 1 | minute 5–7 |
-| 3rd evolution, or a graft on a second weapon | 1–2 | minute 7+, usually affordable |
+| Fusion | 1 | minute 5–7 |
+| 3rd evolution, or a fusion on a second weapon | 1–2 | minute 7+, usually affordable |
 
-So the target is **two evolutions and one graft in most runs**. With grafts at 1 starsteel, a third evolution
-or a second graft on a different weapon is often in reach late; the bench decides whether that is too much. **[bench]**: the bench should report the minute of the first evolution and the first graft over
+So the target is **two evolutions and one fusion in most runs**. With fusions at 1 starsteel, a third evolution
+or a second fusion on a different weapon is often in reach late; the bench decides whether that is too much. **[bench]**: the bench should report the minute of the first evolution and the first fusion over
 200 seeded bot runs. The target medians are 3:00 and 6:30.
 
 Two more levers, only if the bench says the economy is too tight:
@@ -204,7 +204,7 @@ Two more levers, only if the bench says the economy is too tight:
 
 ## 6. Difficulty with stronger builds
 
-Grafts are deliberately a power spike, so the last third of the run has to push back. Here is the plan,
+Fusions are deliberately a power spike, so the last third of the run has to push back. Here is the plan,
 cheapest first:
 
 1. **Health scaling after minute 6:** `hpScale` goes from 2.9 to 3.6 in the last segment. The
@@ -229,8 +229,8 @@ cheapest first:
 | Grave Legion: hounds that kill something get +30% speed for 2 s (a "frenzy"). | Gives the swarm some motion, and contrasts with the slow Bone Colossus. |
 | Pyre Crown: the aura leaves short `fire_patch` embers where enemies die. | It's an aura that grows today. This gives it a mark on the ground and makes it a better donor. |
 | Colossus Maul: keep the +3 enhance requirement. | It's the Smith's identity: the forge class evolves at the forge. |
-| Fusions (Vapor Wheel, Stormshell Mortar, Stormfrost Lance): unchanged. | They already act as "branches" for side weapons, and they're good graft donors. |
-| `explode` gets an optional `patch` param that leaves a `fire_patch`. | Reuses the vocabulary. Storm Volley's kill explosions can scorch the ground once grafted with fire. |
+| Combos (Vapor Wheel, Stormshell Mortar, Stormfrost Lance): unchanged. | They already act as "branches" for side weapons, and they're good fusion donors. |
+| `explode` gets an optional `patch` param that leaves a `fire_patch`. | Reuses the vocabulary. Storm Volley's kill explosions can scorch the ground once fused with fire. |
 
 ---
 
@@ -240,15 +240,15 @@ cheapest first:
 |---|---|
 | `src/data/weapons.js` | 6 new evolved weapons (`pool: false, rarity: 'evolved'`). |
 | `src/data/evolutions.js` | 6 new recipes, plus an `exclusiveWith` group per starter weapon so the forge can say which branch it locks. |
-| `src/data/grafts.js` (new) | `GRAFT = { cost, echoEvery, echoFrac }`, the 12 `MASTERWORKS` `{ id, host, donor, name, desc, mods, triggers }`, and an element-name table for generic names. |
+| `src/data/fusions.js` (new) | `FUSION = { cost, echoEvery, echoFrac }`, the 12 `MASTERWORKS` `{ id, host, donor, name, desc, mods, triggers }`, and an element-name table for generic names. |
 | `src/effects/index.js` | `fire_patch`, `vortex`, `shockwave`, `pillar`, `sunder`, `cast`. |
 | `src/systems/hazards.js` (new) | Fire patches and vortices: pooled, updated in the tick between statuses and the flush, drawn under enemies. |
 | `src/game/triggers.js` | `on: 'attack'` with `every`, `chance` on all triggers. Behaviours call `fireTriggers(run, 'attack', inst, ...)` once per attack. |
 | `src/behaviors/*` | Each behaviour reports its attack, and aura/orbit gain the hooks Hellhounds and Spear Wheel need (an aura that follows a summon, blades that launch and return). |
-| `src/game/graft.js` (new) | `canGraft`, `graftOptions(run)`, `graft(run, host, donor)`, `masterworkFor(a, b)`. Pure rules with no DOM, like `game/forge.js`. |
-| `src/ui/forge.js` | A **Graft** section under the weapon list when 2+ evolved weapons are owned. Picking a host, then a donor, shows a preview card with the name, effect and "consumes the donor". |
-| `src/game/compendium.js`, `src/ui/compendium.js` | A branches view and a Grafts page with discovery. |
-| `src/save/save.js` | v3: `discovered: { branches: [], grafts: [] }`. |
+| `src/game/fusion.js` (new) | `canFusion`, `fusionOptions(run)`, `fuse(run, host, donor)`, `masterworkFor(a, b)`. Pure rules with no DOM, like `game/forge.js`. |
+| `src/ui/forge.js` | A **Fusion** section under the weapon list when 2+ evolved weapons are owned. Picking a host, then a donor, shows a preview card with the name, effect and "consumes the donor". |
+| `src/game/compendium.js`, `src/ui/compendium.js` | A branches view and a Fusions page with discovery. |
+| `src/save/save.js` | v3: `discovered: { branches: [], fusions: [] }`. |
 | `src/data/validate.js` | Masterwork hosts and donors must be evolved weapons, no duplicate pairs, and effect params must be present. |
 
 Staging:
@@ -256,7 +256,7 @@ Staging:
 - **M26a:** vocabulary, triggers and hazards. Nothing visible changes yet except that the hazards can be
   tested.
 - **M26b:** the 6 branch evolutions plus the forge and Compendium branch UI.
-- **M27:** graft rules, generic grafts, masterworks #1–#6, forge graft UI, discovery and save v3.
+- **M27:** fusion rules, generic fusions, masterworks #1–#6, forge fusion UI, discovery and save v3.
 - **M28:** masterworks #7–#12, the difficulty items from §6, and bench tuning.
 
 ---
@@ -265,20 +265,20 @@ Staging:
 
 - Every recipe pair on a starter weapon has disjoint requirements. Combining one branch removes the other
   card.
-- `graft()`: the donor is consumed, the slot is freed, tags are merged, starsteel is spent, a weapon
-  cannot be grafted twice, and a masterwork is found in either order.
+- `fuse()`: the donor is consumed, the slot is freed, tags are merged, starsteel is spent, a weapon
+  cannot be fused twice, and a masterwork is found in either order.
 - Generic echo: over 30 attacks, the donor is cast exactly 10 times, at 50% of its damage.
 - Hazards: patch and vortex pools never exceed their caps under the 500-enemy stress test, and the frame
   budget still holds with 3 vortices and 30 patches live.
-- Bench: report the minute of the first evolution, second evolution and first graft, plus DPS before and
-  after the graft. Flag any masterwork whose DPS is more than 1.6x the median masterwork.
+- Bench: report the minute of the first evolution, second evolution and first fusion, plus DPS before and
+  after the fusion. Flag any masterwork whose DPS is more than 1.6x the median masterwork.
 
 ---
 
-## 10. Apex grafts (later, after the M27 playtest)
+## 10. Apex fusions (later, after the M27 playtest)
 
-A grafted weapon cannot take a second graft. Separate grafts on **different** weapons are allowed, and
-they add more variety for the same starsteel. A small, named exception is worth trying once grafts have
+A fused weapon cannot take a second fusion. Separate fusions on **different** weapons are allowed, and
+they add more variety for the same starsteel. A small, named exception is worth trying once fusions have
 been played: an **Apex**, where one specific masterwork takes one specific third weapon. There are no
 generic triples, so balance stays in hand and each Apex is a rare jackpot. Candidates:
 
@@ -293,8 +293,8 @@ Gate: a title earned by making a masterwork, and 2 starsteel, so an Apex is a la
 
 ## 11. Decisions (Dan, 2026-10-14)
 
-1. Graft cost: **1 starsteel**.
-2. Second graft on one weapon: **not for now**. Separate grafts on different weapons are allowed. Apex
+1. Fusion cost: **1 starsteel**.
+2. Second fusion on one weapon: **not for now**. Separate fusions on different weapons are allowed. Apex
    triples (§10) are revisited after the M27 playtest.
 3. Masterwork illustrations in the Compendium: **yes**, as an art round once masterworks #1–#6 are in.
-4. Generic graft names: **"{Host} of {Element}"**, changeable later.
+4. Generic fusion names: **"{Host} of {Element}"**, changeable later.

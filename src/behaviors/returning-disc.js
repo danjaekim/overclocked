@@ -75,7 +75,7 @@ export default {
         if (d.parked <= 0) {
           d.parked = 0;
           d.back = true;
-          const ms = inst.graft && inst.graft.hooks.millstone;
+          const ms = inst.fusion && inst.fusion.hooks.millstone;
           if (ms) inst.mill.push({ x: d.x, y: d.y, t: MILL_TELE });   // the maul comes down where the saw gathered them
         }
         pullIn(run, d, radius * 3, bs.park.pull * dt);
@@ -83,7 +83,7 @@ export default {
         if (!d.tgt || !d.tgt.alive || d.hit.has(d.tgt.uid)) {
           if (d.tgt && d.hit.has(d.tgt.uid)) {
             d.n++;
-            const sr = inst.graft && inst.graft.hooks.bounceRod;   // Storm Saw: each bounce plants a short rod
+            const sr = inst.fusion && inst.fusion.hooks.bounceRod;   // Storm Saw: each bounce plants a short rod
             if (sr) addRod(run, inst, d.tgt.x, d.tgt.y, sr.radius * run.player.stats.getFor('area', inst.tags), sr.ttl, dmg * sr.frac, { every: sr.every, zaps: sr.zaps, max: sr.max, link: sr.link });
           }
           d.tgt = d.n >= bs.bounce.n ? null : nearestUncut(run, d, d.n === 0 ? reach * 1.1 : bs.bounce.range, p);
@@ -158,7 +158,7 @@ export default {
   },
 
   draw(inst, ctx, run) {
-    const ms = inst.graft && inst.graft.hooks.millstone;
+    const ms = inst.fusion && inst.fusion.hooks.millstone;
     if (ms) {
       for (const m of inst.mill) {                         // the maul's shadow before it lands
         const u = 1 - m.t / MILL_TELE;
@@ -231,7 +231,7 @@ function pullIn(run, d, radius, step) {
 // Millstone: the maul lands on each spot a parked saw has finished spinning: a crater that hits and
 // staggers everything inside.
 function millStep(inst, dt, run, dmg) {
-  const ms = inst.graft.hooks.millstone;
+  const ms = inst.fusion.hooks.millstone;
   const w = run.world;
   for (let i = inst.mill.length - 1; i >= 0; i--) {
     const m = inst.mill[i];

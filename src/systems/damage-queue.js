@@ -13,8 +13,8 @@ export const KIND_PROC = 1;
 export const KIND_DOT = 2;
 
 // Where an entry's damage came from, for the run stats (what the end screen breaks down).
-export const CAUSE = { DIRECT: 0, BURN: 1, CHAIN: 2, BLAST: 3, QUENCH: 4, OVERLOAD: 5, SHATTER: 6, THUNDERCLAP: 7, REACTION: 8, FORK: 9, GRAFT: 10, SPELLBURST: 11 };
-export const CAUSE_NAMES = ['Direct hits', 'Burn', 'Shock chains', 'Blasts', 'Quench', 'Overload', 'Shatter', 'Thunderclap', 'Chain Reaction', 'Forked Strikes', 'Graft', 'Spellburst'];
+export const CAUSE = { DIRECT: 0, BURN: 1, CHAIN: 2, BLAST: 3, QUENCH: 4, OVERLOAD: 5, SHATTER: 6, THUNDERCLAP: 7, REACTION: 8, FORK: 9, FUSION: 10, SPELLBURST: 11 };
+export const CAUSE_NAMES = ['Direct hits', 'Burn', 'Shock chains', 'Blasts', 'Quench', 'Overload', 'Shatter', 'Thunderclap', 'Chain Reaction', 'Forked Strikes', 'Fusion', 'Spellburst'];
 const DEFAULT_CAUSE = [CAUSE.DIRECT, CAUSE.BLAST, CAUSE.BURN];   // by kind: HIT, PROC, DOT
 
 export function createDamageQueue() {

@@ -1,10 +1,10 @@
-// M38: magnet drop, longer shrines, fusion-aware offers. A fusion partner (the missing half of a fusion you
+// M38: magnet drop, longer shrines, combo-aware offers. A combo partner (the missing half of a combo you
 // hold the other half of) is a little likelier at level-ups and much likelier from a chest's new-weapon roll.
 
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { addWeapon } from '../src/game/weapons.js';
-import { generateOffers, fusionPartners } from '../src/game/upgrades.js';
+import { generateOffers, comboPartners } from '../src/game/upgrades.js';
 import { pickChestItem, evolutionBlockers, openChest } from '../src/game/chests.js';
 import { offerState } from '../src/game/apply-offer.js';
 import { createRng } from '../src/core/rng.js';
@@ -56,23 +56,23 @@ test('m38 a magnet is only rolled when enough is lying on the ground', () => {
   assert.ok(n > 100 && n < 400, `${n}`);
 });
 
-test('m38 fusionPartners names the missing half of a fusion, only when you hold the other half', () => {
+test('m38 comboPartners names the missing half of a combo, only when you hold the other half', () => {
   const run = newRun('archer');
-  assert.equal(fusionPartners(offerState(run)).size, 0);
+  assert.equal(comboPartners(offerState(run)).size, 0);
   give(run, 'storm_javelin');
-  const m = fusionPartners(offerState(run));
+  const m = comboPartners(offerState(run));
   assert.deepEqual([...m.keys()], ['rime_shards']);
   assert.equal(m.get('rime_shards'), 'Stormfrost Lance');
   give(run, 'rime_shards');
-  assert.equal(fusionPartners(offerState(run)).size, 0, 'both halves held: nothing missing');
+  assert.equal(comboPartners(offerState(run)).size, 0, 'both halves held: nothing missing');
 });
 
-test('m38 a level-up offers the missing half of a fusion more often, and marks what it leads to', () => {
+test('m38 a level-up offers the missing half of a combo more often, and marks what it leads to', () => {
   const run = newRun('archer');
   give(run, 'storm_javelin');
   const state = offerState(run);
   const count = (boost) => {
-    LEVELUP.fusionPartnerBoost = boost;
+    LEVELUP.comboPartnerBoost = boost;
     const rng = createRng(21);
     let n = 0;
     let marked = true;
@@ -82,14 +82,14 @@ test('m38 a level-up offers the missing half of a fusion more often, and marks w
     assert.ok(marked);
     return n;
   };
-  const saved = LEVELUP.fusionPartnerBoost;
+  const saved = LEVELUP.comboPartnerBoost;
   const base = count(1);
   const boosted = count(saved);
-  LEVELUP.fusionPartnerBoost = saved;
+  LEVELUP.comboPartnerBoost = saved;
   assert.ok(boosted > base * 1.25 && boosted < base * 2.2, `${base} -> ${boosted}`);
 });
 
-test('m38 a chest new-weapon roll mostly picks the missing fusion half', () => {
+test('m38 a chest new-weapon roll mostly picks the missing combo half', () => {
   const run = newRun('smith');
   give(run, 'cinder_ward');
   const state = offerState(run);
@@ -100,7 +100,7 @@ test('m38 a chest new-weapon roll mostly picks the missing fusion half', () => {
   assert.ok(hit / 3000 > 0.3, `${hit / 3000}`);
 });
 
-test('m38 with a fusion half missing, a 3-roll chest can unlock the other half', () => {
+test('m38 with a combo half missing, a 3-roll chest can unlock the other half', () => {
   let gave = 0;
   let chests = 0;
   for (let s = 1; s <= 80; s++) {

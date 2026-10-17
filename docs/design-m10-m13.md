@@ -85,7 +85,7 @@ the first 12 work.
 | **M12** | Elites (3 affixes), chests (1/3/5 rolls, evolution bias, chest-evolve jackpot), treasure overlay. | one session |
 | **M13** | Forge choices: reforge one slot and pick 1 of 3, expanded affix pool with infusion tags, tempers at +5/+10. | one session |
 
-M14 (weapons, recipes, fusion) and M15 (balance, classes) are unchanged. The **lock** from the old
+M14 (weapons, recipes, combo) and M15 (balance, classes) are unchanged. The **lock** from the old
 M13 is dropped: reforging one slot at a time never touches the others, so there's nothing to lock.
 
 ---

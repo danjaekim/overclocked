@@ -34,7 +34,7 @@ function add(run, h) {
 // status: what standing in it does besides damage: 'burn' (the default, null), 'chill', 'shock', 'bless'
 // (marks the enemy and mends you a little) or 'none'. cause: the damage cause to credit (run stats).
 // direct: the patch is the weapon's own attack (Frost Wake): its ticks are real weapon hits (crit,
-// knockback, the weapon's own status chances, hit triggers, graft payloads) instead of PROC damage, and
+// knockback, the weapon's own status chances, hit triggers, fusion payloads) instead of PROC damage, and
 // `look` picks the colours. look: 'burn' | 'chill' | 'steam' | 'shock' | 'bless' | 'none'.
 // Patches dropped one after another along a path share a `chain` id and an index `ci`; render/auras.js draws a chain as one
 // organic ribbon instead of a string of discs. `link` extends the caller's chain (or starts one when `next` is false).
@@ -49,7 +49,7 @@ export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth, shock = 
   return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, shock, status, cause, direct, look });
 }
 
-// Blades that circle an enemy and hit whatever is near it (graft payload "Whirling Blades"). They
+// Blades that circle an enemy and hit whatever is near it (fusion payload "Whirling Blades"). They
 // follow the enemy while it lives and stay where it died after that.
 export function addSpin(run, src, target, radius, ttl, tick, dmg, depth, cause) {
   return add(run, { kind: SPIN, src, e: target, x: target.x, y: target.y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, cause });
@@ -90,7 +90,7 @@ export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
   return add(run, { kind: VORTEX, src, x, y, r: radius, ttl, life: ttl, pull, dmg, depth });
 }
 export function addPillar(run, src, x, y, radius, tele, dmg, depth, cause, star = false) {
-  const wr = src && src.graft && src.graft.hooks.wrath;          // Wrath: the pillar stays and joins the lightning net
+  const wr = src && src.fusion && src.fusion.hooks.wrath;          // Wrath: the pillar stays and joins the lightning net
   const life = tele + 0.3 + (wr ? wr.stay : 0);
   return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: life, tele, life, dmg, depth, done: false, net: !!wr, cause, star });
 }
@@ -226,7 +226,7 @@ export function updateHazards(run, dt) {
       if (h.rr >= h.rMax) h.ttl = Math.min(h.ttl, 0.12);
     } else if (h.kind === VORTEX) {
       const reach = h.r * 1.4;
-      const star = h.src && h.src.graft && h.src.graft.hooks.burnVortex;     // Black Sun: a burning star
+      const star = h.src && h.src.fusion && h.src.fusion.hooks.burnVortex;     // Black Sun: a burning star
       let burnNow = false;
       if (star && (h.bt = (h.bt || 0) - dt) <= 0) { h.bt += 0.3; burnNow = true; }
       const n = w.hash.queryRadius(h.x, h.y, reach + MAX_ENEMY_RADIUS, w.scratch);
@@ -277,7 +277,7 @@ export function updateHazards(run, dt) {
       h.x += h.dx * step;
       h.y += h.dy * step;
       h.left -= step;
-      const ck = h.src && h.src.graft && h.src.graft.hooks.crack;           // Fault Line: the wave leaves a burning, shocking crack
+      const ck = h.src && h.src.fusion && h.src.fusion.hooks.crack;           // Fault Line: the wave leaves a burning, shocking crack
       if (ck) {
         h.cd = (h.cd || 0) + step;
         while (h.cd >= ck.every) {
@@ -324,7 +324,7 @@ function zapRod(run, h) {
     addArc(run, h.x, h.y - 14, e.x, e.y);
     queueDamage(run, e, h.dmg, false, 0, 0, 1, h.src, KIND_PROC, CAUSE.DIRECT);
     applyShock(run, e, h.src);
-    const fk = h.src && h.src.graft && h.src.graft.hooks.rodFork;   // Stormspire: every zap forks on like Tempest
+    const fk = h.src && h.src.fusion && h.src.fusion.hooks.rodFork;   // Stormspire: every zap forks on like Tempest
     if (fk) forkChain(run, h.src, e, h.dmg * fk.boost, fk.gens, fk.falloff, fk.jump, 0);
   }
 }
@@ -405,7 +405,7 @@ function netStep(run, dt) {
         const rr = 26 + e.r;
         if (dx * dx + dy * dy > rr * rr) continue;
         seen.add(e.uid);
-        queueDamage(run, e, p.dmg * p.src.graft.hooks.wrath.linkFrac, false, 0, 0, p.depth + 1, p.src, KIND_PROC);
+        queueDamage(run, e, p.dmg * p.src.fusion.hooks.wrath.linkFrac, false, 0, 0, p.depth + 1, p.src, KIND_PROC);
         applyShock(run, e, p.src);
       }
     }
@@ -498,7 +498,7 @@ export function drawHazards(ctx, run) {
       ctx.fill();
     } else if (h.kind === VORTEX) {
       const spin = t * 5;
-      ctx.strokeStyle = h.src && h.src.graft && h.src.graft.hooks.burnVortex ? '#ff8a3c' : '#c58bff';
+      ctx.strokeStyle = h.src && h.src.fusion && h.src.fusion.hooks.burnVortex ? '#ff8a3c' : '#c58bff';
       ctx.lineWidth = 2.5;
       for (let r = 0; r < 3; r++) {
         const rad = h.r * (0.35 + r * 0.3) * (1.05 - 0.25 * (1 - k));

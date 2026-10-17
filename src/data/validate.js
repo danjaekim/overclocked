@@ -11,7 +11,7 @@ import { RARITIES } from './rarities.js';
 import { CLASSES } from './classes.js';
 import { ENEMIES } from './enemies.js';
 import { EFFECTS } from '../effects/index.js';
-import { MASTERWORKS, PAYLOADS, SHAPE_PAYLOAD } from './grafts.js';
+import { MASTERWORKS, PAYLOADS, SHAPE_PAYLOAD } from './fusions.js';
 import { RUN, WAVES, EVENTS } from './waves.js';
 import { RUN_EVENTS } from '../game/run-events.js';
 import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
@@ -226,8 +226,8 @@ export function validateData() {
   for (const r of EVOLUTIONS) {
     const at = `evolution ${r.id}`;
     if (!WEAPONS[r.from]) problems.push(`${at}: unknown from weapon "${r.from}"`);
-    if (r.with && !WEAPONS[r.with]) problems.push(`${at}: unknown fusion partner "${r.with}"`);
-    if (r.with && r.with === r.from) problems.push(`${at}: a fusion needs two different weapons`);
+    if (r.with && !WEAPONS[r.with]) problems.push(`${at}: unknown combo partner "${r.with}"`);
+    if (r.with && r.with === r.from) problems.push(`${at}: a combo needs two different weapons`);
     if (!WEAPONS[r.into]) problems.push(`${at}: unknown into weapon "${r.into}"`);
     else if (WEAPONS[r.into].pool !== false) problems.push(`${at}: the evolved weapon must set pool: false`);
     for (const q of r.requires) {
@@ -269,10 +269,10 @@ export function validateData() {
     });
   }
   if (new Set(MASTERWORKS.map((m) => m.id)).size !== MASTERWORKS.length) problems.push('masterwork ids must be unique');
-  for (const b of Object.keys(BEHAVIORS)) {                                       // a new behavior cannot ship without a graft payload
+  for (const b of Object.keys(BEHAVIORS)) {                                       // a new behavior cannot ship without a fusion payload
     const id = SHAPE_PAYLOAD[b];
-    if (!id) problems.push(`behavior "${b}" has no graft payload (data/grafts.js SHAPE_PAYLOAD)`);
-    else if (!PAYLOADS[id]) problems.push(`graft payload "${id}" is not defined`);
+    if (!id) problems.push(`behavior "${b}" has no fusion payload (data/fusions.js SHAPE_PAYLOAD)`);
+    else if (!PAYLOADS[id]) problems.push(`fusion payload "${id}" is not defined`);
   }
 
   return problems;

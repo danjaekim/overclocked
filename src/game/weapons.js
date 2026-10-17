@@ -49,7 +49,7 @@ export function addWeapon(run, weaponId) {
     // upgrades (levels, forge) and global ones flow through the same stat math
     tags: makeTags([...def.tags, `weapon:${instanceId}`]),
     instanceTag: `weapon:${instanceId}`,
-    graft: null,            // { id, name, donorId, tags, triggers, hooks } once grafted (game/graft.js)
+    fusion: null,            // { id, name, donorId, tags, triggers, hooks } once fused (game/fusion.js)
     cd: 0,
     trigT: def.triggers.map(() => 0),     // interval-trigger timers
   };
@@ -66,9 +66,9 @@ export function instanceTagSet(inst) {
   return makeTags([...inst.def.tags, ...inst.addTags, inst.instanceTag]);
 }
 
-// The name to show for a weapon: a grafted weapon carries its masterwork (or generic graft) name.
+// The name to show for a weapon: a fused weapon carries its masterwork (or generic fusion) name.
 export function weaponName(inst) {
-  return inst.graft ? inst.graft.name : inst.def.name;
+  return inst.fusion ? inst.fusion.name : inst.def.name;
 }
 
 export function canLevelUp(inst) {

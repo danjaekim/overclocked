@@ -1,4 +1,4 @@
-// Graft payload audit: for every generic payload (data/grafts.js PAYLOADS), graft it onto one evolved
+// Fusion payload audit: for every generic payload (data/fusions.js PAYLOADS), fusion it onto one evolved
 // host of every behavior and measure how much of the damage dealt in a pinned crowd the payload adds.
 //   node tools/payload-audit.mjs            all payloads, summary
 //   node tools/payload-audit.mjs saw,quake  just those
@@ -9,7 +9,7 @@ import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
 import { WEAPONS } from '../src/data/weapons.js';
-import { PAYLOADS } from '../src/data/grafts.js';
+import { PAYLOADS } from '../src/data/fusions.js';
 
 const STEP = 1 / 60;
 const SECONDS = 20;
@@ -25,7 +25,7 @@ function measure(hostId, payload) {
   run.player.weapons.length = 0;
   run.director.update = () => {};
   const h = addWeapon(run, hostId);
-  if (payload) h.graft = { id: 'echo', name: 'audit', desc: '', donorId: 'x', tags: [], triggers: [], payload, elements: [], light: false, hooks: {} };
+  if (payload) h.fusion = { id: 'echo', name: 'audit', desc: '', donorId: 'x', tags: [], triggers: [], payload, elements: [], light: false, hooks: {} };
   const homes = [];
   for (let k = 0; k < 16; k++) {
     const a = k * 0.9;
