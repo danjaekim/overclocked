@@ -70,6 +70,17 @@ export const ENEMIES = {
     charge: { every: 5, windup: 0.9, speed: 340, time: 0.7 },
     color: '#c0392b',
   },
+  // Late heavy: slow, thick-skinned, and when it reaches you it stops and slams a marked circle around itself.
+  crusher: {
+    name: 'Crusher',
+    hp: 300, speed: 38, damage: 16, radius: 24,
+    xp: 12,
+    ore: { chance: 0.5, type: 'iron' },
+    ai: 'slammer',
+    armor: 6,
+    slam: { every: 6, windup: 0.9, radius: 95, damage: 12 },
+    color: '#8a8f98',
+  },
   // The late boss: stands off and calls down Meteor Fall (systems/boss-zones.js). Below `rageAt` of its hp it
   // casts faster and drops more circles.
   seer: {

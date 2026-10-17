@@ -31,6 +31,13 @@ export function castMeteors(run, e) {
   }
 }
 
+// A Crusher's slam: one circle centred on the enemy, which stands still while it fills.
+export function castSlam(run, e) {
+  const s = e.def.slam;
+  const scale = run.director ? run.director.damageScale : 1;
+  run.bossZones.push({ x: e.x, y: e.y, r: s.radius, t: 0, fuse: s.windup, dmg: s.damage * scale });
+}
+
 export function updateBossZones(run, dt) {
   const list = run.bossZones;
   if (list.length === 0) return;

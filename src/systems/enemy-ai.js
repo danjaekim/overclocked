@@ -4,7 +4,7 @@
 import { randomPerimeterPoint } from '../game/director.js';
 import { affixDefs } from '../data/elites.js';
 import { spawnEnemyShot } from './enemy-shots.js';
-import { castMeteors } from './boss-zones.js';
+import { castMeteors, castSlam } from './boss-zones.js';
 
 const SEP_RADIUS = 2.2;       // x enemy radius
 const SEP_MAX_NEIGHBOURS = 4;
@@ -54,6 +54,21 @@ function casterStep(run, e, d, dt) {
   }
   if (e.ai === AI_WINDUP) return 0;
   return d < c.range * 0.75 ? -1 : d > c.range ? 1 : 0;
+}
+
+// Slammer (Crusher): walks at the player; once within reach and off cooldown it stops, flashes, and the
+// circle it marked around itself blasts at the end of `windup`. Returns true while it stands still.
+function slamStep(run, e, d, dt) {
+  const s = e.def.slam;
+  if (e.ai === AI_CHASE) {
+    e.aiCd -= dt;
+    if (e.aiCd <= 0 && d < s.radius * 1.6) { e.ai = AI_WINDUP; e.aiT = s.windup; castSlam(run, e); }
+    return false;
+  }
+  e.aiT -= dt;
+  e.flash = 0.05;
+  if (e.aiT <= 0) { e.ai = AI_CHASE; e.aiCd = s.every; }
+  return true;
 }
 
 // Ranged: once inside `range` it stops, counts down, flashes through the windup and throws.
@@ -136,6 +151,7 @@ export function updateEnemies(run, dt) {
     let vx = dx * inv * sp;
     let vy = dy * inv * sp;
     if (stunned) { vx = 0; vy = 0; }
+    else if (e.def.slam) { if (e.slowMul > 0 && slamStep(run, e, Math.sqrt(d2), dt)) { vx = 0; vy = 0; } }
     else if (e.def.caster) { vx *= casterMode; vy *= casterMode; }
     else if (e.def.ranged && rangedStep(run, e, d, dt)) { vx = 0; vy = 0; }
     if (e.def.charge && !stunned) {

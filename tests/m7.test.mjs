@@ -282,3 +282,19 @@ test('the Ashen Seer arrives at 8:00, keeps its distance, and its meteors mark c
   for (let i = 0; i < 60 * 2; i++) { run.player.iframes = 0; tick(run, 1 / 60); }
   assert.ok(run.player.hp < hp, 'standing still gets hit');
 });
+
+test('a Crusher stops and marks a circle around itself near the player, which blasts when the windup ends', () => {
+  const run = createRun({ seed: 1, view: VIEW, debug: { god: false }, classId: 'archer' });
+  run.player.hp = run.player.maxHp = 5000;
+  const e = spawnEnemy(run, 'crusher', run.player.x + 60, run.player.y, 1);
+  e.aiCd = 0.01;
+  for (let i = 0; i < 10 && run.bossZones.length === 0; i++) tick(run, STEP);
+  assert.equal(run.bossZones.length, 1, 'the slam is marked');
+  const x = e.x;
+  tick(run, 0.3);
+  assert.ok(Math.abs(e.x - x) < 3, 'it stands still while the circle fills');
+  const hp = run.player.hp;
+  tick(run, 1);
+  assert.equal(run.bossZones.length, 0);
+  assert.ok(run.player.hp < hp, 'the slam hits a player inside the circle');
+});

@@ -1,9 +1,27 @@
-// Hand-drawn boss sprites (woodcut ink style, 64x64 grid, same filter as sprite-art.js / elite-art.js).
+// Hand-drawn boss and heavy-enemy sprites (woodcut ink style, 64x64 grid, same filter as sprite-art.js / elite-art.js).
 
 const HEAD = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 76 76"><defs><filter id="rough" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/></filter></defs>';
 const INK = '<g filter="url(#rough)" fill="#1d1713" stroke="#e9dcc0" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">';
 
 export const BOSS_ART = {
+  // Crusher: a hulking stone-plated ogre, one cracked slab on its shoulder and a heavy fist raised to slam.
+  crusher: HEAD + '<ellipse cx="32" cy="60" rx="25" ry="3.4" fill="#000" opacity=".3"/>' + INK +
+    '<ellipse cx="20" cy="57" rx="9" ry="4" fill="#5b5f66"/><ellipse cx="44" cy="57" rx="9" ry="4" fill="#5b5f66"/>' +
+    '<ellipse cx="32" cy="42" rx="24" ry="18" fill="#7d828b"/>' +
+    '<path d="M14 36 L24 30 L26 42 L16 48 Z M38 32 L50 36 L48 48 L38 44 Z" fill="#9aa0aa" stroke-width="1.6"/>' +
+    '<path d="M30 34 L33 40 L29 46 L33 52" fill="none" stroke="#1d1713" stroke-width="1.4"/>' +
+    '<path d="M44 34 L52 28" stroke="#7d828b" stroke-width="9" fill="none"/>' +
+    '<circle cx="53" cy="22" r="11" fill="#5b5f66"/>' +
+    '<path d="M46 20 l3 -4 M52 14 l1 -4 M58 17 l4 -2" stroke="#e9dcc0" stroke-width="1.6" fill="none"/>' +
+    '<path d="M6 30 L16 24 L24 34 L14 44 Z" fill="#9aa0aa"/>' +
+    '<path d="M10 32 L16 38 M14 28 L18 34" stroke="#1d1713" stroke-width="1.2" fill="none"/>' +
+    '<circle cx="31" cy="24" r="12" fill="#7d828b"/>' +
+    '<path d="M21 17 L18 7 L26 13 Z M41 17 L44 7 L36 13 Z" fill="#e9dcc0" stroke-width="1.2"/>' +
+    '</g>' +
+    '<path d="M23 22 l7 3 M39 22 l-7 3" stroke="#1d1713" stroke-width="2.4" stroke-linecap="round"/>' +
+    '<circle cx="26" cy="26" r="2" fill="#e8531e"/><circle cx="36" cy="26" r="2" fill="#e8531e"/>' +
+    '<path d="M25 32 Q31 36 37 32" fill="none" stroke="#1d1713" stroke-width="2"/></svg>',
+
   // Ashen Seer: a hooded cinder-priest in a violet robe, antlers of bone, a burning orb held aloft in one hand.
   seer: `${HEAD}<ellipse cx="30" cy="60" rx="24" ry="3.4" fill="#000" opacity=".3"/>${INK}` +
     '<path d="M10 60 Q6 38 20 24 L42 24 Q56 38 52 60 Z" fill="#3b2a4a"/>' +                      // the robe
