@@ -8,6 +8,7 @@ import { createOverlays } from './ui/overlay.js';
 import { createRotatePrompt } from './ui/rotate-prompt.js';
 import { createGame } from './game/game.js';
 import { createDebug, readParams } from './debug/debug.js';
+import { setNumberStyle } from './render/fx.js';
 import { validateData } from './data/validate.js';
 import { createSave, browserStorage } from './save/save.js';
 import { createRunSave } from './save/run-save.js';
@@ -59,4 +60,5 @@ const loop = createLoop({
 loop.start();
 
 // Handy for poking around in a desktop console or automated tests.
-window.__overforged = { game, view, debug, input, save, audio };
+setNumberStyle(params.numScale, params.numFx);
+window.__overforged = { game, view, debug, input, save, audio, setNumberStyle };

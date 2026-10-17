@@ -13,14 +13,29 @@ const KIND_BURST = 3;
 const MAX_BURSTS = 36;        // flashes alive at once: a chain reaction through a packed crowd stays readable and cheap
 
 const numStr = [];
+const SUFFIX = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi'];
 function numberText(n) {
-  if (n > 999) return String(n);
-  return numStr[n] || (numStr[n] = String(n));
+  if (n <= 999) return numStr[n] || (numStr[n] = String(n));
+  if (n < 10000) return String(n);
+  let k = 0;
+  while (n >= 1000 && k < SUFFIX.length - 1) { n /= 1000; k++; }
+  return (n < 100 ? n.toFixed(1).replace(/\.0$/, '') : String(Math.round(n))) + SUFFIX[k];
+}
+
+// Display experiment: do bigger numbers feel better? `scale` multiplies what is SHOWN (damage itself is untouched);
+// `big` also makes crit text larger, lets numbers linger and allows more of them on screen. Set from ?numscale / ?numfx.
+let numScale = 1;
+let numBig = false;
+let maxNumbers = MAX_NUMBERS;
+export function setNumberStyle(scale = 1, big = false) {
+  numScale = scale > 0 ? scale : 1;
+  numBig = !!big;
+  maxNumbers = big ? 100 : MAX_NUMBERS;
 }
 
 export function addDamageNumber(run, x, y, amount, crit) {
   const w = run.world;
-  if (w.fxNumbers >= MAX_NUMBERS) return;
+  if (w.fxNumbers >= maxNumbers) return;
   const f = w.fx.acquire();
   if (!f) return;
   const r = run.fxRng;
@@ -29,9 +44,9 @@ export function addDamageNumber(run, x, y, amount, crit) {
   f.y = y;
   f.vx = (r.next() - 0.5) * 24;
   f.vy = -70;
-  f.ttl = f.maxTtl = crit ? 0.8 : 0.55;
+  f.ttl = f.maxTtl = (crit ? 0.8 : 0.55) * (numBig ? 1.6 : 1);
   f.crit = crit;
-  f.text = numberText(Math.max(1, Math.round(amount)));
+  f.text = numberText(Math.max(1, Math.round(amount * numScale)));
   w.fxNumbers++;
 }
 
@@ -352,7 +367,7 @@ export function drawFx(ctx, view, run) {
   ctx.lineJoin = 'round';
   for (let pass = 0; pass < 2; pass++) {
     const wantCrit = pass === 1;
-    ctx.font = wantCrit ? '700 20px system-ui, sans-serif' : '600 14px system-ui, sans-serif';
+    ctx.font = wantCrit ? (numBig ? '800 28px system-ui, sans-serif' : '700 20px system-ui, sans-serif') : (numBig ? '700 17px system-ui, sans-serif' : '600 14px system-ui, sans-serif');
     ctx.fillStyle = wantCrit ? '#ffd34d' : '#ffffff';
     ctx.strokeStyle = 'rgba(0,0,0,0.75)';
     ctx.lineWidth = wantCrit ? 4 : 3;

@@ -1,5 +1,5 @@
 // Debug helpers, enabled with ?debug=1 (adds a `stress` button and a `lab` panel for trying any
-// weapon, branch or masterwork directly). Other URL flags: ?god=1 (no damage), ?seed=N.
+// weapon, branch or masterwork directly). Other URL flags: ?god=1 (no damage), ?seed=N, ?numscale=N and ?numfx=1 (damage number display experiment).
 
 export function readParams() {
   const q = new URLSearchParams(window.location.search);
@@ -8,6 +8,8 @@ export function readParams() {
     god: q.get('god') === '1',
     unlockAll: q.get('unlock') === 'all',   // ?unlock=all shows every class as unlocked (not saved)
     classId: q.get('class'),         // ?class=smith starts that class directly, skipping class select
+    numScale: q.has('numscale') ? Math.max(0.01, Number(q.get('numscale')) || 1) : 1,   // ?numscale=25 multiplies the damage numbers SHOWN (not the damage)
+    numFx: q.get('numfx') === '1',   // ?numfx=1: bigger crit text, numbers last longer, more of them alive
     seed: q.has('seed') ? Number(q.get('seed')) >>> 0 : null,
   };
 }
