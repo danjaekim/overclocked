@@ -50,6 +50,7 @@ for (const v of spec.variants) {
     WEAPON_OVERRIDE: v.weaponOverride ? JSON.stringify(v.weaponOverride) : '',
     SF_OVERRIDE: v.sfOverride ? JSON.stringify(v.sfOverride) : '',
     ENEMY_OVERRIDE: v.enemyOverride ? JSON.stringify(v.enemyOverride) : '',
+    ...(v.env || {}),                                   // extra environment for the bench (e.g. BOT_FORGE=full)
   };
   for (const k of ['CLASS_OVERRIDE', 'WEAPON_OVERRIDE', 'SF_OVERRIDE', 'ENEMY_OVERRIDE']) if (!env[k]) delete env[k];
   if (mode === 'dps') {

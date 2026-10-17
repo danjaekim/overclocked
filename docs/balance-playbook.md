@@ -17,6 +17,8 @@ All headless, deterministic, no dependencies. Run from the repo root.
 | `node tools/bench.mjs --bots --class <id> --seeds N [--json]` | Bot win rate, level, kills, level and hp at 5:00, death times, the bot's build at 5:00 and at the end |
 | `node tools/bench.mjs --dps` | Max-level DPS per weapon: single target, pinned crowd of 24, live crowd of 40 walking goblins. `DPS_IDS=a,b` narrows it |
 | `node tools/bench.mjs --starforge` / `--masterworks` | A weapon (or masterwork fusion at +15) with and without its Starforge mutation. `STAR_ONLY=`, `MW_ONLY=` narrow them |
+| `node tools/bench.mjs --tempers [--real]` | The forge's tempers: `--tempers` sweeps the generic pair (edit the candidates or pass `TEMPER_SET` JSON), `--real` measures the four tempers each weapon is really offered, one weapon per behavior (`TEMPER_IDS=` narrows). DPS relative to the bare weapon, single / pinned / live |
+| `node tools/bench.mjs --affixes [--legendary]` | Every eligible reforge affix (or legendary) on five representative weapons, DPS relative to the bare weapon. Bane and kill-driven effects (Wellspring, Overflow) read 1.0 on this bench: it spawns no elites and rarely kills, so measure them in a killing crowd instead |
 | `node tools/bench.mjs --classes` | The same four builds played by every class: a class's damage multiplier on equal footing |
 | `node tools/diag-class.mjs <class> [seeds]` | How a class's damage actually lands in bot play: enemies hit per arrow, distance of hits (Long Shot), time moving (Fleet), damage by source and cause, deaths. `DIAG_END=600` for the whole run (default first 300 s) |
 | `node tools/variants.mjs <spec.json> [--seeds N]` | Runs any set of variants (data overrides) in parallel and prints one table, with standard errors on win rates. Specs live in `tools/specs/` |
@@ -30,6 +32,9 @@ Overrides (environment variables read by `tools/bench.mjs`; `variants.mjs` sets 
   The default (`plain`) bot is greedy and naive (about 1.7 weapons at 5:00, ignores evolution requirements).
 - `BOT_SPEND=none|quench|all` what the bot buys with starsteel. Use `none` for class and weapon work so Starforge does
   not blur the comparison.
+- `BOT_FORGE=full` the bot also reforges every weapon (best rarity of the three) and, with `BOT_SPEND=all`, buys a legendary at +10.
+  Without it the bot only enhances its first weapon and always takes the first temper, so reforge affixes and legendaries
+  never show up in bot win rates. `variants.mjs` specs can set it with `"env": { "BOT_FORGE": "full" }`.
 - `BENCH_CLASS=<id>` puts a class kit back into the weapon measurements (by default they use no class at all).
 
 Spec example (`tools/specs/archer-rain-tune.json` is a real one):

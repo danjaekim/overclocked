@@ -33,7 +33,9 @@ import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
 import { enhance, canEnhance, chooseTemper, quench, canQuench, temperOptions, rebuildAffixes, eligibleAffixes } from '../src/game/forge.js';
 import { canStarforge, starforge } from '../src/game/starforge.js';
-import { legendaryEligible } from '../src/game/legendary.js';
+import { legendaryEligible, canLegendary, rollLegendary, applyLegendary } from '../src/game/legendary.js';
+import { rollReforge, applyReforge, canReforge, slotCount } from '../src/game/forge.js';
+import { AFFIXES } from '../src/data/forge.js';
 import { MUTATIONS } from '../src/data/starforge.js';
 if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(process.env.SF_OVERRIDE))) Object.assign(MUTATIONS[b], o);   // tuning sweeps without editing data
 if (process.env.CLASS_OVERRIDE) for (const [c, o] of Object.entries(JSON.parse(process.env.CLASS_OVERRIDE))) {   // class tuning sweeps: {"archer":{"addMods":[{"stat":"maxHp","op":"flat","value":30}],"trait":{"dodge":{"chance":0.3}},"startWeapon":"x"}}
@@ -61,6 +63,7 @@ import { fuse } from '../src/game/fusion.js';
 import { MASTERWORKS } from '../src/data/fusions.js';
 
 const args = process.argv.slice(2);
+const FULL_FORGE = process.env.BOT_FORGE === 'full';   // the bot also reforges every weapon and buys legendaries (M45e); default: enhance the first weapon only, as before M45
 const SPEND = process.env.BOT_SPEND || 'all';        // what the bot buys with starsteel at the forge: 'none' | 'quench' | 'all' (Quench and Starforge)
 const flag = (n) => args.includes(n);
 const argv = process.argv;
@@ -204,6 +207,22 @@ function starDps(weaponId, star, mode, seed, prep) {
 
 // ---- bot -------------------------------------------------------------------------------------
 
+// BOT_FORGE=full: reforge each weapon's empty slots (best rarity of the three, with a pull towards damage) and, with
+// starsteel and BOT_SPEND=all, buy a legendary at +10 (the first of the three shown).
+const RANK = { common: 0, uncommon: 1, rare: 2, epic: 3 };
+function fullForge(run, p) {
+  for (const w of p.weapons) {
+    if (w.pendingTemper) chooseTemper(run, w, 0);
+    for (let k = 0; k < 6 && canReforge(run, w) && w.affixes.length < slotCount(w) && run.ore >= 60; k++) {
+      const r = rollReforge(run, w, w.affixes.length);
+      if (!r.ok) break;
+      let best = 0;
+      r.options.forEach((id, i) => { if (RANK[AFFIXES[id].rarity] > RANK[AFFIXES[r.options[best]].rarity]) best = i; });
+      applyReforge(run, w, best);
+    }
+    if (SPEND === 'all' && canLegendary(run, w) && w.enhance >= 10) { if (rollLegendary(run, w).ok) applyLegendary(run, w, 0); }
+  }
+}
 const SMART = process.env.BOT_POLICY === 'smart';   // a bot that chases evolution requirements and the perks/passives that scale what it owns
 const WISH = new Set(['volley', 'heavy_fletching', 'splitting_tips', 'keen_eye', 'wind_sigil', 'broad_strokes', 'kindling', 'fan_the_flames', 'keen_whetstone', 'quickening_gear', 'tempered_core', 'long_reach', 'bloodletting', 'scholars_lens']);
 function smartBonus(o, run) {
@@ -320,6 +339,7 @@ export function playBot(classId, seed, onTick) {
       for (const w of p.weapons) for (const r of recipesFor(w)) if (canEvolve(run, w, r)) { evolve(run, w, r); evolved++; }
       if (run.starsteel !== ss.prev) { ss.spent += ss.prev - run.starsteel; ss.prev = run.starsteel; }
       for (let i = 0; i < 30; i++) { const w = p.weapons[0]; if (w && w.pendingTemper) chooseTemper(run, w, 0); if (SPEND !== 'none' && w && canStarforge(run, w) && SPEND === 'all') starforge(run, w); if (SPEND !== 'none' && w && w.enhance >= 7 && !w.quench && canQuench(run, w)) quench(run, w); if (w && canEnhance(run, w)) enhance(run, w); else break; }
+      if (FULL_FORGE) fullForge(run, p);
       iron.prev = run.ore;
     }
   }
