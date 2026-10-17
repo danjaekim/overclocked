@@ -6,8 +6,12 @@ import { GEM } from '../data/progression.js';
 import { ORES } from '../data/ores.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST, KIND_HEAL, KIND_MAGNET } from '../systems/pickups.js';
-import { ELITE, affixDefs } from '../data/elites.js';
+import { drawEliteBack, drawEliteFront } from './elites.js';
 import { getSprite } from './sprites.js';
+import { ELITE_ART } from './elite-art.js';
+
+// An elite wears the body of its first affix when there is one, its own enemy's sprite otherwise.
+export const spriteIdOf = (e) => (e.elite === 1 && ELITE_ART['elite_' + e.affix] ? 'elite_' + e.affix : e.defId);
 
 const TAU = Math.PI * 2;
 const ALL_DEFS = { ...ENEMIES, ...PROPS };             // enemies and props share the pool and the drawing
@@ -205,11 +209,21 @@ export function drawEnemies(ctx, view, run) {
 
   // Sprites where the art has loaded; the old discs otherwise (tests, or while loading).
   const px = run.player.x;
+  const py = run.player.y;
+  const blit = (e, ox, oy) => {                         // a ghost of an enemy's sprite, offset (swift afterimages)
+    const spr = getSprite(spriteIdOf(e), false, 0);
+    if (!spr) return;
+    const w = e.r * SPRITE_K * (spr.pad || 1);
+    const cy = e.y - e.r * LIFT_K + oy;
+    if (px < e.x) { ctx.save(); ctx.translate(e.x + ox, cy); ctx.scale(-1, 1); ctx.drawImage(spr, -w / 2, -w / 2, w, w); ctx.restore(); }
+    else ctx.drawImage(spr, e.x + ox - w / 2, cy - w / 2, w, w);
+  };
+  drawEliteBack(ctx, list, x0, x1, y0, y1, px, py, run.time, blit);
   let discs = false;
   for (let i = 0; i < list.length; i++) {
     const e = list[i];
     if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
-    const spr = getSprite(e.defId, e.flash > 0, e.status);
+    const spr = getSprite(spriteIdOf(e), e.flash > 0, e.status);
     if (!spr) { discs = true; continue; }
     const w = e.r * SPRITE_K * (spr.pad || 1);       // status looks are drawn padded so their outlines fit
     const cy = e.y - e.r * LIFT_K;
@@ -251,7 +265,7 @@ export function drawEnemies(ctx, view, run) {
   }
 
   if (discs) drawStatusRings(ctx, list, x0, x1, y0, y1);        // the tint shows a status on a sprite; plain discs (no art) keep rings
-  drawEliteMarks(ctx, list, x0, x1, y0, y1, run.time);
+  drawEliteFront(ctx, list, x0, x1, y0, y1, px, py, run.time);
   drawWards(ctx, list, x0, x1, y0, y1);
 }
 
@@ -270,31 +284,6 @@ function drawWards(ctx, list, x0, x1, y0, y1) {
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.globalAlpha = 1;
-  }
-}
-
-// Elites get a pulsing gold ring and their affix name above them (there are only a few at a time).
-function drawEliteMarks(ctx, list, x0, x1, y0, y1, t) {
-  let started = false;
-  for (let i = 0; i < list.length; i++) {
-    const e = list[i];
-    if (e.elite !== 1) continue;
-    if (e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
-    if (!started) {
-      started = true;
-      ctx.lineWidth = 3;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.font = '700 12px system-ui, sans-serif';
-    }
-    ctx.strokeStyle = ELITE.color;
-    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 6);
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.r + 4, 0, TAU);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = ELITE.color;
-    ctx.fillText(affixDefs(e).map((a) => a.name).join(' '), e.x, e.y - e.r - 8);
   }
 }
 

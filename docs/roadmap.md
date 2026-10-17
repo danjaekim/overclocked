@@ -87,6 +87,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44h** *(done)* | Weapon looks, round 2 (v0.44.8) | Auras, Halo rings, orbiting blades, mortar shells, Judgement's pillar and organic ribbon trails. Left: chain weapons (Static Rod, Tempest), summons. |
 | **M44i** *(done)* | Singularity and Gyre (v0.44.9) | Singularity opens its vortex on the crowd far from you; Gyre stops just past the first enemy it hits (nothing hit: comes home). Damage retuned to keep both level with their peers. |
 | **M44j** *(done)* | Shockwave look (v0.44.10) | Ground waves are a crescent crest with a crack, rubble and dust instead of a line. |
+| **M44k** *(done)* | Elite looks (v0.44.12) | Each elite affix has its own body and effects instead of a gold ring on a bigger brute. |
 | **M26–M28** *(planned)* | Evolution branches and grafts | Two evolutions per starter weapon, grafting one evolved weapon into another (12 named masterworks plus a generic echo graft), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 
