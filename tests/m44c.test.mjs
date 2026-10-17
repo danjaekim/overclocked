@@ -28,3 +28,39 @@ test('every masterwork can be fused the way the preview does it: both at max lev
     assert.equal(run.player.weapons.length, 1);
   }
 });
+
+test('builds: every finished build is reachable by its class: its weapons, evolutions, passives and fusion all line up', async () => {
+  const { BUILDS } = await import('../src/data/builds.js');
+  const { WEAPONS } = await import('../src/data/weapons.js');
+  const { CLASSES } = await import('../src/data/classes.js');
+  const { EVOLUTIONS } = await import('../src/data/evolutions.js');
+  const { masterworkFor } = await import('../src/game/fusion.js');
+  const ok = (id, cls) => WEAPONS[id].class == null || WEAPONS[id].class === cls;
+  for (const b of BUILDS) {
+    const held = new Set([CLASSES[b.cls].startWeapon, ...b.weapons]);
+    assert.ok(held.has(CLASSES[b.cls].startWeapon), b.id);
+    for (const id of b.weapons) assert.ok(ok(id, b.cls), `${b.id}: ${id} is not offered to ${b.cls}`);
+    assert.ok(b.end && b.end.weapons.length >= 2, `${b.id} has a finished build`);
+    for (const id of b.end.weapons) {
+      assert.ok(WEAPONS[id], `${b.id}: ${id}`);
+      if (held.has(id)) continue;                                           // an unevolved weapon you simply keep
+      const recipe = EVOLUTIONS.find((r) => r.into === id && held.has(r.from) && (!r.with || held.has(r.with)));
+      assert.ok(recipe, `${b.id}: ${id} cannot be evolved from ${[...held].join(', ')}`);
+      for (const q of recipe.requires) {
+        if (q.perk) assert.ok(b.perks.includes(q.perk), `${b.id}: ${id} needs the ${q.perk} technique`);
+        if (q.passive) assert.ok(b.passives.includes(q.passive), `${b.id}: ${id} needs the ${q.passive} passive`);
+      }
+    }
+    for (const id of held) assert.ok(b.end.weapons.includes(id) || EVOLUTIONS.some((r) => (r.from === id || r.with === id) && b.end.weapons.includes(r.into)), `${b.id}: ${id} vanishes from the finished build`);
+    if (b.end.fuse) {
+      assert.ok(b.end.fuse.every((id) => b.end.weapons.includes(id)), `${b.id}: fusion parts must be in the finished build`);
+      assert.ok(masterworkFor(b.end.fuse[0], b.end.fuse[1]), `${b.id}: ${b.end.fuse.join(' + ')} is not a masterwork`);
+    }
+  }
+});
+
+test('every class has at least three builds', async () => {
+  const { BUILDS } = await import('../src/data/builds.js');
+  const { CLASSES } = await import('../src/data/classes.js');
+  for (const c of Object.keys(CLASSES)) assert.ok(BUILDS.filter((b) => b.cls === c).length >= 3, c);
+});

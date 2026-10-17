@@ -17,6 +17,7 @@ import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
 import { RARITIES } from '../data/rarities.js';
 import { describe as describeReq } from './evolution.js';
+import { masterworkFor } from './fusion.js';
 import { MASTERWORKS, FUSION, PAYLOADS, SHAPE_PAYLOAD } from '../data/fusions.js';
 
 export const ELEMENTS = ['fire', 'frost', 'storm'];
@@ -208,7 +209,10 @@ export function buildEntries(discovered = { fusions: [] }) {
     out.push({
       tab: 'builds', id: `build:${b.id}`, name: b.name, glyph: b.name[0], rarity: 'rare', elements: ELEMENTS.filter((e) => els.has(e)),
       cat: CLASSES[b.cls].name, classes: [b.cls], summary: b.idea,
-      lines: [b.idea, `Weapons: ${b.weapons.map((w) => WEAPONS[w].name).join(', ')}.`, `Techniques: ${b.perks.map((p) => PERKS[p].name).join(', ')}.`, b.tips],
+      lines: [b.idea, `Weapons: ${b.weapons.map((w) => WEAPONS[w].name).join(', ')}.`,
+        ...(b.end ? [`Finished: ${b.end.weapons.map((w) => WEAPONS[w].name).join(', ')}.${b.end.fuse ? ` Fusion: ${masterworkFor(b.end.fuse[0], b.end.fuse[1]).name}.` : ''}`] : []),
+        ...(b.passives && b.passives.length ? [`Passives: ${b.passives.map((p) => PASSIVES[p].name).join(', ')}.`] : []),
+        `Techniques: ${b.perks.map((p) => PERKS[p].name).join(', ')}.`, b.tips],
       builds: [], parts,
     });
   }

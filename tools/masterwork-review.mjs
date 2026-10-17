@@ -4,7 +4,7 @@
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
-import { fusion } from '../src/game/fusion.js';
+import { fuse } from '../src/game/fusion.js';
 import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 

@@ -55,7 +55,7 @@ const STAR_ONLY = process.env.STAR_ONLY ? process.env.STAR_ONLY.split(',') : nul
 import { addPerk, levelUpPerk, findPerk } from '../src/game/perks.js';
 import { PERKS } from '../src/data/perks.js';
 import { openChest } from '../src/game/chests.js';
-import { fusion } from '../src/game/fusion.js';
+import { fuse } from '../src/game/fusion.js';
 import { MASTERWORKS } from '../src/data/fusions.js';
 
 const args = process.argv.slice(2);
@@ -337,7 +337,17 @@ export function playBot(classId, seed, onTick) {
 // (weapons level 5, perks level 2 or max). Reports a crowd of 120 for 20 s and a stationary-boss
 // duel. Target: every build within 2x of the median; outliers show up here before playtests.
 
-const BUILDS = [
+// --late: the end state of a build (`end: { weapons, fuse }` in data/builds.js): evolved weapons at max level, perks at
+// level 3, the masterwork fused if the build has one. Measured against a bigger crowd and a 20000 hp boss.
+const LATE = flag('--late');
+const LATE_BASE = { archer: 'sunpiercer', smith: 'colossus_maul', berserker: 'reaper_axe', mage: 'prismatic_bolt', summoner: 'grave_legion', saint: 'radiant_halo' };
+
+const BUILDS = LATE ? [
+  ...Object.entries(LATE_BASE).flatMap(([cls, id]) => [
+    { id: `baseline-${cls}`, cls, weapons: [id], perks: [], end: { weapons: [id] } },
+    ...SHARED_BUILDS.filter((b) => b.bench && b.cls === cls && b.end),
+  ]),
+] : [
   { id: 'baseline-archer', cls: 'archer', weapons: ['ember_bow'], perks: [] },
   ...SHARED_BUILDS.filter((b) => b.bench && ['archer'].includes(b.cls)),
   { id: 'baseline-smith', cls: 'smith', weapons: ['forge_hammer'], perks: [] },
@@ -355,6 +365,27 @@ const BUILDS = [
 function buildRun(b, seed = 1) {
   const run = createRun({ seed, view: VIEW, debug: { god: true }, classId: b.cls });
   run.director.update = () => {};
+  if (LATE) {
+    const want = b.end.weapons;
+    for (const w of [...run.player.weapons]) {
+      if (want.includes(w.weaponId)) continue;
+      run.player.stats.removeBySource(`weapon:${w.instanceId}:`);
+      run.player.weapons.splice(run.player.weapons.indexOf(w), 1);
+    }
+    for (const id of want) if (!run.player.weapons.some((w) => w.weaponId === id)) addWeapon(run, id);
+    for (const w of run.player.weapons) while (w.level < w.def.maxLevel && canLevelUp(w)) levelUpWeapon(run, w);
+    for (const id of b.perks) {
+      addPerk(run, id);
+      const e = findPerk(run.player, id);
+      while (e.level < Math.min(3, PERKS[id].maxLevel)) levelUpPerk(run, e);
+    }
+    if (b.end.fuse) {
+      const [h, d] = b.end.fuse.map((id) => run.player.weapons.find((w) => w.weaponId === id));
+      run.starsteel = 1;
+      if (!h || !d || !fuse(run, h, d).ok) throw new Error(`${b.id}: fusion failed`);
+    }
+    return run;
+  }
   for (const id of b.weapons) if (!run.player.weapons.some((w) => w.weaponId === id)) addWeapon(run, id);
   for (const w of run.player.weapons) while (w.level < 5 && canLevelUp(w)) levelUpWeapon(run, w);
   for (const id of b.perks) {
@@ -367,12 +398,13 @@ function buildRun(b, seed = 1) {
 
 function buildCrowd(b) {
   const run = buildRun(b);
-  const N = 200;
+  const N = LATE ? 300 : 200;
+  const hpK = LATE ? 10 : 3;
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2 * 4;
     const d = 120 + (i % 8) * 30;
     const brute = i % 6 === 5;
-    spawnEnemy(run, brute ? 'brute' : 'goblin', Math.cos(a) * d, Math.sin(a) * d, brute ? 3 : 3);
+    spawnEnemy(run, brute ? 'brute' : 'goblin', Math.cos(a) * d, Math.sin(a) * d, hpK);
   }
   for (let i = 0; i < 60 / STEP; i++) {
     run.update(STEP, { x: 0, y: 0 });
@@ -383,11 +415,13 @@ function buildCrowd(b) {
 
 function buildBoss(b) {
   const run = buildRun(b);
-  const boss = spawnEnemy(run, 'warlord', 110, 0);
+  const bx = LATE ? 55 : 110;
+  const boss = spawnEnemy(run, 'warlord', bx, 0);
   boss.speed = 0;
+  if (LATE) boss.hp = boss.maxHp = 20000;
   for (let i = 0; i < 60 / STEP; i++) {
     run.update(STEP, { x: 0, y: 0 });
-    boss.x = 110; boss.y = 0; boss.kx = boss.ky = 0; boss.ai = 0; boss.aiCd = 99;
+    boss.x = bx; boss.y = 0; boss.kx = boss.ky = 0; boss.ai = 0; boss.aiCd = 99;
     if (!boss.alive) return run.time;
   }
   return null;
@@ -464,7 +498,7 @@ if (flag('--starforge')) {
 }
 
 if (flag('--builds')) {
-  console.log('\nBUILDS  (mid-run power: weapons L5, perks L2; crowd = seconds to clear 200 enemies at 3x hp (cap 60); boss = seconds to kill the Warlord)');
+  console.log(LATE ? '\nBUILDS, LATE  (evolved weapons L6, perks L3, fusion applied; crowd = 300 enemies at 10x hp, boss = 20000 hp)' : '\nBUILDS  (mid-run power: weapons L5, perks L2; crowd = seconds to clear 200 enemies at 3x hp (cap 60); boss = seconds to kill the Warlord)');
   console.log(pad('build', 22) + pad('crowd s', 10) + pad('boss s', 8));
   const rows = BUILDS.map((b) => ({ b, kills: buildCrowd(b), boss: buildBoss(b) }));
   for (const r of rows) console.log(pad(r.b.id, 22) + pad(r.kills === null ? '>60' : r.kills.toFixed(1), 10) + pad(r.boss === null ? '>60' : r.boss.toFixed(1), 8));
