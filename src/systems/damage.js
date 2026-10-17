@@ -14,7 +14,7 @@ import { recordDamage, recordKill } from '../game/run-stats.js';
 import { onClassKill } from '../game/class-traits.js';
 import { breakCrate } from './crates.js';
 import { ST } from '../data/statuses.js';
-import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike } from './status.js';
+import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike, stagger } from './status.js';
 
 const IFRAMES = 0.5;       // seconds of invulnerability after a hit
 const HURT_FLASH = 0.15;
@@ -90,6 +90,10 @@ function rollStatuses(run, e, src, amount, depth, kind) {
   const tags = src.tags;
   const rng = run.rng;
   const alive = e.hp > 0;
+  if (alive && kind === KIND_HIT && stats.mods.stagger.length > 0) {      // Crushing temper: a direct hit staggers
+    const st = stats.getFor('stagger', tags);
+    if (st > 0) stagger(e, st);
+  }
   let c = stats.getFor('burnChance', tags);
   if (c > 0 && rng.next() < c && alive) applyBurn(run, e, src, amount, depth);
   c = stats.getFor('chillChance', tags);

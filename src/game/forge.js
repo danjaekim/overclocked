@@ -9,7 +9,7 @@
 // INVARIANT (tested): no outcome of a failed enhance removes the weapon. Only salvage does.
 
 import { markGone } from './run-stats.js';
-import { ENHANCE, REFORGE, SALVAGE, AFFIXES, QUENCH } from '../data/forge.js';
+import { ENHANCE, REFORGE, SALVAGE, AFFIXES, QUENCH, TEMPERS_BY_BEHAVIOR } from '../data/forge.js';
 import { instanceTagSet } from './weapons.js';
 import { refreshResonance } from './resonance.js';
 import { RARITIES } from '../data/rarities.js';
@@ -85,7 +85,9 @@ const temperSource = (inst, level) => `forge:${inst.instanceId}:temper:${level}:
 // The two temper choices for this weapon at that enhance level (its own, else the generic pair).
 export function temperOptions(inst, level) {
   const own = inst.def.forge && inst.def.forge.tempers && inst.def.forge.tempers[level];
-  return own || ENHANCE.tempers[level] || null;
+  if (own) return own;
+  const shape = TEMPERS_BY_BEHAVIOR[inst.def.behavior];
+  return (shape && shape[level]) || ENHANCE.tempers[level] || null;
 }
 
 // Commits one of the two tempers for the pending level.

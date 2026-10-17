@@ -31,7 +31,7 @@ import { ENEMIES } from '../src/data/enemies.js';
 import { generateOffers } from '../src/game/upgrades.js';
 import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
-import { enhance, canEnhance, chooseTemper, quench, canQuench } from '../src/game/forge.js';
+import { enhance, canEnhance, chooseTemper, quench, canQuench, temperOptions } from '../src/game/forge.js';
 import { canStarforge, starforge } from '../src/game/starforge.js';
 import { MUTATIONS } from '../src/data/starforge.js';
 if (process.env.SF_OVERRIDE) for (const [b, o] of Object.entries(JSON.parse(process.env.SF_OVERRIDE))) Object.assign(MUTATIONS[b], o);   // tuning sweeps without editing data
@@ -479,7 +479,7 @@ if (flag('--dps')) {
 // Generic temper balance (M45a): one weapon per behavior, each temper applied alone on a max-level weapon.
 // Reports DPS relative to no temper in single / held / live modes. Candidates are listed here so numbers can be
 // swept without editing data; TEMPER_IDS=id,id narrows the weapons. Pairs: honed vs hasted (+5), mighty vs vast (+10).
-if (flag('--tempers')) {
+if (flag('--tempers') && !flag('--real')) {
   const nSeeds = numArg('--seeds', 3);
   const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
   const ids = process.env.TEMPER_IDS ? process.env.TEMPER_IDS.split(',') : ['storm_volley', 'colossus_maul', 'spirit_blades', 'cinder_ward', 'thunder_lance', 'rime_shards', 'reaper_axe', 'static_rod', 'chakram', 'rime_orbs', 'cinder_mortar', 'prismatic_bolt', 'bone_call', 'halo', 'judgement'];
@@ -515,6 +515,29 @@ if (flag('--tempers')) {
       const f = (r) => `${r.rel.single.toFixed(2)} ${r.rel.held.toFixed(2)} ${r.rel.flow.toFixed(2)}`;
       console.log(pad(id, 16) + names.map((n) => pad(f(rows.find((r) => r.id === id && r.name === n)), 17)).join(''));
     }
+  }
+}
+
+// The real tempers each weapon is offered (M45b): --tempers --real prints, per representative weapon, DPS of each of its four
+// tempers (two at +5, two at +10) relative to the bare weapon, as single / held / live.
+if (flag('--tempers') && flag('--real')) {
+  const nSeeds = numArg('--seeds', 3);
+  const seeds = Array.from({ length: nSeeds }, (_, i) => i + 1);
+  const ids = process.env.TEMPER_IDS ? process.env.TEMPER_IDS.split(',') : ['storm_volley', 'colossus_maul', 'spirit_blades', 'cinder_ward', 'thunder_lance', 'rime_shards', 'reaper_axe', 'static_rod', 'chakram', 'rime_orbs', 'cinder_mortar', 'prismatic_bolt', 'bone_call', 'halo', 'judgement'];
+  console.log(`\nREAL TEMPERS  (DPS relative to the bare weapon; mean of ${nSeeds} seeds; single / held / live)`);
+  for (const id of ids) {
+    const meas = (opt) => ['single', 'held', 'flow'].map((mode) => seeds.reduce((a, sd) => a + starDps(id, false, mode, sd, (run, inst) => {
+      if (opt) for (const m of opt.mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: 'bench:temper' });
+      if (opt && opt.addTags) for (const t of opt.addTags) inst.tags.set.add(t);
+    }), 0) / seeds.length);
+    const base = meas(null);
+    const probe = loneWeaponRun(id, 99).inst;
+    const cells = [];
+    for (const lvl of [5, 10]) for (const o of temperOptions(probe, lvl)) {
+      const r = meas(o);
+      cells.push(pad(o.id, 15) + r.map((v, i) => (base[i] > 0 ? v / base[i] : 0).toFixed(2)).join(' '));
+    }
+    console.log(pad(id, 15) + cells.join(' | '));
   }
 }
 

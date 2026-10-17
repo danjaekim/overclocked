@@ -14,7 +14,7 @@ import { EFFECTS } from '../effects/index.js';
 import { MASTERWORKS, PAYLOADS, SHAPE_PAYLOAD } from './fusions.js';
 import { RUN, WAVES, EVENTS } from './waves.js';
 import { RUN_EVENTS } from '../game/run-events.js';
-import { ENHANCE, REFORGE, AFFIXES, SHRINE } from './forge.js';
+import { ENHANCE, REFORGE, AFFIXES, SHRINE, TEMPERS_BY_BEHAVIOR } from './forge.js';
 import { ORES } from './ores.js';
 import { EVOLUTIONS } from './evolutions.js';
 import { TITLES } from './titles.js';
@@ -183,6 +183,7 @@ export function validateData() {
     }
   };
   checkTempers(ENHANCE.tempers, 'ENHANCE.tempers');
+  for (const [b, tp] of Object.entries(TEMPERS_BY_BEHAVIOR)) { if (!BEHAVIORS[b]) problems.push(`TEMPERS_BY_BEHAVIOR: unknown behavior ${b}`); checkTempers(tp, `behavior ${b} tempers`); for (const lvl of [5, 10]) if (!tp[lvl]) problems.push(`behavior ${b} tempers need a ${lvl} entry`); }
   for (const lvl of [5, 10]) if (!ENHANCE.tempers[lvl]) problems.push(`ENHANCE.tempers needs a ${lvl} entry`);
   for (const [id, w] of Object.entries(WEAPONS)) if (w.forge && w.forge.tempers) checkTempers(w.forge.tempers, `weapon ${id} tempers`);
   for (const [id, w] of Object.entries(WEAPONS)) {

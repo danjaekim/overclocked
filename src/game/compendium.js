@@ -10,7 +10,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { PERKS } from '../data/perks.js';
 import { PASSIVES } from '../data/passives.js';
 import { EVOLUTIONS } from '../data/evolutions.js';
-import { AFFIXES, ENHANCE, QUENCH } from '../data/forge.js';
+import { AFFIXES, ENHANCE, QUENCH, TEMPERS_BY_BEHAVIOR } from '../data/forge.js';
 import { STARFORGE, MUTATIONS } from '../data/starforge.js';
 import { RESONANCE } from '../data/resonance.js';
 import { CLASSES } from '../data/classes.js';
@@ -158,8 +158,23 @@ export function buildEntries(discovered = { fusions: [] }) {
       out.push({
         tab: 'forge', id: `temper:${lvl}:${t.id}`, name: t.name, glyph: '+', rarity: 'rare', elements: elementsOf(t.addTags || []),
         cat: 'Temper', classes: [], summary: `+${lvl} temper: ${t.desc}`,
-        lines: [`Offered at +${lvl}: ${t.desc}`, 'Most weapons have their own pair of tempers; these are the defaults.'], builds: [],
+        lines: [`Offered at +${lvl}: ${t.desc}`, 'The last-resort pair; most weapons are offered a pair that fits how they attack.'], builds: [],
       });
+    }
+  }
+  const seenTemper = new Set();
+  for (const [beh, tp] of Object.entries(TEMPERS_BY_BEHAVIOR)) {
+    for (const lvl of Object.keys(tp)) {
+      for (const t of tp[lvl]) {
+        if (seenTemper.has(t.id)) continue;
+        seenTemper.add(t.id);
+        const shapes = Object.entries(TEMPERS_BY_BEHAVIOR).filter(([, v]) => v === tp).map(([k]) => k);
+        out.push({
+          tab: 'forge', id: `temper:${lvl}:${t.id}`, name: t.name, glyph: '+', rarity: 'rare', elements: elementsOf(t.addTags || []),
+          cat: 'Temper', classes: [], summary: `+${lvl} temper: ${t.desc}`,
+          lines: [`Offered at +${lvl}: ${t.desc}`, `Offered to ${shapes.map(cap).join(', ')} weapons that have no pair of their own.`], builds: [],
+        });
+      }
     }
   }
   for (const [id, r] of Object.entries(RESONANCE)) {

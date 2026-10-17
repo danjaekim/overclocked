@@ -92,3 +92,103 @@ export const AFFIXES = {
   executioner: { name: 'Executioner', rarity: 'epic', desc: 'Crits execute non-bosses under 15% HP', mods: [{ stat: 'executeBelow', op: 'flat', value: 0.15 }] },
   colossal:    { name: 'Colossal',    rarity: 'epic', desc: '30% more area', mods: [{ stat: 'area', op: 'more', value: 0.3 }] },
 };
+
+// Default tempers by weapon behavior (M45b, docs/design-m45.md). Lookup order: a weapon's own `forge.tempers`, then its
+// behavior's pair here, then ENHANCE.tempers (Honed/Hasted, Mighty/Vast). Keyed by behavior id, then +5 / +10.
+const SHOT = {
+  5: [
+    { id: 'longshot', name: 'Longshot', desc: '+2 pierce, +40% speed, 30% more damage', mods: [{ stat: 'pierce', op: 'flat', value: 2 }, { stat: 'projSpeed', op: 'inc', value: 0.4 }, { stat: 'damage', op: 'more', value: 0.3 }] },
+    { id: 'barrage', name: 'Barrage', desc: '+2 projectiles', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }] },
+  ],
+  10: [
+    { id: 'splitshot', name: 'Splitshot', desc: 'Hits split into 3 projectiles that hit for 60% as hard', mods: [{ stat: 'split', op: 'flat', value: 3 }, { stat: 'splitDamage', op: 'flat', value: 0.2 }] },
+    { id: 'ricochet_shot', name: 'Ricochet', desc: 'Bounces 3 times after its pierce runs out', mods: [{ stat: 'ricochet', op: 'flat', value: 3 }] },
+  ],
+};
+const STRIKE = {
+  5: [
+    { id: 'crushing', name: 'Crushing', desc: '50% more damage, hits stagger for 0.4 s, +10% cooldown', mods: [{ stat: 'damage', op: 'more', value: 0.5 }, { stat: 'stagger', op: 'flat', value: 0.4 }, { stat: 'cooldown', op: 'inc', value: 0.1 }] },
+    { id: 'flurry', name: 'Flurry', desc: '-20% cooldown, 10% less area', mods: [{ stat: 'cooldown', op: 'inc', value: -0.2 }, { stat: 'area', op: 'more', value: -0.1 }] },
+  ],
+  10: [
+    { id: 'quaking', name: 'Quaking', desc: '40% more area, +50% knockback', mods: [{ stat: 'area', op: 'more', value: 0.4 }, { stat: 'knockback', op: 'inc', value: 0.5 }] },
+    { id: 'searing_strike', name: 'Searing', desc: 'Becomes a fire weapon: +60% burn chance', mods: [{ stat: 'burnChance', op: 'flat', value: 0.6 }], addTags: ['fire'] },
+  ],
+};
+const ORBIT = {
+  5: [
+    { id: 'halo_blades', name: 'Halo of blades', desc: '+2 blades', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }] },
+    { id: 'whirling', name: 'Whirling', desc: 'Spins 30% faster, 50% more damage', mods: [{ stat: 'projSpeed', op: 'inc', value: 0.3 }, { stat: 'damage', op: 'more', value: 0.5 }] },
+  ],
+  10: [
+    { id: 'razor_ring', name: 'Razor ring', desc: '35% more damage, +10% crit chance, +0.3 crit multiplier', mods: [{ stat: 'damage', op: 'more', value: 0.35 }, { stat: 'critChance', op: 'flat', value: 0.1 }, { stat: 'critMult', op: 'flat', value: 0.3 }] },
+    { id: 'storm_ring', name: 'Storm ring', desc: 'Becomes a storm weapon: +40% shock chance, +1 chain', mods: [{ stat: 'shockChance', op: 'flat', value: 0.4 }, { stat: 'chains', op: 'flat', value: 1 }], addTags: ['storm'] },
+  ],
+};
+const RING = {
+  5: [
+    { id: 'wide_ring', name: 'Wide ring', desc: '35% more area, 15% more damage', mods: [{ stat: 'area', op: 'more', value: 0.35 }, { stat: 'damage', op: 'more', value: 0.15 }] },
+    { id: 'searing_ring', name: 'Searing ring', desc: 'Ticks 15% faster', mods: [{ stat: 'cooldown', op: 'inc', value: -0.15 }] },
+  ],
+  10: [
+    { id: 'vast_ring', name: 'Vast ring', desc: '40% more area, 15% more damage', mods: [{ stat: 'area', op: 'more', value: 0.4 }, { stat: 'damage', op: 'more', value: 0.15 }] },
+    { id: 'brand', name: 'Brand', desc: 'Becomes a fire weapon: +50% burn chance, burns +30% harder', mods: [{ stat: 'burnChance', op: 'flat', value: 0.5 }, { stat: 'burnPower', op: 'flat', value: 0.3 }], addTags: ['fire'] },
+  ],
+};
+const MINIONS = {
+  5: [
+    { id: 'pack', name: 'Pack', desc: '+2 minions', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }] },
+    { id: 'alpha', name: 'Alpha', desc: 'Minions 40% bigger, 40% more damage', mods: [{ stat: 'area', op: 'more', value: 0.4 }, { stat: 'damage', op: 'more', value: 0.4 }] },
+  ],
+  10: [
+    { id: 'horde', name: 'Horde', desc: '+1 minion, 15% more damage', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }, { stat: 'damage', op: 'more', value: 0.15 }] },
+    { id: 'warband', name: 'Warband', desc: '50% more damage, 30% more area', mods: [{ stat: 'damage', op: 'more', value: 0.5 }, { stat: 'area', op: 'more', value: 0.3 }] },
+  ],
+};
+const BOLTS = {
+  5: [
+    { id: 'forked', name: 'Forked', desc: '+2 bolts, +2 chains, chains hit 10% harder', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }, { stat: 'chains', op: 'flat', value: 2 }, { stat: 'chainDamage', op: 'flat', value: 0.1 }] },
+    { id: 'focused', name: 'Focused', desc: '45% more damage', mods: [{ stat: 'damage', op: 'more', value: 0.45 }] },
+  ],
+  10: [
+    { id: 'arc_storm', name: 'Arc storm', desc: '+3 chains, chains hit 30% harder', mods: [{ stat: 'chains', op: 'flat', value: 3 }, { stat: 'chainDamage', op: 'flat', value: 0.3 }] },
+    { id: 'overload', name: 'Overload', desc: 'Becomes a storm weapon: +40% damage, +30% shock chance', mods: [{ stat: 'damage', op: 'more', value: 0.4 }, { stat: 'shockChance', op: 'flat', value: 0.3 }], addTags: ['storm'] },
+  ],
+};
+const TRAIL = {
+  5: [
+    { id: 'lingering', name: 'Lingering', desc: '80% longer lasting, 15% more damage', mods: [{ stat: 'duration', op: 'inc', value: 0.8 }, { stat: 'damage', op: 'more', value: 0.15 }] },
+    { id: 'scorched', name: 'Scorched', desc: '40% more damage, 20% more area', mods: [{ stat: 'damage', op: 'more', value: 0.4 }, { stat: 'area', op: 'more', value: 0.2 }] },
+  ],
+  10: [
+    { id: 'everlasting', name: 'Everlasting', desc: '60% longer lasting, 20% more damage', mods: [{ stat: 'duration', op: 'inc', value: 0.6 }, { stat: 'damage', op: 'more', value: 0.2 }] },
+    { id: 'cinders', name: 'Cinders', desc: 'Becomes a fire weapon: +50% burn chance', mods: [{ stat: 'burnChance', op: 'flat', value: 0.5 }], addTags: ['fire'] },
+  ],
+};
+const ORDNANCE = {
+  5: [
+    { id: 'salvo', name: 'Salvo', desc: '+1 projectile', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }] },
+    { id: 'heavy_ordnance', name: 'Heavy', desc: '40% more damage, 25% more area, +15% cooldown', mods: [{ stat: 'damage', op: 'more', value: 0.4 }, { stat: 'area', op: 'more', value: 0.25 }, { stat: 'cooldown', op: 'inc', value: 0.15 }] },
+  ],
+  10: [
+    { id: 'bombardment', name: 'Bombardment', desc: '+1 projectile, 15% more damage', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }, { stat: 'damage', op: 'more', value: 0.15 }] },
+    { id: 'frostbound', name: 'Frostbound', desc: 'Becomes a frost weapon: +70% chill chance, 30% more damage to chilled enemies', mods: [{ stat: 'chillChance', op: 'flat', value: 0.7 }, { stat: 'vsChilled', op: 'more', value: 0.3 }], addTags: ['frost'] },
+  ],
+};
+export const TEMPERS_BY_BEHAVIOR = {
+  projectile: SHOT,
+  nova: SHOT,
+  rod: SHOT,
+  slam: STRIKE,
+  arc: STRIKE,
+  orbit: ORBIT,
+  aura: RING,
+  pulse: RING,
+  summon: MINIONS,
+  bolt: BOLTS,
+  chain: BOLTS,
+  trail: TRAIL,
+  mortar: ORDNANCE,
+  boomerang: ORDNANCE,
+  judge: ORDNANCE,
+};
