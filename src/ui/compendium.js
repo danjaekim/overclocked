@@ -35,8 +35,9 @@ function entryHtml(e) {
 
 // A live preview under an open weapon entry (one at a time: the one opened last).
 function previewHtml(e) {
-  if (e.tab !== 'weapons' && e.tab !== 'evolve') return '';
+  if (e.tab !== 'weapons' && e.tab !== 'evolve' && !e.fusePair) return '';
   if (state.previewId !== e.id) return `<span class="pvgo" role="button" data-act="pv:${e.id}">&#9654; Watch it in action</span>`;
+  if (e.fusePair) return `<div class="pv"><canvas class="cprev" data-prev="${e.fusePair[0]}" data-pair="${e.fusePair.join(':')}" data-lv="99" data-act="noop"></canvas><div class="pvbar"><span class="pvlv on">Max, fused</span></div></div>`;
   const levels = previewLevels(e.id);
   const lv = levels.includes(state.previewLevel) ? state.previewLevel : levels[levels.length - 1];
   const chips = levels.map((l, i) => `<span class="pvlv${l === lv ? ' on' : ''}" role="button" data-act="pl:${e.id}:${l}">${i === levels.length - 1 && levels.length > 1 ? 'Max' : 'Lv ' + l}</span>`).join('');
@@ -47,7 +48,7 @@ function previewHtml(e) {
 function mountPreview() {
   const c = document.querySelector('canvas.cprev');
   if (!c) { stopPreview(); return; }
-  startPreview(c, c.dataset.prev, Number(c.dataset.lv));
+  startPreview(c, c.dataset.prev, Number(c.dataset.lv), c.dataset.pair ? c.dataset.pair.split(':') : null);
 }
 
 function listHtml() {
@@ -116,7 +117,7 @@ export function showCompendium(overlays, { onClose, discovered }) {
       const opened = document.querySelector(`.centry.open[data-act="cx:${id}"]`);
       if (opened && opened.scrollIntoView) opened.scrollIntoView({ block: 'nearest' });       // keep the preview and its buttons in view
     } else if (kind === 'pv') {
-      state.previewId = a;
+      state.previewId = act.slice(3);
       state.previewLevel = 0;
       redraw();
     } else if (kind === 'pl') {

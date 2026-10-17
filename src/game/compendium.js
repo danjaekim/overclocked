@@ -194,6 +194,7 @@ export function buildEntries(discovered = { fusions: [] }) {
       elements: ok ? ELEMENTS.filter((e) => WEAPONS[m.host].tags.includes(e) || WEAPONS[m.donor].tags.includes(e)) : [],
       cat: 'Masterwork', classes: [],
       summary: ok ? m.desc : 'Not found yet. Fuse the right weapon into this one.',
+      fusePair: ok ? [m.host, m.donor] : null,
       lines: ok ? [m.desc, `Host: ${WEAPONS[m.host].name}. Donor: ${WEAPONS[m.donor].name}. Either order works; the host is fixed.`]
         : [`Something is waiting to be fused into the ${WEAPONS[m.host].name}.`], builds: [],
     });

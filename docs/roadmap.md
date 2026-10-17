@@ -91,6 +91,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44l** *(done)* | A late boss (v0.44.13) | The Ashen Seer arrives at 8:00 and calls down Meteor Fall: marked circles you have to move out of. The Warlord now comes at 4:00. |
 | **M44m** *(done)* | Crusher (v0.44.14) | A slow, armoured late enemy that stops and slams a marked circle around itself. Spawns from 6:00. |
 | **M44n** *(done)* | Grafts renamed to Fusions (v0.44.15) | Grafting is now fusing everywhere. The old two-base-weapon evolutions that were called fusions are now called combos. Old saves still load. |
+| **M44o** *(done)* | Fusion previews (v0.44.16) | Discovered masterwork fusions can be watched in action in the compendium, like weapons. |
 | **M26–M28** *(planned)* | Evolution branches and fusions | Two evolutions per starter weapon, fusing one evolved weapon into another (12 named masterworks plus a generic echo fusion), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 

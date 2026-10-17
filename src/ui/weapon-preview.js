@@ -8,6 +8,8 @@ import { spawnEnemy } from '../game/director.js';
 import { addWeapon, levelUpWeapon } from '../game/weapons.js';
 import { WEAPONS } from '../data/weapons.js';
 import { getSprite } from '../render/sprites.js';
+import { fuse } from '../game/fusion.js';
+import { FUSION } from '../data/fusions.js';
 
 const VIEW = { w: 480, h: 300, scale: 1, insetTop: 0, isTouch: false };
 const STEP = 1 / 60;
@@ -25,7 +27,8 @@ export function stopPreview() {
   current = null;
 }
 
-export function startPreview(canvas, weaponId, level) {
+// `pair` = [hostId, donorId] previews a fusion: both weapons at max level, fused the way the forge does it.
+export function startPreview(canvas, weaponId, level, pair = null) {
   stopPreview();
   const def = WEAPONS[weaponId];
   if (!def || !canvas.getContext) return null;
@@ -42,6 +45,13 @@ export function startPreview(canvas, weaponId, level) {
   run.player.weapons.length = 0;
   const inst = addWeapon(run, weaponId);
   while (inst.level < Math.min(level, def.maxLevel)) levelUpWeapon(run, inst);
+  if (pair) {
+    const donor = addWeapon(run, pair[1]);
+    while (donor && donor.level < donor.def.maxLevel) levelUpWeapon(run, donor);
+    run.starsteel = FUSION.cost;
+    if (donor) fuse(run, inst, donor);
+    run.toast = null;
+  }
 
   let seed = 12345;
   const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
