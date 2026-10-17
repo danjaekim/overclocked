@@ -16,7 +16,9 @@ import { RESONANCE } from '../data/resonance.js';
 import { CLASSES } from '../data/classes.js';
 import { BUILDS } from '../data/builds.js';
 import { RARITIES } from '../data/rarities.js';
-import { describe as describeReq } from './evolution.js';
+import { describe as describeReq, recipeProgress } from './evolution.js';
+import { findPerk } from './perks.js';
+import { findPassive } from './passives.js';
 import { masterworkFor } from './fusion.js';
 import { MASTERWORKS, FUSION, PAYLOADS, SHAPE_PAYLOAD } from '../data/fusions.js';
 
@@ -71,6 +73,15 @@ export function perkCategory(id, def) {
   return 'General';
 }
 
+// Section builders: the detail view of an entry is a list of these, so the UI can give each kind of
+// information its own look (a paragraph, label/value facts, a level ladder, an evolution recipe).
+const text = (t) => ({ kind: 'text', text: t });
+const facts = (title, rows) => ({ kind: 'facts', title, rows });          // rows: [label, value]
+const levels = (title, rows) => ({ kind: 'levels', title, rows });         // rows: [badge, text]
+const bullets = (title, items) => ({ kind: 'list', title, items });
+const evolinks = (title, items) => ({ kind: 'evolinks', title, items });   // items: recipe ids; each links to its Evolve entry
+const recipes = (title, items) => ({ kind: 'recipes', title, items });     // items: { id, role: 'made' | 'next' }
+
 function recipeLines(recipe) {
   return recipe.requires.map((r) => describeReq(r, recipe));
 }
@@ -95,11 +106,20 @@ function weaponEntry(id, def, buildsFor) {
     for (const lvl of Object.keys(def.forge.tempers)) lines.push(`+${lvl} temper: ${def.forge.tempers[lvl].map((t) => t.name).join(' or ')}.`);
   }
   const classes = def.class ? [def.class] : [];
+  const made = EVOLUTIONS.filter((x) => x.into === id).map((r) => ({ id: r.id, role: 'made' }));
+  const next = EVOLUTIONS.filter((x) => x.from === id || x.with === id).map((r) => ({ id: r.id, role: 'next' }));
+  const sections = [text(def.desc)];
+  if (made.length) sections.push(recipes('How to get it', made));
+  if (def.levelText.length) sections.push(levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 2}`, t])));
+  if (def.baseMods && def.baseMods.length) sections.push(text('Comes with a built-in elemental effect.'));
+  if (next.length) sections.push(evolinks('Evolution', next.map((x) => x.id)));
+  if (def.forge && def.forge.tempers) sections.push(facts('Tempers', Object.keys(def.forge.tempers).map((lvl) => [`+${lvl}`, def.forge.tempers[lvl].map((t) => t.name).join(' or ')])));
   return {
     tab: evolved ? 'evolve' : 'weapons', id, name: def.name, glyph: def.glyph, rarity: def.rarity,
     elements: elementsOf(def.tags),
     cat: def.tags.includes('close') ? 'Close range' : def.behavior === 'summon' ? 'Summon' : 'Ranged',
-    classes, summary: def.desc, lines, builds: buildsFor('weapon', id),
+    classes, summary: def.desc, lines, sections, builds: buildsFor('weapon', id),
+    recipeIds: [...made, ...next].map((x) => x.id), madeIds: made.map((x) => x.id),
   };
 }
 
@@ -131,6 +151,7 @@ export function buildEntries(discovered = { fusions: [] }) {
       tab: 'techniques', id, name: def.name, glyph: def.glyph, rarity: def.rarity,
       elements: perkElements(id, def), cat: perkCategory(id, def), classes: [],
       summary: def.desc, lines, builds: buildsFor('perk', id),
+      sections: [text(def.desc), facts('Offered when', [['', requiresText(def.requires)]]), levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 1}`, t]))],
     });
   }
 
@@ -142,6 +163,7 @@ export function buildEntries(discovered = { fusions: [] }) {
     out.push({
       tab: 'passives', id, name: def.name, glyph: def.glyph || def.name[0], rarity: def.rarity,
       elements: [], cat: cap(def.tags[0] || 'general'), classes: [], summary: def.desc, lines, builds: [],
+      sections: [text(def.desc), levels('Levels', def.levelText.map((t, i) => [`Lv ${i + 1}`, t])), ...(evo.length ? [bullets('Needed to evolve', evo.map((r) => WEAPONS[r.from].name))] : [])],
     });
   }
 
@@ -151,6 +173,7 @@ export function buildEntries(discovered = { fusions: [] }) {
       elements: elementsOf(a.addTags || []), cat: a.infusion ? 'Infusion' : 'Effect', classes: [],
       summary: a.desc,
       lines: [a.desc, a.requires ? `Only on ${a.requires.map(cap).join(', ')} weapons.` : 'Any weapon.', 'Rolled by reforging a weapon: you see three and pick one.'], builds: [],
+      sections: [text(a.desc), facts('', [['Fits', a.requires ? `${a.requires.map(cap).join(', ')} weapons only` : 'Any weapon'], ['How', 'Reforge a weapon: you see three and pick one']])],
     });
   }
   for (const lvl of Object.keys(ENHANCE.tempers)) {
@@ -159,6 +182,7 @@ export function buildEntries(discovered = { fusions: [] }) {
         tab: 'forge', id: `temper:${lvl}:${t.id}`, name: t.name, glyph: '+', rarity: 'rare', elements: elementsOf(t.addTags || []),
         cat: 'Temper', classes: [], summary: `+${lvl} temper: ${t.desc}`,
         lines: [`Offered at +${lvl}: ${t.desc}`, 'The last-resort pair; most weapons are offered a pair that fits how they attack.'], builds: [],
+        sections: [text(t.desc), facts('', [['Offered at', `+${lvl}`], ['Fits', 'Any weapon with no pair of its own, the last resort']])],
       });
     }
   }
@@ -167,6 +191,7 @@ export function buildEntries(discovered = { fusions: [] }) {
       tab: 'forge', id: `legendary:${id}`, name: l.name, glyph: '★', rarity: 'epic', elements: elementsOf(l.addTags || []),
       cat: 'Legendary', classes: [], summary: l.desc,
       lines: [l.desc, l.requires ? `Only on ${l.requires.map(cap).join(', ')} weapons.` : 'Any weapon.', `At +${LEGENDARY.unlockEnhance} a weapon can buy a legendary for ${LEGENDARY.cost} starsteel: you see ${LEGENDARY.options} that fit it and pick one. Rerolling costs ${LEGENDARY.reroll}.`], builds: [],
+      sections: [text(l.desc), facts('', [['Fits', l.requires ? `${l.requires.map(cap).join(', ')} weapons only` : 'Any weapon'], ['Unlocks at', `+${LEGENDARY.unlockEnhance}`], ['Cost', `${LEGENDARY.cost} starsteel, reroll ${LEGENDARY.reroll}`], ['How', `You see ${LEGENDARY.options} that fit and pick one`]])],
     });
   }
   const seenTemper = new Set();
@@ -180,6 +205,7 @@ export function buildEntries(discovered = { fusions: [] }) {
           tab: 'forge', id: `temper:${lvl}:${t.id}`, name: t.name, glyph: '+', rarity: 'rare', elements: elementsOf(t.addTags || []),
           cat: 'Temper', classes: [], summary: `+${lvl} temper: ${t.desc}`,
           lines: [`Offered at +${lvl}: ${t.desc}`, `Offered to ${shapes.map(cap).join(', ')} weapons that have no pair of their own.`], builds: [],
+          sections: [text(t.desc), facts('', [['Offered at', `+${lvl}`], ['Fits', `${shapes.map(cap).join(', ')} weapons with no pair of their own`]])],
         });
       }
     }
@@ -189,6 +215,7 @@ export function buildEntries(discovered = { fusions: [] }) {
       tab: 'forge', id: `resonance:${id}`, name: `${r.name} resonance`, glyph: '≈', rarity: 'epic', elements: ELEMENTS.includes(id) ? [id] : [],
       cat: 'Resonance', classes: [], summary: `Own ${r.tiers.length === 2 ? '2 or 3' : 'several'} ${id} weapons: ${r.text.join('; then ')}.`,
       lines: [`Two ${id} weapons: ${r.text[0]}.`, `Three: ${r.text[1]}.`, 'Infusions and tempers count, so any weapon can join a set.'], builds: [],
+      sections: [facts('', [[`Two ${id}`, r.text[0]], ['Three', r.text[1]]]), text('Infusions and tempers count, so any weapon can join a set.')],
     });
   }
 
@@ -198,6 +225,10 @@ export function buildEntries(discovered = { fusions: [] }) {
     lines: [`At the forge, ${QUENCH.cost} starsteel gives a weapon Quench charges: 3 at +4 to +9, 2 at +10 to +12, 1 at +13 or +14.`,
       'A charge makes the next enhance attempt succeed, with no roll and no downgrade. The ore is still paid.',
       'Charges stay on the weapon, carry through evolving, join the host in a fusion, and are lost if the weapon is salvaged.'], builds: [],
+    sections: [text(`Spend ${QUENCH.cost} starsteel at the forge to make several enhance attempts certain.`),
+      facts('Charges', [['+4 to +9', '3'], ['+10 to +12', '2'], ['+13 to +14', '1']]),
+      text('A charge makes the next enhance succeed: no roll, no downgrade. The ore is still paid.'),
+      text('Charges stay through evolving and join the host in a fusion. Salvaging the weapon loses them.')],
   });
 
   out.push({
@@ -206,6 +237,9 @@ export function buildEntries(discovered = { fusions: [] }) {
     lines: [`At the forge, a weapon at its maximum level can be starforged once for ${STARFORGE.cost} starsteel. It gains one mutation set by how it attacks, drawn in cyan.`,
       ...Object.entries(MUTATIONS).map(([b, m]) => `${b[0].toUpperCase()}${b.slice(1)} weapons: ${m.name}. ${m.desc}`),
       'It works on evolved and fused weapons too. The star survives evolving, a fusion passes it to the host (two stars become one), and salvaging loses it.'], builds: [],
+    sections: [text(`A weapon at its maximum level can be starforged once for ${STARFORGE.cost} starsteel. It gains one mutation set by how it attacks, drawn in cyan.`),
+      facts('Mutations', Object.entries(MUTATIONS).map(([b, m]) => [cap(b), `${m.name}. ${m.desc}`])),
+      text('Works on evolved and fused weapons. The star survives evolving; a fusion passes it to the host (two stars become one); salvaging loses it.')],
   });
 
   const found = new Set(discovered.fusions || []);
@@ -218,6 +252,10 @@ export function buildEntries(discovered = { fusions: [] }) {
       'Most pairs give a payload: the first hit of every attack the host makes also does something shaped like the donor\'s attack.',
       ...Object.entries(SHAPE_PAYLOAD).map(([shape, id]) => `${SHAPE_LABEL[shape] || shape} donor: ${PAYLOADS[id].text} (${Math.round(PAYLOADS[id].frac * 100)}%).`),
       'Some pairs are masterworks with an effect of their own. Find them by trying.'], builds: [],
+    sections: [text(`Fuse one evolved weapon (the donor) into another (the host) for ${FUSION.cost} starsteel. The donor is consumed and frees its slot.`),
+      text('The host keeps its level, enhancement, effects and legendary, gains the donor\'s elements, and gets a fusion effect. A weapon takes one fusion. The donor\'s legendary is lost with it.'),
+      facts('Payload by donor', Object.entries(SHAPE_PAYLOAD).map(([shape, pid]) => [SHAPE_LABEL[shape] || shape, `${PAYLOADS[pid].text} (${Math.round(PAYLOADS[pid].frac * 100)}%)`])),
+      text('Most pairs give a payload: the first hit of every attack the host makes also does something shaped like the donor\'s attack. Some pairs are masterworks with an effect of their own. Find them by trying.')],
   });
   for (const m of MASTERWORKS) {
     const ok = found.has(m.id);
@@ -229,6 +267,9 @@ export function buildEntries(discovered = { fusions: [] }) {
       fusePair: ok ? [m.host, m.donor] : null,
       lines: ok ? [m.desc, `Host: ${WEAPONS[m.host].name}. Donor: ${WEAPONS[m.donor].name}. Either order works; the host is fixed.`]
         : [`Something is waiting to be fused into the ${WEAPONS[m.host].name}.`], builds: [],
+      masterwork: m.id,
+      sections: ok ? [text(m.desc), facts('', [['Host', WEAPONS[m.host].name], ['Donor', WEAPONS[m.donor].name]]), text('Either order works; the host is fixed.')]
+        : [text(`Something is waiting to be fused into the ${WEAPONS[m.host].name}.`)],
     });
   }
 
@@ -244,7 +285,13 @@ export function buildEntries(discovered = { fusions: [] }) {
         ...(b.end ? [`Finished: ${b.end.weapons.map((w) => WEAPONS[w].name).join(', ')}.${b.end.fuse ? ` Fusion: ${masterworkFor(b.end.fuse[0], b.end.fuse[1]).name}.` : ''}`] : []),
         ...(b.passives && b.passives.length ? [`Passives: ${b.passives.map((p) => PASSIVES[p].name).join(', ')}.`] : []),
         `Techniques: ${b.perks.map((p) => PERKS[p].name).join(', ')}.`, b.tips],
-      builds: [], parts,
+      builds: [], parts, buildWeapons: b.weapons,
+      sections: [text(b.idea),
+        facts('', [['Weapons', b.weapons.map((w) => WEAPONS[w].name).join(', ')],
+          ...(b.end ? [['Finished', `${b.end.weapons.map((w) => WEAPONS[w].name).join(', ')}${b.end.fuse ? `, fusion: ${masterworkFor(b.end.fuse[0], b.end.fuse[1]).name}` : ''}`]] : []),
+          ...(b.passives && b.passives.length ? [['Passives', b.passives.map((p) => PASSIVES[p].name).join(', ')]] : []),
+          ['Techniques', b.perks.map((p) => PERKS[p].name).join(', ')]]),
+        text(b.tips)],
     });
   }
 
@@ -280,4 +327,105 @@ export function filterEntries(entries, { tab, element, cat, cls, rarity, q } = {
     && (!cls || e.classes.includes(cls))
     && (!rarity || e.rarity === rarity)
     && (!needle || e.text.includes(needle)));
+}
+
+
+// ---- live status (opened during a run): what you hold, what each evolution or fusion still needs ----
+
+const EVO_BY_ID = Object.fromEntries(EVOLUTIONS.map((r) => [r.id, r]));
+export const evolutionById = (id) => EVO_BY_ID[id];
+
+export function ownedWeapon(run, id) {
+  return run.player.weapons.find((w) => w.weaponId === id) || null;
+}
+
+// Rows for a masterwork's fusion: both weapons in hand (evolved), and the starsteel.
+export function fusionProgress(run, host, donor) {
+  const h = ownedWeapon(run, host);
+  const d = ownedWeapon(run, donor);
+  const rows = [
+    { text: `Own ${WEAPONS[host].name} (host)`, state: h ? 'ok' : 'missing', note: h ? '' : 'evolve it first' },
+    { text: `Own ${WEAPONS[donor].name} (donor)`, state: d ? 'ok' : 'missing', note: d ? '' : 'evolve it first' },
+    { text: `${FUSION.cost} starsteel`, state: run.starsteel >= FUSION.cost ? 'ok' : (run.starsteel > 0 ? 'short' : 'missing'), note: run.starsteel >= FUSION.cost ? '' : `you have ${run.starsteel}` },
+  ];
+  const met = rows.filter((r) => r.state === 'ok').length;
+  return { rows, met, total: rows.length, own: !!h && !!d, ready: met === rows.length };
+}
+
+// The short "still need" line for a collapsed entry: unmet rows, with what you have beside them.
+const needLine = (rows) => rows.filter((r) => r.state !== 'ok').map((r) => (r.note ? `${r.text} (${r.note})` : r.text)).join(' · ');
+
+// { rank, badge, tone, need } for one entry against the run, or null when it has nothing to say.
+// rank orders the list (higher first); tone is 'ready' | 'have' | 'near'.
+export function liveStatus(entry, run) {
+  if (entry.tab === 'weapons' || entry.tab === 'evolve') {
+    const inst = ownedWeapon(run, entry.id);
+    const mine = inst ? `Owned · Lv ${inst.level}${inst.enhance ? ` · +${inst.enhance}` : ''}` : '';
+    if (entry.tab === 'weapons') {
+      // A base weapon says only that you hold it; each evolution it can take is a chip that links to the Evolve tab, where the requirements are.
+      if (!inst) return null;
+      const chips = (entry.recipeIds || []).filter((rid) => EVO_BY_ID[rid].from === entry.id || EVO_BY_ID[rid].with === entry.id).map((rid) => {
+        const r = EVO_BY_ID[rid];
+        const pr = recipeProgress(run, r);
+        return { id: r.into, label: WEAPONS[r.into].name, tone: pr.ready ? 'ready' : pr.own ? 'near' : '', progress: `${pr.met}/${pr.total}` };
+      });
+      const ready = chips.some((c) => c.tone === 'ready');
+      return { rank: ready ? 4 : 3, tone: ready ? 'ready' : 'have', badge: mine, need: '', chips };
+    }
+    let best = null;
+    const made = (entry.madeIds || []).map((rid) => EVO_BY_ID[rid]);
+    for (const r of made) {
+      const pr = recipeProgress(run, r);
+      const score = (pr.ready ? 100 : pr.own ? 50 : 0) + pr.met;
+      if (!best || score > best.score) best = { score, pr, r };
+    }
+    if (best && best.pr.ready) return { rank: 6, tone: 'ready', badge: 'Ready to combine', need: '' };
+    // With several ways to get it, say what each still needs (the ones you hold pieces for).
+    const lines = made.map((r) => ({ r, pr: recipeProgress(run, r) })).filter((x) => x.pr.own)
+      .map((x) => `${made.length > 1 ? `${WEAPONS[x.r.from].name}${x.r.with ? ' + ' + WEAPONS[x.r.with].name : ''}: ` : ''}${needLine(x.pr.rows)}`);
+    if (best && best.pr.own) return { rank: 4 + best.pr.met / 20, tone: 'near', badge: `${best.pr.met} of ${best.pr.total} ready`, need: `Still need: ${lines.join(' | ')}` };
+    if (inst) return { rank: 2, tone: 'have', badge: mine, need: '' };
+    return null;
+  }
+  if (entry.tab === 'techniques' || entry.tab === 'passives') {
+    const k = entry.tab === 'techniques' ? findPerk(run.player, entry.id) : findPassive(run.player, entry.id);
+    if (k) return { rank: 3, tone: 'have', badge: `You have Lv ${k.level}`, need: '' };
+    if (entry.tab === 'passives') {
+      const wants = EVOLUTIONS.filter((r) => r.requires.some((q) => q.passive === entry.id) && ownedWeapon(run, r.from));
+      if (wants.length) return { rank: 2, tone: 'near', badge: `Needed for your ${WEAPONS[wants[0].from].name}`, need: '' };
+    }
+    return null;
+  }
+  if (entry.tab === 'fusions') {
+    if (entry.id === 'fusion:rules') {
+      const evolved = run.player.weapons.filter((w) => w.def.rarity === 'evolved').length;
+      return evolved ? { rank: 4, tone: evolved >= 2 ? 'ready' : 'near', badge: `${evolved} evolved weapon${evolved === 1 ? '' : 's'} owned`, need: evolved >= 2 ? '' : 'A fusion needs two' } : null;
+    }
+    const m = MASTERWORKS.find((x) => `fusion:${x.id}` === entry.id);
+    if (!m) return null;
+    const h = ownedWeapon(run, m.host);
+    const d = ownedWeapon(run, m.donor);
+    if (entry.fusePair) {
+      const pr = fusionProgress(run, m.host, m.donor);
+      if (pr.ready) return { rank: 6, tone: 'ready', badge: 'Ready to fuse', need: '' };
+      if (pr.own) return { rank: 5, tone: 'near', badge: 'You have both', need: `Still need: ${needLine(pr.rows)}` };
+      if (h || d) return { rank: 3, tone: 'near', badge: h ? 'You have the host' : 'You have the donor', need: `Still need: ${needLine(pr.rows)}` };
+      return null;
+    }
+    if (h) return { rank: 3, tone: 'near', badge: 'You own the host', need: '' };      // the pair itself stays hidden until found
+    return null;
+  }
+  if (entry.tab === 'builds') {
+    const have = (entry.buildWeapons || []).filter((w) => ownedWeapon(run, w)).length;
+    const total = (entry.buildWeapons || []).length;
+    if (have) return { rank: 2 + have / 10, tone: have === total ? 'ready' : 'near', badge: `You have ${have} of ${total} weapons`, need: '' };
+  }
+  return null;
+}
+
+// Stable sort: entries with live status first, best match at the top.
+export function sortByStatus(list, run) {
+  const ranked = list.map((e, i) => ({ e, i, st: liveStatus(e, run) }));
+  ranked.sort((a, b) => ((b.st ? b.st.rank : -1) - (a.st ? a.st.rank : -1)) || a.i - b.i);
+  return ranked.map((x) => ({ entry: x.e, status: x.st }));
 }

@@ -160,7 +160,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       ...musicUi(show),
       onResume: resume,
       onBuild: () => showBuild(overlays, game.run, { onBack: show, backLabel: 'Back' }),
-      onCompendium: () => showCompendium(overlays, { onClose: show, discovered: save.data.discovered }),
+      onCompendium: () => showCompendium(overlays, { onClose: show, discovered: save.data.discovered, run: game.run }),
       onQuit: () => { if (runSave) runSave.clear(); toTitle(); },
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
@@ -225,7 +225,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const show = () => showLevelUp(overlays, {
       level,
       getBuild: () => buildHtml(run),
-      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered }),
+      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered, run }),
       owned: ownedLine(run),
       offers,
       rerolls: run.rerolls,
@@ -285,7 +285,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     showForge(overlays, run, {
       sfx,
       onBuild: (back) => showBuild(overlays, run, { onBack: back, backLabel: 'Back to forge' }),
-      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered }),
+      onCompendium: (back) => showCompendium(overlays, { onClose: back, discovered: save.data.discovered, run }),
       onFusion(res) {                                           // a masterwork found for the first time gets a banner
         if (res.masterwork && save.discoverFusion(res.masterwork.id)) {
           run.toast = { text: `Masterwork discovered: ${res.name}!`, ttl: 4.5 };

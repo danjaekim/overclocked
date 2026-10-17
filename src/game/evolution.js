@@ -72,6 +72,54 @@ export function checklist(run, inst, recipe) {
   return list;
 }
 
+// What is in hand and what is still missing, requirement by requirement, for the compendium. Each row is
+// { text, state: 'ok' | 'short' | 'missing', note }: ok = met, short = you have it but not enough, missing =
+// you don't have it at all. Also { own, ready, met, total }.
+export function recipeProgress(run, recipe) {
+  const { a, b } = pair(run, recipe);
+  const A = WEAPONS[recipe.from].name;
+  const B = recipe.with ? WEAPONS[recipe.with].name : '';
+  const rows = [];
+  if (recipe.with) {
+    const lack = [!a && A, !b && B].filter(Boolean);
+    rows.push({ text: `Own ${A} and ${B}`, state: lack.length ? 'missing' : 'ok', note: lack.length ? `need ${lack.join(' and ')}` : '' });
+  } else {
+    rows.push({ text: `Own ${A}`, state: a ? 'ok' : 'missing', note: a ? '' : 'not owned' });
+  }
+  for (const req of recipe.requires) {
+    const text = describe(req, recipe);
+    let state = 'missing';
+    let note = '';
+    if (req.weaponLevel !== undefined) {
+      if (recipe.with) {
+        if (a && b) {
+          state = a.level >= req.weaponLevel && b.level >= req.weaponLevel ? 'ok' : 'short';
+          if (state === 'short') note = `${A} ${a.level}, ${B} ${b.level}`;
+        }
+      } else if (a) {
+        state = a.level >= req.weaponLevel ? 'ok' : 'short';
+        if (state === 'short') note = `yours is ${a.level}`;
+      }
+    } else if (req.perk || req.passive) {
+      const k = req.perk ? findPerk(run.player, req.perk) : findPassive(run.player, req.passive);
+      if (k) {
+        state = k.level >= (req.minLevel || 1) ? 'ok' : 'short';
+        if (state === 'short') note = `yours is Lv ${k.level}`;
+      } else note = 'not owned';
+    } else if (req.enhance !== undefined) {
+      if (a) { state = a.enhance >= req.enhance ? 'ok' : 'short'; if (state === 'short') note = `yours is +${a.enhance}`; }
+    } else if (req.starsteel !== undefined) {
+      state = run.starsteel >= req.starsteel ? 'ok' : (run.starsteel > 0 ? 'short' : 'missing');
+      if (state !== 'ok') note = `you have ${run.starsteel}`;
+    } else if (req.title) {
+      state = hasTitle(run, req.title) ? 'ok' : 'missing';
+    }
+    rows.push({ text, state, note });
+  }
+  const met = rows.filter((r) => r.state === 'ok').length;
+  return { rows, met, total: rows.length, own: !!a && (!recipe.with || !!b), ready: met === rows.length };
+}
+
 export function canEvolve(run, inst, recipe) {
   if (recipe.with) {
     const { a, b } = pair(run, recipe);

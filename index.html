@@ -106,6 +106,14 @@
     .ctabs { display: flex; gap: 6px; width: 100%; max-width: 400px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
     .ctab { flex: none; min-height: 40px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 600; color: var(--dim); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; touch-action: manipulation; }
     .ctab.on { color: #1a1205; background: var(--ember); border-color: var(--ember); }
+    .csrow { display: flex; gap: 8px; width: 100%; max-width: 400px; }
+    .csrow .csearch { flex: 1; min-width: 0; }
+    .cftoggle { flex: none; min-height: 42px; padding: 0 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--dim); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; touch-action: manipulation; }
+    .cftoggle.on { color: var(--ink); border-color: #4a4f66; }
+    .cftoggle i { font-style: normal; display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 4px; border-radius: 8px; background: var(--ember); color: #1a1205; font-size: 11px; }
+    .clinks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .clink { padding: 4px 10px; border-radius: 12px; background: #262a38; color: #dcdde4; font-size: 12px; font-weight: 600; touch-action: manipulation; }
+    .clink.near { background: #3a2f17; color: #ffc766; } .clink.ready { background: #7be0a6; color: #0e1a13; }
     .csearch { width: 100%; max-width: 400px; min-height: 42px; box-sizing: border-box; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: #171923; border: 1px solid #2a2d3b; border-radius: 10px; }
     .cfacets { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 4px; }
     .cfacet { display: flex; gap: 6px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -114,11 +122,51 @@
     .cchip.on { background: #e8e6df; color: #14161d; border-color: #e8e6df; }
     .cchip.el { border-color: var(--e); } .cchip.el.on { background: var(--e); color: #14161d; }
     .clist { flex: 1; width: 100%; max-width: 400px; overflow-y: auto; text-align: left; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; }
-    .centry { display: block; text-align: left; font: inherit; color: var(--ink); background: var(--panel); border: 0; border-left: 4px solid var(--c, #2c2f3d); border-radius: 8px; padding: 8px 10px; touch-action: manipulation; }
+    .centry { position: relative; text-align: left; color: var(--ink); background: var(--panel); border-left: 4px solid var(--c, #2c2f3d); border-radius: 8px; }
+    .chead { display: block; width: 100%; text-align: left; font: inherit; color: var(--ink); background: transparent; border: 0; padding: 10px 12px; touch-action: manipulation; }
+    .centry.open > .chead { position: sticky; top: 0; z-index: 3; background: #1c1f2b; border-radius: 8px 8px 0 0; border-bottom: 1px solid #2a2d3b; }
+    .centry.open > .cbody, .centry.open > .bsub { padding: 0 12px 12px; }
     .centry .btop em { display: flex; align-items: center; gap: 4px; }
     .cdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
     .ccat { display: block; font-size: 11px; color: var(--dim); }
     .cbody p { margin: 4px 0 0; font-size: 13px; line-height: 1.35; color: #cfd0d8; }
+    .centry.open { background: #1c1f2b; }
+    .ccat { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; margin-top: 1px; }
+    .cbadge { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 10px; background: #262a38; color: #cfd0d8; }
+    .cbadge.have { background: #1f3a2c; color: #7be0a6; }
+    .cbadge.ready { background: #7be0a6; color: #0e1a13; }
+    .cbadge.near { background: #3a2f17; color: #ffc766; }
+    .centry.ready { box-shadow: inset 0 0 0 1px #7be0a6; }
+    .cneed { margin-top: 6px; font-size: 12px; line-height: 1.35; color: #ffc766; }
+    .cbody { margin-top: 8px; }
+    .cbody .ctext { margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: #dcdde4; }
+    .csec { margin-top: 12px; padding-top: 8px; border-top: 1px solid #2a2d3b; }
+    .csec h4 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+    .cfact { display: flex; gap: 10px; padding: 3px 0; font-size: 13px; line-height: 1.4; }
+    .cfact dt { flex: none; width: 78px; color: var(--dim); }
+    .cfact dd { margin: 0; color: #dcdde4; }
+    .cfact.solo dd { width: 100%; }
+    .csec dl { margin: 0; }
+    .clv { list-style: none; margin: 0; padding: 0; }
+    .clv li { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; font-size: 13px; line-height: 1.4; color: #dcdde4; }
+    .clv li + li { border-top: 1px dotted #2a2d3b; }
+    .clv b { flex: none; width: 40px; font-size: 11px; color: var(--ember); letter-spacing: 0.03em; }
+    .cbul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.45; color: #dcdde4; }
+    .crecipe { margin: 6px 0 0; padding: 8px 10px; background: #14161d; border-left: 3px solid #3a3e50; border-radius: 6px; }
+    .crecipe.near { border-left-color: #ffc766; } .crecipe.ready { border-left-color: #7be0a6; }
+    .crhead { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink); }
+    .crhead em { font-style: normal; font-weight: 600; font-size: 11px; color: var(--dim); }
+    .creq { list-style: none; margin: 6px 0 0; padding: 0; }
+    .creq li { display: flex; gap: 8px; padding: 2px 0; font-size: 13px; line-height: 1.35; color: #dcdde4; }
+    .creq li i { flex: none; width: 14px; font-style: normal; text-align: center; color: var(--dim); }
+    .creq li small { display: block; font-size: 11px; color: #ffc766; }
+    .creq li.ok i { color: #7be0a6; }
+    .creq li.short i, .creq li.short small { color: #ffc766; }
+    .creq li.missing { color: #6d7080; }
+    .creq li.missing small { color: #8b8e9e; }
+    .crfoot { margin-top: 6px; font-size: 12px; font-weight: 700; color: #7be0a6; }
+    .cchips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cchips span { padding: 3px 10px; border-radius: 12px; background: #262a38; font-size: 12px; color: #dcdde4; }
     .pv { margin: 6px 0 2px; }
     .cprev { position: static; inset: auto; display: block; width: 100%; height: auto; aspect-ratio: 480 / 300; touch-action: manipulation; border-radius: 6px; background: #0e0f14; }
     .pvbar { display: flex; gap: 6px; margin-top: 6px; }
