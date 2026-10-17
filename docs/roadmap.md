@@ -94,6 +94,7 @@ M10–M13 are specified in detail in `docs/design-m10-m13.md` (status model, hit
 | **M44o** *(done)* | Fusion previews (v0.44.16) | Discovered masterwork fusions can be watched in action in the compendium, like weapons. |
 | **M44p** *(done)* | Builds for every class (v0.44.17) | 20 builds across all six classes, each leading through evolutions and fusions. |
 | **M44q** *(done)* | Masterworks that every class can make (v0.44.18) | Stormfall, Seraph Titan and Stormfangs replace Eventide Volley, Familiars and Sanctum Titan. |
+| **M44r** *(done)* | No masterwork spoilers in builds (v0.44.19) | Builds that end in a masterwork appear once you have found it. |
 | **M26–M28** *(planned)* | Evolution branches and fusions | Two evolutions per starter weapon, fusing one evolved weapon into another (12 named masterworks plus a generic echo fusion), a shared effect vocabulary, and late-game difficulty. Spec: `docs/design-m26-m28.md`. |
 | Later | | More enemy types (ranged, splitters, chargers) and biomes, real art, meta progression beyond unlocks, daily seed, cloud sync. |
 

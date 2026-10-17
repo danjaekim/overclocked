@@ -22,7 +22,7 @@ test('every weapon, technique, passive, effect and resonance set has an entry', 
   for (const id of Object.keys(PASSIVES)) assert.ok(ids('passives').has(id), id);
   for (const id of Object.keys(AFFIXES)) assert.ok(ids('forge').has(`affix:${id}`), id);
   for (const id of Object.keys(RESONANCE)) assert.ok(ids('forge').has(`resonance:${id}`), id);
-  assert.equal(ids('builds').size, BUILDS.length);
+  assert.equal(ids('builds').size, BUILDS.filter((b) => !b.end.fuse).length, 'builds that end in a masterwork stay hidden until it is found');
   for (const t of TABS) assert.ok(ids(t.id).size > 0, `${t.id} is not empty`);
 });
 

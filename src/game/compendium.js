@@ -109,8 +109,17 @@ const SHAPE_LABEL = {
   summon: 'Hound', judge: 'Pillar', boomerang: 'Thrown disc', trail: 'Trail', pulse: 'Pulse', slam: 'Slam', chain: 'Chain lightning', rod: 'Planted rod',
 };
 
+// A build that ends in a masterwork would give its name and pair away, so it stays hidden until that masterwork is found.
+export function buildVisible(b, found) {
+  if (!b.end || !b.end.fuse) return true;
+  const m = masterworkFor(b.end.fuse[0], b.end.fuse[1]);
+  return !m || found.has(m.id);
+}
+
 export function buildEntries(discovered = { fusions: [] }) {
-  const buildsFor = (kind, id) => BUILDS.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
+  const foundIds = new Set(discovered.fusions || []);
+  const visibleBuilds = BUILDS.filter((b) => buildVisible(b, foundIds));
+  const buildsFor = (kind, id) => visibleBuilds.filter((b) => (kind === 'weapon' ? b.weapons : b.perks).includes(id)).map((b) => b.name);
   const out = [];
 
   for (const [id, def] of Object.entries(WEAPONS)) out.push(weaponEntry(id, def, buildsFor));
@@ -201,7 +210,7 @@ export function buildEntries(discovered = { fusions: [] }) {
     });
   }
 
-  for (const b of BUILDS) {
+  for (const b of visibleBuilds) {
     const parts = [...b.weapons.map((w) => WEAPONS[w].name), ...b.perks.map((p) => PERKS[p].name)];
     const els = new Set();
     for (const w of b.weapons) elementsOf(WEAPONS[w].tags).forEach((e) => els.add(e));

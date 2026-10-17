@@ -76,3 +76,22 @@ test('every masterwork can be made by at least one class (no pair needs weapons 
     assert.ok(Object.keys(CLASSES).some((c) => reach(m.host, c) && reach(m.donor, c)), `${m.id}: no class can make ${m.host} + ${m.donor}`);
   }
 });
+
+test('builds that end in a masterwork are hidden until it is found, and never leak through weapon entries or text', async () => {
+  const { BUILDS } = await import('../src/data/builds.js');
+  const none = buildEntries({ fusions: [] });
+  const shown = none.filter((e) => e.tab === 'builds');
+  assert.equal(shown.length, BUILDS.filter((b) => !b.end.fuse).length);
+  const text = none.filter((e) => e.tab === 'builds' || e.builds.length).map((e) => [e.name, ...e.lines, ...e.builds].join(' ')).join(' ').toLowerCase();
+  for (const m of MASTERWORKS) assert.ok(!text.includes(m.name.toLowerCase()), `${m.name} leaks into the builds before it is found`);
+  for (const b of BUILDS.filter((x) => x.end.fuse)) {
+    assert.ok(!none.some((e) => e.id === `build:${b.id}`), b.id);
+    assert.ok(!none.some((e) => e.builds.includes(b.name)), `${b.name} listed under a weapon`);
+  }
+  const m = MASTERWORKS.find((x) => x.id === 'comet');
+  const some = buildEntries({ fusions: ['comet'] });
+  const comet = BUILDS.find((b) => b.id === 'comet');
+  assert.ok(some.some((e) => e.id === 'build:comet'), 'found: the build appears');
+  assert.ok(some.some((e) => e.builds.includes(comet.name)), 'and its weapons list it');
+  assert.equal(buildEntries({ fusions: MASTERWORKS.map((x) => x.id) }).filter((e) => e.tab === 'builds').length, BUILDS.length);
+});
