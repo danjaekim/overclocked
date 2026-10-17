@@ -838,14 +838,14 @@ export const WEAPONS = {
 
   gyre: {
     name: 'Gyre',
-    desc: 'The disc parks at the far end of its throw and spins as a buzzsaw for a second and a half, dragging the crowd in, then comes home.',
+    desc: 'The disc stops just past the first enemy it cuts and spins as a buzzsaw for a second and a half, dragging the crowd in, then comes home. A throw that meets nobody comes straight back.',
     class: null,
     pool: false,
     glyph: 'g',
     rarity: 'evolved',
     tags: ['ranged', 'thrown', 'physical'],
     behavior: 'boomerang',
-    base: { damage: 40, cooldown: 1.9, count: 1, range: 230, speed: 360, radius: 22, tickEvery: 0.4, color: '#8fe6d4', park: { time: 1.5, pull: 70 } },
+    base: { damage: 18, cooldown: 1.9, count: 1, range: 230, speed: 360, radius: 22, tickEvery: 0.4, color: '#8fe6d4', park: { time: 1.5, pull: 70, onHit: true, overshoot: 30 } },
     maxLevel: 6,
     levels: [
       [{ stat: 'damage', op: 'inc', value: 0.25 }],
@@ -885,7 +885,7 @@ export const WEAPONS = {
 
   singularity: {
     name: 'Singularity',
-    desc: 'A bolt that opens a vortex. It drags the horde into one spot, then collapses.',
+    desc: 'A bolt that opens a vortex away from you, on the thickest crowd out there. It drags the horde into one spot, then collapses.',
     class: null,
     pool: false,
     glyph: 'o',
@@ -904,7 +904,7 @@ export const WEAPONS = {
     ],
     levelText: ['+25% damage', '+20% area (bigger vortex)', '-15% cooldown', '+25% duration', '35% more damage'],
     triggers: [
-      { on: 'attack', effect: 'vortex', params: { radius: 100, ttl: 1.5, pull: 150, damageFrac: 2.2 } },
+      { on: 'attack', effect: 'vortex', params: { radius: 100, ttl: 1.5, pull: 150, damageFrac: 4.0, minDist: 150 } },
     ],
     evolvesInto: null,
   },

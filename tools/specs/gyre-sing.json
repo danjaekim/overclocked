@@ -1,0 +1,11 @@
+{
+  "mode": "dps",
+  "weapons": ["chakram", "ricochet_saw", "gyre", "prismatic_bolt", "singularity"],
+  "variants": [
+    { "name": "current" },
+    { "name": "gyre-onhit-0", "weaponOverride": { "gyre": { "base": { "damage": 40, "cooldown": 1.9, "count": 1, "range": 230, "speed": 360, "radius": 22, "tickEvery": 0.4, "color": "#8fe6d4", "park": { "time": 1.5, "pull": 70, "onHit": true, "overshoot": 0 } } } } },
+    { "name": "gyre-onhit-30", "weaponOverride": { "gyre": { "base": { "damage": 40, "cooldown": 1.9, "count": 1, "range": 230, "speed": 360, "radius": 22, "tickEvery": 0.4, "color": "#8fe6d4", "park": { "time": 1.5, "pull": 70, "onHit": true, "overshoot": 30 } } } } },
+    { "name": "gyre-onhit-60", "weaponOverride": { "gyre": { "base": { "damage": 40, "cooldown": 1.9, "count": 1, "range": 230, "speed": 360, "radius": 22, "tickEvery": 0.4, "color": "#8fe6d4", "park": { "time": 1.5, "pull": 70, "onHit": true, "overshoot": 60 } } } } },
+    { "name": "sing-far150", "weaponOverride": { "singularity": { "triggers": [ { "on": "attack", "effect": "vortex", "params": { "radius": 100, "ttl": 1.5, "pull": 150, "damageFrac": 2.2, "minDist": 150 } } ] } } }
+  ]
+}

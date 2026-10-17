@@ -98,21 +98,24 @@ test('ricochet saw returns and is caught when nothing is left to hop to', () => 
   assert.ok(caught, 'caught');
 });
 
-test('gyre: parks at the end of its throw, keeps cutting there, drags enemies in, then returns', () => {
+test('gyre: parks just past the first enemy it cuts, keeps cutting there, drags enemies in, then returns', () => {
   const run = newRun();
   const w = addWeapon(run, 'gyre');
   w.cd = 1e9;
   const near = dummy(run, 150, 0);                       // in the path
-  const edge = dummy(run, 230, 60);                      // beside where it parks, inside the pull
+  const edge = dummy(run, 190, 50);                      // beside where it parks, inside the pull
   tick(run, 0.05);
   w.cd = 0;
   const y0 = edge.y;
   let parked = false;
+  let parkX = 0;
   for (let i = 0; i < 240; i++) {
     run.update(STEP, { x: 0, y: 0 });
-    if (w.discs.some((d) => d.parked > 0)) parked = true;
+    const pk = w.discs.find((d) => d.parked > 0);
+    if (pk) { parked = true; parkX = pk.x; }
   }
   assert.ok(parked, 'it parked');
+  assert.ok(parkX < 230, `it parked where the crowd is (x=${parkX}), not at the end of its range`);
   assert.ok(dealt(edge) > 0, 'the parked saw cut the enemy beside it');
   assert.ok(Math.abs(edge.y) < y0 - 5, `dragged toward the saw (${y0} -> ${edge.y})`);
   w.cd = 1e9;

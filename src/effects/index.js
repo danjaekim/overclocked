@@ -53,7 +53,13 @@ export const EFFECTS = {
   vortex(run, t, src, x, y, depth) {
     if (!src || depth + 1 > MAX_TRIGGER_DEPTH) return;
     const p = t.params;
-    addVortex(run, src, x, y, p.radius * area(run, src), p.ttl, p.pull, param(run, src, 'damage') * p.damageFrac, depth);
+    const radius = p.radius * area(run, src);
+    if (p.minDist) {                                          // Singularity: open it away from you, on the thickest crowd out there
+      const spot = farSpot(run, x, y, radius, Math.max(p.minDist, radius * 1.3 + 24), p.reach || 340);
+      x = spot.x;
+      y = spot.y;
+    }
+    addVortex(run, src, x, y, radius, p.ttl, p.pull, param(run, src, 'damage') * p.damageFrac, depth);
   },
 
   // A slow wave from the player along `ang`.
@@ -155,4 +161,40 @@ export const EFFECTS = {
 
 function area(run, src) {
   return run.player.stats.getFor('area', src.tags);
+}
+// Where a vortex with a safe distance opens: among the enemies at least `min` from the player (and within `reach`), the one with
+// the most others inside `radius` of it. With none that far out, the aimed spot (x, y) pushed out along the line from the player to `min`.
+const FAR_CANDIDATES = 16;
+const farBuf = [];
+function farSpot(run, x, y, radius, min, reach) {
+  const p = run.player;
+  const w = run.world;
+  const n = w.hash.queryRadius(p.x, p.y, reach, w.scratch);
+  farBuf.length = 0;
+  for (let i = 0; i < n && farBuf.length < FAR_CANDIDATES * 3; i++) {
+    const e = w.scratch[i];
+    if (!e.alive || e.prop === 1) continue;
+    if ((e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y) >= min * min) farBuf.push(e);
+  }
+  if (farBuf.length) {
+    let best = farBuf[0];
+    let bestN = -1;
+    const m = Math.min(farBuf.length, FAR_CANDIDATES * 3);
+    for (let i = 0; i < m; i++) {
+      const a = farBuf[i];
+      let k = 0;
+      for (let j = 0; j < m; j++) {
+        const b = farBuf[j];
+        if ((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) <= radius * radius) k++;
+      }
+      if (k > bestN) { bestN = k; best = a; }
+    }
+    return { x: best.x, y: best.y };
+  }
+  let dx = x - p.x;
+  let dy = y - p.y;
+  const d = Math.hypot(dx, dy) || 1;
+  dx /= d; dy /= d;
+  if (d >= min) return { x, y };
+  return { x: p.x + dx * min, y: p.y + dy * min };
 }

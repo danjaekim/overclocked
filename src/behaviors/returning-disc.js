@@ -59,7 +59,7 @@ export default {
         const base = Math.atan2(target.y - p.y, target.x - p.x);
         for (let i = 0; i < count && discs.length < MAX_DISCS; i++) {
           const a = base + (i - (count - 1) / 2) * FAN;
-          discs.push({ x: p.x, y: p.y, dx: Math.cos(a), dy: Math.sin(a), out: 0, back: false, spin: 0, hit: new Map(), n: 0, tgt: null, parked: 0, trips: 0, mult: 1 });
+          discs.push({ x: p.x, y: p.y, dx: Math.cos(a), dy: Math.sin(a), out: 0, back: false, spin: 0, hit: new Map(), n: 0, tgt: null, parked: 0, trips: 0, mult: 1, stopAt: -1 });
         }
         inst.cd += param(run, inst, 'cooldown');
         attackTriggers(run, inst, target.x, target.y, base);
@@ -105,7 +105,11 @@ export default {
         d.x += d.dx * speed * dt;
         d.y += d.dy * speed * dt;
         d.out += speed * dt;
-        if (d.out >= reach) { if (bs.park) d.parked = bs.park.time; else d.back = true; }
+        if (bs.park && bs.park.onHit) {                    // Gyre: parks just past the first enemy it cuts, where the crowd is; nothing met: straight home
+          if (d.stopAt < 0 && d.hit.size) d.stopAt = d.out + bs.park.overshoot;
+          if (d.stopAt >= 0 && d.out >= d.stopAt) d.parked = bs.park.time;
+          else if (d.out >= reach) d.back = true;
+        } else if (d.out >= reach) { if (bs.park) d.parked = bs.park.time; else d.back = true; }
       } else {
         const hx = p.x - d.x;
         const hy = p.y - d.y;
@@ -122,6 +126,7 @@ export default {
             d.n = 0;
             d.tgt = null;
             d.parked = 0;
+            d.stopAt = -1;
             d.hit.clear();
             d.x = p.x;
             d.y = p.y;
