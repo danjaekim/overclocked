@@ -26,10 +26,12 @@ export const CLASSES = {
       { stat: 'moveSpeed', op: 'inc', value: 0.1 },
       { stat: 'cooldown', op: 'more', value: -0.15, when: 'moving' },          // Fleet
       { stat: 'projectiles', op: 'flat', value: 1, tags: ['ranged'] },        // Quiver: one more shot from every ranged weapon (M43; was +1 pierce, which arrows rarely used)
+      { stat: 'maxHp', op: 'flat', value: 20 },                               // M45f: the Archer had no sustain at all and bled out around 8:00 (bots 58/69% -> 85/95%, docs/balance-playbook.md)
+      { stat: 'regen', op: 'flat', value: 0.3 },
     ],
     trait: {
       name: 'Deadeye',
-      text: ['Rain of Arrows: every 3 s arrows fall on the thickest crowd in range of your ranged weapon, more with every extra shot it fires', 'Quiver: every ranged weapon fires one more shot', 'Long Shot: hits deal up to 50% more damage the farther the target', 'Fleet: weapons attack 15% faster while you move', 'Evasion: 25% of hits miss you'],
+      text: ['Rain of Arrows: every 3 s arrows fall on the thickest crowd in range of your ranged weapon, more with every extra shot it fires', 'Quiver: every ranged weapon fires one more shot', 'Long Shot: hits deal up to 50% more damage the farther the target', 'Fleet: weapons attack 15% faster while you move', 'Evasion: 25% of hits miss you', 'Steady hands: +20 max HP and a little regeneration'],
       longShot: { near: 60, far: 220, bonus: 0.5 },
       dodge: { chance: 0.25, grace: 0.25 },
       // Rain of Arrows (game/class-traits.js): needs a ranged weapon; damage is `frac` x that weapon's, arrows = `arrows`

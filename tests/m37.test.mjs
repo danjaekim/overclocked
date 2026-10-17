@@ -106,7 +106,7 @@ test('m37 a crate drops xp gems or ore when you are healthy', () => {
 });
 
 test('m37 a heart waits for you at full health, then flies in and heals 15% of max hp', () => {
-  const run = newRun('archer', false);
+  const run = newRun('smith', false);
   const p = run.player;
   spawnHeal(run, 20, 0, CRATES.loot.heal.frac);
   for (let i = 0; i < 90; i++) run.update(STEP, { x: 0, y: 0 });

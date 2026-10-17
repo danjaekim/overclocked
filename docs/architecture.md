@@ -682,6 +682,7 @@ Each milestone ends playable, is one or a few commits, and has a clear done-chec
 | **M45c** *(done, v0.45.3)* | Affix cleanup and new affixes | Merge Keen and Brutal, replace Shoving with Staggering, make Heavy a `more` bonus. New: Lingering, Broad, Swiftshot, Bane, Seeking, Packmaster, and unconditional epics Echoing, Overcharged, Hunter's Mark, Prismatic. Spec: `docs/design-m45.md`. |
 | **M45d** *(done, v0.45.4)* | Legendary tier | One legendary slot per weapon at +10, bought with starsteel, pick 1 of 3 by shape: Wellspring, Overflow, Starfall, Bloodpact, Twinned. Spec: `docs/design-m45.md`. |
 | **M45e** *(done)* | Forge review | Bot bench before and after M45a-d, 6 classes, plain and smart bots, 100 seeds: average win rate 73.3/86.5 (plain/smart) to 82.0/90.0, nearly all from Archer, Mage and Summoner; Smith, Berserker and Saint were already at the ceiling. Costs left alone by decision. Bench modes `--tempers`, `--affixes [--legendary]` and the `BOT_FORGE=full` bot are in the playbook. Spec: `docs/design-m45.md`. |
+| **M45f** *(done, v0.45.5)* | Archer sustain | Bot sweeps showed Archer's gap was survival, not damage (pierce and Rain of Arrows buffs were all noise; +20 HP and regen 0.3/s moved the bots 58/69% to 85/95%). Archer now has +20 max HP and 0.3 regen (`data/classes.js`); sweep specs `tools/specs/archer-pierce-rain.json` and `archer-sustain.json`. |
 
 After M8: see `docs/roadmap.md` (M9 onward: statuses, perks, elites and chests, reforge choice, more weapons and evolutions, balance, remaining classes).
 
