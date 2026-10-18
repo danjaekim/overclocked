@@ -19,25 +19,33 @@ export function gemTier(value) {
   return t;
 }
 
+// Gems merge so a screen clear can never run the pool dry. Past 85% full a new gem joins the nearest gem within
+// MERGE_NEAR of where it fell (the pile just grows and changes colour); if the pool is completely full and nothing is
+// near, the XP is banked at once, as ore is. It never piles onto a far-off gem, which looked like a drop that vanished.
+const MERGE_AT = 0.85, MERGE_NEAR = 48;
+function nearestGem(list, x, y, within) {
+  let best = null, bestD2 = within * within;
+  for (let i = 0; i < list.length; i++) {
+    const c = list[i];
+    if (c.kind !== KIND_GEM) continue;
+    const d2 = (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y);
+    if (d2 <= bestD2) { bestD2 = d2; best = c; }
+  }
+  return best;
+}
+function mergeInto(g, value) { g.value += value; g.r = GEM.tiers[gemTier(g.value)][1]; return g; }
+
 export function spawnGem(run, x, y, value) {
   const store = run.world.pickups;
+  const list = store.active;
+  if (list.length >= store.capacity * MERGE_AT) {
+    const near = nearestGem(list, x, y, MERGE_NEAR);
+    if (near) return mergeInto(near, value);
+  }
   let g = store.acquire();
   if (!g) {
-    const p = run.player;
-    let far = null;
-    let farD2 = -1;
-    const list = store.active;
-    for (let i = 0; i < list.length; i++) {
-      const c = list[i];
-      if (c.kind !== KIND_GEM) continue;          // only gems merge
-      const d2 = (c.x - p.x) * (c.x - p.x) + (c.y - p.y) * (c.y - p.y);
-      if (d2 > farD2) { farD2 = d2; far = c; }
-    }
-    if (far) {
-      far.value += value;
-      far.r = GEM.tiers[gemTier(far.value)][1];
-    }
-    return far;
+    gainXp(run, value * run.player.stats.get('xpGain'));        // nothing near and no room: pay out now
+    return null;
   }
   g.kind = KIND_GEM;
   g.x = x;

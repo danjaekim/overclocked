@@ -77,16 +77,18 @@ test('the xpGain stat scales collected xp', () => {
   approx(run.player.xp, 3);
 });
 
-test('a full gem pool merges new gems into the farthest one and loses no xp', () => {
+test('a full gem pool loses no xp: new gems join a near pile, or are paid out at once (M45n)', () => {
   const run = newRun();
-  for (let i = 0; i < CAPS.pickups; i++) spawnGem(run, 1000 + i, 1000, 1);
+  for (let i = 0; i < CAPS.pickups; i++) spawnGem(run, 1000 + i * 100, 1000, 1);      // spread out: nothing merges
   assert.equal(run.world.pickups.count, CAPS.pickups);
+  const xp0 = run.player.xp, lvl0 = run.player.level;
+  spawnGem(run, -9000, 0, 7);                                                           // full, nothing near: banked now
+  assert.equal(run.world.pickups.count, CAPS.pickups);
+  assert.ok(run.player.level > lvl0 || run.player.xp > xp0);
   const before = run.world.pickups.active.reduce((a, g) => a + g.value, 0);
-  const merged = spawnGem(run, 0, 0, 7);
+  const merged = spawnGem(run, 1000, 1010, 5);                                          // near a pile: joins it
   assert.ok(merged);
-  assert.equal(run.world.pickups.count, CAPS.pickups);
-  const after = run.world.pickups.active.reduce((a, g) => a + g.value, 0);
-  assert.equal(after, before + 7);
+  assert.equal(run.world.pickups.active.reduce((a, g) => a + g.value, 0), before + 5);
 });
 
 test('kills drop gems worth the enemy xp, and collecting them levels the player up', () => {
