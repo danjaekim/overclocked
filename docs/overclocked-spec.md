@@ -198,9 +198,9 @@ If the concept check fails, we stop and rethink the pieces before building the e
 
 **M0: Setup**
 
-- [ ] You create the empty `overclocked` repo, and I push the copy of Overforged
-- [ ] Rename the save keys, the service worker cache and the app identity
-- [ ] Fix the cache cleanup in Overforged's `sw.js` (small separate commit)
+- [x] You create the empty `overclocked` repo, and I push the copy of Overforged
+- [x] Rename the save keys, the service worker cache and the app identity
+- [x] Fix the cache cleanup in Overforged's `sw.js` (small separate commit)
 - [ ] Turn on Pages and confirm the build loads on your phone
 
 **M1: Chain engine**
