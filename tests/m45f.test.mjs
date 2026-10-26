@@ -4,9 +4,6 @@ import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { CLASSES } from '../src/data/classes.js';
 import { validateData } from '../src/data/validate.js';
-import { VERSION } from '../src/version.js';
-
-test('version bumped', () => assert.ok(/^0\.(45\.([5-9]|\d\d)|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
 
 test('Archer: +20 max HP and 0.3 regen over a classless run; the text says so', () => {
   assert.deepEqual(validateData(), []);

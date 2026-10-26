@@ -8,8 +8,8 @@ export function showTitle(overlays, { onPlay, onCompendium, onHistory, onToggleS
     ? `<p class="hint">Best: ${fmtTime(bests.time)} · ${bests.kills} kills · level ${bests.level}</p>`
     : '<p class="hint">Drag anywhere to move. Weapons fire automatically.</p>';
   const el = overlays.show(
-    `<h1>OVERFORGED</h1>
-     <p class="sub">Forge your build. Survive the horde.</p>
+    `<h1>OVERCLOCKED</h1>
+     <p class="sub">Program your build. Survive the horde.</p>
      ${titleSceneHtml()}
      <button class="btn primary" data-act="play">Play</button>
      <button class="btn" data-act="guide">Compendium</button>

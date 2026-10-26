@@ -13,7 +13,6 @@ import { validateData } from '../src/data/validate.js';
 import { buildEntries } from '../src/game/compendium.js';
 import { queueDamage, KIND_HIT } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
-import { VERSION } from '../src/version.js';
 
 const newRun = () => {
   const run = createRun({ seed: 4, view: { w: 480, h: 1040 }, debug: { god: true }, classId: 'smith' });
@@ -21,8 +20,6 @@ const newRun = () => {
   run.player.weapons.length = 0;
   return run;
 };
-
-test('version bumped', () => assert.ok(/^0\.(45\.([2-9]|\d\d)|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
 
 test('every behavior has a shape pair; every weapon is offered two valid tempers at +5 and +10', () => {
   assert.deepEqual(validateData(), []);

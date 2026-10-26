@@ -8,7 +8,6 @@ import { fuse } from '../src/game/fusion.js';
 import { RUN_EVENTS } from '../src/game/run-events.js';
 import { snapshotRun, restoreRun, SNAPSHOT_FORMAT } from '../src/game/run-snapshot.js';
 import { createRunSave } from '../src/save/run-save.js';
-import { VERSION } from '../src/version.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -142,7 +141,7 @@ test('m35: the run save stores, loads and clears one snapshot, and survives bad 
   assert.equal(b.kills, a.kills);
   rs.clear();
   assert.equal(rs.load(), null);
-  mem.set('overforged.run.v1', '{not json');
+  mem.set('overclocked.run.v1', '{not json');
   assert.equal(rs.load(), null);
   // missing / throwing storage: no crash, just no resume
   assert.equal(createRunSave(null).save({ a: 1 }), false);
@@ -150,5 +149,4 @@ test('m35: the run save stores, loads and clears one snapshot, and survives bad 
   const full = { getItem: () => null, setItem: () => { throw new Error('quota'); }, removeItem: () => { throw new Error('x'); } };
   assert.equal(createRunSave(full).save({ a: 1 }), false);
   assert.equal(createRunSave(full).has(), false);
-  assert.ok(/^0\.(3[5-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });

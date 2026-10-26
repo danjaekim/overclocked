@@ -10,7 +10,6 @@ import { fuse, previewFusion } from '../src/game/fusion.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { validateData } from '../src/data/validate.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -29,7 +28,6 @@ test('m33c data: Tempest is Chain Lightning\'s evolution (Static Charge 2); the 
   assert.ok(r.requires.some((q) => q.perk === 'static_charge' && q.minLevel === 2));
   assert.ok(EVOLUTIONS.some((x) => x.into === 'stormshell_mortar' && x.with === 'static_rod'));
   assert.equal(WEAPONS.tempest.behavior, 'chain');
-  assert.ok(/^0\.33\.([2-9]|\d\d)/.test(VERSION) || /^0\.(3[4-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });
 
 test('Chain Lightning evolves into Tempest', () => {

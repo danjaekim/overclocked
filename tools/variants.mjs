@@ -38,7 +38,7 @@ const spec = JSON.parse(readFileSync(specPath, 'utf8'));
 const mode = spec.mode || 'bots';
 const seeds = Number(opt('--seeds', mode === 'dps' ? 3 : 100));
 const jobs = Number(opt('--jobs', Math.max(1, cpus().length)));
-const outDir = opt('--out', join(tmpdir(), 'overforged-variants'));
+const outDir = opt('--out', join(tmpdir(), 'overclocked-variants'));
 mkdirSync(outDir, { recursive: true });
 
 // One bench invocation per (variant, class, policy) for bots, per variant for dps.

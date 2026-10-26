@@ -21,8 +21,8 @@ const newRun = (classId = 'archer', extra = {}) => createRun({ seed: 1, view: VI
 const tick = (run, s) => { for (let i = 0; i < Math.round(s / STEP); i++) run.update(STEP, { x: 0, y: 0 }); };
 
 function fakeStorage(initial) {
-  const m = new Map(initial ? [['overforged.save.v1', initial]] : []);
-  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), raw: () => m.get('overforged.save.v1') };
+  const m = new Map(initial ? [['overclocked.save.v1', initial]] : []);
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), raw: () => m.get('overclocked.save.v1') };
 }
 
 test('m8 data validates', () => {

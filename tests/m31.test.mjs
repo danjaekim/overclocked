@@ -9,7 +9,6 @@ import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
 import { SHAPE_PAYLOAD } from '../src/data/fusions.js';
 import { BEHAVIORS } from '../src/behaviors/index.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -30,7 +29,6 @@ test('m31 data: ids kept, new shapes registered with payloads', () => {
   assert.equal(WEAPONS.halo.name, 'Halo Pulse');
   assert.equal(WEAPONS.radiant_halo.name, 'Radiant Pulse');
   for (const b of ['trail', 'pulse']) { assert.ok(BEHAVIORS[b], b); assert.ok(SHAPE_PAYLOAD[b], b); }
-  assert.ok(/^0\.(3[1-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });
 
 test('trail: standing still drops a patch on a timer; moving drops them by distance', () => {

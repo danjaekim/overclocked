@@ -4,7 +4,7 @@
 // full quota), so every access is wrapped; without it the game just doesn't offer a resume.
 // createRunSave(storage) takes the storage object so tests can pass a fake.
 
-const KEY = 'overforged.run.v1';
+const KEY = 'overclocked.run.v1';
 
 export function createRunSave(storage) {
   return {

@@ -1,7 +1,7 @@
 {
-  "name": "Overforged",
-  "short_name": "Overforged",
-  "description": "A short survivors-style roguelike. Forge your build and survive the horde.",
+  "name": "Overclocked",
+  "short_name": "Overclocked",
+  "description": "A short survivors-style roguelike. Program your weapons with rule cards and chains, and survive the horde.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

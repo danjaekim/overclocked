@@ -10,7 +10,6 @@ import { validateData } from '../src/data/validate.js';
 import { SHAPE_PAYLOAD } from '../src/data/fusions.js';
 import { BEHAVIORS } from '../src/behaviors/index.js';
 import { stagger } from '../src/systems/status.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -32,7 +31,6 @@ test('m32 data: ids kept, three new shapes with payloads, version bumped', () =>
   assert.equal(WEAPONS.static_rod.name, 'Chain Lightning');
   assert.equal(WEAPONS.storm_javelin.name, 'Lightning Rod');
   for (const b of ['slam', 'chain', 'rod']) { assert.ok(BEHAVIORS[b], b); assert.ok(SHAPE_PAYLOAD[b], b); }
-  assert.ok(/^0\.(3[2-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });
 
 test('stagger: stops an enemy, bosses take half', () => {

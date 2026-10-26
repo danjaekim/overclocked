@@ -1,5 +1,7 @@
 # Roadmap after the prototype (M9 onward)
 
+> **Overclocked.** This roadmap (M9 onward) is Overforged's. Overclocked has its own milestones, M0 to M5, in `docs/overclocked-spec.md`. Status: M0 (setup) is in progress. The app identity and storage are renamed (v0.0.1); the Pages build on a phone is still to confirm.
+
 The prototype milestones (M0 to M8, `docs/architecture.md` §10) are done: the loop, two open classes plus
 the Berserker, five weapons, the forge, shrines, evolutions, a boss, titles, saving and install support.
 This file plans what comes next, driven by the first playtest (2026-10-13). Same rules as before: small

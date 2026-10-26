@@ -2,8 +2,8 @@
 // the save, compressed when the browser can (CompressionStream), base64url encoded, with a checksum so
 // a truncated or edited paste is rejected instead of half-applied.
 //
-//   OFZ1.<checksum>.<payload>   deflate-raw compressed JSON
-//   OF1.<checksum>.<payload>    plain JSON (browsers without CompressionStream)
+//   OCZ1.<checksum>.<payload>   deflate-raw compressed JSON
+//   OC1.<checksum>.<payload>    plain JSON (browsers without CompressionStream)
 //
 // Importing replaces the save (docs/architecture.md §8); the caller shows describeSave() first.
 
@@ -43,11 +43,11 @@ const canCompress = () => typeof CompressionStream === 'function' && typeof Deco
 
 export async function encodeSave(data) {
   let bytes = enc.encode(JSON.stringify(data));
-  let tag = 'OF1';
+  let tag = 'OC1';
   if (canCompress()) {
     try {
       bytes = await pipe(bytes, new CompressionStream('deflate-raw'));
-      tag = 'OFZ1';
+      tag = 'OCZ1';
     } catch { /* fall back to plain */ }
   }
   const payload = toB64(bytes);
@@ -57,14 +57,14 @@ export async function encodeSave(data) {
 // Returns a normalized save, or throws an Error whose message is fit to show the player.
 export async function decodeSave(code) {
   const text = String(code || '').replace(/\s+/g, '');
-  const m = /^(OFZ1|OF1)\.([0-9a-f]{8})\.([A-Za-z0-9_-]+)$/.exec(text);
-  if (!m) throw new Error('That does not look like an Overforged code.');
+  const m = /^(OCZ1|OC1)\.([0-9a-f]{8})\.([A-Za-z0-9_-]+)$/.exec(text);
+  if (!m) throw new Error('That does not look like an Overclocked code.');
   const [, tag, sum, payload] = m;
   if (fnv1a(payload) !== sum) throw new Error('The code is damaged or cut short. Copy it again in full.');
   let json;
   try {
     let bytes = fromB64(payload);
-    if (tag === 'OFZ1') {
+    if (tag === 'OCZ1') {
       if (!canCompress()) throw new Error('This browser cannot read compressed codes.');
       bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
     }
@@ -78,7 +78,7 @@ export async function decodeSave(code) {
   } catch {
     throw new Error('The code could not be read.');
   }
-  if (!raw || typeof raw !== 'object' || !Number.isFinite(raw.version)) throw new Error('That is not an Overforged save.');
+  if (!raw || typeof raw !== 'object' || !Number.isFinite(raw.version)) throw new Error('That is not an Overclocked save.');
   return normalize(raw);
 }
 

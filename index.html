@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#0e0f14">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <title>Overforged</title>
+  <title>Overclocked</title>
   <style>
     :root {
       --bg: #0e0f14;
@@ -375,7 +375,7 @@
       el.style.display = 'block';
       el.textContent += 'Unhandled: ' + (e.reason && e.reason.stack || e.reason) + '\n';
     });
-    // Startup watchdog: main.js sets window.__overforged when it has booted. If it has not within a
+    // Startup watchdog: main.js sets window.__overclocked when it has booted. If it has not within a
     // few seconds (a module failed to load or parse, a stale cache), say so and offer a clean reload.
     function bootReport(msg) {
       var el = document.getElementById('boot-error');
@@ -436,7 +436,7 @@
       }
       next();
     }
-    setTimeout(function () { if (!window.__overforged) { bootReport('Overforged did not start (no error was reported).'); diagnose(); } }, 3000);
+    setTimeout(function () { if (!window.__overclocked) { bootReport('Overclocked did not start (no error was reported).'); diagnose(); } }, 3000);
   </script>
   <script type="module" src="./src/main.js" onerror="bootReport('Could not load src/main.js (or a file it imports)'); diagnose()"></script>
 </body>

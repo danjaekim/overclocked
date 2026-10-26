@@ -11,7 +11,6 @@ import { damagePlayer, flushDamage } from '../src/systems/damage.js';
 import { enhance } from '../src/game/forge.js';
 import { CLASSES } from '../src/data/classes.js';
 import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const VIEW = { w: 480, h: 1040 };
@@ -29,7 +28,6 @@ test('m36 data: every class has a named trait with text lines', () => {
   for (const [id, c] of Object.entries(CLASSES)) {
     assert.ok(c.trait && c.trait.name && Array.isArray(c.trait.text) && c.trait.text.length >= 2, id);
   }
-  assert.ok(/^0\.(3[6-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });
 
 test('Archer Long Shot: a far hit deals up to 50% more than a near one; other classes see no difference', () => {

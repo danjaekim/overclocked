@@ -4,7 +4,7 @@
 // when the game pauses, which also happens whenever the tab is hidden.
 // createSave(storage) takes the storage object so tests can pass a fake.
 
-const KEY = 'overforged.save.v1';
+const KEY = 'overclocked.save.v1';
 
 export const DEFAULTS = {
   version: 3,

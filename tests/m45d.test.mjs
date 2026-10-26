@@ -13,7 +13,6 @@ import { validateData } from '../src/data/validate.js';
 import { buildEntries } from '../src/game/compendium.js';
 import { queueDamage, KIND_HIT } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -32,8 +31,6 @@ const wear = (id, lg) => {
   return { run, w };
 };
 const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
-
-test('version bumped', () => assert.ok(/^0\.(45\.([4-9]|\d\d)|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
 
 test('data validates; every weapon is offered at least three legendaries; legendary has its own colour', () => {
   assert.deepEqual(validateData(), []);

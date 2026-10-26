@@ -12,7 +12,6 @@ import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { SHAPE_PAYLOAD } from '../src/data/fusions.js';
 import { validateData } from '../src/data/validate.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -38,7 +37,6 @@ test('m33a data: two chakram branches with their own requirements, both evolved 
   assert.ok(EVOLUTIONS.find((r) => r.into === 'ricochet_saw').requires.some((q) => q.perk === 'ricochet'));
   assert.ok(EVOLUTIONS.find((r) => r.into === 'gyre').requires.some((q) => q.passive === 'wind_sigil'));
   assert.equal(SHAPE_PAYLOAD.boomerang, 'saw');
-  assert.ok(/^0\.(3[3-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });
 
 function evolveTo(into) {

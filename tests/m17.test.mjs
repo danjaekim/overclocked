@@ -52,7 +52,7 @@ test('the history is capped at the newest HISTORY_CAP runs while the counters ke
 
 test('a v1 save (no history) loads with an empty history and keeps its progress', () => {
   const st = fakeStorage();
-  st.setItem('overforged.save.v1', JSON.stringify({ version: 1, lastClass: 'smith', unlocked: ['smith'], bests: { time: 90, kills: 50, level: 5 }, runs: 4, wins: 1, bossKills: 1, sound: false }));
+  st.setItem('overclocked.save.v1', JSON.stringify({ version: 1, lastClass: 'smith', unlocked: ['smith'], bests: { time: 90, kills: 50, level: 5 }, runs: 4, wins: 1, bossKills: 1, sound: false }));
   const save = createSave(st);
   assert.deepEqual(save.data.history, []);
   assert.deepEqual(save.data.unlocked, ['smith']);
@@ -76,7 +76,7 @@ test('export then import round-trips the whole save', async () => {
   save.unlock('smith');
   for (let i = 0; i < 30; i++) save.recordRun(summary({ kills: i }), i);
   const code = await encodeSave(save.data);
-  assert.match(code, /^OFZ?1\.[0-9a-f]{8}\.[A-Za-z0-9_-]+$/);
+  assert.match(code, /^OCZ?1\.[0-9a-f]{8}\.[A-Za-z0-9_-]+$/);
   const back = await decodeSave(code);
   assert.deepEqual(back, save.data);
 });
@@ -101,10 +101,10 @@ test('damaged, truncated or foreign text is rejected with a readable message', a
 test('an import is re-validated: bad fields in a valid-looking code are dropped', async () => {
   const evil = { version: 2, lastClass: 5, unlocked: ['smith', 7], bests: { time: -5, kills: 9, level: 'x' }, runs: 'many', history: [{ cls: 'smith' }], sound: 'yes' };
   const payload = Buffer.from(JSON.stringify(evil)).toString('base64url');
-  // plain OF1 code with a correct checksum, built the same way the encoder does
+  // plain OC1 code with a correct checksum, built the same way the encoder does
   let h = 0x811c9dc5;
   for (let i = 0; i < payload.length; i++) { h ^= payload.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  const out = await decodeSave(`OF1.${h.toString(16).padStart(8, '0')}.${payload}`);
+  const out = await decodeSave(`OC1.${h.toString(16).padStart(8, '0')}.${payload}`);
   assert.equal(out.lastClass, 'archer');
   assert.deepEqual(out.unlocked, ['smith']);
   assert.equal(out.bests.time, 0);

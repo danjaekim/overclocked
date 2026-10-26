@@ -11,7 +11,6 @@ import { validateData } from '../src/data/validate.js';
 import { queueDamage, KIND_HIT } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
 import { fireTriggers } from '../src/game/triggers.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -29,8 +28,6 @@ const withAffix = (id, ...affixes) => {
   return { run, w };
 };
 const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
-
-test('version bumped', () => assert.ok(/^0\.(45\.([3-9]|\d\d)|4[6-9]\.|[5-9]\d\.)/.test(VERSION), VERSION));
 
 test('data: Brutal and Shoving are gone, Keen is merged, new affixes validate', () => {
   assert.deepEqual(validateData(), []);

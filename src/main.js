@@ -1,4 +1,4 @@
-// Overforged: boot. Wires the view, input, game state machine, renderer and loop.
+// Overclocked: boot. Wires the view, input, game state machine, renderer and loop.
 
 import { createLoop } from './core/loop.js';
 import { createView } from './render/view.js';
@@ -61,4 +61,4 @@ loop.start();
 
 // Handy for poking around in a desktop console or automated tests.
 setNumberStyle(params.numScale, params.numFx);
-window.__overforged = { game, view, debug, input, save, audio, setNumberStyle };
+window.__overclocked = { game, view, debug, input, save, audio, setNumberStyle };

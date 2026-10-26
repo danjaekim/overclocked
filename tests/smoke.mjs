@@ -53,7 +53,7 @@ await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'de
 if (flag('--history')) {                                         // run history + export/import, from the title screen
   const shotH = (n) => opt('--shot') && page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${n}.png`) });
   await page.evaluate(() => {
-    const { save } = window.__overforged;
+    const { save } = window.__overclocked;
     const mk = (i, cls, won) => ({
       time: 200 + i * 60, kills: 100 + i * 40, seed: 100 + i, won, bossKilled: won, classId: cls, level: 8 + i, titleIds: [],
       build: { weapons: [[cls === 'smith' ? 'forge_hammer' : 'ember_bow', 3 + i]], passives: [], perks: [['wildfire', 2]] },
@@ -115,15 +115,15 @@ if (flag('--guide')) {                                           // the compendi
   await page.waitForSelector('[data-act=play]');
 }
 if (flag('--music')) {                                           // music scenes, the settings row and the save
-  const mus = () => page.evaluate(() => window.__overforged.audio.music.playing);
+  const mus = () => page.evaluate(() => window.__overclocked.audio.music.playing);
   const shotM = (n) => opt('--shot') && page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${n}.png`) });
   await page.tap('[data-act=music]');                             // a tap is also the audio-unlock gesture
   await page.tap('[data-act=music]');
   await page.waitForTimeout(400);
-  console.log('title music:', await mus(), 'audio:', await page.evaluate(() => window.__overforged.audio.state));
+  console.log('title music:', await mus(), 'audio:', await page.evaluate(() => window.__overclocked.audio.state));
   await shotM('music-title');
   await page.evaluate(() => { const r = document.querySelector('input[data-vol=music]'); r.value = 30; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); });
-  console.log('saved volume:', await page.evaluate(() => window.__overforged.save.data.musicVolume));
+  console.log('saved volume:', await page.evaluate(() => window.__overclocked.save.data.musicVolume));
   await page.tap('[data-act=play]');
   await page.tap('[data-act="class:smith"]');
   await page.waitForTimeout(1200);
@@ -135,7 +135,7 @@ if (flag('--music')) {                                           // music scenes
   await page.waitForSelector('.overlay');
   await shotM('music-pause');
   await page.tap('[data-act=music]');
-  console.log('music off:', await mus(), 'saved:', await page.evaluate(() => window.__overforged.save.data.music));
+  console.log('music off:', await mus(), 'saved:', await page.evaluate(() => window.__overclocked.save.data.music));
   await page.tap('[data-act=music]');
   console.log('music back on:', await mus());
   await page.tap('[data-act=resume]');
@@ -167,7 +167,7 @@ if (flag('--ui') && opt('--shot')) {
   await shot('banish');
   await page.tap('[data-act^="pick:"]');                          // banish the first offer
   await page.waitForTimeout(500);
-  const info = await page.evaluate(() => ({ b: window.__overforged.game.run.banished, bl: window.__overforged.game.run.banishes }));
+  const info = await page.evaluate(() => ({ b: window.__overclocked.game.run.banished, bl: window.__overclocked.game.run.banishes }));
   console.log('banished:', JSON.stringify(info));
   await page.tap('[data-act=reroll]');
   await page.waitForTimeout(500);
@@ -180,7 +180,7 @@ if (flag('--ui') && opt('--shot')) {
   await shot('pause-build');
   await page.tap('[data-act=back]');
   await page.tap('[data-act=sound]');
-  console.log('sound saved:', await page.evaluate(() => window.__overforged.save.data.sound));
+  console.log('sound saved:', await page.evaluate(() => window.__overclocked.save.data.sound));
   await page.tap('[data-act=resume]');
   await page.tap('canvas', { position: { x: 60, y: 40 } });          // a tap on the HUD opens the build view
   await page.waitForSelector('.overlay.build', { timeout: 2000 });
@@ -196,14 +196,14 @@ if (flag('--results')) {                                         // end screen w
   if (opt('--shot')) await page.screenshot({ path: opt('--shot').replace(/\.png$/, '-results.png') });
   console.log('results damage block:', await page.locator('.build-wrap.results').count());
 }
-if (flag('--loadout')) await page.evaluate(() => window.__overforged.game.run.debugLoadout());
-if (flag('--boss')) await page.evaluate(() => { const o = window.__overforged; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
+if (flag('--loadout')) await page.evaluate(() => window.__overclocked.game.run.debugLoadout());
+if (flag('--boss')) await page.evaluate(() => { const o = window.__overclocked; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
 if (flag('--forge')) {
   // drive the shrine -> forge -> back-to-battle flow
   await page.evaluate(() => {
-    const r = window.__overforged.game.run;
+    const r = window.__overclocked.game.run;
     r.ore = 40;
-    const sh = window.__overforged.game.run.shrines;
+    const sh = window.__overclocked.game.run.shrines;
     const w = r.world; w.enemies.releaseAll();
     r.debug.god = true;
     import('/src/systems/shrines.js').then((m) => { const s = m.spawnShrine(r); r.player.x = s.x; r.player.y = s.y; });
@@ -222,7 +222,7 @@ if (flag('--forge')) {
 if (flag('--chest')) {
   // drive an elite -> chest pickup -> treasure screen -> back-to-battle flow
   await page.evaluate(() => {
-    const r = window.__overforged.game.run;
+    const r = window.__overclocked.game.run;
     r.debug.god = true;
     r.world.enemies.releaseAll();
     import('/src/systems/pickups.js').then((m) => { m.spawnChest(r, r.player.x, r.player.y, 1); });
@@ -233,15 +233,15 @@ if (flag('--chest')) {
   console.log('treasure cards:', await page.locator('.card.reveal').count());
   await page.click('[data-act=done]');
   await page.waitForTimeout(500);
-  console.log('state after chest:', await page.evaluate(() => window.__overforged.game.state));
+  console.log('state after chest:', await page.evaluate(() => window.__overclocked.game.state));
 }
-if (flag('--stress')) await page.evaluate(() => window.__overforged.game.run.stress());
+if (flag('--stress')) await page.evaluate(() => window.__overclocked.game.run.stress());
 await page.waitForTimeout(4000);
 
-const audioState = await page.evaluate(() => window.__overforged.audio.state);
+const audioState = await page.evaluate(() => window.__overclocked.audio.state);
 console.log('audio state:', audioState);
 const info = await page.evaluate(() => {
-  const o = window.__overforged;
+  const o = window.__overclocked;
   const r = o.game.run;
   return { state: o.game.state, time: +r.time.toFixed(1), kills: r.kills, enemies: r.world.enemies.count,
     fps: +o.debug.fps.toFixed(0), simMs: +o.debug.simMs.toFixed(2) };

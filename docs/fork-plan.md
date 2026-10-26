@@ -1,6 +1,6 @@
 # Fork plan: a second game on Overforged's core
 
-Status: parked as of v0.45.17. Written so a fresh session can pick it up without this thread's history. The assessment comes from the import graph and file sizes, not a full audit; confirm it before committing to a refactor.
+Status: acted on 2026-10-26 (option 3, fork now): the second game is Overclocked, in danjaekim/overclocked, specified in `docs/overclocked-spec.md`. Originally parked as of v0.45.17. Written so a fresh session can pick it up without this thread's history. The assessment comes from the import graph and file sizes, not a full audit; confirm it before committing to a refactor.
 
 ## The concept (Dan's words, condensed)
 

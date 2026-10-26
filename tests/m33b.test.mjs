@@ -10,7 +10,6 @@ import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { buildEntries } from '../src/game/compendium.js';
 import { PERKS } from '../src/data/perks.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -42,8 +41,6 @@ const make = (m) => {
   assert.ok(r.ok && r.masterwork && r.masterwork.id === m.id, m.id);
   return { run, h };
 };
-
-test('version bumped', () => assert.ok(/^0\.(33\.[1-9]|3[4-9]\.|[4-9]\d\.)/.test(VERSION), VERSION));
 
 test('every masterwork fusions, runs 6 s in a crowd, and deals more than its host alone', () => {
   for (const m of MASTERWORKS) {

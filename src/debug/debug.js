@@ -23,7 +23,7 @@ export function createDebug(params) {
       'position:fixed;left:8px;bottom:8px;z-index:5;padding:10px 14px;font:12px monospace;' +
       'background:#222;color:#9fe870;border:1px solid #9fe870;border-radius:6px;opacity:.85';
     btn.addEventListener('click', () => {
-      const o = window.__overforged;
+      const o = window.__overclocked;
       if (o && o.game.run) o.game.run.stress();
     });
     document.body.appendChild(btn);
@@ -78,7 +78,7 @@ export function createDebug(params) {
 let labEl = null;
 async function toggleLab() {
   if (labEl) { labEl.remove(); labEl = null; return; }
-  const o = window.__overforged;
+  const o = window.__overclocked;
   if (!o || !o.game.run) return;
   const [{ WEAPONS }, W, G, D, { MASTERWORKS }, SF] = await Promise.all([
     import('../data/weapons.js'), import('../game/weapons.js'), import('../game/fusion.js'),

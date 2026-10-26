@@ -8,7 +8,6 @@ import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
 import { PAYLOAD_FX } from '../src/effects/payloads.js';
 import { PAYLOADS } from '../src/data/fusions.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 
@@ -89,5 +88,4 @@ test('m35b: audit: every generic payload adds at least 10% on a slam host, and n
     const share = (on - off) / on;
     assert.ok(share > 0.10 && share < 0.5, `${id}: ${share.toFixed(2)}`);
   }
-  assert.ok(/^0\.(35\.[1-9]|3[6-9]|[4-9]\d)/.test(VERSION), VERSION);
 });

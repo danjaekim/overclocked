@@ -9,7 +9,6 @@ import { fuse, masterworkFor } from '../src/game/fusion.js';
 import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { validateData } from '../src/data/validate.js';
-import { VERSION } from '../src/version.js';
 
 const STEP = 1 / 60;
 const newRun = () => {
@@ -40,7 +39,6 @@ test('m34 data: four new masterworks, valid pairs of fusionable (evolved) weapon
   }
   const pairs = new Set(MASTERWORKS.map((m) => [m.host, m.donor].sort().join('+')));
   assert.equal(pairs.size, MASTERWORKS.length, 'no pair has two masterworks');
-  assert.ok(/^0\.(3[4-9]|[4-9]\d)\./.test(VERSION), VERSION);
 });
 
 test('Aurora Wake: the wake blesses what stands in it, and beacons send out rings', () => {
