@@ -1,0 +1,145 @@
+{
+ "mode": "dps",
+ "weapons": [
+  "chakram",
+  "ricochet_saw",
+  "gyre",
+  "arc_bolt",
+  "prismatic_bolt",
+  "singularity"
+ ],
+ "variants": [
+  {
+   "name": "current"
+  },
+  {
+   "name": "gyre-d20-os30",
+   "weaponOverride": {
+    "gyre": {
+     "base": {
+      "damage": 20,
+      "cooldown": 1.9,
+      "count": 1,
+      "range": 230,
+      "speed": 360,
+      "radius": 22,
+      "tickEvery": 0.4,
+      "color": "#8fe6d4",
+      "park": {
+       "time": 1.5,
+       "pull": 70,
+       "onHit": true,
+       "overshoot": 30
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "gyre-d24-os30",
+   "weaponOverride": {
+    "gyre": {
+     "base": {
+      "damage": 24,
+      "cooldown": 1.9,
+      "count": 1,
+      "range": 230,
+      "speed": 360,
+      "radius": 22,
+      "tickEvery": 0.4,
+      "color": "#8fe6d4",
+      "park": {
+       "time": 1.5,
+       "pull": 70,
+       "onHit": true,
+       "overshoot": 30
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "gyre-d24-os20",
+   "weaponOverride": {
+    "gyre": {
+     "base": {
+      "damage": 24,
+      "cooldown": 1.9,
+      "count": 1,
+      "range": 230,
+      "speed": 360,
+      "radius": 22,
+      "tickEvery": 0.4,
+      "color": "#8fe6d4",
+      "park": {
+       "time": 1.5,
+       "pull": 70,
+       "onHit": true,
+       "overshoot": 20
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "sing-far-f3.5",
+   "weaponOverride": {
+    "singularity": {
+     "triggers": [
+      {
+       "on": "attack",
+       "effect": "vortex",
+       "params": {
+        "radius": 100,
+        "ttl": 1.5,
+        "pull": 150,
+        "damageFrac": 3.5,
+        "minDist": 150
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "sing-far-f4.5",
+   "weaponOverride": {
+    "singularity": {
+     "triggers": [
+      {
+       "on": "attack",
+       "effect": "vortex",
+       "params": {
+        "radius": 100,
+        "ttl": 1.5,
+        "pull": 150,
+        "damageFrac": 4.5,
+        "minDist": 150
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "sing-far-f3.5-t2-p220",
+   "weaponOverride": {
+    "singularity": {
+     "triggers": [
+      {
+       "on": "attack",
+       "effect": "vortex",
+       "params": {
+        "radius": 100,
+        "ttl": 2.0,
+        "pull": 220,
+        "damageFrac": 3.5,
+        "minDist": 150
+       }
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

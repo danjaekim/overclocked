@@ -1,0 +1,7 @@
+{
+  "mode": "bots",
+  "classes": ["archer", "smith", "berserker", "mage", "summoner", "saint"],
+  "policies": ["plain", "smart"],
+  "spend": "all",
+  "variants": [ { "name": "m45-full-forge-bot", "env": { "BOT_FORGE": "full" } } ]
+}

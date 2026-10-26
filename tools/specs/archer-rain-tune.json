@@ -1,0 +1,11 @@
+{
+  "mode": "bots",
+  "classes": ["archer"],
+  "policies": ["plain", "smart"],
+  "variants": [
+    { "name": "current" },
+    { "name": "rain-every3-6arrows", "classOverride": { "archer": { "trait": { "rain": { "every": 3, "arrows": 6, "perProj": 2, "max": 18, "spread": 60, "radius": 26, "frac": 0.55, "delay": 0.45, "stagger": 0.04, "reach": 240 } } } } },
+    { "name": "rain-frac0.7", "classOverride": { "archer": { "trait": { "rain": { "every": 3.5, "arrows": 5, "perProj": 2, "max": 16, "spread": 60, "radius": 26, "frac": 0.7, "delay": 0.45, "stagger": 0.04, "reach": 240 } } } } },
+    { "name": "rain-both", "classOverride": { "archer": { "trait": { "rain": { "every": 3, "arrows": 6, "perProj": 2, "max": 18, "spread": 60, "radius": 28, "frac": 0.7, "delay": 0.45, "stagger": 0.04, "reach": 240 } } } } }
+  ]
+}

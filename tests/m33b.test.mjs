@@ -1,0 +1,111 @@
+// M33b: the masterwork review (docs/design-m30-m33.md §6.2). Every masterwork still works on the new
+// shapes, and the ones retuned in the review do what their text now says.
+
+import { test, assert } from './harness.mjs';
+import { createRun } from '../src/game/run.js';
+import { spawnEnemy } from '../src/game/director.js';
+import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
+import { fuse } from '../src/game/fusion.js';
+import { MASTERWORKS } from '../src/data/fusions.js';
+import { WEAPONS } from '../src/data/weapons.js';
+import { buildEntries } from '../src/game/compendium.js';
+import { PERKS } from '../src/data/perks.js';
+import { VERSION } from '../src/version.js';
+
+const STEP = 1 / 60;
+const newRun = () => {
+  const run = createRun({ seed: 3, view: { w: 480, h: 1040 }, debug: { god: true }, classId: 'archer' });
+  run.player.stats.removeBySource(`weapon:${run.player.weapons[0].instanceId}:`);
+  run.player.weapons.length = 0;
+  run.director.update = () => {};
+  run.starsteel = 3;
+  return run;
+};
+const tick = (run, s) => { for (let i = 0; i < Math.round(s / STEP); i++) run.update(STEP, { x: 0, y: 0 }); };
+const crowd = (run, n = 30) => {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const d = 70 + (i % 6) * 35;
+    const e = spawnEnemy(run, 'goblin', Math.cos(a) * d, Math.sin(a) * d);
+    e.hp = e.maxHp = 1e9; e.speed = 0;
+    out.push(e);
+  }
+  return out;
+};
+const make = (m) => {
+  const run = newRun();
+  const h = addWeapon(run, m.host);
+  while (h.level < 4 && canLevelUp(h)) levelUpWeapon(run, h);
+  const d = addWeapon(run, m.donor);
+  const r = fuse(run, h, d);
+  assert.ok(r.ok && r.masterwork && r.masterwork.id === m.id, m.id);
+  return { run, h };
+};
+
+test('version bumped', () => assert.ok(/^0\.(33\.[1-9]|3[4-9]\.|[4-9]\d\.)/.test(VERSION), VERSION));
+
+test('every masterwork fusions, runs 6 s in a crowd, and deals more than its host alone', () => {
+  for (const m of MASTERWORKS) {
+    const alone = newRun();
+    const a = addWeapon(alone, m.host);
+    while (a.level < 4 && canLevelUp(a)) levelUpWeapon(alone, a);
+    crowd(alone);
+    tick(alone, 6);
+    const { run } = make(m);
+    crowd(run);
+    tick(run, 6);
+    assert.ok(Number.isFinite(run.stats.total) && run.stats.total > alone.stats.total, `${m.id}: ${Math.round(run.stats.total)} vs ${Math.round(alone.stats.total)}`);
+    assert.ok(run.hazards.length <= 90);
+  }
+});
+
+test('Seraph Titan: the colossus wears a wheel of blades that bless what they cut', () => {
+  const m = MASTERWORKS.find((x) => x.id === 'seraph_titan');
+  assert.ok(m.hooks.minionBlades && !m.hooks.minionAura);
+  const { run } = make(m);
+  const es = crowd(run);
+  for (let i = 0; i < 360; i++) run.update(STEP, { x: 0, y: 0 });
+  assert.ok(es.some((e) => e.hp < e.maxHp), 'the blades cut');
+  assert.ok(es.some((e) => e.blessT > 0), 'and blessed what they cut');
+});
+
+test('Comet bursts its ice shards at the last enemy the arrow pierced, not off-screen', () => {
+  const m = MASTERWORKS.find((x) => x.id === 'comet');
+  const { run, h } = make(m);
+  h.cd = 1e9;
+  const e = spawnEnemy(run, 'goblin', 150, 0); e.hp = e.maxHp = 1e9; e.speed = 0;
+  tick(run, 0.05);
+  h.cd = 0;
+  let shards = [];
+  for (let i = 0; i < 90 && !shards.length; i++) {
+    run.update(STEP, { x: 0, y: 0 });
+    shards = run.world.projectiles.active.filter((p) => p.sub);
+  }
+  assert.ok(shards.length >= 8, 'the ring of shards');
+  assert.ok(shards.every((p) => Math.hypot(p.x - 150, p.y) < 40), 'around the enemy it struck');
+  assert.ok(shards.every((p) => p.depth === 1), 'shards never set off the arrow\'s own shatter');
+});
+
+test('Stormfangs: the hounds fire piercing lances', () => {
+  const m = MASTERWORKS.find((x) => x.id === 'stormfangs');
+  assert.ok(m.hooks.minionLance.pierce >= 2);
+  const { run, h } = make(m);
+  const a = spawnEnemy(run, 'goblin', 120, 0); a.hp = a.maxHp = 1e9; a.speed = 0;
+  tick(run, 6);
+  assert.ok(h.minions.length >= 1 && a.hp < a.maxHp, 'a lance landed');
+});
+
+test('Bladestorm flings blades on every spin; Hellhounds wear a wider aura', () => {
+  assert.equal(MASTERWORKS.find((x) => x.id === 'bladestorm').triggers[0].every, undefined);
+  assert.ok(MASTERWORKS.find((x) => x.id === 'hellhounds').hooks.minionAura.radius >= 46);
+});
+
+test('text: Echo Strike mentions slams; the Fusions tab names the new shapes; masterwork text mentions no arc for the slam hosts', () => {
+  assert.match(PERKS.echo_strike.desc, /slam/);
+  const gm = MASTERWORKS.find((x) => x.id === 'glacier_maul');
+  assert.ok(!/arc\b/.test(gm.desc) && WEAPONS[gm.host].behavior === 'slam');
+  const lines = buildEntries({ fusions: MASTERWORKS.map((x) => x.id) }).filter((e) => e.tab === 'fusions').flatMap((e) => e.lines).join(' ');
+  assert.match(lines, /Planted rod/);
+  assert.match(lines, /Slam/);
+});

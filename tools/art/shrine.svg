@@ -1,0 +1,22 @@
+<defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d869c"/><stop offset="0.35" stop-color="#4f566a"/><stop offset="1" stop-color="#363b4a"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f6652"/><stop offset="1" stop-color="#4a4234"/></linearGradient>
+<linearGradient id="flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d63a12"/><stop offset="0.55" stop-color="#ff7a1f"/><stop offset="1" stop-color="#ffb347"/></linearGradient></defs>
+<ellipse cx="32" cy="59.500" rx="23" ry="3.200" fill="#000" opacity=".32"/>
+<g stroke="#e9dcc0" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+<path d="M10 59 V53 L13 50 H51 L54 53 V59 Z" fill="url(#stone)"/>
+<path d="M13 50 H51 L54 53 H10 Z" fill="#8a7f68" stroke-width="1.400"/>
+<path d="M22 55.500 H30 M36 55.500 H43 M15 56.500 H19" fill="none" stroke="#2c261d" stroke-width="1.200" opacity=".7"/>
+<path d="M20 50 V46 H44 V50 Z" fill="#3a3f4d"/>
+<path d="M24 46 C25 41.500 26.500 39 27.500 37 H36.500 C37.500 39 39 41.500 40 46 Z" fill="url(#steel)"/>
+<path d="M5.500 29.500 C10 29.500 14 27.500 19 27.500 H50 C52.500 27.500 54 29 54 31.500 V32.500 C54 34.500 52 35.500 50 35.500 H42 C40 36 39 37 38.500 38.500 H25.500 C25 37 24 36 22 35.500 H19.500 C12 35.500 7.500 33 5.500 29.500 Z" fill="url(#steel)"/>
+<path d="M17 29.200 H51.500" fill="none" stroke="#c8d0e2" stroke-width="1.500" opacity=".85"/>
+<path d="M45 30.500 V33 H48.500 V30.500" fill="#14110e" stroke-width="1" opacity=".9"/>
+</g>
+<g stroke="#e9dcc0" stroke-linejoin="round" stroke-linecap="round">
+<path d="M32 26 C21.500 20 25 10.500 32 2 C39 10.500 42.500 20 32 26 Z" fill="url(#flame)" stroke-width="2"/>
+<path d="M32 25 C26.500 21.500 28 15.500 32 10.500 C36 15.500 37.500 21.500 32 25 Z" fill="#ffd34d" stroke="none"/>
+<path d="M32 24.500 C29.500 22.500 30.200 19.500 32 17 C33.800 19.500 34.500 22.500 32 24.500 Z" fill="#fff3c4" stroke="none"/>
+<path d="M22.500 27 C18 23.500 20 18.500 23.500 14.500 C25 18.500 27.500 22 22.500 27 Z" fill="#ff7a1f" stroke-width="1.500"/>
+<path d="M42 27 C45.500 24 44.500 20 42 16.500 C40.500 20 38 23 42 27 Z" fill="#ff7a1f" stroke-width="1.500"/>
+</g>
+<g fill="#ffd34d" stroke="none"><circle cx="17" cy="19" r="1.100"/><circle cx="48.500" cy="12" r="1"/><circle cx="14" cy="9.500" r=".8"/><circle cx="51" cy="21" r=".8"/></g>

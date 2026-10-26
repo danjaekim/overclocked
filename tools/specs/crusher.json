@@ -1,0 +1,10 @@
+{
+  "mode": "bots",
+  "classes": ["archer", "mage", "summoner", "smith"],
+  "policies": ["plain"],
+  "variants": [
+    { "name": "hp300-slam1", "enemyOverride": { "crusher": { "hp": 300, "slam": { "damage": 1 } } } },
+    { "name": "hp300-d10-ev6", "enemyOverride": { "crusher": { "hp": 300, "slam": { "damage": 10, "every": 6 } } } },
+    { "name": "hp300-d10-ev6-a4", "enemyOverride": { "crusher": { "hp": 300, "armor": 4, "slam": { "damage": 10, "every": 6 } } } }
+  ]
+}

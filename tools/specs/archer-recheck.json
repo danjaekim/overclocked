@@ -1,0 +1,6 @@
+{
+  "mode": "bots",
+  "classes": ["archer", "mage", "summoner"],
+  "policies": ["plain", "smart"],
+  "variants": [ { "name": "current" } ]
+}

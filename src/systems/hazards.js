@@ -1,0 +1,553 @@
+// Hazards (docs/design-m26-m28.md §2): things the weapons leave in the world for a while.
+//   patch   burning ground: ticks damage and burn on anything standing in it
+//   vortex  pulls enemies toward a point, then bursts
+//   pillar  a telegraphed column of light that hits everything in its radius once
+//   wave    a slow ground shockwave that travels along a line and hits each enemy once
+// One flat array on the run, capped. Damage is queued as PROC damage attributed to the weapon
+// instance that made the hazard, so every perk, status and trigger applies as usual.
+
+import { queueDamage, KIND_PROC, CAUSE } from './damage-queue.js';
+import { applyBurn, applyChill, applyShock, forkChain } from './status.js';
+import { resolveHit } from '../game/hit.js';
+import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
+import { addPuff, addArc } from '../render/fx.js';
+import { drawLightRing, drawPillar, drawPatchMarks, drawPatchChains, drawWave } from '../render/auras.js';
+
+export const HAZARD_CAP = 90;
+
+const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7;
+const TAU = Math.PI * 2;
+
+function add(run, h) {
+  const list = run.hazards;
+  if (list.length >= HAZARD_CAP) {
+    if (h.kind !== PATCH) {                 // a patch is the cheapest thing to lose: drop the oldest one
+      const i = list.findIndex((o) => o.kind === PATCH);
+      if (i < 0) return null;
+      list.splice(i, 1);
+    } else return null;
+  }
+  list.push(h);
+  return h;
+}
+
+// status: what standing in it does besides damage: 'burn' (the default, null), 'chill', 'shock', 'bless'
+// (marks the enemy and mends you a little) or 'none'. cause: the damage cause to credit (run stats).
+// direct: the patch is the weapon's own attack (Frost Wake): its ticks are real weapon hits (crit,
+// knockback, the weapon's own status chances, hit triggers, fusion payloads) instead of PROC damage, and
+// `look` picks the colours. look: 'burn' | 'chill' | 'steam' | 'shock' | 'bless' | 'none'.
+// Patches dropped one after another along a path share a `chain` id and an index `ci`; render/auras.js draws a chain as one
+// organic ribbon instead of a string of discs. `link` extends the caller's chain (or starts one when `next` is false).
+let chainSeq = 0;
+export const newChain = () => ++chainSeq;
+export function linkPatch(patch, chain, ci) {
+  if (patch) { patch.chain = chain; patch.ci = ci; }
+  return patch;
+}
+
+export function addPatch(run, src, x, y, radius, ttl, tick, dmg, depth, shock = false, status = null, cause, direct = false, look = null) {
+  return add(run, { kind: PATCH, src, x, y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, shock, status, cause, direct, look });
+}
+
+// Blades that circle an enemy and hit whatever is near it (fusion payload "Whirling Blades"). They
+// follow the enemy while it lives and stay where it died after that.
+export function addSpin(run, src, target, radius, ttl, tick, dmg, depth, cause) {
+  return add(run, { kind: SPIN, src, e: target, x: target.x, y: target.y, r: radius, ttl, life: ttl, tick, t: tick * 0.5, dmg, depth, cause });
+}
+
+// A ring that grows from (x, y) (or from the player, follow) to rMax, hitting each enemy once as its
+// edge reaches it. status 'bless' marks what it hits and heals you `heal` per enemy (capped per ring).
+export function addRing(run, src, x, y, rMax, speed, dmg, depth, opts = {}) {
+  const life = rMax / speed + 0.25;
+  return add(run, { kind: RING, src, x, y, rr: 0, rMax, speed, ttl: life, life, dmg, depth, hit: new Set(), follow: !!opts.follow, status: opts.status || null, heal: opts.heal || 0, healed: 0, direct: !!opts.direct, thick: opts.thick || 4, color: opts.color || '#fff3b0', cause: opts.cause, kb: opts.kb === undefined ? 60 : opts.kb });
+}
+// A planted rod (Lightning Rod): every `every` s it zaps the `zaps` nearest enemies within r (shocking each),
+// and with `chill` it also chills everything in r once a second. `link` joins it to its weapon's other rods.
+export function addRod(run, src, x, y, r, ttl, dmg, o) {
+  const mine = [];
+  for (let i = 0; i < run.hazards.length; i++) if (run.hazards[i].kind === ROD && run.hazards[i].src === src) mine.push(run.hazards[i]);
+  while (mine.length >= o.max) {                              // the oldest rod goes
+    const old = mine.shift();
+    old.ttl = Math.min(old.ttl, 0.05);
+  }
+  return add(run, { kind: ROD, src, x, y, r, ttl, life: ttl, dmg, depth: 0, t: o.every * 0.5, every: o.every, zaps: o.zaps, chill: !!o.chill, chillT: 1, link: o.link || 0, linkT: 0.4, zapAt: -9 });
+}
+
+// Called where a projectile of a rod weapon ends. Payload shots (`sub`) never plant.
+export function plantRod(run, pr) {
+  const inst = pr.inst;
+  const b = inst && inst.def.base.rod;
+  if (!b || pr.sub) return;
+  const stats = run.player.stats;
+  const count = Math.max(1, Math.round(inst.def.base.count + stats.getFor('projectiles', inst.tags)));
+  const px = pr.hx === pr.hx ? pr.hx : pr.x;                  // plant among the enemies it struck, not off at the end of its flight
+  const py = pr.hy === pr.hy ? pr.hy : pr.y;
+  addRod(run, inst, px, py, b.radius * stats.getFor('area', inst.tags), b.ttl * stats.getFor('duration', inst.tags),
+    pr.dmg * b.frac, { every: b.every, zaps: b.zaps, max: b.max + count - 1, chill: b.chill, link: b.link });
+}
+
+export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
+  return add(run, { kind: VORTEX, src, x, y, r: radius, ttl, life: ttl, pull, dmg, depth });
+}
+export function addPillar(run, src, x, y, radius, tele, dmg, depth, cause, star = false) {
+  const wr = src && src.fusion && src.fusion.hooks.wrath;          // Wrath: the pillar stays and joins the lightning net
+  const life = tele + 0.3 + (wr ? wr.stay : 0);
+  return add(run, { kind: PILLAR, src, x, y, r: radius, ttl: life, tele, life, dmg, depth, done: false, net: !!wr, cause, star });
+}
+export function addWave(run, src, x, y, dx, dy, speed, range, width, dmg, depth) {
+  return add(run, { kind: WAVE, src, x, y, x0: x, y0: y, dx, dy, speed, left: range, r: width, ttl: range / speed + 0.2, life: range / speed + 0.2, dmg, depth, hit: new Set() });
+}
+
+// A telegraphed burst that also lays statuses on everything it hits (Thunderscythe's storm shells).
+// flags: { burn, shock, chill }
+export function addBlast(run, src, x, y, radius, tele, dmg, depth, flags, cause) {
+  return add(run, { kind: BLAST, src, x, y, r: radius, ttl: tele + 0.15, tele, life: tele + 0.15, dmg, depth, flags, done: false, cause });
+}
+
+// The nearest vortex within `range` of a point, or null (Eventide Volley's arrows bend toward it).
+export function nearestVortex(run, x, y, range) {
+  let best = null;
+  let bd = range * range;
+  const list = run.hazards;
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    if (h.kind !== VORTEX) continue;
+    const d = (h.x - x) * (h.x - x) + (h.y - y) * (h.y - y);
+    if (d < bd) { bd = d; best = h; }
+  }
+  return best;
+}
+
+function hitCircle(run, h, x, y, r, dmg, kb, burn = false) {
+  const w = run.world;
+  const n = w.hash.queryRadius(x, y, r + MAX_ENEMY_RADIUS, w.scratch);
+  for (let i = 0; i < n; i++) {
+    const e = w.scratch[i];
+    if (!e.alive) continue;
+    const dx = e.x - x;
+    const dy = e.y - y;
+    const rr = r + e.r;
+    if (dx * dx + dy * dy > rr * rr) continue;
+    const d = Math.hypot(dx, dy) || 1;
+    queueDamage(run, e, dmg, false, (dx / d) * kb, (dy / d) * kb, h.depth + 1, h.src, KIND_PROC, h.cause);
+    if (burn) applyBurn(run, e, h.src, dmg, h.depth + 1);
+  }
+}
+
+export function updateHazards(run, dt) {
+  const list = run.hazards;
+  if (list.length === 0) return;
+  const w = run.world;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const h = list[i];
+    h.ttl -= dt;
+    if (h.kind === PATCH) {
+      if (h.pulse && h.ttl <= h.pulse.at) {                  // Pulse Wake: the patch sends one ring out as it fades
+        addRing(run, h.src, h.x, h.y, h.r * h.pulse.reach, h.r * h.pulse.reach * 4, h.dmg * h.pulse.frac, h.depth,
+          { color: '#7fe9ff', thick: 4, kb: 25 });
+        h.pulse = null;
+      }
+      h.t -= dt;
+      if (h.t <= 0) {
+        let healed = 0;
+        h.t += h.tick;
+        const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive) continue;
+          const dx = e.x - h.x;
+          const dy = e.y - h.y;
+          const rr = h.r + e.r;
+          if (dx * dx + dy * dy > rr * rr) continue;
+          if (h.direct) {                                       // a weapon's own ground: real hits, no shove, and one hit per enemy per tick however many patches overlap
+            const seen = h.src.patchSeen || (h.src.patchSeen = new Map());
+            if (run.time - (seen.get(e.uid) || -1e9) < h.tick * 0.9) continue;
+            if (seen.size > 400) seen.clear();
+            seen.set(e.uid, run.time);
+            resolveHit(run, h.src, e, h.dmg, 0, 0);
+            if (h.bless) e.blessT = Math.max(e.blessT, 1.5);      // Aurora Wake
+            continue;
+          }
+          queueDamage(run, e, h.dmg, false, 0, 0, h.depth + 1, h.src, KIND_PROC, h.cause);
+          const st = h.status;
+          if (!st || st === 'burn' || st === 'steam') applyBurn(run, e, h.src, h.dmg, h.depth + 1);
+          if (h.shock || st === 'shock') applyShock(run, e, h.src);
+          if (st === 'chill' || st === 'steam') applyChill(run, e, h.src, h.depth + 1);
+          if (st === 'bless') {
+            e.blessT = 2;
+            if (healed < 4) { healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + 0.5); }
+          }
+        }
+      }
+    } else if (h.kind === ROD) {
+      h.t -= dt;
+      if (h.t <= 0) {
+        h.t += h.every;
+        zapRod(run, h);
+      }
+      if (h.chill) {
+        h.chillT -= dt;
+        if (h.chillT <= 0) {
+          h.chillT += 1;
+          const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+          for (let k = 0; k < n; k++) {
+            const e = w.scratch[k];
+            if (e.alive && (e.x - h.x) * (e.x - h.x) + (e.y - h.y) * (e.y - h.y) <= (h.r + e.r) * (h.r + e.r)) applyChill(run, e, h.src, 1);
+          }
+        }
+      }
+    } else if (h.kind === SPIN) {
+      if (h.e && h.e.alive && h.e.uid !== undefined) { h.x = h.e.x; h.y = h.e.y; }
+      h.t -= dt;
+      if (h.t <= 0) {
+        h.t += h.tick;
+        hitCircle(run, h, h.x, h.y, h.r, h.dmg, 25);
+      }
+    } else if (h.kind === RING) {
+      if (h.follow) { h.x = run.player.x; h.y = run.player.y; }
+      h.rr = Math.min(h.rMax, h.rr + h.speed * dt);
+      const n = w.hash.queryRadius(h.x, h.y, h.rr + MAX_ENEMY_RADIUS, w.scratch);
+      for (let k = 0; k < n; k++) {
+        const e = w.scratch[k];
+        if (!e.alive || h.hit.has(e.uid)) continue;
+        const dx = e.x - h.x;
+        const dy = e.y - h.y;
+        const rr = h.rr + e.r;
+        if (dx * dx + dy * dy > rr * rr) continue;
+        h.hit.add(e.uid);
+        const d = Math.hypot(dx, dy) || 1;
+        if (h.direct) resolveHit(run, h.src, e, h.dmg, dx / d, dy / d);                 // the weapon's own attack (Halo Pulse)
+        else queueDamage(run, e, h.dmg, false, (dx / d) * h.kb, (dy / d) * h.kb, h.depth + 1, h.src, KIND_PROC, h.cause);
+        if (h.status === 'bless') {
+          e.blessT = 2;
+          if (h.healed < 6) { h.healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + h.heal); }
+        }
+      }
+      if (h.rr >= h.rMax) h.ttl = Math.min(h.ttl, 0.12);
+    } else if (h.kind === VORTEX) {
+      const reach = h.r * 1.4;
+      const star = h.src && h.src.fusion && h.src.fusion.hooks.burnVortex;     // Black Sun: a burning star
+      let burnNow = false;
+      if (star && (h.bt = (h.bt || 0) - dt) <= 0) { h.bt += 0.3; burnNow = true; }
+      const n = w.hash.queryRadius(h.x, h.y, reach + MAX_ENEMY_RADIUS, w.scratch);
+      for (let k = 0; k < n; k++) {
+        const e = w.scratch[k];
+        if (!e.alive) continue;
+        const dx = h.x - e.x;
+        const dy = h.y - e.y;
+        const d = Math.hypot(dx, dy);
+        if (d > reach || d < 6) continue;
+        const step = Math.min(d, h.pull * (e.def.boss ? 0.15 : 1) * dt);
+        e.x += (dx / d) * step;
+        e.y += (dy / d) * step;
+        if (burnNow) applyBurn(run, e, h.src, h.dmg * 0.2, h.depth + 1);
+      }
+      if (h.ttl <= 0) {                                      // the collapse
+        hitCircle(run, h, h.x, h.y, h.r, h.dmg, 120, !!star);
+        addPuff(run, h.x, h.y, h.r / 2.2, star ? '#ff9a3c' : '#c58bff');
+        if (star) addPatch(run, h.src, h.x, h.y, h.r * 0.7, star.patchTtl, 0.5, h.dmg * 0.1, h.depth);
+      }
+    } else if (h.kind === BLAST) {
+      if (!h.done && h.life - h.ttl >= h.tele) {
+        h.done = true;
+        const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive) continue;
+          const dx = e.x - h.x;
+          const dy = e.y - h.y;
+          const rr = h.r + e.r;
+          if (dx * dx + dy * dy > rr * rr) continue;
+          const d = Math.hypot(dx, dy) || 1;
+          queueDamage(run, e, h.dmg, false, (dx / d) * 50, (dy / d) * 50, h.depth + 1, h.src, KIND_PROC, h.cause);
+          if (h.flags.burn) applyBurn(run, e, h.src, h.dmg, h.depth + 1);
+          if (h.flags.shock) applyShock(run, e, h.src);
+          if (h.flags.chill) applyChill(run, e, h.src, h.depth + 1);
+        }
+        addPuff(run, h.x, h.y, h.r / 1.8, h.flags.shock ? '#ffe066' : '#ff9a3c');
+      }
+    } else if (h.kind === PILLAR) {
+      if (!h.done && h.life - h.ttl >= h.tele) {
+        h.done = true;
+        hitCircle(run, h, h.x, h.y, h.r, h.dmg, 40);
+        addPuff(run, h.x, h.y, h.r / 1.6, '#fff3b0');
+      }
+    } else {                                                 // WAVE
+      const step = Math.min(h.left, h.speed * dt);
+      h.x += h.dx * step;
+      h.y += h.dy * step;
+      h.left -= step;
+      const ck = h.src && h.src.fusion && h.src.fusion.hooks.crack;           // Fault Line: the wave leaves a burning, shocking crack
+      if (ck) {
+        h.cd = (h.cd || 0) + step;
+        while (h.cd >= ck.every) {
+          h.cd -= ck.every;
+          linkPatch(addPatch(run, h.src, h.x - h.dx * h.cd, h.y - h.dy * h.cd, ck.radius, ck.ttl, ck.tick, h.dmg * ck.damageFrac, h.depth, true), h.chain || (h.chain = newChain()), h.ci = (h.ci || 0) + 1);
+        }
+      }
+      const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+      for (let k = 0; k < n; k++) {
+        const e = w.scratch[k];
+        if (!e.alive || h.hit.has(e.uid)) continue;
+        const dx = e.x - h.x;
+        const dy = e.y - h.y;
+        const rr = h.r + e.r;
+        if (dx * dx + dy * dy > rr * rr) continue;
+        h.hit.add(e.uid);
+        queueDamage(run, e, h.dmg, false, h.dx * 90, h.dy * 90, h.depth + 1, h.src, KIND_PROC);
+      }
+      if (h.left <= 0) h.ttl = Math.min(h.ttl, 0.15);
+    }
+    if (h.ttl <= 0) {
+      list[i] = list[list.length - 1];
+      list.pop();
+    }
+  }
+  netStep(run, dt);
+  rodLinks(run, dt);
+}
+
+// The nearest `zaps` enemies within the rod's radius take a hit and a shock, each with a bolt to the rod's tip.
+function zapRod(run, h) {
+  const w = run.world;
+  const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+  let a = null, b = null, da = Infinity, db = Infinity;
+  for (let k = 0; k < n; k++) {
+    const e = w.scratch[k];
+    if (!e.alive) continue;
+    const d = (e.x - h.x) * (e.x - h.x) + (e.y - h.y) * (e.y - h.y);
+    if (d > (h.r + e.r) * (h.r + e.r)) continue;
+    if (d < da) { b = a; db = da; a = e; da = d; } else if (d < db) { b = e; db = d; }
+  }
+  for (const e of [a, b]) {
+    if (!e || (e === b && h.zaps < 2)) continue;
+    addArc(run, h.x, h.y - 14, e.x, e.y);
+    queueDamage(run, e, h.dmg, false, 0, 0, 1, h.src, KIND_PROC, CAUSE.DIRECT);
+    applyShock(run, e, h.src);
+    const fk = h.src && h.src.fusion && h.src.fusion.hooks.rodFork;   // Stormspire: every zap forks on like Tempest
+    if (fk) forkChain(run, h.src, e, h.dmg * fk.boost, fk.gens, fk.falloff, fk.jump, 0);
+  }
+}
+
+// Thunder Lance: rods of one weapon between 40 and `link` units apart are joined by lightning that hurts
+// and shocks whatever stands on the line, once per enemy every 0.4 s.
+const LINK_TICK = 0.4;
+function rodLinks(run, dt) {
+  const list = run.hazards;
+  let rods = null;
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    if (h.kind === ROD && h.link > 0 && h.ttl > 0.1) (rods || (rods = [])).push(h);
+  }
+  if (!rods || rods.length < 2) { run.rodLinks = null; return; }
+  run.rodLinks = rods;
+  run.rodT = (run.rodT || 0) - dt;
+  if (run.rodT > 0) return;
+  run.rodT += LINK_TICK;
+  const w = run.world;
+  const seen = new Set();
+  for (let a = 0; a < rods.length; a++) {
+    const p = rods[a];
+    for (let b = a + 1; b < rods.length; b++) {
+      const q = rods[b];
+      if (q.src !== p.src) continue;
+      const len = Math.hypot(q.x - p.x, q.y - p.y);
+      if (len > p.link || len < 40) continue;
+      const steps = Math.max(1, Math.ceil(len / 30));
+      for (let s = 0; s <= steps; s++) {
+        const x = p.x + ((q.x - p.x) * s) / steps;
+        const y = p.y + ((q.y - p.y) * s) / steps;
+        const n = w.hash.queryRadius(x, y, 22 + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive || seen.has(e.uid)) continue;
+          if ((e.x - x) * (e.x - x) + (e.y - y) * (e.y - y) > (22 + e.r) * (22 + e.r)) continue;
+          seen.add(e.uid);
+          queueDamage(run, e, p.dmg * 1.5, false, 0, 0, 1, p.src, KIND_PROC, CAUSE.DIRECT);
+          applyShock(run, e, p.src);
+        }
+      }
+    }
+  }
+}
+
+// Wrath: every live pillar of a Wrath weapon is joined to the next by lightning. Anything standing
+// on a link takes a share of the pillar's damage and is shocked, every 0.35 s.
+const NET_TICK = 0.35;
+function netStep(run, dt) {
+  const list = run.hazards;
+  const nodes = [];
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    if (h.kind === PILLAR && h.net && h.done) nodes.push(h);
+  }
+  if (nodes.length < 2) { run.netT = 0; run.netLinks = null; return; }
+  run.netLinks = nodes;
+  run.netT = (run.netT || 0) - dt;
+  if (run.netT > 0) return;
+  run.netT += NET_TICK;
+  const w = run.world;
+  const seen = new Set();
+  for (let a = 0; a < nodes.length - 1; a++) {
+    const p = nodes[a];
+    const q = nodes[a + 1];
+    const len = Math.hypot(q.x - p.x, q.y - p.y);
+    const steps = Math.max(1, Math.ceil(len / 36));
+    for (let s = 0; s <= steps; s++) {
+      const x = p.x + ((q.x - p.x) * s) / steps;
+      const y = p.y + ((q.y - p.y) * s) / steps;
+      const n = w.hash.queryRadius(x, y, 26 + MAX_ENEMY_RADIUS, w.scratch);
+      for (let k = 0; k < n; k++) {
+        const e = w.scratch[k];
+        if (!e.alive || seen.has(e.uid)) continue;
+        const dx = e.x - x;
+        const dy = e.y - y;
+        const rr = 26 + e.r;
+        if (dx * dx + dy * dy > rr * rr) continue;
+        seen.add(e.uid);
+        queueDamage(run, e, p.dmg * p.src.fusion.hooks.wrath.linkFrac, false, 0, 0, p.depth + 1, p.src, KIND_PROC);
+        applyShock(run, e, p.src);
+      }
+    }
+  }
+}
+
+const PATCH_COLORS = { burn: ['#ff6a2e', '#ffb45e'], chill: ['#6ec8ff', '#d6f1ff'], steam: ['#c3cfdc', '#ffd9b0'], shock: ['#ffd23a', '#fff3a8'], bless: ['#ffc83a', '#fff3b0'], none: ['#b9a7ff', '#e4dcff'] };
+
+// Drawn under the enemies. Everything here is cheap strokes and fills.
+export function drawHazards(ctx, run) {
+  const list = run.hazards;
+  if (list.length === 0) return;
+  const t = run.time;
+  if (run.rodLinks) {                                         // Thunder Lance: a crackling line between rods that are linked
+    ctx.strokeStyle = '#fff3a8';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.55 + 0.25 * Math.sin(t * 30);
+    for (let a = 0; a < run.rodLinks.length; a++) {
+      for (let b = a + 1; b < run.rodLinks.length; b++) {
+        const p = run.rodLinks[a];
+        const q = run.rodLinks[b];
+        const L = Math.hypot(q.x - p.x, q.y - p.y);
+        if (p.src !== q.src || L > p.link || L < 40) continue;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 16);
+        const mx = (p.x + q.x) / 2 + Math.sin(t * 40 + a) * 6;
+        const my = (p.y + q.y) / 2 - 16 + Math.cos(t * 37 + b) * 6;
+        ctx.lineTo(mx, my);
+        ctx.lineTo(q.x, q.y - 16);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  drawPatchChains(ctx, list, t, PATCH, PATCH_COLORS);
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    const k = h.ttl / h.life;                                // 1 -> 0
+    if (h.kind === PATCH && h.chain) { drawPatchMarks(ctx, h, h.look || h.status || 'burn', k, t); continue; }
+    if (h.kind === SPIN) {
+      ctx.strokeStyle = '#fff1c4';
+      ctx.lineWidth = 4.5;
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = Math.min(1, k * 3) * 0.95;
+      ctx.beginPath();
+      const a0 = t * 11;
+      for (let b = 0; b < 3; b++) {
+        const a = a0 + (b * TAU) / 3;
+        ctx.moveTo(h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r);
+        ctx.arc(h.x, h.y, h.r, a, a + 0.7);
+      }
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    } else if (h.kind === RING) {
+      drawLightRing(ctx, h.x, h.y, h.rr, h.rMax, h.thick, h.color, t);
+    } else if (h.kind === PATCH) {
+      const col = PATCH_COLORS[h.look || h.status || 'burn'] || PATCH_COLORS.burn;
+      ctx.globalAlpha = Math.min(1, k * 2) * 0.28;
+      ctx.fillStyle = h.shock && !h.status ? '#ff6a2e' : col[0];
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, h.r * (0.9 + 0.1 * Math.sin(t * 9 + h.x)), 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = Math.min(1, k * 2) * (h.look === 'chill' || h.look === 'steam' ? 0.16 : 0.5);   // trail patches overlap: a faint rim lets them read as one band
+      ctx.strokeStyle = col[1];
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      drawPatchMarks(ctx, h, h.look || h.status || 'burn', k, t);
+    } else if (h.kind === ROD) {
+      const grow = Math.min(1, (h.life - h.ttl) * 8);            // the rod drops in
+      ctx.globalAlpha = Math.min(1, k * 3) * 0.22;
+      ctx.strokeStyle = h.chill ? '#9fdcff' : '#ffe066';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, h.r * (0.96 + 0.04 * Math.sin(t * 7 + h.x)), 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = Math.min(1, k * 3);
+      ctx.strokeStyle = '#d9d4c4';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(h.x, h.y + 2);
+      ctx.lineTo(h.x, h.y - 16 * grow);
+      ctx.stroke();
+      ctx.fillStyle = h.chill ? '#bfeaff' : '#fff3a8';
+      ctx.beginPath();
+      ctx.arc(h.x, h.y - 16 * grow, 3.2 + (Math.sin(t * 24 + h.y) > 0.6 ? 1.6 : 0), 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = '#2b2a24';
+      ctx.beginPath();
+      ctx.ellipse(h.x, h.y + 3, 6, 2.5, 0, 0, TAU);
+      ctx.fill();
+    } else if (h.kind === VORTEX) {
+      const spin = t * 5;
+      ctx.strokeStyle = h.src && h.src.fusion && h.src.fusion.hooks.burnVortex ? '#ff8a3c' : '#c58bff';
+      ctx.lineWidth = 2.5;
+      for (let r = 0; r < 3; r++) {
+        const rad = h.r * (0.35 + r * 0.3) * (1.05 - 0.25 * (1 - k));
+        ctx.globalAlpha = 0.35 + 0.15 * r;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, rad, spin + r, spin + r + 4.2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#2a1646';
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, h.r * 0.28, 0, TAU);
+      ctx.fill();
+    } else if (h.kind === BLAST) {
+      const age = h.life - h.ttl;
+      if (age < h.tele) {                                    // a ring closing on the shell
+        ctx.globalAlpha = 0.3 + 0.5 * (age / h.tele);
+        ctx.strokeStyle = h.flags.shock ? '#ffe066' : '#ff9a3c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r * (1.2 - 0.2 * (age / h.tele)), 0, TAU);
+        ctx.stroke();
+        ctx.fillStyle = '#ffb347';
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, 4, 0, TAU);
+        ctx.fill();
+      }
+    } else if (h.kind === PILLAR) {
+      drawPillar(ctx, h, h.life - h.ttl, t, h.net);
+    } else {
+      drawWave(ctx, h, k);
+    }
+  }
+  const links = run.netLinks;
+  if (links && links.length > 1) {                           // Wrath's lightning between pillars
+    ctx.strokeStyle = '#ffe066';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    for (let i = 0; i < links.length - 1; i++) {
+      const a = links[i];
+      const b = links[i + 1];
+      ctx.moveTo(a.x, a.y);
+      const mx = (a.x + b.x) / 2 + Math.sin(t * 40 + i) * 8;
+      const my = (a.y + b.y) / 2 + Math.cos(t * 37 + i) * 8;
+      ctx.lineTo(mx, my);
+      ctx.lineTo(b.x, b.y);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
