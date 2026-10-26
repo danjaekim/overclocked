@@ -1,0 +1,249 @@
+# Overclocked: game spec and milestones
+
+Last updated: 2026-10-26
+
+## Pitch
+
+Overclocked is a survivors-like where you *program* your power instead of picking it from a menu. Your character fires automatically, and what it fires comes from a **rig**: a few short **chains**. Each chain starts with a **rule card** that says when it runs, followed by pieces that say what happens. Pieces are read left to right, so moving one piece can turn a mortar into a cluster bomb. Overclocked is a working title.
+
+**Pillars**
+
+1. **Order is power.** Rearranging pieces changes how you move and position, not just a damage number. A piece that doesn't pass this test gets cut.
+2. **Discovery over recipes.** Nothing is a fixed fusion recipe. Chain reactions come out of simple rules, and the compendium records what you've found.
+3. **Fast by default, deep by choice.** A new piece goes into a sensible spot automatically. Rearranging is optional, and only happens during level-ups and chests.
+4. **Built on Overforged.** We reuse its arena, enemies, bosses, weapon behaviors, statuses, effects and tooling, and keep its standard of polish and offline play on a phone.
+
+## Core loop
+
+A run lasts about 10 minutes, the same as Overforged, on the same arena with the same wave timeline, elites and bosses.
+
+1. **Start.** You begin with a starter rig: one chain holding a rule card and one weapon, already working. Classes come after the proof of concept, and each will start with a different rule card. You fight from the first second.
+2. **Fight.** Move with one thumb. Chains fire on their own rules. Enemies drop XP gems, and elites and bosses drop chests.
+3. **Level up.** The game pauses and the rig editor opens over the lower 40% of the screen. You pick 1 of 3 offers. The new piece goes into a suggested slot, and you can accept that, move it, or put it on the bench. One tap resumes.
+4. **Open chests.** Chests give rarer pieces, more capacity (slots, chains, energy) or piece upgrades. The same editor opens.
+5. **Visit a workbench.** Shrines appear on the timeline, as Overforged's anvil shrines do. Standing in one opens a shop where you spend gold on a specific piece, a reroll or an upgrade.
+6. **End.** Survive the final boss or die. The results screen shows your final rig and the reactions you discovered.
+
+## The rig
+
+The rig holds up to 4 chains, plus a bench of 3 slots for pieces you're keeping but not using. A run starts with 1 chain, and the proof of concept has 2. Each chain has a rule card and 3 slots, growing to 6.
+
+**How a chain runs.** When its rule card fires, the chain gets its full **energy** (10 at the start) and a cursor reads the slots left to right:
+
+1. **Modifier.** It's held and applied to the *next* weapon only, then cleared. Several modifiers in a row all apply to that weapon in order, and their order decides element reactions.
+2. **Weapon.** It fires one attack of its Overforged behavior from the player, with the held modifiers. Weapons next to each other with nothing between them fire together as a volley.
+3. **Trigger.** It attaches to the weapon just before it. Everything to its right becomes that trigger's *payload*. The payload runs later, when the trigger's event happens, from where it happens and aimed away from the player. A trigger with no weapon before it does nothing and shows a warning.
+4. **Energy.** Every piece costs energy each time it runs, and payloads draw from the same pool as the activation that started them. If a Nova with On Hit strikes 12 enemies, it keeps firing payloads until the pool runs out. That's what ends chain reactions, and there's no separate cap. The pool refills the next time the rule card fires.
+
+```text
+Pulse (pool of 10) -> Flame (1) -> Mortar (3) -> On Impact (1) -> Scatter (2) -> Nova (3)
+
+Flame is held for the Mortar.
+Scatter and Nova are the payload: they run where the shell lands.
+1 + 3 + 1 + 2 + 3 = 10, the whole pool. A sixth piece would wait for the next pulse.
+```
+
+This is a chain from later in a run, with 5 slots. Every second, a burning shell lands, and five small novas burst around the crater.
+
+**Rule cards**
+
+| Rule card | Fires | Play style |
+| --- | --- | --- |
+| Pulse | Every 1 s | Steady. The default |
+| Stride | Every 0.5 s while moving | Kiting |
+| Anchor | Every 0.6 s while standing still | Turret. Risky in a crowd |
+| Reaper | On any kill, at most 4 times per second | Snowballs in big waves |
+| Spite | When you take damage | Defensive bursts |
+
+Classes come after the proof of concept. Each class will start with a different rule card, for example a kiting class that starts with Stride.
+
+**Triggers**
+
+| Trigger | Runs its payload | From |
+| --- | --- | --- |
+| On Impact | Once per attack, at the first hit or landing | That point |
+| On Hit | Every enemy hit (costly) | Each enemy hit |
+| On Kill | Every kill the attack makes | The enemy that died |
+| Every 3rd | Every third time the cursor reaches it | The player |
+
+Weapons that run continuously in Overforged, such as orbit, aura and trail, become "on for 2 seconds" pieces later. They aren't in the first builds.
+
+## Starter piece set
+
+These are the 16 pieces for the first test build. The proof of concept uses the 10 marked **PoC**: 2 rule cards (Pulse, Stride), 3 weapons, 3 modifiers and 2 triggers. Energy costs are starting guesses to tune later.
+
+| Piece | Type | Energy | Effect | Built from (Overforged) | PoC |
+| --- | --- | --- | --- | --- | --- |
+| Mortar | Weapon | 3 | Lobs a shell that bursts on landing | `mortar` behavior | PoC |
+| Nova | Weapon | 3 | A ring of damage around its origin | `nova` behavior | PoC |
+| Blaster | Weapon | 2 | A volley at the nearest enemy | `projectile` behavior | PoC |
+| Chain Bolt | Weapon | 3 | Lightning that jumps between enemies | `chain` behavior |  |
+| Slam | Weapon | 4 | A heavy ground strike that knocks enemies back | `slam` behavior |  |
+| Scatter | Modifier | 2 | The next weapon fires 5 copies at 25% power each, spread out | The projectile count param | PoC |
+| Flame | Modifier | 1 | Adds fire: the attack burns | Fire tag and burn status | PoC |
+| Frost | Modifier | 1 | Adds frost: the attack chills | Frost tag and chill status | PoC |
+| Storm | Modifier | 1 | Adds storm: the attack shocks | Storm tag and shock status |  |
+| Heavy | Modifier | 2 | Double damage and area, slower shots | The damage and area params |  |
+| Echo | Modifier | 2 | The next weapon fires twice, 0.2 s apart, at 60% each | Echoing perk logic |  |
+| Pierce | Modifier | 1 | Shots pass through 2 more enemies | The pierce param |  |
+| On Impact | Trigger | 1 | Runs the payload once, where the attack first lands | Hit triggers | PoC |
+| On Kill | Trigger | 1 | Runs the payload from each enemy the attack kills | Kill triggers | PoC |
+| On Hit | Trigger | 2 | Runs the payload from every enemy hit | Hit triggers |  |
+| Every 3rd | Trigger | 0 | Runs the payload every third time it's reached | The `every` counter on attack triggers |  |
+
+## Element reactions
+
+A reaction happens when two element modifiers are held for the same weapon, one directly after the other. The first element is the base and the second acts on it, so reversing the two gives a different reaction. The same element twice makes **Intensify**, a stronger version of its status. The proof of concept only includes the fire and frost pair. All magnitudes are guesses to tune later.
+
+| First → second | Reaction | Effect |
+| --- | --- | --- |
+| Fire → Frost | Steam | A cloud that slows enemies 40% and blinds them so they wander for 2 s. Defensive |
+| Frost → Fire | Shatter | Chilled enemies hit by the attack burst into shards that hit nearby enemies. Clears packs |
+| Fire → Storm | Overload | Burning enemies explode when shocked. Grows with crowd density |
+| Storm → Fire | Plasma | Shocks leave burning ground along the arc. Zone control |
+| Frost → Storm | Superconduct | Chilled and shocked targets are always crits. Overforged already has this as an alloy |
+| Storm → Frost | Static field | Shocked enemies are pulled slightly together. Sets up area attacks |
+
+The compendium records each reaction the first time it happens in a run.
+
+## Progression
+
+Power comes from five layers during a run and one between runs, which comes after the first test build. Each layer is tied to a moment in the run that Overforged already has.
+
+| Layer | Source | What it gives |
+| --- | --- | --- |
+| New pieces | Level-up, pick 1 of 3 | New verbs. Offers lean toward pieces that fit the rig you have, so a rig with a weapon and no trigger is more likely to be offered a trigger |
+| Piece levels | Level-up: an offer for a piece you already own levels it up, to a maximum of 5 | Levels 2 to 4 add +20% to the piece's main number. Level 5 adds a **mastery twist**, below |
+| Capacity | Elite and boss chests, plus levels 10 and 20 | +1 slot in a chain, a new chain with a rule card, or +3 energy to one chain |
+| Workbench | Shrines on the wave timeline. Gold drops from chests and elites | Buy a chosen piece, reroll, level up a piece, or swap a rule card |
+| Passive stats | About 1 offer in 6 at level-up | Move speed, max HP, magnet range, armor |
+| Unlocks (later) | Firsts: first boss kill, first reaction found, and so on | New pieces and rule cards join the offer pool. The compendium logs your discoveries |
+
+**Mastery twists (examples)**
+
+| Piece | Level 5 twist |
+| --- | --- |
+| Mortar | Lobs 2 shells |
+| Nova | Leaves a ring on the ground for 1 s |
+| Blaster | Shots ricochet once |
+| Scatter | 6 copies instead of 5 |
+| On Impact | Refunds half its energy |
+| On Kill | Payloads from kills cost 1 less energy |
+
+**Chest contents** (Overforged's chests roll 1, 3 or 5 items): a mix of rare pieces, capacity and piece levels. Boss chests always include one capacity item. Rerolls and banishes carry over from Overforged's level-up (2 rerolls and 1 banish per run).
+
+## Editing and readability
+
+**The rig editor** opens over the lower 40% of the screen while the game is paused:
+
+- Each chain is one horizontal strip: its rule card, then its slots. Below the strips are the bench and the offer cards.
+- When you pick an offer, the piece drops into a **suggested slot**, shown with a pulsing outline. Tap **Done** to keep it there.
+- **Tap to move.** Tap a piece, then tap a slot or the gap between two pieces. Drag also works, but it's never required.
+- **Live preview.** One line under each chain describes what it does now, such as "1 s: Mortar, then 5 Novas at the crater (cost 9 of 10)". It updates while you move pieces. Pieces that can't run are greyed out, with a reason ("no weapon before this trigger", "out of energy").
+- **Undo** puts back the last move. **Reset** returns the rig to how it was when you opened the editor.
+
+**During combat:**
+
+- A small rig strip in the HUD flashes each piece as it runs, so you can see the cause of each effect in the arena.
+- Each element and reaction has its own color and shape in the arena, using Overforged's element colors.
+- An energy pip under each chain empties as payloads run, so you can see a chain reaction drain the pool.
+
+**Compendium.** One entry per piece and rule card, a "How chains run" page covering the four evaluation rules, a reactions page that fills in as you discover them, and the rigs from past runs in the history.
+
+## Technical plan
+
+### Repo and deploy
+
+Overclocked gets its own repo, `danjaekim/overclocked`, seeded with a copy of Overforged's `main` including its history. GitHub won't fork a repo into the same account that owns it, so this is a copy rather than a GitHub fork. It still works like option 3 in `docs/fork-plan.md`: fork now, extract a shared engine later. The new repo gets its own GitHub Pages site at `danjaekim.github.io/overclocked/`, set up the same way Overforged's is (Settings → Pages → Deploy from branch → `main` / root).
+
+Both games will share the `danjaekim.github.io` origin, so they share browser storage. Milestone 0 has to fix three collisions:
+
+- **Save keys.** `overforged.save.v1` and `overforged.run.v1` become `overclocked.save.v1` and `overclocked.run.v1`.
+- **Service worker cache.** On activate, `sw.js` deletes every cache that isn't its own, so each game's worker would wipe the other game's offline copy. The new game uses its own cache prefix and only deletes caches with that prefix. Overforged needs the same one-line fix, as a separate small commit to Overforged.
+- **Identity.** The manifest name, `id` and icons, the page title, and the `window.__overforged` startup watchdog.
+
+### Module plan
+
+| Area | Keep as is | Reuse through an adapter | Replace or drop | New |
+| --- | --- | --- | --- | --- |
+| Core | `src/core`, `src/input`, fixed-step loop |  |  | None needed: the editor reuses the pause of Overforged's level-up screen |
+| Combat | `src/systems` (movement, collision, AI, damage queue, hazards, boss zones) | Statuses, `hit.js`, `effects/payloads.js` |  | Reaction effects |
+| Weapons |  | `src/behaviors`: fire on demand, from a chosen point | `weapons.js`, evolution, fusion, Starforge, legendary, resonance | Weapon piece adapter |
+| Build logic |  | `triggers.js` hit and kill events, `weapon-params.js` (packet power) | Perks, passives, class traits, forge, `apply-offer.js`, `upgrades.js` | `src/rig/`: piece data, chain evaluation, energy, payload queue, reactions, offers |
+| Run and loot | Director, waves, enemies, elites, XP | `chests.js` (new loot types), shrines (workbench), ore (as gold) | `run-snapshot.js` | Rig snapshot |
+| UI | Overlay, title, results, settings, pause, history, compendium framework | Level-up overlay shell | Build screen, forge screen, compendium content | Rig editor, HUD rig strip, compendium entries |
+| Tests and tools | `tests/run.mjs` harness, `offline.mjs`, `smoke.mjs`, sprite pipeline | Bench and bots, once there's content | Overforged content tests | Headless chain tests |
+
+### The main engine change
+
+Today every behavior fires from the player (`run.player`) on its own cooldown (`inst.cd`). A weapon piece needs to fire *once, on request, from any point*. That's what On Impact and On Kill need. The adapter gives each weapon piece a hidden Overforged weapon instance that keeps updating so shells and projectiles in flight still move. Its cooldown is held, and it fires when the chain asks it to. Each behavior also needs an optional origin (`inst.ox`, `inst.oy`, falling back to the player), and its targeting needs to search around that origin. The proof of concept needs this for 3 behaviors (mortar, nova, projectile). The rest get audited one at a time later. This is the riskiest engine work, so it's done first in Milestone 1.
+
+## Milestones
+
+There are six milestones. The concept check comes right after the sandbox, before we build the editor. Preset buttons are enough to find out whether chains are fun, so we don't spend the effort on the editor until that's answered. Each milestone ends with a build on your phone, and UI work follows our usual rule: screenshots first, ship on your go-ahead.
+
+```text
+M0 Setup -> M1 Chain engine -> M2 Sandbox proof of concept -> M3 Rig editor -> M4 First test build -> M5 Depth
+```
+
+Gates between milestones:
+
+- After M0: builds load on your phone, and Overforged still works offline
+- After M1: tests match the expected attacks for all six test chains
+- After M2 (the concept check): you can tell the chains apart from the arena alone
+- After M3: any test chain built in under 10 s on a phone
+- After M4: a full run plays start to finish, and two runs feel different
+
+If the concept check fails, we stop and rethink the pieces before building the editor. The tasks for each milestone are below.
+
+**M0: Setup**
+
+- [ ] You create the empty `overclocked` repo, and I push the copy of Overforged
+- [ ] Rename the save keys, the service worker cache and the app identity
+- [ ] Fix the cache cleanup in Overforged's `sw.js` (small separate commit)
+- [ ] Turn on Pages and confirm the build loads on your phone
+
+**M1: Chain engine**
+
+- [ ] `src/rig/` with piece data, chain evaluation, energy and the payload queue
+- [ ] Headless tests that check the attacks and energy use for the six test chains
+- [ ] Weapon adapter: mortar, nova and projectile fire on request from any point
+
+**M2: Sandbox proof of concept**
+
+- [ ] Sandbox as the default start screen: the arena with steady waves, no level-ups
+- [ ] Two chains, with buttons to load each test chain
+- [ ] HUD rig strip, energy pips, and the Steam and Shatter reactions
+- [ ] Playtest on your phone: the concept check
+
+**M3: Rig editor**
+
+- [ ] Pause the game while the editor is open, reusing the level-up state
+- [ ] Editor strips, tap-to-move, suggested slot, live preview line, undo and reset
+- [ ] Level-up offers drawn from the 10 proof-of-concept pieces
+
+**M4: First test build**
+
+- [ ] Remove Overforged's build systems from `run.js` and the UI
+- [ ] All 16 pieces and 5 rule cards, piece levels, and chests with capacity items
+- [ ] Full 10-minute runs with elites and bosses, and the run's rig on the results screen
+
+**M5: Depth**
+
+- [ ] Workbench at shrines with ore as gold, and mastery twists
+- [ ] All six reactions and compendium entries
+- [ ] A first balance pass, with a bench table posted first and your go-ahead before any long run
+
+## Decisions
+
+- The game is called Overclocked, for now. The repo is `danjaekim/overclocked`.
+- The editor pauses the game instead of slowing it down.
+- Modifiers apply only to the next weapon.
+- Classes wait until after the proof of concept. When they arrive, each starts with a different rule card.
+- Unlocks wait until after the first test build.
+- No query parameter. The game's default path boots into the build for the current milestone: the sandbox for M2, then the full run from M4.
+- The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. How it's opened gets decided when we build it.
+
+## Open questions
+
+None right now. New questions will be added here.
