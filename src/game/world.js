@@ -36,6 +36,7 @@ function makeEnemy() {
 function makeProjectile() {
   return {
     inst: null,
+    atk: null,                           // rig attack token (src/rig/rig.js), null for ordinary weapons
     x: 0, y: 0, dx: 0, dy: 0, vx: 0, vy: 0,
     r: 4, ttl: 0, dmg: 0, pierce: 0,
     hx: NaN, hy: NaN,                            // where the last enemy it hit stood (a rod plants there)

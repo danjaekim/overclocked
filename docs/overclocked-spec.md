@@ -201,13 +201,13 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - [x] You create the empty `overclocked` repo, and I push the copy of Overforged
 - [x] Rename the save keys, the service worker cache and the app identity
 - [x] Fix the cache cleanup in Overforged's `sw.js` (small separate commit)
-- [ ] Turn on Pages and confirm the build loads on your phone
+- [x] Turn on Pages and confirm the build loads on your phone
 
 **M1: Chain engine**
 
-- [ ] `src/rig/` with piece data, chain evaluation, energy and the payload queue
-- [ ] Headless tests that check the attacks and energy use for the six test chains
-- [ ] Weapon adapter: mortar, nova and projectile fire on request from any point
+- [x] `src/rig/` with piece data, chain evaluation, energy and the payload queue
+- [x] Headless tests that check the attacks and energy use for the six test chains (`tests/rig.test.mjs`; the chains are in `src/rig/presets.js`: Blaster, Scatter shot, Cluster mortar, Steam nova, Shatter shell, Kill chain)
+- [x] Weapon adapter: mortar, nova and projectile fire on request from any point
 
 **M2: Sandbox proof of concept**
 

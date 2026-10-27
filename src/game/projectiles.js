@@ -27,6 +27,7 @@ export function spawnProjectile(run, inst, x, y, dx, dy, speed, dmg, ttl, radius
   pr.ci = 0;
   pr.sub = false;                  // a secondary projectile: no trail, no end burst
   pr.look = 0;
+  pr.atk = null;                   // rig attack token (src/rig/rig.js): set by a rig chain's fire, null for ordinary weapons
   pr.depth = 0;                    // trigger depth its hits resolve at (fusion payload shots use 1: they never fire payloads)
   const stats = run.player.stats;
   pr.bounce = Math.round(stats.getFor('ricochet', inst.tags));

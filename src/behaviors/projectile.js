@@ -8,6 +8,7 @@
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
 import { attackTriggers } from '../game/triggers.js';
+import { playerCtx } from '../game/fire-ctx.js';
 import { activeMutation } from '../game/starforge.js';
 import { STARFORGE } from '../data/starforge.js';
 import { strike } from '../game/hit.js';
@@ -58,6 +59,43 @@ function updateFalls(inst, dt, run) {
   }
 }
 
+// One volley from (ctx.x, ctx.y) at the nearest enemy in range (ctx.da turns the aim). False when there is none.
+function fire(inst, run, ctx) {
+  const range = param(run, inst, 'range');
+  const target = run.world.hash.queryNearest(ctx.x, ctx.y, range, isAlive);
+  if (!target) return false;
+
+  const count = Math.max(1, Math.round(param(run, inst, 'count')));
+  const spread = inst.def.base.spread;
+  const gap = inst.def.base.gap || 0;
+  const base = Math.atan2(target.y - ctx.y, target.x - ctx.x) + ctx.da;
+  const dmg = param(run, inst, 'damage') * ctx.mult;
+  const speed = param(run, inst, 'speed');
+  const ttl = param(run, inst, 'ttl');
+  const radius = param(run, inst, 'radius');
+  const pierce = Math.floor(param(run, inst, 'pierce'));
+  const star = activeMutation(inst);
+  inst.volley = (inst.volley || 0) + 1;
+  const falling = star && (star.every ? inst.volley % star.every === 0 : star.delay) ? 1 : 0;   // bows: every Nth volley; rods: every javelin
+
+  for (let i = 0; i < count; i++) {
+    const k = i - (count - 1) / 2;
+    const a = base + k * spread;
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    // sideways offset perpendicular to the aim (-dy, dx)
+    const pr = spawnProjectile(run, inst, ctx.x - dy * k * gap, ctx.y + dx * k * gap, dx, dy, speed, dmg, ttl, radius, pierce);
+    if (pr) {
+      pr.fall = falling;
+      pr.atk = ctx.atk;
+    }
+  }
+  ctx.ax = target.x;
+  ctx.ay = target.y;
+  ctx.aa = base;
+  return true;
+}
+
 export default {
   // stats this behavior reads (used later to avoid offering useless upgrades)
   uses: ['damage', 'cooldown', 'area', 'projectiles', 'pierce', 'duration', 'projSpeed', 'critChance', 'critMult', 'knockback'],
@@ -66,43 +104,20 @@ export default {
     inst.cd = 0.25;                        // first shot almost immediately
   },
 
+  fire,
+
   update(inst, dt, run) {
     if (inst.falls && inst.falls.length) updateFalls(inst, dt, run);
+    if (inst.manual) return;
     inst.cd -= dt;
     if (inst.cd > 0) return;
-
-    const p = run.player;
-    const range = param(run, inst, 'range');
-    const target = run.world.hash.queryNearest(p.x, p.y, range, isAlive);
-    if (!target) {                          // nothing to shoot: stay ready, don't bank a burst
+    const ctx = playerCtx(run.player);
+    if (!fire(inst, run, ctx)) {              // nothing to shoot: stay ready, don't bank a burst
       inst.cd = 0;
       return;
     }
-
-    const count = Math.max(1, Math.round(param(run, inst, 'count')));
-    const spread = inst.def.base.spread;
-    const gap = inst.def.base.gap || 0;
-    const base = Math.atan2(target.y - p.y, target.x - p.x);
-    const dmg = param(run, inst, 'damage');
-    const speed = param(run, inst, 'speed');
-    const ttl = param(run, inst, 'ttl');
-    const radius = param(run, inst, 'radius');
-    const pierce = Math.floor(param(run, inst, 'pierce'));
-    const star = activeMutation(inst);
-    inst.volley = (inst.volley || 0) + 1;
-    const falling = star && (star.every ? inst.volley % star.every === 0 : star.delay) ? 1 : 0;   // bows: every Nth volley; rods: every javelin
-
-    for (let i = 0; i < count; i++) {
-      const k = i - (count - 1) / 2;
-      const a = base + k * spread;
-      const dx = Math.cos(a);
-      const dy = Math.sin(a);
-      // sideways offset perpendicular to the aim (-dy, dx)
-      const pr = spawnProjectile(run, inst, p.x - dy * k * gap, p.y + dx * k * gap, dx, dy, speed, dmg, ttl, radius, pierce);
-      if (pr) pr.fall = falling;
-    }
     inst.cd += param(run, inst, 'cooldown');
-    attackTriggers(run, inst, target.x, target.y, base);
+    attackTriggers(run, inst, ctx.ax, ctx.ay, ctx.aa);
   },
 
   // Falling stars: a cyan target ring that tightens as a streak drops onto it.

@@ -74,6 +74,7 @@ function projectileHits(run) {
       pr.hy = e.y;
 
       resolveHit(run, pr.inst, e, pr.dmg, pr.dx, pr.dy, pr.depth);
+      if (pr.atk !== null) pr.inst.onRig(run, 'impact', pr.atk, e.x, e.y, e);   // a rig chain's On Impact: first landing of this attack
       if (pr.fall) callStar(run, pr.inst, e.x, e.y, pr.dmg);           // Starforge Starfall: a star comes down where it hit
 
       if (pr.split > 0) spawnSplit(run, pr, e);

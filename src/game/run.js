@@ -25,6 +25,7 @@ import { RUN } from '../data/waves.js';
 import { CLASSES, DEFAULT_CLASS } from '../data/classes.js';
 import { LEVELUP } from '../data/progression.js';
 import { createStats, statsSnapshot } from './run-stats.js';
+import { updateRig, drawRig } from '../rig/rig.js';
 import { initClassTrait, updateClassTrait, drawClassTrait } from './class-traits.js';
 
 export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = () => {} }) {
@@ -70,6 +71,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
     world: createWorld(),
     director: null,
+    rig: null,              // the chain rig (src/rig/rig.js), or null when the run uses ordinary weapons
 
     update(dt, move) {
       if (run.over) return;
@@ -80,6 +82,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       run.director.update(dt);                                  // 1 spawns
       updatePlayer(run.player, dt, move);                       // 2 player
       updateWeapons(run, dt);                                   // 3 weapons
+      if (run.rig !== null) updateRig(run, dt);                 // 3a rig chains: rule cards, payloads, shells in flight
       updateClassTrait(run, dt);                                // 3b class trait timers (Frenzy, Holy Nova)
       updateEnemies(run, dt);                                   // 4 enemy AI
       updateProjectiles(run, dt);                               // 5 projectile movement
@@ -134,6 +137,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         const b = BEHAVIORS[ws[i].def.behavior];
         if (b.draw) b.draw(ws[i], ctx, run);
       }
+      if (run.rig !== null) drawRig(ctx, run);
     },
 
     drawFx(ctx, view) {

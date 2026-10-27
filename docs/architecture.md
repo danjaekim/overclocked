@@ -2,6 +2,19 @@
 
 > **Overclocked note (2026-10-26).** This repo started as a copy of Overforged (v0.45.17), and everything below still describes that code. Overclocked keeps the engine and replaces the build systems (weapons, perks, forge, classes) with the rig; the plan is in `docs/overclocked-spec.md`. Identity changes so far: the save keys are `overclocked.save.v1` and `overclocked.run.v1`, export codes start `OCZ1` / `OC1`, the service worker cache is `overclocked-v1` (a worker only deletes caches with its own prefix), and the boot global is `window.__overclocked`.
 
+## Overclocked: the chain rig (`src/rig/`, v0.0.3)
+
+The rig is a second way to fire weapons, added beside Overforged's. A run with `run.rig === null` plays exactly as before.
+
+- **`rig/pieces.js`** is the piece and rule-card data (10 proof-of-concept pieces, Pulse and Stride). **`rig/chain.js`** is a pure compiler: a rule card plus a list of piece ids becomes a tree of weapon nodes (held modifiers, one optional trigger, the trigger's payload), plus a list of `problems` for slots that can never run. **`rig/presets.js`** holds the six test chains. **`rig/rig.js`** is the runtime: `installRig(run, chainDefs, { log })` sets `run.rig`; `updateRig` runs at tick step 3a, right after `updateWeapons`.
+- **Fire on request.** The mortar, nova and projectile behaviors export `fire(inst, run, ctx)`; `ctx` (`game/fire-ctx.js`) carries the origin, a damage multiplier, an aim offset and the rig's attack token. Their own cooldown path calls the same function with the player as the origin (`playerCtx`), so Overforged weapons are unchanged. Other behaviors have no `fire` yet.
+- **Rig pieces are hidden weapon instances** (`createRigWeapon` in `game/weapons.js`): not in `player.weapons`, `inst.manual = true` (the behavior's `update` moves shells and shots in flight but never fires by itself). Each weapon node has its own instance, so element modifiers are stat modifiers scoped to that instance's tag (`rig:<instanceId>:` sources, removed by `removeRig`).
+- **Events come back through `inst.onRig(run, event, atk, x, y, target)`**: mortar shells (`impact` on landing), projectiles (`impact` on first hit, via `pr.atk` in `collision.js`) and `fireTriggers` (`kill`, and `hit`, which nothing listens to yet). `atk` is a per-attack token that makes On Impact fire once per attack.
+- **Payloads are queued, not run inline.** An event queues `{ trigger, activation, x, y }`; `updateRig` runs up to 24 per tick on the next tick, from that point, paying from the pool of the activation that fired the attack. A queued run is dropped if the pool is empty (and the queue is capped at 256).
+- **Energy.** An activation gets a fresh pool (10). A weapon node costs its modifiers plus the weapon; a trigger costs its own price and is armed only if the pool can pay after the weapon fired. A piece the pool cannot pay for does not run, and nothing after it in its segment does. A weapon with no target fires nothing and costs nothing.
+- **Scatter** is handled by the evaluator: five attacks on a ring around the origin, each at 25% damage, each its own attack with its own On Impact. **Kill attribution** is by weapon instance: a kill by a piece's attack runs that piece's On Kill payload against the activation it last fired in.
+- Not built yet: Reaper and Spite rule cards, the other 6 pieces, the reaction effects (Steam, Shatter; compile only names them), the editor, snapshots of a rig.
+
 This is the source of truth for how the game is built. Any agent or person adding code should read this first and keep it in sync: if an implementation deviates from it, update this file in the same commit.
 
 ---

@@ -23,14 +23,9 @@ export function applyBaseMods(run, inst) {
   }
 }
 
-export function addWeapon(run, weaponId) {
-  const def = WEAPONS[weaponId];
-  if (!def) throw new Error(`Unknown weapon "${weaponId}"`);
-  const p = run.player;
-  if (p.weapons.length >= MAX_WEAPONS) return null;
-
+function buildInstance(weaponId, def) {
   const instanceId = nextInstance++;
-  const inst = {
+  return {
     instanceId,
     weaponId,
     def,
@@ -57,11 +52,34 @@ export function addWeapon(run, weaponId) {
     fusion: null,            // { id, name, donorId, tags, triggers, hooks } once fused (game/fusion.js)
     cd: 0,
     trigT: def.triggers.map(() => 0),     // interval-trigger timers
+    manual: false,          // true: never fires on its own cooldown, only when asked (rig pieces, src/rig/rig.js)
+    onRig: null,            // rig pieces: (run, event, atk, x, y, target) called on impact / hit / kill events
+    rigAct: null,           // rig pieces: the activation whose attack is in flight (its energy pool pays the payload)
+    rigArmed: false,        // rig pieces: the last attack carried its trigger
   };
+}
+
+export function addWeapon(run, weaponId) {
+  const def = WEAPONS[weaponId];
+  if (!def) throw new Error(`Unknown weapon "${weaponId}"`);
+  const p = run.player;
+  if (p.weapons.length >= MAX_WEAPONS) return null;
+
+  const inst = buildInstance(weaponId, def);
   p.weapons.push(inst);
   applyBaseMods(run, inst);
   BEHAVIORS[def.behavior].init(inst, run);
   refreshResonance(run);
+  return inst;
+}
+
+// A weapon instance that is not in the player's list: a rig piece (src/rig). It fires only on request,
+// from wherever the chain asks, and the rig updates it so shells and shots in flight keep moving.
+export function createRigWeapon(run, id, def) {
+  const inst = buildInstance(id, def);
+  inst.manual = true;
+  applyBaseMods(run, inst);
+  BEHAVIORS[def.behavior].init(inst, run);
   return inst;
 }
 

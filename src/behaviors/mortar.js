@@ -9,11 +9,33 @@ import { strike } from '../game/hit.js';
 import { addPuff } from '../render/fx.js';
 import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
+import { playerCtx } from '../game/fire-ctx.js';
 import { activeMutation } from '../game/starforge.js';
 import { STARFORGE, MUTATIONS } from '../data/starforge.js';
 
 const MAX_SHELLS = 12;
 const MAX_BOMBLETS = 36;
+
+// One salvo from (ctx.x, ctx.y): `count` shells at random enemies within range. False when nothing is in range.
+function fire(inst, run, ctx) {
+  const w = run.world;
+  const shells = inst.shells;
+  const range = param(run, inst, 'range');
+  const n = w.hash.queryRadius(ctx.x, ctx.y, range, w.scratch);
+  let live = 0;
+  for (let i = 0; i < n; i++) if (w.scratch[i].alive && w.scratch[i].prop !== 1) w.scratch[live++] = w.scratch[i];
+  if (live === 0) return false;
+  const fuse = inst.def.base.fuse;
+  const count = Math.max(1, Math.round(param(run, inst, 'count')));
+  for (let k = 0; k < count && shells.length < MAX_SHELLS; k++) {
+    const e = w.scratch[Math.floor(run.rng.next() * live)];
+    shells.push({ x: e.x, y: e.y, t: fuse, ox: ctx.x, oy: ctx.y, mult: ctx.mult, atk: ctx.atk });
+  }
+  ctx.ax = ctx.x;
+  ctx.ay = ctx.y;
+  ctx.aa = 0;
+  return true;
+}
 
 export default {
   uses: ['damage', 'cooldown', 'area', 'projectiles', 'critChance', 'critMult', 'knockback'],
@@ -23,29 +45,24 @@ export default {
     inst.shells = [];
   },
 
+  fire,
+
   update(inst, dt, run) {
     const p = run.player;
     const shells = inst.shells;
     const w = run.world;
     const blast = param(run, inst, 'radius');
-    const fuse = inst.def.base.fuse;
 
-    inst.cd -= dt;
-    if (inst.cd <= 0) {
-      const range = param(run, inst, 'range');
-      const n = w.hash.queryRadius(p.x, p.y, range, w.scratch);
-      let live = 0;
-      for (let i = 0; i < n; i++) if (w.scratch[i].alive && w.scratch[i].prop !== 1) w.scratch[live++] = w.scratch[i];
-      if (live === 0) {
-        inst.cd = 0;
-      } else {
-        const count = Math.max(1, Math.round(param(run, inst, 'count')));
-        for (let k = 0; k < count && shells.length < MAX_SHELLS; k++) {
-          const e = w.scratch[Math.floor(run.rng.next() * live)];
-          shells.push({ x: e.x, y: e.y, t: fuse, ox: p.x, oy: p.y });
+    if (!inst.manual) {
+      inst.cd -= dt;
+      if (inst.cd <= 0) {
+        const ctx = playerCtx(p);
+        if (fire(inst, run, ctx)) {
+          inst.cd += param(run, inst, 'cooldown');
+          attackTriggers(run, inst, ctx.ax, ctx.ay, ctx.aa);
+        } else {
+          inst.cd = 0;
         }
-        inst.cd += param(run, inst, 'cooldown');
-        attackTriggers(run, inst, p.x, p.y, 0);
       }
     }
 
@@ -58,13 +75,13 @@ export default {
       shells.splice(i, 1);
       const el = elementOf(inst);
       const br = s.sub ? blast * star.size : blast;            // a bomblet's smaller blast
-      const bd = s.sub ? dmg * star.frac : dmg;
+      const bd = (s.sub ? dmg * star.frac : dmg) * s.mult;
       addPuff(run, s.x, s.y, br / 2.2, s.sub ? STARFORGE.color : el ? el.puff : '#ff9a3c');
       if (star && !s.sub && shells.length < MAX_BOMBLETS) {    // Cluster Shells: the burst throws bomblets around it
         const a0 = run.rng.next() * Math.PI * 2;
         for (let b = 0; b < star.bomblets; b++) {
           const a = a0 + (b * Math.PI * 2) / star.bomblets;
-          shells.push({ x: s.x + Math.cos(a) * blast * star.scatter, y: s.y + Math.sin(a) * blast * star.scatter, t: star.delay, sub: true });
+          shells.push({ x: s.x + Math.cos(a) * blast * star.scatter, y: s.y + Math.sin(a) * blast * star.scatter, t: star.delay, sub: true, mult: s.mult, atk: null });
         }
       }
       const n = w.hash.queryRadius(s.x, s.y, br + MAX_ENEMY_RADIUS, w.scratch);
@@ -78,6 +95,7 @@ export default {
         const d = Math.hypot(dx, dy) || 1;
         strike(run, inst, e, bd, dx / d, dy / d, s.sub ? 1 : 0);
       }
+      if (s.atk !== null && inst.onRig !== null) inst.onRig(run, 'impact', s.atk, s.x, s.y, null);      // a rig chain's On Impact: the shell has landed
     }
   },
 

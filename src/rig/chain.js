@@ -1,0 +1,85 @@
+// Compiles a chain (a rule card plus a list of piece ids) into the tree the rig runs. Pure: no engine,
+// no randomness, so the evaluation rules can be tested and previewed without a run.
+//
+// The four rules (spec, "How a chain runs"):
+//   1. Slots are read left to right.
+//   2. A modifier is held and applies to the next weapon only. A trigger ends the hold.
+//   3. A trigger attaches to the nearest weapon on its left; everything to its right is its payload.
+//   4. Energy: see rig.js. The cost fields here are what the rig charges.
+//
+// compileChain(def) -> { rule, energy, nodes, problems }
+//   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, cost, trigger }
+//   trigger  { piece, idx, on, cost, payload: [node] }
+//   problems [{ idx, why }]: slots that can never run, for the editor to grey out
+
+import { PIECES, REACTIONS, RULES, DEFAULT_ENERGY } from './pieces.js';
+
+export function compileChain(def) {
+  const slots = def.slots;
+  const problems = [];
+  const nodes = parse(slots, 0, problems);
+  return { rule: def.rule, energy: def.energy === undefined ? DEFAULT_ENERGY : def.energy, nodes, problems };
+}
+
+// Parses slots[start..] as one segment: the top level, or one payload.
+function parse(slots, start, problems) {
+  const nodes = [];
+  let held = [];                              // modifiers waiting for a weapon: { id, idx }
+  let last = null;                            // the nearest weapon so far in this segment
+  for (let i = start; i < slots.length; i++) {
+    const id = slots[i];
+    const piece = PIECES[id];
+    if (!piece) {
+      problems.push({ idx: i, why: 'unknown piece' });
+    } else if (piece.type === 'modifier') {
+      held.push({ id, idx: i });
+    } else if (piece.type === 'weapon') {
+      last = makeNode(id, i, held);
+      held = [];
+      nodes.push(last);
+    } else {                                  // trigger
+      for (const h of held) problems.push({ idx: h.idx, why: 'no weapon after this modifier' });
+      held = [];
+      if (!last) {
+        problems.push({ idx: i, why: 'no weapon before this trigger' });
+        for (let k = i + 1; k < slots.length; k++) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
+        return nodes;
+      }
+      last.trigger = { piece: id, idx: i, on: piece.on, cost: piece.cost, payload: parse(slots, i + 1, problems) };
+      return nodes;                           // the rest of the slots belong to the payload
+    }
+  }
+  for (const h of held) problems.push({ idx: h.idx, why: 'no weapon after this modifier' });
+  return nodes;
+}
+
+function makeNode(id, idx, held) {
+  const elements = [];
+  let scatter = false;
+  let cost = PIECES[id].cost;
+  for (const h of held) {
+    const m = PIECES[h.id];
+    cost += m.cost;
+    if (m.scatter) scatter = true;
+    if (m.element && !elements.includes(m.element)) elements.push(m.element);
+  }
+  const reaction = elements.length >= 2 ? REACTIONS[`${elements[0]}>${elements[1]}`] || null : null;
+  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), elements, reaction, scatter, cost, trigger: null };
+}
+
+// Energy the whole chain uses if every attack lands and every trigger fires once: the number the
+// editor shows as "cost 9 of 10". Counting a payload once, however often it runs.
+export function chainCost(nodes) {
+  let c = 0;
+  for (const n of nodes) {
+    c += n.cost;
+    if (n.trigger) c += n.trigger.cost + chainCost(n.trigger.payload);
+  }
+  return c;
+}
+
+export function ruleOf(id) {
+  const r = RULES[id];
+  if (!r) throw new Error(`Unknown rule card "${id}"`);
+  return r;
+}

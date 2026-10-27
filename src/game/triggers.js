@@ -8,6 +8,7 @@ import { firePayload } from '../effects/payloads.js';
 // Event-driven triggers: src is the weapon instance whose hit caused the event.
 export function fireTriggers(run, on, src, x, y, depth, target) {
   if (!src) return;
+  if (src.onRig) src.onRig(run, on, null, x, y, target);      // a rig chain's On Hit / On Kill (src/rig/rig.js)
   // A generic fusion's payload: the first direct hit after each attack fires it (game/fusion.js, effects/payloads.js).
   if (on === 'hit' && src.payloadArmed && depth === 0 && target && target.alive && firePayload(run, src, target, depth)) src.payloadArmed = false;
   fireList(run, src.def.triggers, on, src, x, y, depth, 0, target);
