@@ -53,7 +53,7 @@ function buildInstance(weaponId, def) {
     cd: 0,
     trigT: def.triggers.map(() => 0),     // interval-trigger timers
     manual: false,          // true: never fires on its own cooldown, only when asked (rig pieces, src/rig/rig.js)
-    onRig: null,            // rig pieces: (run, event, atk, x, y, target) called on impact / hit / kill events
+    onRig: null,            // rig pieces: (run, event, atk, x, y, target, depth) called on impact / hit / kill events
     rigAct: null,           // rig pieces: the activation whose attack is in flight (its energy pool pays the payload)
     rigArmed: false,        // rig pieces: the last attack carried its trigger
   };

@@ -71,6 +71,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
     world: createWorld(),
     director: null,
+    sandbox: false,         // the endless chain sandbox (game/sandbox.js): no level-ups, no end
     rig: null,              // the chain rig (src/rig/rig.js), or null when the run uses ordinary weapons
 
     update(dt, move) {
@@ -109,7 +110,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         cam.shake = cam.ox = cam.oy = 0;
       }
 
-      if (!run.over && run.time >= RUN.length) {                // 10 run events
+      if (!run.over && !run.sandbox && run.time >= RUN.length) {                // 10 run events
         run.over = true;
         run.won = true;
       }

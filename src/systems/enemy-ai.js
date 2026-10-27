@@ -158,6 +158,14 @@ export function updateEnemies(run, dt) {
       if (e.ai === AI_WINDUP) { vx = 0; vy = 0; }
       else if (e.ai === AI_DASH) { vx = e.ax * e.def.charge.speed; vy = e.ay * e.def.charge.speed; }
     }
+    if (e.steamT > 0) {                                 // blind in steam: it wanders instead of chasing, slower
+      e.steamT -= dt;
+      if (!stunned) {
+        const a = e.uid * 2.399 + run.time * 1.7;
+        vx = Math.cos(a) * sp * 0.6;
+        vy = Math.sin(a) * sp * 0.6;
+      }
+    }
     e.x += (vx + e.sx * SEP_SPEED + e.kx) * dt;
     e.y += (vy + e.sy * SEP_SPEED + e.ky) * dt;
     e.kx *= decay;

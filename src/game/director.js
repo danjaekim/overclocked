@@ -37,6 +37,7 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   e.affix = '';
   e.affix2 = '';
   e.wardT = 0;
+  e.steamT = 0;
   e.lastHitT = -1e9;
   e.status = 0;
   e.burnDps = e.burnT = e.burnAcc = 0;

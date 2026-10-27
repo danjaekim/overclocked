@@ -20,6 +20,7 @@ function makeEnemy() {
     aiCd: 0,               // seconds until the next charge
     prop: 0,               // 1 = a breakable prop (a supply crate), not an enemy: weapons do not aim at it (data/enemies.js PROPS)
     elite: 0, affix: '', affix2: '',   // elites (data/elites.js): flag and affix ids (the second only late in the run)
+    steamT: 0,             // seconds left blind in steam (rig Steam reaction): it wanders at 60% speed
     wardT: 0,              // seconds a Shaman's ward still covers this enemy (takes half damage)
     lastHitT: 0,           // run.time of the last damage taken (regenerating elites)
     // status effects (systems/status.js)

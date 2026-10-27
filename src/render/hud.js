@@ -2,9 +2,14 @@
 import { fmtTime } from '../ui/overlay.js';
 import { xpToNext } from '../game/xp.js';
 import { RARITIES } from '../data/rarities.js';
+import { drawSandboxHud } from './rig-hud.js';
 import { drawShrineArrows, drawChestArrows, drawCrateArrows } from './shrines.js';
 
 export function drawHud(ctx, view, run) {
+  if (run.sandbox) {
+    drawSandboxHud(ctx, view, run);
+    return;
+  }
   const p = run.player;
   const y0 = view.insetTop + 16;
 

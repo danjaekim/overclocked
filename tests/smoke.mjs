@@ -49,7 +49,7 @@ const errors = [];
 page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
-await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1')}`);
+await page.goto(`http://localhost:${server.address().port}/?${opt('--query', 'debug=1&god=1&seed=1&title=1')}`);
 if (flag('--history')) {                                         // run history + export/import, from the title screen
   const shotH = (n) => opt('--shot') && page.screenshot({ path: opt('--shot').replace(/\.png$/, `-${n}.png`) });
   await page.evaluate(() => {

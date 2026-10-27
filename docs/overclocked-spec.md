@@ -211,9 +211,9 @@ If the concept check fails, we stop and rethink the pieces before building the e
 
 **M2: Sandbox proof of concept**
 
-- [ ] Sandbox as the default start screen: the arena with steady waves, no level-ups
-- [ ] Two chains, with buttons to load each test chain
-- [ ] HUD rig strip, energy pips, and the Steam and Shatter reactions
+- [x] Sandbox as the default start screen: the arena with steady waves, no level-ups
+- [x] Two chains, with buttons to load each test chain
+- [x] HUD rig strip, energy pips, and the Steam and Shatter reactions
 - [ ] Playtest on your phone: the concept check
 
 **M3: Rig editor**

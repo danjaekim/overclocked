@@ -27,8 +27,10 @@ import { showHistory } from '../ui/history.js';
 import { showBackup } from '../ui/backup.js';
 import { encodeSave, decodeSave, describeSave } from '../save/transfer.js';
 import { snapshotRun, restoreRun } from './run-snapshot.js';
+import { createSandboxRun, loadChain } from './sandbox.js';
+import { mountSandboxPanel } from '../ui/sandbox-panel.js';
 
-export function createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio }) {
+export function createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio, sandboxHost }) {
   const game = { state: 'title', run: null };
   let nextSeed = params.seed;
   const sfx = (name) => audio && audio.play(name);
@@ -60,7 +62,26 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     redraw();
   }
 
+  let panel = null;
+  const unmountPanel = () => { if (panel) { panel.unmount(); panel = null; } };
+
+  // The sandbox (game/sandbox.js): the default boot until the full run returns in M4.
+  function startSandbox() {
+    unmountPanel();
+    const seed = nextSeed != null ? nextSeed : randomSeed();
+    nextSeed = null;
+    input.reset();
+    overlays.hide();
+    if (runSave) runSave.clear();
+    game.run = createSandboxRun({ seed, view, debug, sfx });
+    scene('run');
+    if (audio) audio.music.duck(false);
+    game.state = 'run';
+    if (sandboxHost) panel = mountSandboxPanel(sandboxHost, { getKeys: () => game.run.chainKeys, onPick: (i, key) => loadChain(game.run, i, key) });
+  }
+
   function toTitle() {
+    unmountPanel();
     game.state = 'title';
     game.run = null;
     scene('title');
@@ -124,6 +145,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     save.setLastClass(classId);
     const seed = nextSeed != null ? nextSeed : randomSeed();
     nextSeed = null;                       // a ?seed= applies to the first run only
+    unmountPanel();
     input.reset();
     overlays.hide();
     if (runSave) runSave.clear();
@@ -137,7 +159,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   // Debug (god) runs are never saved. A snapshot taken in the forge reopens it on resume.
   function persistRun() {
     const run = game.run;
-    if (!runSave || !run || run.over || debug.god) return;
+    if (!runSave || !run || run.over || run.sandbox || debug.god) return;
     const wasForge = game.state === 'forge';
     try {
       if (wasForge) run.forgeReady = true;
@@ -174,6 +196,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       onBuild: () => showBuild(overlays, game.run, buildOpts(show, 'Back')),
       onCompendium: () => showCompendium(overlays, { onClose: show, discovered: save.data.discovered, run: game.run }),
       onQuit: () => { if (runSave) runSave.clear(); toTitle(); },
+      sandbox: game.run.sandbox,
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
     });
@@ -312,7 +335,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
-  game.openBuild = () => { if (game.state === 'run') pause(true); };
+  game.openBuild = () => { if (game.state === 'run' && !game.run.sandbox) pause(true); };
   game.togglePause = () => (game.state === 'run' ? pause() : game.state === 'paused' ? resume() : undefined);
   game.isSimulating = () => game.state === 'run' && !rotate.blocked;
 
@@ -349,6 +372,6 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
-  if (!resumeSaved()) toTitle();
+  if (params.title) { if (!resumeSaved()) toTitle(); } else startSandbox();
   return game;
 }

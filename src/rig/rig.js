@@ -15,6 +15,7 @@ import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
 import { PIECES, ELEMENTS, SCATTER } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
+import { reactOnHit } from './reactions.js';
 
 const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the rest wait in the queue
 const MAX_QUEUE = 256;                 // queued payload runs; further events are dropped
@@ -50,18 +51,20 @@ export function removeRig(run) {
 function buildChain(run, rig, def, index) {
   const c = compileChain(def);
   const rule = ruleOf(def.rule);
-  const chain = { index, def, rule, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.first === undefined ? rule.every : rule.first };
+  const chain = { index, def, rule, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.first === undefined ? rule.every : rule.first,
+    act: null,                          // the latest activation: its pool is what the HUD's energy pips show
+    flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
   const stack = [...c.nodes];
   while (stack.length) {
     const node = stack.pop();
-    node.inst = makeInstance(run, rig, node);
+    node.inst = makeInstance(run, rig, node, chain);
     rig.insts.push(node.inst);
     if (node.trigger) for (const n of node.trigger.payload) stack.push(n);
   }
   return chain;
 }
 
-function makeInstance(run, rig, node) {
+function makeInstance(run, rig, node, chain) {
   const inst = createRigWeapon(run, node.piece, weaponDef(node.piece));
   for (const el of node.elements) {
     const e = ELEMENTS[el];
@@ -69,13 +72,18 @@ function makeInstance(run, rig, node) {
     inst.addTags.push(e.tag);
   }
   if (inst.addTags.length) inst.tags = instanceTagSet(inst);
-  inst.onRig = (r, ev, atk, x, y) => onEvent(r, rig, node, inst, ev, atk, x, y);
+  inst.reactAt = -1e9;
+  inst.onRig = (r, ev, atk, x, y, target, depth) => onEvent(r, rig, chain, node, inst, ev, atk, x, y, target, depth);
   return inst;
 }
 
 // An event from a piece's attack: queue the payload run if this node's trigger listens for it.
-function onEvent(run, rig, node, inst, ev, atk, x, y) {
+function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
   if (run.rig !== rig) return;
+  if (ev === 'hit') {                   // the node's own direct hits drive its element reaction
+    if (node.reaction !== null && depth === 0 && target !== null) reactOnHit(run, node, inst, target);
+    return;
+  }
   const trig = node.trigger;
   if (trig === null || trig.on !== ev) return;
   let act;
@@ -88,7 +96,7 @@ function onEvent(run, rig, node, inst, ev, atk, x, y) {
     act = inst.rigAct;
   }
   if (act === null || act.pool < 1 || rig.queue.length - rig.head >= MAX_QUEUE) return;
-  rig.queue.push({ trig, act, x, y });
+  rig.queue.push({ trig, act, x, y, chain });
 }
 
 function note(run, rig, ev, o) {
@@ -97,19 +105,20 @@ function note(run, rig, ev, o) {
 
 // Runs one segment of nodes from (x, y), paying from act's pool. Stops at the first piece the pool cannot pay for.
 function runNodes(run, rig, nodes, x, y, act) {
+  const chains = rig.chains;
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     if (act.pool < node.cost) {
       note(run, rig, 'dry', { act: act.id, piece: node.piece, need: node.cost, pool: act.pool });
       return;
     }
-    fireNode(run, rig, node, x, y, act);
+    fireNode(run, rig, chains[act.chain], node, x, y, act);
   }
 }
 
 const TAU = Math.PI * 2;
 
-function fireNode(run, rig, node, x, y, act) {
+function fireNode(run, rig, chain, node, x, y, act) {
   const inst = node.inst;
   const behavior = BEHAVIORS[inst.def.behavior];
   const ctx = rig.ctx;
@@ -151,11 +160,15 @@ function fireNode(run, rig, node, x, y, act) {
   }
   inst.rigArmed = armed;
   for (let i = 0; i < atks.length; i++) atks[i].armed = armed;
+  chain.flash[node.idx] = run.time;
+  for (let i = 0; i < node.modIdx.length; i++) chain.flash[node.modIdx[i]] = run.time;
+  if (armed) chain.flash[node.trigger.idx] = run.time;
   note(run, rig, 'fire', { act: act.id, piece: node.piece, mods: node.mods, copies: fired, x, y, armed, pool: act.pool });
 }
 
 function activate(run, rig, chain) {
   const act = { id: ++rig.actN, chain: chain.index, pool: chain.energy, spent: 0 };
+  chain.act = act;
   note(run, rig, 'activate', { act: act.id, chain: chain.index, pool: act.pool });
   const p = run.player;
   runNodes(run, rig, chain.nodes, p.x, p.y, act);
@@ -179,6 +192,7 @@ export function updateRig(run, dt) {
   for (let n = 0; rig.head < q.length && n < MAX_PAYLOADS_PER_TICK; n++) {
     const job = q[rig.head++];
     note(run, rig, 'payload', { act: job.act.id, trigger: job.trig.piece, x: job.x, y: job.y, pool: job.act.pool });
+    job.chain.flash[job.trig.idx] = run.time;
     runNodes(run, rig, job.trig.payload, job.x, job.y, job.act);
   }
   if (rig.head >= q.length) {

@@ -64,7 +64,7 @@ function makeNode(id, idx, held) {
     if (m.element && !elements.includes(m.element)) elements.push(m.element);
   }
   const reaction = elements.length >= 2 ? REACTIONS[`${elements[0]}>${elements[1]}`] || null : null;
-  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), elements, reaction, scatter, cost, trigger: null };
+  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, cost, trigger: null };
 }
 
 // Energy the whole chain uses if every attack lands and every trigger fires once: the number the

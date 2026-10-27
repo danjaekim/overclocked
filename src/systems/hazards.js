@@ -15,7 +15,7 @@ import { drawLightRing, drawPillar, drawPatchMarks, drawPatchChains, drawWave } 
 
 export const HAZARD_CAP = 90;
 
-const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7;
+const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7, STEAM = 8;
 const TAU = Math.PI * 2;
 
 function add(run, h) {
@@ -84,6 +84,11 @@ export function plantRod(run, pr) {
   const py = pr.hy === pr.hy ? pr.hy : pr.y;
   addRod(run, inst, px, py, b.radius * stats.getFor('area', inst.tags), b.ttl * stats.getFor('duration', inst.tags),
     pr.dmg * b.frac, { every: b.every, zaps: b.zaps, max: b.max + count - 1, chill: b.chill, link: b.link });
+}
+
+// A steam cloud (the rig's Steam reaction): everything in it goes blind for 2 s, so it wanders at 60% speed.
+export function addSteam(run, src, x, y, radius, ttl) {
+  return add(run, { kind: STEAM, src, x, y, r: radius, ttl, life: ttl, t: 0, depth: 0 });
 }
 
 export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
@@ -177,6 +182,18 @@ export function updateHazards(run, dt) {
             e.blessT = 2;
             if (healed < 4) { healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + 0.5); }
           }
+        }
+      }
+    } else if (h.kind === STEAM) {
+      h.t -= dt;
+      if (h.t <= 0) {
+        h.t += 0.2;
+        const n = w.hash.queryRadius(h.x, h.y, h.r + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive || e.prop === 1) continue;
+          const rr = h.r + e.r;
+          if ((e.x - h.x) * (e.x - h.x) + (e.y - h.y) * (e.y - h.y) <= rr * rr) e.steamT = 2;
         }
       }
     } else if (h.kind === ROD) {
@@ -459,6 +476,22 @@ export function drawHazards(ctx, run) {
       }
       ctx.stroke();
       ctx.lineCap = 'butt';
+    } else if (h.kind === STEAM) {
+      ctx.fillStyle = '#e4f3ff';
+      for (let b = 0; b < 5; b++) {                          // drifting puffs
+        const a = b * 1.256 + t * 0.9;
+        const rr = h.r * (0.45 + 0.25 * Math.sin(t * 1.7 + b));
+        ctx.globalAlpha = Math.min(1, k * 2.5) * 0.2;
+        ctx.beginPath();
+        ctx.arc(h.x + Math.cos(a) * rr * 0.7, h.y + Math.sin(a) * rr * 0.7 - (1 - k) * 10, h.r * 0.5, 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = Math.min(1, k * 2) * 0.35;
+      ctx.strokeStyle = '#bfeaff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, h.r, 0, TAU);
+      ctx.stroke();
     } else if (h.kind === RING) {
       drawLightRing(ctx, h.x, h.y, h.rr, h.rMax, h.thick, h.color, t);
     } else if (h.kind === PATCH) {
