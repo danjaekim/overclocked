@@ -87,6 +87,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   // It reuses the level-up state, so the run is frozen like any other pause.
   function openRigEditor(withOffers) {
     const run = game.run;
+    if (game.state === 'levelup' || game.state === 'results') return;     // an editor is already open (the panel's Rig button stays reachable above it)
     game.state = 'levelup';
     input.reset();
     if (withOffers) sfx('levelup');
@@ -109,7 +110,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
           run.banishes = used.banishes;
           run.banished.push(...used.banished);
         }
-        if (run.pendingLevelUps > 0 && withOffers) { openRigEditor(true); return; }     // a big gem can give two levels: show them back to back
+        if (run.pendingLevelUps > 0 && withOffers) { game.state = 'run'; openRigEditor(true); return; }     // a big gem can give two levels: show them back to back
         overlays.hide();
         run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);
         game.state = 'run';

@@ -22,6 +22,8 @@ const CAP_ICON = { filled: false, icon: 'M3 8l9-5 9 5-9 5z M3 13l9 5 9-5 M3 17l9
 
 // opts: { rig, offers: [offer] | null, deal(banished) -> offers, rerolls, banishes, onDone(rig, { rerolls, banishes, banished }) }
 // An offer is { kind: 'piece' | 'level' | 'stat' | 'cap', ... } (rig/offers.js). A piece goes to a slot; the others apply at once.
+let active = null;             // the open editor's AbortController: a new editor closes the old one's listeners
+
 export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0, banishes = 0, onDone }) {
   const used = { rerolls, banishes, banished: [] };
   let st = cloneRig(rig);
@@ -35,7 +37,9 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
   let drag = null;                // { from, to, plan, ghost, rects } while a piece is held
   let press = null;               // a pointer that went down on a piece and has not become a drag yet
   let quietUntil = 0;             // ignore the click a finished drag leaves behind
+  if (active) active.abort();
   const ac = new AbortController();
+  active = ac;
 
   const piece = (id) => (id ? PIECES[id] : null);
   const view = () => (drag && drag.plan && drag.to.kind === 'gap' ? drag.plan.rig : st);
@@ -120,6 +124,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
     note = '';
   }
 
+  const validLoc = (rig, l) => (l.kind === 'bench' ? l.i >= 0 && l.i < rig.bench.length : !!rig.chains[l.c] && l.i >= 0 && l.i < rig.chains[l.c].slots.length);
   const locOf = (kind, a, b) => (kind === 'bench' ? { kind, i: Number(a) } : { kind, c: Number(a), i: Number(b) });
 
   function onAct(act) {
@@ -268,13 +273,16 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
     drag.ghost.style.transform = `translate(${e.clientX - 22}px, ${e.clientY - 56}px)`;
   }
 
+  const rig_ok = (to) => !!st.chains[to.c];
+
   function sameTarget(a, b) {
     return (!a && !b) || (a && b && a.kind === b.kind && a.c === b.c && a.i === b.i);
   }
 
   function updateDrag(e) {
     moveGhost(e);
-    const to = targetAt(e.clientX, e.clientY, drag.rects);
+    let to = targetAt(e.clientX, e.clientY, drag.rects);
+    if (to && to.kind === 'gap' ? !rig_ok(to) : to && !validLoc(st, to)) to = null;
     if (sameTarget(to, drag.to)) return;
     drag.to = to;
     drag.plan = to ? planMove(st, drag.from, to) : null;
@@ -296,7 +304,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
     if (!el || incoming) return;
     const [kind, a, b] = el.dataset.act.split(':');
     const loc = locOf(kind, a, b);
-    if (!pieceAt(st, loc)) return;
+    if (!validLoc(st, loc) || !pieceAt(st, loc)) return;
     press = { loc, x: e.clientX, y: e.clientY, id: e.pointerId };
   }, { signal: ac.signal });
   document.addEventListener('pointermove', (e) => {

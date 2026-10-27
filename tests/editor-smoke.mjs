@@ -49,9 +49,18 @@ await shot('e6-drag.png');
 await page.mouse.up(); await page.waitForTimeout(150);
 await page.click('[data-act="done"]'); await page.waitForTimeout(300);
 const g = await info(); if (g.slots[0] === before) fail('drag did not change the chain: ' + g.slots[0]);
+// the panel's Rig button must not open a second editor over an open one
+await page.click('.sbx-edit'); await page.waitForSelector('.overlay.sheet');
+await page.click('.sbx-edit', { force: true }); await page.waitForTimeout(100);
+if ((await page.locator('.overlay.sheet').count()) !== 1) fail('two editors open');
+await page.click('[data-act="done"]'); await page.waitForTimeout(200);
 // a full rig: take an offer with no room -> replace banner, skip
 await page.evaluate(() => { const r = window.__overclocked.game.run; r.rigState.chains.forEach((c) => c.slots.forEach((s, i) => { if (!s) c.slots[i] = 'blaster'; })); r.rigState.bench.forEach((s, i) => { if (!s) r.rigState.bench[i] = 'blaster'; }); });
 await page.click('.sbx-tab'); await page.click('[data-level]'); await page.waitForSelector('.rcard');
+for (let t = 0; t < 8 && !(await page.locator('.rcard:has(span:text-matches("^new"))').count()); t++) {   // the deal is random: skip until a new piece shows
+  await page.click('[data-act="skip"]'); await page.click('[data-act="done"]'); await page.waitForTimeout(100);
+  await page.click('.sbx-tab'); await page.click('[data-level]'); await page.waitForSelector('.rcard');
+}
 await page.click('.rcard:has(span:text-matches("^new"))');         // a new piece, which has nowhere to go
 if (!(await page.locator('.rfull').count())) fail('no full-rig banner');
 await shot('e7-full.png');
