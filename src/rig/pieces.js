@@ -54,6 +54,10 @@ export const REACTIONS = {
   'frost>fire': 'shatter',
 };
 
+// Chain identity in the HUD and the arena: strip badge, and the ring where each of its pieces runs.
+export const CHAIN_COLORS = ['#ff7ac6', '#9be564'];
+export const CHAIN_NAMES = 'AB';
+
 // When a rule card starts an activation. `while` gates the timer: it only runs while the player is moving.
 export const RULES = {
   pulse: { name: 'Pulse', every: 1, first: 0.3, desc: 'Every 1 s' },

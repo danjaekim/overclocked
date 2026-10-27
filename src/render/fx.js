@@ -33,7 +33,7 @@ export function setNumberStyle(scale = 1, big = false) {
   maxNumbers = big ? 100 : MAX_NUMBERS;
 }
 
-export function addDamageNumber(run, x, y, amount, crit) {
+export function addDamageNumber(run, x, y, amount, crit, color = '') {
   const w = run.world;
   if (w.fxNumbers >= maxNumbers) return;
   const f = w.fx.acquire();
@@ -46,6 +46,7 @@ export function addDamageNumber(run, x, y, amount, crit) {
   f.vy = -70;
   f.ttl = f.maxTtl = (crit ? 0.8 : 0.55) * (numBig ? 1.6 : 1);
   f.crit = crit;
+  f.c2 = color;                                         // '' = the default white / crit gold
   f.text = numberText(Math.max(1, Math.round(amount * numScale)));
   w.fxNumbers++;
 }
@@ -377,7 +378,11 @@ export function drawFx(ctx, view, run) {
       if (f.x < x0 || f.x > x1 || f.y < y0 || f.y > y1) continue;
       ctx.globalAlpha = Math.min(1, (f.ttl / f.maxTtl) * 2.2);
       ctx.strokeText(f.text, f.x, f.y);
-      ctx.fillText(f.text, f.x, f.y);
+      if (f.c2 !== '') {
+        ctx.fillStyle = f.c2;
+        ctx.fillText(f.text, f.x, f.y);
+        ctx.fillStyle = wantCrit ? '#ffd34d' : '#ffffff';
+      } else ctx.fillText(f.text, f.x, f.y);
     }
   }
   ctx.globalAlpha = 1;

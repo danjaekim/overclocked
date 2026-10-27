@@ -2,7 +2,8 @@
 // A piece lights up when it runs, so you can see which piece caused what in the arena.
 
 import { fmtTime } from '../ui/overlay.js';
-import { PIECES, RULES } from '../rig/pieces.js';
+import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
+import { TEST_CHAINS } from '../rig/presets.js';
 
 const SLOT = 30;
 const GAP = 4;
@@ -36,7 +37,7 @@ export function drawSandboxHud(ctx, view, run) {
 
   if (run.rig) {
     const rows = run.rig.chains;
-    for (let i = 0; i < rows.length; i++) drawStrip(ctx, run, rows[i], 12, y0 + bh + 32 + i * (SLOT + 22));
+    for (let i = 0; i < rows.length; i++) drawStrip(ctx, run, rows[i], 12, y0 + bh + 32 + i * (SLOT + 34));
   }
 
   const s = 30;                                                  // pause button (top-right), where input.js looks for it
@@ -50,6 +51,15 @@ export function drawSandboxHud(ctx, view, run) {
 
 function drawStrip(ctx, run, chain, x, y) {
   const rule = RULES[chain.def.rule];
+  const color = CHAIN_COLORS[chain.index % CHAIN_COLORS.length];
+  ctx.fillStyle = color;                                          // the chain's badge: the same colour rings its attacks in the arena
+  ctx.fillRect(x, y, 22, SLOT);
+  ctx.fillStyle = '#10121a';
+  ctx.font = '800 17px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(CHAIN_NAMES[chain.index], x + 11, y + SLOT / 2 + 1);
+  x += 24;
   const waiting = rule.while === 'moving' && !run.player.moving;
   ctx.fillStyle = waiting ? 'rgba(40,40,52,0.7)' : 'rgba(60,60,80,0.85)';        // Stride is dim while you stand still
   ctx.fillRect(x, y, 54, SLOT);
@@ -88,5 +98,13 @@ function drawStrip(ctx, run, chain, x, y) {
   for (let k = 0; k < chain.energy; k++) {
     ctx.fillStyle = k < pool ? '#ffd34d' : 'rgba(255,255,255,0.18)';
     ctx.fillRect(x + k * 9, y + SLOT + 5, 7, 7);
+  }
+  const preset = TEST_CHAINS[chain.def.key];
+  if (preset) {                                                   // the chain's name, under its strip
+    ctx.fillStyle = color;
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(preset.name, x, y + SLOT + 15);
   }
 }

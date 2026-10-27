@@ -9,7 +9,7 @@ import { fireTriggers } from '../game/triggers.js';
 import { onMilestone } from '../game/titles.js';
 import { spawnShrine } from './shrines.js';
 import { SHRINE } from '../data/forge.js';
-import { KIND_HIT, KIND_DOT } from './damage-queue.js';
+import { KIND_HIT, KIND_DOT, CAUSE } from './damage-queue.js';
 import { recordDamage, recordKill } from '../game/run-stats.js';
 import { onClassKill } from '../game/class-traits.js';
 import { breakCrate } from './crates.js';
@@ -154,7 +154,7 @@ export function flushDamage(run) {
     e.flash = HIT_FLASH;
     e.kx += q.kx[i];
     e.ky += q.ky[i];
-    if (kind !== KIND_DOT) addDamageNumber(run, e.x, e.y - e.r, amount, q.crit[i] === 1);
+    if (kind !== KIND_DOT) addDamageNumber(run, e.x, e.y - e.r, amount, q.crit[i] === 1, q.cause[i] === CAUSE.SHATTER ? '#8fd8ff' : '');
     if (src && kind !== KIND_DOT) {
       if (lifesteal > 0) {                            // heal a share of damage dealt (per weapon scope)
         const p = run.player;

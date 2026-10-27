@@ -15,7 +15,9 @@ import { drawLightRing, drawPillar, drawPatchMarks, drawPatchChains, drawWave } 
 
 export const HAZARD_CAP = 90;
 
-const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7, STEAM = 8;
+const PATCH = 0, VORTEX = 1, PILLAR = 2, WAVE = 3, BLAST = 4, SPIN = 5, RING = 6, ROD = 7, STEAM = 8, SHATTER = 9;
+const SHATTER_DELAY = 0.12;            // the crack, before the shards fly
+const SHATTER_SWEEP = 0.28;            // the shards reach the edge of the blast this long after that
 const TAU = Math.PI * 2;
 
 function add(run, h) {
@@ -89,6 +91,15 @@ export function plantRod(run, pr) {
 // A steam cloud (the rig's Steam reaction): everything in it goes blind for 2 s, so it wanders at 60% speed.
 export function addSteam(run, src, x, y, radius, ttl) {
   return add(run, { kind: STEAM, src, x, y, r: radius, ttl, life: ttl, t: 0, depth: 0 });
+}
+
+// A shatter (the rig's Shatter reaction): the target cracks, then ice shards fly out to `radius`. Each enemy
+// the shards' front reaches takes `dmg` once; the target itself (`skip` is its uid) does not.
+export function addShatter(run, src, x, y, radius, dmg, skip) {
+  const hit = new Set();
+  hit.add(skip);
+  const life = SHATTER_DELAY + SHATTER_SWEEP + 0.12;
+  return add(run, { kind: SHATTER, src, x, y, r: radius, ttl: life, life, dmg, depth: 0, hit, spin: (skip % 7) * 0.9 });
 }
 
 export function addVortex(run, src, x, y, radius, ttl, pull, dmg, depth) {
@@ -182,6 +193,23 @@ export function updateHazards(run, dt) {
             e.blessT = 2;
             if (healed < 4) { healed++; run.player.hp = Math.min(run.player.maxHp, run.player.hp + 0.5); }
           }
+        }
+      }
+    } else if (h.kind === SHATTER) {
+      const age = h.life - h.ttl;
+      if (age >= SHATTER_DELAY) {
+        const front = h.r * Math.min(1, (age - SHATTER_DELAY) / SHATTER_SWEEP);
+        const n = w.hash.queryRadius(h.x, h.y, front + MAX_ENEMY_RADIUS, w.scratch);
+        for (let k = 0; k < n; k++) {
+          const e = w.scratch[k];
+          if (!e.alive || e.prop === 1 || h.hit.has(e.uid)) continue;
+          const dx = e.x - h.x;
+          const dy = e.y - h.y;
+          const rr = front + e.r;
+          if (dx * dx + dy * dy > rr * rr) continue;
+          h.hit.add(e.uid);
+          const d = Math.hypot(dx, dy) || 1;
+          queueDamage(run, e, h.dmg, false, (dx / d) * 40, (dy / d) * 40, 1, h.src, KIND_PROC, CAUSE.SHATTER);
         }
       }
     } else if (h.kind === STEAM) {
@@ -476,6 +504,8 @@ export function drawHazards(ctx, run) {
       }
       ctx.stroke();
       ctx.lineCap = 'butt';
+    } else if (h.kind === SHATTER) {
+      drawShatter(ctx, h, h.life - h.ttl);
     } else if (h.kind === STEAM) {
       ctx.fillStyle = '#e4f3ff';
       for (let b = 0; b < 5; b++) {                          // drifting puffs
@@ -580,6 +610,60 @@ export function drawHazards(ctx, run) {
       ctx.lineTo(mx, my);
       ctx.lineTo(b.x, b.y);
     }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Shatter: a white flash and cracks on the target, then eight ice shards and a ring racing out to the blast radius.
+function drawShatter(ctx, h, age) {
+  if (age < SHATTER_DELAY) {
+    const u = age / SHATTER_DELAY;
+    ctx.globalAlpha = 0.35 + 0.5 * u;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, 10 + 6 * u, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#8fd8ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let c = 0; c < 6; c++) {
+      const a = h.spin + c * 1.05;
+      ctx.moveTo(h.x, h.y);
+      ctx.lineTo(h.x + Math.cos(a) * (8 + 12 * u), h.y + Math.sin(a) * (8 + 12 * u));
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    return;
+  }
+  const u = Math.min(1, (age - SHATTER_DELAY) / SHATTER_SWEEP);
+  const fade = 1 - Math.max(0, (age - SHATTER_DELAY - SHATTER_SWEEP) / 0.12);
+  const front = h.r * u;
+  ctx.globalAlpha = 0.55 * fade;
+  ctx.strokeStyle = '#bfeaff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(h.x, h.y, front, 0, TAU);
+  ctx.stroke();
+  ctx.globalAlpha = fade;
+  ctx.fillStyle = '#e6f6ff';
+  ctx.strokeStyle = '#6fc8f5';
+  ctx.lineWidth = 1.5;
+  for (let c = 0; c < 8; c++) {                              // a shard: a thin diamond pointing out
+    const a = h.spin + (c * TAU) / 8;
+    const ca = Math.cos(a);
+    const sa = Math.sin(a);
+    const tip = front + 5;
+    const tail = Math.max(0, front - 11);
+    const mid = (tip + tail) / 2;
+    ctx.beginPath();
+    ctx.moveTo(h.x + ca * tip, h.y + sa * tip);
+    ctx.lineTo(h.x + ca * mid - sa * 3, h.y + sa * mid + ca * 3);
+    ctx.lineTo(h.x + ca * tail, h.y + sa * tail);
+    ctx.lineTo(h.x + ca * mid + sa * 3, h.y + sa * mid - ca * 3);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
   }
   ctx.globalAlpha = 1;

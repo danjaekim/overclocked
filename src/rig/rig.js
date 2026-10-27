@@ -13,12 +13,13 @@
 import { BEHAVIORS } from '../behaviors/index.js';
 import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
-import { PIECES, ELEMENTS, SCATTER } from './pieces.js';
+import { PIECES, ELEMENTS, SCATTER, CHAIN_COLORS } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { reactOnHit } from './reactions.js';
 
 const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the rest wait in the queue
 const MAX_QUEUE = 256;                 // queued payload runs; further events are dropped
+const PING_TIME = 0.4;                 // seconds a chain's ring stays on screen
 const SOURCE = 'rig:';                 // stat modifier source prefix for everything the rig adds
 
 const defs = new Map();                // piece id -> full weapon definition, built once
@@ -36,7 +37,7 @@ function weaponDef(id) {
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, log: log ? [] : null, ctx: makeFireCtx(), atks: [] };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [] };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
@@ -161,6 +162,7 @@ function fireNode(run, rig, chain, node, x, y, act) {
   inst.rigArmed = armed;
   for (let i = 0; i < atks.length; i++) atks[i].armed = armed;
   chain.flash[node.idx] = run.time;
+  if (rig.pings.length < 32) rig.pings.push({ x, y, t0: run.time, color: CHAIN_COLORS[chain.index % CHAIN_COLORS.length] });   // a ring where this chain's piece ran
   for (let i = 0; i < node.modIdx.length; i++) chain.flash[node.modIdx[i]] = run.time;
   if (armed) chain.flash[node.trigger.idx] = run.time;
   note(run, rig, 'fire', { act: act.id, piece: node.piece, mods: node.mods, copies: fired, x, y, armed, pool: act.pool });
@@ -200,6 +202,7 @@ export function updateRig(run, dt) {
     rig.head = 0;
   }
 
+  while (rig.pings.length && run.time - rig.pings[0].t0 > PING_TIME) rig.pings.shift();
   for (let i = 0; i < rig.insts.length; i++) {
     const inst = rig.insts[i];
     BEHAVIORS[inst.def.behavior].update(inst, dt, run);
@@ -207,6 +210,18 @@ export function updateRig(run, dt) {
 }
 
 export function drawRig(ctx, run) {
+  const pings = run.rig.pings;
+  ctx.lineWidth = 3;
+  for (let i = 0; i < pings.length; i++) {
+    const g = pings[i];
+    const u = (run.time - g.t0) / PING_TIME;
+    ctx.globalAlpha = 0.85 * (1 - u);
+    ctx.strokeStyle = g.color;
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, 14 + 26 * u, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
   const insts = run.rig.insts;
   for (let i = 0; i < insts.length; i++) {
     const b = BEHAVIORS[insts[i].def.behavior];
