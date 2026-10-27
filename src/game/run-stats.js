@@ -74,9 +74,19 @@ export function peakDps(run, window = 5) {
 export function statsSnapshot(run) {
   const st = run.stats;
   const t = Math.max(1, run.time);
-  const weapons = [...st.src.values()]
-    .map((r) => ({ name: r.name, dmg: r.dmg, kills: r.kills, crits: r.crits, gone: r.gone, byCause: r.byCause.slice(),
-      dps: r.dmg / Math.max(1, (r.gone ? r.t1 : run.time) - r.t0) }))     // per second from its first hit until the run ends (or it was salvaged)
+  const byName = new Map();                    // rig pieces fire as one instance per slot: a piece in several slots is one row
+  for (const r of st.src.values()) {
+    const w = byName.get(r.name);
+    const t0 = w ? Math.min(w.t0, r.t0) : r.t0;
+    const t1 = r.gone ? r.t1 : run.time;
+    if (!w) byName.set(r.name, { name: r.name, dmg: r.dmg, kills: r.kills, crits: r.crits, gone: r.gone, byCause: r.byCause.slice(), t0, t1 });
+    else {
+      w.dmg += r.dmg; w.kills += r.kills; w.crits += r.crits; w.gone = w.gone && r.gone; w.t0 = t0; w.t1 = Math.max(w.t1, t1);
+      r.byCause.forEach((v, i) => { w.byCause[i] += v; });
+    }
+  }
+  const weapons = [...byName.values()]
+    .map(({ t0, t1, ...w }) => ({ ...w, dps: w.dmg / Math.max(1, t1 - t0) }))     // per second from its first hit until the run ends (or it was salvaged)
     .sort((a, b) => b.dmg - a.dmg);
   const causes = st.causes.map((dmg, i) => ({ name: CAUSE_NAMES[i], dmg })).filter((c) => c.dmg > 0).sort((a, b) => b.dmg - a.dmg);
   return { total: st.total, avgDps: st.total / t, recentDps: recentDps(run), peakDps: peakDps(run), weapons, causes, sec: st.sec.slice() };

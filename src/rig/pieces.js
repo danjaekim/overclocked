@@ -97,12 +97,14 @@ export const MAX_CHAINS = 4;
 // When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. A card with `on` is not
 // timed: it runs when that event happens ('kill': any enemy dies; 'hurt': you take damage), at most once per `gap` seconds.
 // `short` is the second line of the HUD badge.
+export const SPITE_HEAL = 0.06;     // a share of max hp, each time a Spite chain fires
+
 export const RULES = {
   pulse: { name: 'Pulse', every: 1, first: 0.3, desc: 'Every 1 s', short: '1s' },
   stride: { name: 'Stride', every: 0.5, first: 0.3, while: 'moving', desc: 'Every 0.5 s while moving', short: '0.5s' },
   anchor: { name: 'Anchor', every: 0.6, first: 0.3, while: 'still', desc: 'Every 0.6 s while standing still', short: 'still' },
   reaper: { name: 'Reaper', on: 'kill', gap: 0.25, desc: 'On any kill, at most 4 times a second', short: 'kills' },
-  spite: { name: 'Spite', on: 'hurt', gap: 0.4, desc: 'When you take damage', short: 'hurt' },
+  spite: { name: 'Spite', on: 'hurt', gap: 0.4, heal: SPITE_HEAL, desc: 'When you take damage, and it heals you a little', short: 'hurt' },
 };
 
 // Passive stats an offer can give (about 1 offer in 6). Each pick adds one step; the rig keeps the counts

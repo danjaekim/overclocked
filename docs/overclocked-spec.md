@@ -53,7 +53,7 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 | Stride | Every 0.5 s while moving | Kiting |
 | Anchor | Every 0.6 s while standing still | Turret. Risky in a crowd |
 | Reaper | On any kill, at most 4 times per second | Snowballs in big waves |
-| Spite | When you take damage | Defensive bursts |
+| Spite | When you take damage; each firing heals 6% of max hp | Defensive bursts |
 
 Classes come after the proof of concept. Each class will start with a different rule card, for example a kiting class that starts with Stride.
 

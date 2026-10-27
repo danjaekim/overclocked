@@ -15,6 +15,7 @@ import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
 import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
+import { healPlayer } from '../systems/pickups.js';
 import { reactOnHit } from './reactions.js';
 
 const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the rest wait in the queue
@@ -203,6 +204,7 @@ export function updateRig(run, dt) {
       if (chain.t > 0) chain.t -= dt;
       if (rig.flags[rule.on] && chain.t <= 0) {
         chain.t = rule.gap;
+        if (rule.heal) healPlayer(run, rule.heal);
         activate(run, rig, chain);
       }
       continue;

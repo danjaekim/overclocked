@@ -44,7 +44,7 @@ test('the rig a run built is on the summary, for the results screen', () => {
   assert.deepEqual(s.rig.chains[0].slots.filter(Boolean), ['blaster']);
   assert.deepEqual(s.rig.levels, { blaster: 2 });
   const html = rigHtml(s.rig);
-  assert.ok(html.includes('Blaster') && html.includes('Lv 2') && html.includes('Pulse'));
+  assert.ok(html.includes('Blaster') && html.includes('L2') && html.includes('Pulse'));
   assert.equal(rigHtml(null), '');
 });
 
@@ -191,4 +191,22 @@ test('the bench bot plays a full run without errors and the rig grows', () => {
 test('every rule card has a name, a description and a HUD label', () => {
   for (const [id, r] of Object.entries(RULES)) assert.ok(r.name && r.desc && r.short, id);
   for (const id of Object.keys(PIECES)) assert.ok(PIECES[id].icon && PIECES[id].short, id);
+});
+
+test('Spite heals you a little each time it fires, and a piece in several slots is one row in the damage breakdown', async () => {
+  const { createRun } = await import('../src/game/run.js');
+  const run = newRun();
+  run.rigState = { ...run.rigState, chains: [...run.rigState.chains, { rule: 'spite', key: null, bonus: 0, slots: ['blaster', 'blaster', null] }] };
+  applyRig(run);
+  run.player.hp = 50;
+  run.director.update = () => {};
+  run.update(1 / 60, { x: 0, y: 0 });
+  run.player.iframes = 0;
+  const { damagePlayer } = await import('../src/systems/damage.js');
+  damagePlayer(run, 5);
+  const hp = run.player.hp;
+  for (let i = 0; i < 6; i++) run.update(1 / 60, { x: 0, y: 0 });
+  assert.ok(run.player.hp > hp, 'spite healed');
+  const names = run.statsSnapshot().weapons.map((w) => w.name);
+  assert.equal(new Set(names).size, names.length, 'one row per piece');
 });
