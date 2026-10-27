@@ -14,7 +14,6 @@ import { firePayload, PAYLOAD_FX } from '../src/effects/payloads.js';
 import { attackTriggers, fireTriggers } from '../src/game/triggers.js';
 import { queueDamage, KIND_HIT, CAUSE_NAMES, CAUSE } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
-import { buildEntries } from '../src/game/compendium.js';
 
 const STEP = 1 / 60;
 const newRun = (seed = 7) => {
@@ -165,9 +164,3 @@ test('a fused weapon still fights: a whole run with each shape of donor does not
   }
 });
 
-test('the compendium fusion rules describe payloads, and the forge preview names the payload', () => {
-  const rules = buildEntries({ fusions: [] }).find((e) => e.id === 'fusion:rules');
-  assert.ok(rules.lines.some((l) => /payload/.test(l)));
-  assert.ok(rules.lines.some((l) => /Hound donor/.test(l)));
-  assert.ok(!rules.lines.some((l) => /echo/i.test(l)));
-});

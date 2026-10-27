@@ -15,8 +15,6 @@ import { grantTitle, hasTitle, onMilestone } from '../src/game/titles.js';
 import { RUN_EVENTS } from '../src/game/run-events.js';
 import { killEnemy, damagePlayer } from '../src/systems/damage.js';
 import { updatePickups } from '../src/systems/pickups.js';
-import { generateOffers, buildCandidates } from '../src/game/upgrades.js';
-import { offerState, applyOffer } from '../src/game/apply-offer.js';
 import { createRng } from '../src/core/rng.js';
 import { enhance } from '../src/game/forge.js';
 
@@ -72,22 +70,6 @@ test('evolve: replaces the weapon in place, keeps enhance and affixes, spends st
   assert.equal(evolve(run, bow, recipesFor({ weaponId: 'ember_bow' })[0]).ok, false);
 });
 
-test('evolved weapons are never offered at level-up, but can level up once owned', () => {
-  const run = newRun();
-  const st = offerState(run);
-  for (let s = 0; s < 30; s++) {
-    for (const o of generateOffers(st, createRng(s))) assert.ok(!['storm_volley', 'colossus_maul'].includes(o.id));
-  }
-  const bow = run.player.weapons[0];
-  maxOut(run, bow);
-  addPassive(run, 'wind_sigil');
-  run.starsteel = 1;
-  evolve(run, bow, recipesFor(bow)[0]);
-  const ups = buildCandidates(offerState(run)).filter((c) => c.kind === 'weapon_up' && c.id === 'storm_volley');
-  assert.equal(ups.length, 1);
-  levelUpWeapon(run, bow);
-  assert.equal(bow.level, 2);
-});
 
 test('colossus maul needs the passive, enhance +3 and starsteel; the evolved maul hits much harder', () => {
   const run = newRun('smith');
@@ -228,15 +210,6 @@ test('kills crossing 1000 grant Slayer through the real kill path', () => {
   assert.ok(hasTitle(run, 'slayer'));
 });
 
-test('offer titles appear as epic level-up offers, apply on pick, and are not offered twice', () => {
-  const run = newRun();
-  const st = offerState(run);
-  const cands = buildCandidates(st).filter((c) => c.kind === 'title_new');
-  assert.deepEqual(cands.map((c) => c.id), ['unyielding']);     // milestone titles are never offered
-  applyOffer(run, cands[0]);
-  assert.ok(hasTitle(run, 'unyielding'));
-  assert.equal(buildCandidates(offerState(run)).filter((c) => c.kind === 'title_new').length, 0);
-});
 
 test('titles show up in the run summary', () => {
   const run = newRun();

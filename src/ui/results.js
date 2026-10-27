@@ -1,20 +1,25 @@
 import { resultsSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
-import { resultsDamageHtml } from './build.js';
-import { WEAPONS } from '../data/weapons.js';
+import { resultsDamageHtml } from './damage.js';
+import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 
 const BEST_LABEL = { time: 'time', kills: 'kills', level: 'level' };
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
-const wname = (id) => (WEAPONS[id] ? WEAPONS[id].name : id);
-
-// One line per fusion: its name and the two weapons that went into it.
-function fusionsHtml(summary) {
-  const list = summary.fusionList || [];
-  if (!list.length) return '';
-  return `<div class="rfusions">${list.map((g) => `<p class="unlock">${g.masterwork ? '✦ ' : ''}<b>${g.name}</b> <span class="rg-from">${wname(g.host)} + ${wname(g.donor)}</span></p>`).join('')}</div>`;
+// The run's rig: each chain as a row of its pieces (icon, name, level), so a good build can be read back.
+export function rigHtml(rig) {
+  if (!rig) return '';
+  const cell = (id) => {
+    const p = PIECES[id];
+    const lv = (rig.levels && rig.levels[id]) || 1;
+    return `<span class="rrcell ${p.type}"><svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="20" height="20"><path d="${p.icon}"/></svg><b>${esc(p.short)}</b>${lv > 1 ? `<i>Lv ${lv}</i>` : ''}</span>`;
+  };
+  const rows = rig.chains.map((c, i) => `<div class="rrrow"><span class="rbadge" style="background:${CHAIN_COLORS[i]}">${CHAIN_NAMES[i]}</span><span class="rrrule">${esc(RULES[c.rule].name)}</span>${c.slots.filter(Boolean).map(cell).join('') || '<em>empty</em>'}</div>`).join('');
+  const bench = rig.bench.filter(Boolean);
+  return `<div class="rrig"><p class="sub">Your rig</p>${rows}${bench.length ? `<div class="rrrow"><span class="rrrule">Bench</span>${bench.map(cell).join('')}</div>` : ''}</div>`;
 }
 
-export function showResults(overlays, summary, { onAgain, onTitle, newBests = [], unlocked = [] }) {
+export function showResults(overlays, summary, { onAgain, newBests = [] }) {
   const title = summary.won ? 'You survived' : 'You fell';
   const stat = (key, label, value) =>
     `<div><span>${label}${newBests.includes(key) ? ' · best!' : ''}</span><b>${value}</b></div>`;
@@ -27,18 +32,14 @@ export function showResults(overlays, summary, { onAgain, onTitle, newBests = []
        ${stat('level', 'Level', summary.level)}
      </div>
      ${summary.bossKilled ? '<p class="sub">The Warlord is slain.</p>' : ''}
-     ${unlocked.length ? `<p class="unlock">Unlocked: ${unlocked.join(', ')}!</p>` : ''}
-     ${fusionsHtml(summary)}
-     ${summary.titles.length ? `<p class="sub">Titles: ${summary.titles.join(', ')}</p>` : ''}
+     ${rigHtml(summary.rig)}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>
      <div class="rbar">
        <button class="btn primary" data-act="again">Play again</button>
-       <button class="btn" data-act="title">Title</button>
      </div>`,
     (act) => {
       if (act === 'again') onAgain();
-      else if (act === 'title') onTitle();
     },
     'results'
   );

@@ -6,9 +6,7 @@ export function readParams() {
   return {
     enabled: q.get('debug') === '1',
     god: q.get('god') === '1',
-    unlockAll: q.get('unlock') === 'all',   // ?unlock=all shows every class as unlocked (not saved)
-    title: q.get('title') === '1',   // ?title=1 boots to Overforged's title screen and run flow instead of the sandbox (tests and comparisons)
-    classId: q.get('class'),         // ?class=smith starts that class directly, skipping class select
+    sandbox: q.get('sandbox') === '1',   // ?sandbox=1 boots the chain sandbox instead of the run (tests; players reach it from the pause menu)
     numScale: q.has('numscale') ? Math.max(0.01, Number(q.get('numscale')) || 1) : 30,   // damage numbers SHOWN are x30 by default (not the damage); ?numscale=1 for true values
     numFx: q.get('numfx') !== '0',   // on by default: bigger crit text, numbers last longer, more of them alive; ?numfx=0 turns it off
     seed: q.has('seed') ? Number(q.get('seed')) >>> 0 : null,

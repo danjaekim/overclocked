@@ -8,7 +8,7 @@ const types={'.html':'text/html','.js':'text/javascript','.json':'application/js
 const server=http.createServer((req,res)=>{let p=decodeURIComponent(req.url.split('?')[0]); if(p==='/')p='/index.html'; const f=path.join(root,p); if(!fs.existsSync(f)){res.writeHead(404);res.end();return;} res.writeHead(200,{'content-type':types[path.extname(f)]||'text/plain'}); fs.createReadStream(f).pipe(res);}).listen(0);
 const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,hasTouch:true,isMobile:true});
 const page=await ctx.newPage(); const errs=[]; page.on('console',m=>{if(['error','warning'].includes(m.type()))errs.push(m.text())}); page.on('pageerror',e=>errs.push('pageerror '+e.message));
-await page.goto(`http://localhost:${server.address().port}/?seed=3`);
+await page.goto(`http://localhost:${server.address().port}/?sandbox=1&seed=3`);
 const out=process.argv[2]||'';
 await page.waitForTimeout(4500); if(out)await page.screenshot({path:out+'a.png'});
 await page.click('.sbx-tab'); await page.waitForTimeout(300); if(out)await page.screenshot({path:out+'b.png'});

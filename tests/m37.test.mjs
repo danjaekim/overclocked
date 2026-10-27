@@ -11,7 +11,6 @@ import { spawnCrate, liveCrates, lootWeights, rollLoot } from '../src/systems/cr
 import { spawnHeal, KIND_HEAL, KIND_GEM, KIND_ORE } from '../src/systems/pickups.js';
 import { CRATES } from '../src/data/crates.js';
 import { EVENTS } from '../src/data/waves.js';
-import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -137,21 +136,3 @@ test('m37 the timeline has about one crate every 75 s, in time order, and the di
   assert.ok(liveCrates(run) >= 1, 'the first crate arrived by 60 s');
 });
 
-test('m37 a run with a crate and a heart survives snapshot and resume and plays on identically', () => {
-  const a = newRun('mage');
-  a.player.weapons.length = 0;                       // nothing to break it during the test
-  const c = spawnCrate(a, { x: 150, y: 20 });
-  spawnHeal(a, 90, 90, 0.15);
-  for (let i = 0; i < 90; i++) a.update(STEP, { x: 0.3, y: -0.2 });
-  const snap = JSON.parse(JSON.stringify(snapshotRun(a)));
-  const b = restoreRun(snap, { view: VIEW, debug: { god: true }, sfx: () => {} });
-  b.director.update = () => {};
-  assert.equal(liveCrates(b), liveCrates(a));
-  const cb = b.world.enemies.active.find((e) => e.prop === 1);
-  assert.ok(cb && cb.def === c.def && Math.abs(cb.aiCd - c.aiCd) < 1e-9);
-  for (let i = 0; i < 300; i++) {
-    a.update(STEP, { x: 0.3, y: -0.2 });
-    b.update(STEP, { x: 0.3, y: -0.2 });
-  }
-  assert.equal(JSON.stringify([a.player.x, a.player.hp, a.world.pickups.count, liveCrates(a)]), JSON.stringify([b.player.x, b.player.hp, b.world.pickups.count, liveCrates(b)]));
-});

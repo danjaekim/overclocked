@@ -12,8 +12,6 @@ import {
 import { AFFIXES, ENHANCE, REFORGE } from '../src/data/forge.js';
 import { RARITIES } from '../src/data/rarities.js';
 import { WEAPONS } from '../src/data/weapons.js';
-import { offerState } from '../src/game/apply-offer.js';
-import { buildCandidates } from '../src/game/upgrades.js';
 import { evolve, recipesFor } from '../src/game/evolution.js';
 import { validateData } from '../src/data/validate.js';
 
@@ -148,39 +146,6 @@ test('rarer affixes are rarer: epics show up far less than commons across many r
 
 // ---- infusion --------------------------------------------------------------------------------
 
-test('infusion: an Ember-touched hammer becomes a fire weapon (tags, burn, perks, resonance)', () => {
-  const run = newRun('smith');
-  const hammer = run.player.weapons[0];
-  assert.ok(!hammer.tags.set.has('fire'));
-  const ward = addWeapon(run, 'cinder_ward');             // fire
-  void ward;
-  assert.equal(run.resonance.some((r) => r.tag === 'fire'), false);
-  hammer.affixes = [];
-  // roll until ember_touched is offered, then pick it
-  let got = false;
-  for (let i = 0; i < 300 && !got; i++) {
-    const r = rollReforge(run, hammer, 0);
-    const k = r.options.indexOf('ember_touched');
-    if (k >= 0) { applyReforge(run, hammer, k); got = true; } else keepCurrent(hammer);
-  }
-  assert.ok(got, 'ember_touched is offered eventually');
-  assert.ok(hammer.tags.set.has('fire') && hammer.addTags.includes('fire'));
-  approx(run.player.stats.getFor('burnChance', hammer.tags), 0.25);
-  assert.ok(run.resonance.some((r) => r.tag === 'fire' && r.tier === 1), 'hammer + ward = Fire I');
-  assert.ok(offerState(run).ownedTags.includes('fire'));
-  assert.ok(buildCandidates(offerState(run)).some((c) => c.id === 'fan_the_flames'), 'perk requirements see the infusion');
-  // replace it: the tag goes away again
-  rollReforge(run, hammer, 0);
-  for (let i = 0; i < 300 && hammer.addTags.length; i++) {
-    const r = hammer.pendingReforge;
-    const k = r.options.findIndex((id) => !AFFIXES[id].addTags);
-    if (k >= 0) applyReforge(run, hammer, k);
-    else { keepCurrent(hammer); rollReforge(run, hammer, 0); }
-  }
-  assert.equal(hammer.addTags.length, 0);
-  assert.ok(!hammer.tags.set.has('fire'));
-  assert.equal(run.resonance.some((r) => r.tag === 'fire'), false);
-});
 
 test('a weapon can hold only one infusion; replacing the slot that holds it is fine', () => {
   const run = newRun();

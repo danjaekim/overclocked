@@ -6,7 +6,7 @@ import { drawSandboxHud } from './rig-hud.js';
 import { drawShrineArrows, drawChestArrows, drawCrateArrows } from './shrines.js';
 
 export function drawHud(ctx, view, run) {
-  if (run.sandbox) {
+  if (run.sandbox || run.rigRun) {
     drawSandboxHud(ctx, view, run);
     return;
   }

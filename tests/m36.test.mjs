@@ -10,7 +10,6 @@ import { param } from '../src/game/weapon-params.js';
 import { damagePlayer, flushDamage } from '../src/systems/damage.js';
 import { enhance } from '../src/game/forge.js';
 import { CLASSES } from '../src/data/classes.js';
-import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 
 const STEP = 1 / 60;
 const VIEW = { w: 480, h: 1040 };
@@ -171,19 +170,3 @@ test('Saint Holy Nova: a blessing ring every 6 s, credited as Holy Nova, healing
   assert.ok(run.statsSnapshot().weapons.some((x) => x.name === 'Holy Nova' && x.dmg > 0));
 });
 
-test('class traits survive a run snapshot: a restored run plays on identically', () => {
-  for (const cls of ['saint', 'summoner', 'berserker', 'mage']) {
-    const a = createRun({ seed: 9, view: VIEW, debug: { god: true }, classId: cls });
-    for (let i = 0; i < 90 / STEP; i++) { a.update(STEP, { x: Math.cos(i / 90), y: Math.sin(i / 90) }); a.pendingLevelUps = 0; }
-    const b = restoreRun(JSON.parse(JSON.stringify(snapshotRun(a))), { view: VIEW, debug: { god: true }, sfx: () => {} });
-    a.world.hash.rebuild(a.world.enemies.active, a.world.enemies.count);
-    assert.deepEqual({ ...b.cls, inst: null }, { ...a.cls, inst: null }, cls);
-    assert.equal(b.trait, CLASSES[cls].trait, 'the trait is the shipped data');
-    for (let i = 0; i < 600; i++) {
-      const mv = { x: Math.cos((5400 + i) / 90), y: Math.sin((5400 + i) / 90) };
-      a.update(STEP, mv); b.update(STEP, mv); a.pendingLevelUps = b.pendingLevelUps = 0;
-    }
-    assert.equal(b.stats.total, a.stats.total, cls);
-    assert.equal(b.kills, a.kills, cls);
-  }
-});

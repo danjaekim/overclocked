@@ -7,7 +7,6 @@ import { CLASSES } from '../src/data/classes.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { validateData } from '../src/data/validate.js';
-import { unlockMet } from '../src/game/unlocks.js';
 import { createSave } from '../src/save/save.js';
 import { levelUpWeapon } from '../src/game/weapons.js';
 import { recipesFor, canEvolve, evolve } from '../src/game/evolution.js';
@@ -99,15 +98,3 @@ test('each new class evolves its start weapon with the required passive', () => 
   }
 });
 
-test('unlock rules: boss, win, kills and level events', () => {
-  assert.equal(unlockMet(CLASSES.berserker.unlock, { bossKilled: true }), true);
-  assert.equal(unlockMet(CLASSES.berserker.unlock, { bossKilled: false }), false);
-  assert.equal(unlockMet(CLASSES.mage.unlock, { won: true }), true);
-  assert.equal(unlockMet(CLASSES.mage.unlock, { won: false }), false);
-  assert.equal(unlockMet(CLASSES.summoner.unlock, { kills: 1999 }), false);
-  assert.equal(unlockMet(CLASSES.summoner.unlock, { kills: 2000 }), true);
-  assert.equal(unlockMet(CLASSES.saint.unlock, { level: 17 }), false);
-  assert.equal(unlockMet(CLASSES.saint.unlock, { level: 18 }), true);
-  assert.equal(unlockMet(undefined, {}), false);
-  for (const id of ['mage', 'summoner', 'saint']) assert.ok(CLASSES[id].unlock.hint.length > 5);
-});

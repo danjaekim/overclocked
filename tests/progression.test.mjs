@@ -4,8 +4,6 @@ import { test, assert, approx } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { createRng } from '../src/core/rng.js';
 import { xpToNext, gainXp } from '../src/game/xp.js';
-import { generateOffers, buildCandidates, offerWeight, HEAL_OFFER } from '../src/game/upgrades.js';
-import { applyOffer, offerState } from '../src/game/apply-offer.js';
 import { addPassive, levelUpPassive, findPassive } from '../src/game/passives.js';
 import { spawnGem, updatePickups, gemTier } from '../src/systems/pickups.js';
 import { WEAPONS } from '../src/data/weapons.js';
@@ -152,142 +150,16 @@ test('passive slots are capped and a passive cannot be added twice', () => {
 
 // ---- offers ----
 
-test('first offers: the bow level-up plus passives, three distinct choices', () => {
-  const run = newRun();
-  const offers = generateOffers(offerState(run), createRng(1));
-  assert.equal(offers.length, 3);
-  assert.equal(new Set(offers.map((o) => `${o.kind}:${o.id}`)).size, 3);
-});
 
-test('offers are deterministic for the same state and rng, and vary with the seed', () => {
-  const run = newRun();
-  const st = offerState(run);
-  const a = generateOffers(st, createRng(7)).map((o) => o.id);
-  const b = generateOffers(st, createRng(7)).map((o) => o.id);
-  assert.deepEqual(a, b);
-  const seen = new Set();
-  for (let s = 0; s < 40; s++) seen.add(generateOffers(st, createRng(s)).map((o) => o.id).join());
-  assert.ok(seen.size > 5, 'offers should vary across seeds');
-});
 
-test('maxed items are never offered; weapons of another class are never offered', () => {
-  const st = { classId: 'archer', luck: 0, weapons: [{ weaponId: 'ember_bow', level: 8, instanceId: 1 }], passives: [] };
-  assert.ok(buildCandidates(st).every((c) => c.id !== 'ember_bow'));
-  const other = { classId: 'mage', luck: 0, weapons: [], passives: [] };
-  assert.ok(buildCandidates(other).every((c) => c.kind !== 'weapon_new' || WEAPONS[c.id].class == null || WEAPONS[c.id].class === 'mage'));
-  assert.ok(buildCandidates(other).some((c) => c.id === 'arc_bolt'), 'its own class weapon is offered');
-  assert.ok(buildCandidates(st).every((c) => c.id !== 'arc_bolt' && c.id !== 'halo' && c.id !== 'bone_call'));
-});
 
-test('slot caps: no new passives at the passive cap, no new weapons at the weapon cap', () => {
-  const ids = Object.keys(PASSIVES).slice(0, SLOTS.passives);
-  const full = {
-    classId: 'archer', luck: 0,
-    weapons: [{ weaponId: 'ember_bow', level: 1, instanceId: 1 }],
-    passives: ids.map((id) => ({ id, level: 1 })),
-  };
-  const cands = buildCandidates(full);
-  if (ids.length >= SLOTS.passives) assert.ok(cands.every((c) => c.kind !== 'passive_new'));
-  assert.ok(cands.some((c) => c.kind === 'passive_up'));
-});
 
-test('when everything is maxed the offer falls back to Rest', () => {
-  const st = {
-    classId: 'archer', luck: 0,
-    weapons: Object.entries(WEAPONS)
-      .filter(([, d]) => d.class == null || d.class === 'archer')
-      .map(([id, d], i) => ({ weaponId: id, level: d.maxLevel, instanceId: i + 1 })),
-    titles: Object.keys(TITLES),
-    passives: Object.entries(PASSIVES).map(([id, d]) => ({ id, level: d.maxLevel })),
-    perks: Object.entries(PERKS).map(([id, d]) => ({ id, level: d.maxLevel })),
-    ownedTags: ['fire', 'frost', 'storm', 'projectile', 'close', 'arc', 'orbit'],
-  };
-  const offers = generateOffers(st, createRng(1));
-  assert.deepEqual(offers.map((o) => o.kind), ['heal']);
-  assert.equal(offers[0], HEAL_OFFER);
-});
 
-test('owned items are weighted up and luck favours rarer items', () => {
-  const owned = { rarity: 'common', owned: true };
-  const fresh = { rarity: 'common', owned: false };
-  approx(offerWeight(owned, 0), offerWeight(fresh, 0) * 1.5);
-  const rare = { rarity: 'rare', owned: false };
-  assert.ok(offerWeight(rare, 10) > offerWeight(rare, 0) * 2.5);
-  assert.equal(offerWeight(fresh, 10), offerWeight(fresh, 0));        // common ignores luck
-});
 
-test('luck measurably shifts offers toward rare items', () => {
-  const st = (luck) => ({ classId: 'archer', luck, weapons: [{ weaponId: 'ember_bow', level: 1, instanceId: 1 }], passives: [] });
-  const share = (luck) => {
-    let rare = 0;
-    for (let s = 0; s < 800; s++) {
-      for (const o of generateOffers(st(luck), createRng(s))) if (o.rarity === 'rare') rare++;
-    }
-    return rare;
-  };
-  assert.ok(share(10) > share(0) * 1.3);
-});
 
 // ---- applying offers ----
 
-test('applyOffer: each kind changes the run as described, and grants i-frames', () => {
-  const run = newRun();
-  const p = run.player;
-  const bow = p.weapons[0];
-  const offers = generateOffers(offerState(run), createRng(3), 20);
 
-  const up = offers.find((o) => o.kind === 'weapon_up');
-  applyOffer(run, up);
-  assert.equal(bow.level, 2);
-
-  const np = offers.find((o) => o.kind === 'passive_new');
-  applyOffer(run, np);
-  assert.equal(findPassive(p, np.id).level, 1);
-
-  const pu = generateOffers(offerState(run), createRng(3), 20).find((o) => o.kind === 'passive_up');
-  applyOffer(run, pu);
-  assert.equal(findPassive(p, pu.id).level, 2);
-
-  p.hp = 10;
-  p.iframes = 0;
-  applyOffer(run, HEAL_OFFER);
-  approx(p.hp, 10 + p.maxHp * 0.3);
-  assert.ok(p.iframes >= 1);
-});
-
-test('applyOffer rejects an unknown offer kind', () => {
-  const run = newRun();
-  assert.throws(() => applyOffer(run, { kind: 'bogus' }), /Unknown offer kind/);
-});
 
 // ---- a whole run with automatic picks ----
 
-test('a 5-minute run with random level-up picks stays consistent and the build grows', () => {
-  const run = newRun(21, { god: true });
-  const pick = createRng(99);
-  let picks = 0;
-  let heals = 0;   // picks that raise no item level (heals, titles)
-  for (let i = 0; i < 60 * 300; i++) {
-    run.update(STEP, STILL);
-    while (run.pendingLevelUps > 0) {
-      const offers = generateOffers(offerState(run), run.rng);
-      assert.ok(offers.length >= 1 && offers.length <= 3);
-      const chosen = pick.pick(offers);
-      applyOffer(run, chosen);
-      picks++;
-      if (chosen.kind === 'heal' || chosen.kind === 'title_new') heals++;
-      run.pendingLevelUps--;
-    }
-    if (i % 600 === 0) {
-      const w = run.world;
-      assert.ok(w.pickups.count <= CAPS.pickups && w.enemies.count <= CAPS.enemies);
-      assert.ok(run.player.passives.length <= SLOTS.passives && run.player.weapons.length <= SLOTS.weapons);
-      assert.ok(Number.isFinite(run.player.hp) && run.player.hp > 0);
-    }
-  }
-  const weaponLevels = run.player.weapons.reduce((a, w) => a + w.level, 0);
-  const passiveLevels = run.player.passives.reduce((a, x) => a + x.level, 0) + run.player.perks.reduce((a, x) => a + x.level, 0);
-  assert.ok(run.player.level >= 8, `level ${run.player.level}`);
-  assert.equal(picks, run.player.level - 1, 'one pick per level gained');
-  assert.equal(weaponLevels + passiveLevels - 1, picks - heals, 'every item pick (weapon, passive or perk) raised exactly one item level');
-});

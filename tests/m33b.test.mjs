@@ -8,7 +8,6 @@ import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
 import { fuse } from '../src/game/fusion.js';
 import { MASTERWORKS } from '../src/data/fusions.js';
 import { WEAPONS } from '../src/data/weapons.js';
-import { buildEntries } from '../src/game/compendium.js';
 import { PERKS } from '../src/data/perks.js';
 
 const STEP = 1 / 60;
@@ -98,11 +97,3 @@ test('Bladestorm flings blades on every spin; Hellhounds wear a wider aura', () 
   assert.ok(MASTERWORKS.find((x) => x.id === 'hellhounds').hooks.minionAura.radius >= 46);
 });
 
-test('text: Echo Strike mentions slams; the Fusions tab names the new shapes; masterwork text mentions no arc for the slam hosts', () => {
-  assert.match(PERKS.echo_strike.desc, /slam/);
-  const gm = MASTERWORKS.find((x) => x.id === 'glacier_maul');
-  assert.ok(!/arc\b/.test(gm.desc) && WEAPONS[gm.host].behavior === 'slam');
-  const lines = buildEntries({ fusions: MASTERWORKS.map((x) => x.id) }).filter((e) => e.tab === 'fusions').flatMap((e) => e.lines).join(' ');
-  assert.match(lines, /Planted rod/);
-  assert.match(lines, /Slam/);
-});

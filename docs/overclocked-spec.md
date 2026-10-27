@@ -224,9 +224,10 @@ If the concept check fails, we stop and rethink the pieces before building the e
 
 **M4: First test build**
 
-- [ ] Remove Overforged's build systems from `run.js` and the UI
-- [ ] All 16 pieces and 5 rule cards, piece levels, and chests with capacity items
-- [ ] Full 10-minute runs with elites and bosses, and the run's rig on the results screen
+- [x] Remove Overforged's build systems from `run.js` and the UI (title, class select, level-up, forge, build screen, compendium, history, backup and run-resume screens and their code are gone; the engine-era modules that the stat and status tests still use stay, see docs/architecture.md)
+- [x] All 16 pieces and 5 rule cards, piece levels, and chests with capacity items
+- [x] Full 10-minute runs with elites and bosses, and the run's rig on the results screen
+- [ ] Playtest on your phone: the M4 gate (a full run plays start to finish, and two runs feel different). Bot runs do not finish yet (see the bench numbers in the thread), so this gate may need the first balance pass
 
 **M5: Depth**
 
@@ -242,7 +243,11 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Classes wait until after the proof of concept. When they arrive, each starts with a different rule card.
 - Unlocks wait until after the first test build.
 - No query parameter. The game's default path boots into the build for the current milestone: the sandbox for M2, then the full run from M4.
-- The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. How it's opened gets decided when we build it.
+- The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. From M4 it opens from the pause menu ("Chain sandbox (debug)"); `?sandbox=1` boots it directly, for tests.
+- Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 20% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload). The mastery twists at level 5 are M5.
+- A run starts with 130 HP and 0.5 HP/s regeneration (the stat default plus the Archer's numbers from Overforged). This is a first guess, tuned in M5.
+- Capacity: levels 10 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
+- Shrines and ore are off in a run until the M5 workbench.
 
 ## Open questions
 

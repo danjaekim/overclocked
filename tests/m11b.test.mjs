@@ -14,7 +14,6 @@ import { ST } from '../src/data/statuses.js';
 import { validateData } from '../src/data/validate.js';
 import { evolve, recipesFor } from '../src/game/evolution.js';
 import { addPassive } from '../src/game/passives.js';
-import { buildCandidates } from '../src/game/upgrades.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -214,23 +213,7 @@ test('Headsman: a crit that leaves a non-boss under the threshold kills it; boss
   assert.ok(boss.alive, 'bosses are never executed');
 });
 
-test('Headsman is offered only after Keen Eye (or as the Berserker)', () => {
-  const st = (over) => ({ classId: 'archer', luck: 0, weapons: [{ weaponId: 'ember_bow', level: 1, instanceId: 1 }], passives: [], perks: [], ownedTags: ['projectile', 'fire'], ...over });
-  const ids = (s) => buildCandidates(s).map((c) => c.id);
-  assert.ok(!ids(st({})).includes('headsman'));
-  assert.ok(ids(st({ perks: [{ id: 'keen_eye', level: 1 }] })).includes('headsman'));
-  assert.ok(ids(st({ classId: 'berserker' })).includes('headsman'));
-});
 
-test('alloys need BOTH elements: Quench is hidden with only fire, shown with fire + frost', () => {
-  const st = (tags) => ({ classId: 'archer', luck: 0, weapons: [], passives: [], perks: [], ownedTags: tags });
-  const ids = (s) => buildCandidates(s).map((c) => c.id);
-  assert.ok(!ids(st(['fire'])).includes('quench'));
-  assert.ok(!ids(st(['frost'])).includes('quench'));
-  assert.ok(ids(st(['fire', 'frost'])).includes('quench'));
-  assert.ok(ids(st(['fire'])).includes('wildfire'));
-  assert.ok(!ids(st([])).includes('wildfire'));
-});
 
 // ---- resonance -------------------------------------------------------------------------------
 

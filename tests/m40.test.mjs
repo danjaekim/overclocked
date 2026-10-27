@@ -15,7 +15,6 @@ import { evolve, canEvolve } from '../src/game/evolution.js';
 import { addPassive, findPassive, levelUpPassive } from '../src/game/passives.js';
 import { addPerk, findPerk, levelUpPerk } from '../src/game/perks.js';
 import { callStar } from '../src/behaviors/projectile.js';
-import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -213,20 +212,4 @@ test('m40 a star survives evolving and is lost on salvage; a fusion passes it to
   assert.ok(host.star, 'the donor\'s star passed to the host');
 });
 
-test('m40 a star survives a snapshot and the starred bow plays on identically after resume', () => {
-  const a = newRun();
-  const bow = maxed(a, 'ember_bow');
-  a.starsteel = 2;
-  starforge(a, bow);
-  dummy(a, 150, 0);
-  tick(a, 90);
-  const snap = JSON.parse(JSON.stringify(snapshotRun(a)));
-  const b = restoreRun(snap, { view: VIEW, debug: { god: true }, sfx: () => {} });
-  b.director.update = () => {};
-  const wb = b.player.weapons[0];
-  assert.ok(wb.star);
-  assert.equal(wb.volley, bow.volley);
-  for (let i = 0; i < 600; i++) { a.update(STEP, { x: 0, y: 0 }); b.update(STEP, { x: 0, y: 0 }); }
-  assert.equal(wb.volley, bow.volley, 'the resumed run fires the same volleys');
-});
 

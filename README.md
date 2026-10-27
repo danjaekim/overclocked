@@ -2,7 +2,7 @@
 
 A mobile-first survivors-style roguelike where you program your power. Your character fires on its own, and what it fires comes from a **rig**: short **chains** that start with a rule card (when it runs) and continue with weapons, modifiers and triggers read left to right. Move a piece and the same pieces play differently.
 
-Overclocked is built on the engine of [Overforged](https://github.com/danjaekim/overforged) and started as a copy of it (v0.45.17). The weapon, forge, perk and class systems are still Overforged's and will be replaced step by step. **The plan, the rules and the milestones are in [`docs/overclocked-spec.md`](docs/overclocked-spec.md).** Read it before changing code.
+Overclocked is built on the engine of [Overforged](https://github.com/danjaekim/overforged) and started as a copy of it (v0.45.17). The default boot is the full run (M4): a ten-minute survivors-like where the rig of chains is your only build. Overforged's title, class, forge and compendium screens are gone; some of its weapon, perk and status code stays underneath as engine. **The plan, the rules and the milestones are in [`docs/overclocked-spec.md`](docs/overclocked-spec.md).** Read it before changing code.
 
 ## Status
 
@@ -12,7 +12,7 @@ M0 (setup): the app identity, storage keys and service worker are renamed so Ove
 
 - **On your phone:** open https://danjaekim.github.io/overclocked/ in Safari (needs GitHub Pages enabled: Settings → Pages → Deploy from branch → `main` / root). Use Share → Add to Home Screen for a fullscreen app-like launch; after one visit it also loads offline. Pages can take a minute or two to update after a push, and Safari may cache the old build; if a change doesn't show up, reload or add `?v=2` to the URL.
 - **Controls:** drag anywhere on the lower part of the screen to move (a floating joystick appears under your thumb). Weapons fire automatically. Desktop: WASD or arrow keys, Esc to pause.
-- **Debug URL flags** (inherited from Overforged): `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `F` spawns a shrine, `O` gives 20 ore, `B` spawns the boss, `X` gives 2 starsteel, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run), `?class=smith` (skip class select), `?unlock=all` (show locked classes as open; not saved). Combine them: `?debug=1&god=1&seed=7&class=smith`.
+- **Debug URL flags**: `?debug=1` (fps/entity overlay, a stress button that spawns 500 enemies, `L` gives a level-up, `E` spawns an elite, `C` drops an elite chest, `B` spawns the boss, `R` ends the run), `?god=1` (no damage), `?seed=N` (reproducible first run), `?sandbox=1` (boot the chain sandbox; players reach it from the pause menu). Combine them: `?debug=1&god=1&seed=7`. Bot runs for balance: `node tools/rigbench.mjs --seeds 20`.
 
 Portrait-only, 10-minute runs.
 
@@ -48,7 +48,7 @@ src/systems/      per-tick systems: enemy AI, movement, collision, damage, statu
 src/render/       view, renderer, entities, fx, HUD
 src/save/         versioned localStorage save (bests, unlocks, settings)
 src/audio/        synthesized sound blips
-src/ui/           DOM overlays: title, class select, level-up, forge, pause, results, rotate prompt
+src/ui/           DOM overlays: rig editor, chest reveal, pause, results, rotate prompt
 src/input/        joystick + keyboard
 src/data/         content as data: weapons, classes, enemies, waves, validation
 icons/, manifest.webmanifest, sw.js   PWA files; sw.js gives offline play (placeholder icons made by tools/make-icons.py)

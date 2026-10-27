@@ -4,9 +4,6 @@
 import { test, assert } from './harness.mjs';
 import { createRun } from '../src/game/run.js';
 import { addWeapon } from '../src/game/weapons.js';
-import { generateOffers, comboPartners } from '../src/game/upgrades.js';
-import { pickChestItem, evolutionBlockers, openChest } from '../src/game/chests.js';
-import { offerState } from '../src/game/apply-offer.js';
 import { createRng } from '../src/core/rng.js';
 import { LEVELUP } from '../src/data/progression.js';
 import { SHRINE } from '../src/data/forge.js';
@@ -56,61 +53,6 @@ test('m38 a magnet is only rolled when enough is lying on the ground', () => {
   assert.ok(n > 100 && n < 400, `${n}`);
 });
 
-test('m38 comboPartners names the missing half of a combo, only when you hold the other half', () => {
-  const run = newRun('archer');
-  assert.equal(comboPartners(offerState(run)).size, 0);
-  give(run, 'storm_javelin');
-  const m = comboPartners(offerState(run));
-  assert.deepEqual([...m.keys()], ['rime_shards']);
-  assert.equal(m.get('rime_shards'), 'Stormfrost Lance');
-  give(run, 'rime_shards');
-  assert.equal(comboPartners(offerState(run)).size, 0, 'both halves held: nothing missing');
-});
 
-test('m38 a level-up offers the missing half of a combo more often, and marks what it leads to', () => {
-  const run = newRun('archer');
-  give(run, 'storm_javelin');
-  const state = offerState(run);
-  const count = (boost) => {
-    LEVELUP.comboPartnerBoost = boost;
-    const rng = createRng(21);
-    let n = 0;
-    let marked = true;
-    for (let i = 0; i < 4000; i++) {
-      for (const o of generateOffers(state, rng)) if (o.id === 'rime_shards') { n++; if (!o.evo) marked = false; }
-    }
-    assert.ok(marked);
-    return n;
-  };
-  const saved = LEVELUP.comboPartnerBoost;
-  const base = count(1);
-  const boosted = count(saved);
-  LEVELUP.comboPartnerBoost = saved;
-  assert.ok(boosted > base * 1.25 && boosted < base * 2.2, `${base} -> ${boosted}`);
-});
 
-test('m38 a chest new-weapon roll mostly picks the missing combo half', () => {
-  const run = newRun('smith');
-  give(run, 'cinder_ward');
-  const state = offerState(run);
-  const bl = evolutionBlockers(run);
-  const rng = createRng(5);
-  let hit = 0;
-  for (let i = 0; i < 3000; i++) if (pickChestItem(state, rng, bl, true).id === 'rime_orbs') hit++;
-  assert.ok(hit / 3000 > 0.3, `${hit / 3000}`);
-});
 
-test('m38 with a combo half missing, a 3-roll chest can unlock the other half', () => {
-  let gave = 0;
-  let chests = 0;
-  for (let s = 1; s <= 80; s++) {
-    const run = newRun('archer', true, s);
-    give(run, 'storm_javelin');
-    run.chestsOpened = 5;                       // not the first-chest minimum
-    const r = openChest(run, 0);
-    if (r.count !== 3) continue;
-    chests++;
-    if (r.rolls.some((x) => x.kind === 'weapon_new')) gave++;
-  }
-  assert.ok(chests > 5 && gave >= 1, `${gave}/${chests}`);
-});

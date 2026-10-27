@@ -10,7 +10,6 @@ import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { CLASSES } from '../src/data/classes.js';
 import { validateData } from '../src/data/validate.js';
 import { recipesFor, canEvolve, evolve, checklist, pair } from '../src/game/evolution.js';
-import { evolutionBlockers, openChest } from '../src/game/chests.js';
 import { enhance } from '../src/game/forge.js';
 import { statsSnapshot } from '../src/game/run-stats.js';
 
@@ -112,12 +111,6 @@ test('perk-gated evolution: needs the technique at its level, the weapon level a
   assert.equal(run.starsteel, 0);
 });
 
-test('chest blockers include a perk that is one level short of a recipe', () => {
-  const run = newRun('berserker');
-  run.player.weapons[0].level = 8;
-  addPerk(run, 'keen_eye');
-  assert.ok(evolutionBlockers(run).has('perk_up:keen_eye'));
-});
 
 test('combo: needs both weapons at level 6, consumes the partner, keeps enhance and affixes', () => {
   const run = newRun();
@@ -149,17 +142,6 @@ test('combo: needs both weapons at level 6, consumes the partner, keeps enhance 
   assert.equal(statsSnapshot(run).weapons.find((w) => w.gone) === undefined, false, 'the consumed weapon is marked gone');
 });
 
-test('a chest never auto-fuses (combo consumes a weapon): the jackpot skips combo recipes', () => {
-  const run = newRun();
-  const a = addWeapon(run, 'cinder_mortar');
-  const b = addWeapon(run, 'static_rod');
-  while (a.level < 6) levelUpWeapon(run, a);
-  while (b.level < 6) levelUpWeapon(run, b);
-  run.starsteel = 1;
-  const r = openChest(run, 1);
-  assert.ok(r.rolls.every((x) => x.kind !== 'evolve'));
-  assert.equal(run.player.weapons.length, 3);
-});
 
 test('combo needs the partner in hand', () => {
   const run = newRun();

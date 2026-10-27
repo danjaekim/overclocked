@@ -6,8 +6,6 @@ import { spawnEnemy } from '../src/game/director.js';
 import { addWeapon } from '../src/game/weapons.js';
 import { PERKS } from '../src/data/perks.js';
 import { addPerk, levelUpPerk, findPerk, meetsRequires } from '../src/game/perks.js';
-import { buildCandidates, generateOffers, offerWeight } from '../src/game/upgrades.js';
-import { applyOffer, offerState } from '../src/game/apply-offer.js';
 import { param } from '../src/game/weapon-params.js';
 import { createRng } from '../src/core/rng.js';
 import { validateData } from '../src/data/validate.js';
@@ -51,65 +49,10 @@ test('requirements: AND of ORs over tags, perks and class', () => {
   assert.equal(meetsRequires([['class:archer', 'class:smith']], ctx), true);
 });
 
-test('perks are gated: an amplifier needs its element, and the pool grows once you own the enabler', () => {
-  const none = stateFor({ weapons: [{ weaponId: 'forge_hammer', level: 1, instanceId: 1 }], ownedTags: ['melee', 'arc', 'physical', 'close'] });
-  assert.ok(!kinds(none).includes('fan_the_flames'), 'no fire source, no Fan the Flames');
-  assert.ok(!kinds(none).includes('ricochet'), 'a hammer has no projectiles');
-  assert.ok(kinds(none).includes('long_reach') && kinds(none).includes('kindling'));
-  const withKindling = { ...none, perks: [{ id: 'kindling', level: 1 }] };
-  assert.ok(kinds(withKindling).includes('fan_the_flames'), 'kindling unlocks the amplifier');
-  const bow = stateFor();
-  assert.ok(kinds(bow).includes('fan_the_flames'), 'a fire weapon unlocks it too');
-  assert.ok(!kinds(bow).includes('deep_freeze'));
-});
 
-test('owned perks level up until max, then leave the pool', () => {
-  const st = stateFor({ perks: [{ id: 'keen_eye', level: 2 }] });
-  const up = buildCandidates(st).find((c) => c.id === 'keen_eye');
-  assert.equal(up.kind, 'perk_up');
-  assert.equal(up.toLevel, 3);
-  const maxed = stateFor({ perks: [{ id: 'keen_eye', level: 3 }] });
-  assert.ok(!kinds(maxed).includes('keen_eye'));
-});
 
-test('affinity: perks matching an owned weapon tag are 1.5x as likely', () => {
-  const cands = buildCandidates(stateFor());
-  const kind = cands.find((c) => c.id === 'kindling');          // affinity fire, bow is fire
-  const frost = cands.find((c) => c.id === 'frostbite');        // affinity frost, none owned
-  approx(kind.boost, 1.5);
-  approx(frost.boost, 1);
-  approx(offerWeight(kind, 0), offerWeight(frost, 0) * 1.5);
-});
 
-test('first card: when anything can be upgraded, card 1 is a weapon or passive upgrade', () => {
-  const st = stateFor({ passives: [{ id: 'keen_whetstone', level: 1 }] });
-  let perkLed = 0;
-  for (let seed = 1; seed <= 300; seed++) {
-    const offers = generateOffers(st, createRng(seed));
-    assert.equal(offers.length, 3);
-    if (offers[0].kind !== 'weapon_up' && offers[0].kind !== 'passive_up') perkLed++;
-    assert.equal(new Set(offers.map((o) => o.id)).size, 3, 'no duplicates');
-  }
-  assert.equal(perkLed, 0);
-  // and perks do show up on the other cards
-  let perksSeen = 0;
-  for (let seed = 1; seed <= 100; seed++) perksSeen += generateOffers(st, createRng(seed)).filter((o) => o.kind.startsWith('perk')).length;
-  assert.ok(perksSeen > 60, `perks appear on cards 2-3 (${perksSeen})`);
-});
 
-test('applyOffer: perk_new adds the perk, perk_up levels it, modifiers come and go with source prefixes', () => {
-  const run = newRun();
-  const p = run.player;
-  applyOffer(run, { kind: 'perk_new', id: 'keen_eye' });
-  assert.equal(findPerk(p, 'keen_eye').level, 1);
-  approx(p.stats.get('critChance'), 0.05 + 0.05 + 0.05);       // archer 5% + base 5% + perk 5%
-  applyOffer(run, { kind: 'perk_up', id: 'keen_eye' });
-  applyOffer(run, { kind: 'perk_up', id: 'keen_eye' });
-  approx(p.stats.get('critMult'), 1.5 + 0.25);
-  assert.equal(levelUpPerk(run, findPerk(p, 'keen_eye')), false, 'maxed');
-  assert.equal(addPerk(run, 'keen_eye'), null, 'cannot own it twice');
-  assert.equal(offerState(run).perks[0].id, 'keen_eye');
-});
 
 test('tag scoping: Volley adds projectiles to projectile weapons only; Echo Strike hits arc and orbit only', () => {
   const run = newRun('smith');
@@ -226,13 +169,3 @@ test('split: a lone target takes the parent hit once, not again from its own chi
   approx(1e9 - a.hp, 100, 1e-3);
 });
 
-test('perk offers never include a perk whose requirements fail, over many seeds', () => {
-  const st = stateFor({ weapons: [{ weaponId: 'forge_hammer', level: 1, instanceId: 1 }], ownedTags: ['melee', 'arc', 'physical', 'close'] });
-  for (let seed = 1; seed <= 200; seed++) {
-    for (const o of generateOffers(st, createRng(seed))) {
-      if (o.kind !== 'perk_new') continue;
-      assert.ok(!['ricochet', 'splitting_tips', 'volley', 'heavy_fletching', 'fan_the_flames', 'deep_freeze', 'arc_conductor'].includes(o.id), o.id);
-    }
-  }
-  void PERKS;
-});

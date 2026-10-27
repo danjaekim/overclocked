@@ -13,7 +13,7 @@ const out = process.argv[2] || '';
 const shot = async (n) => { if (out) await page.screenshot({ path: out + n }); };
 const info = () => page.evaluate(() => { const o = window.__overclocked; const r = o.game.run; return { state: o.game.state, t: +r.time.toFixed(2), slots: r.rigState.chains.map((c) => c.slots.join(',')), bench: r.rigState.bench.join(','), pending: r.pendingLevelUps }; });
 const fail = (m) => { console.log('FAIL', m); process.exit(1); };
-await page.goto(`http://localhost:${server.address().port}/?seed=3`);
+await page.goto(`http://localhost:${server.address().port}/?sandbox=1&seed=3`);
 await page.waitForTimeout(2500);
 await page.click('.sbx-edit');
 await page.waitForSelector('.overlay.sheet');
@@ -52,7 +52,7 @@ const g = await info(); if (g.slots[0] === before) fail('drag did not change the
 // a full rig: take an offer with no room -> replace banner, skip
 await page.evaluate(() => { const r = window.__overclocked.game.run; r.rigState.chains.forEach((c) => c.slots.forEach((s, i) => { if (!s) c.slots[i] = 'blaster'; })); r.rigState.bench.forEach((s, i) => { if (!s) r.rigState.bench[i] = 'blaster'; }); });
 await page.click('.sbx-tab'); await page.click('[data-level]'); await page.waitForSelector('.rcard');
-await page.click('[data-act="offer:0"]');
+await page.click('.rcard:has(span:text-matches("^new"))');         // a new piece, which has nowhere to go
 if (!(await page.locator('.rfull').count())) fail('no full-rig banner');
 await shot('e7-full.png');
 await page.click('[data-act="skip"]');

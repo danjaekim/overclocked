@@ -15,7 +15,6 @@ import { flushDamage } from '../src/systems/damage.js';
 import { queueDamage, KIND_PROC } from '../src/systems/damage-queue.js';
 import { addPatch, addVortex, addPillar, addWave, HAZARD_CAP } from '../src/systems/hazards.js';
 import { EFFECTS } from '../src/effects/index.js';
-import { openChest } from '../src/game/chests.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -69,21 +68,6 @@ test('choosing a branch removes the other recipe', () => {
   }
 });
 
-test('a chest does not pick for you when two branches are ready', () => {
-  const run = newRun('archer');
-  const inst = run.player.weapons[0];
-  for (const r of recipesFor(inst)) ready(run, inst, r);
-  run.starsteel = 2;
-  const res = openChest(run, 0);
-  assert.ok(!res.rolls.some((r) => r.kind === 'evolve'));
-  assert.equal(inst.weaponId, 'ember_bow');
-  // with only one branch ready it still evolves
-  const run2 = newRun('archer');
-  const i2 = run2.player.weapons[0];
-  ready(run2, i2, recipesFor(i2).find((r) => r.into === 'sunpiercer'));
-  const res2 = openChest(run2, 0);
-  assert.ok(res2.rolls.some((r) => r.kind === 'evolve'));
-});
 
 test('every branch weapon fights a swarm for 12 seconds without throwing', () => {
   for (const [cls, , b] of BRANCHES) {

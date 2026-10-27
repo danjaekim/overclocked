@@ -6,8 +6,7 @@ import { createPlayer, updatePlayer } from './player.js';
 import { createWorld } from './world.js';
 import { createDirector, spawnEnemy } from './director.js';
 import { BEHAVIORS } from '../behaviors/index.js';
-import { addWeapon, updateWeapons, levelUpWeapon, canLevelUp, weaponName } from './weapons.js';
-import { WEAPONS } from '../data/weapons.js';
+import { addWeapon, updateWeapons, weaponName } from './weapons.js';
 import { updateEnemies } from '../systems/enemy-ai.js';
 import { updateProjectiles } from '../systems/movement.js';
 import { updateCollision } from '../systems/collision.js';
@@ -71,6 +70,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     cam: { x: 0, y: 0, ox: 0, oy: 0, shake: 0 },
     world: createWorld(),
     director: null,
+    rigRun: false,          // the full run (game/ovrun.js): the rig is the only build, no shrines or ore
     sandbox: false,         // the endless chain sandbox (game/sandbox.js): no level-ups, no end
     rig: null,              // the chain rig (src/rig/rig.js), or null when the run uses ordinary weapons
 
@@ -156,16 +156,6 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         spawnEnemy(run, i % 10 === 0 ? 'brute' : 'goblin',
           run.player.x + Math.cos(a) * d, run.player.y + Math.sin(a) * d);
       }
-    },
-
-    // Debug: every weapon at max level, for performance and visual checks.
-    debugLoadout() {
-      for (const id of Object.keys(WEAPONS)) {
-        if (WEAPONS[id].pool === false) continue;             // evolved weapons come from the forge
-        if (WEAPONS[id].class != null && WEAPONS[id].class !== run.player.classId) continue;
-        if (!run.player.weapons.some((w) => w.weaponId === id)) addWeapon(run, id);
-      }
-      for (const w of run.player.weapons) while (canLevelUp(w)) levelUpWeapon(run, w);
     },
 
     debugLines() {

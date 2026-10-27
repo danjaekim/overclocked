@@ -7,6 +7,7 @@ import { spawnEnemy } from './director.js';
 import { installRig } from '../rig/rig.js';
 import { newRig, padSlots, chainDefsOf } from '../rig/editor.js';
 import { TEST_CHAINS } from '../rig/presets.js';
+import { RIG_STATS } from '../rig/pieces.js';
 
 export const SANDBOX = {
   target: 45,            // enemies kept alive
@@ -61,6 +62,17 @@ export function applyRig(run) {
     if (c.key && (c.rule !== TEST_CHAINS[c.key].rule || c.slots.join() !== padSlots(TEST_CHAINS[c.key].slots, run.rigState.cap).join())) c.key = null;
   }
   installRig(run, chainDefsOf(run.rigState));
+  applyRigStats(run);
+}
+
+// The passive stats the rig has taken (move speed, max HP, pickup range, armor), as modifiers under their own source.
+export function applyRigStats(run) {
+  const st = run.player.stats;
+  st.removeBySource('rigstat:');
+  for (const [id, n] of Object.entries(run.rigState.stats || {})) {
+    const def = RIG_STATS[id];
+    if (def && n > 0) st.add({ ...def.mod, value: def.mod.value * n, source: `rigstat:${id}` });
+  }
 }
 
 // Puts a test chain in slot `index` (0 or 1), keeping the other chain as it is.

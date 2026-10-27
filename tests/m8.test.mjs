@@ -6,8 +6,6 @@ import { createSave, normalize, DEFAULTS } from '../src/save/save.js';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { CLASSES } from '../src/data/classes.js';
-import { generateOffers, buildCandidates } from '../src/game/upgrades.js';
-import { offerState } from '../src/game/apply-offer.js';
 import { createRng } from '../src/core/rng.js';
 import { queueDamage } from '../src/systems/damage-queue.js';
 import { flushDamage, killEnemy } from '../src/systems/damage.js';
@@ -133,32 +131,8 @@ test('runs start with the configured rerolls and banishes', () => {
   assert.deepEqual(run.banished, []);
 });
 
-test('banished items are never offered again', () => {
-  const run = newRun();
-  const st = offerState(run);
-  const first = buildCandidates(st).find((c) => c.kind === 'passive_new');
-  run.banished.push(first.id);
-  for (let s = 0; s < 80; s++) {
-    for (const o of generateOffers(offerState(run), createRng(s))) assert.notEqual(o.id, first.id);
-  }
-});
 
-test('banishing everything left still falls back to Rest instead of crashing', () => {
-  const run = newRun();
-  for (const c of buildCandidates(offerState(run))) run.banished.push(c.id);
-  const offers = generateOffers(offerState(run), createRng(1));
-  assert.deepEqual(offers.map((o) => o.kind), ['heal']);
-});
 
-test('rerolling gives a fresh draw from the same rng stream (deterministic, usually different)', () => {
-  const a = createRng(5);
-  const st = offerState(newRun());
-  const one = generateOffers(st, a).map((o) => o.id).join();
-  const two = generateOffers(st, a).map((o) => o.id).join();
-  const b = createRng(5);
-  assert.equal(generateOffers(st, b).map((o) => o.id).join(), one);
-  assert.equal(generateOffers(st, b).map((o) => o.id).join(), two);
-});
 
 // ---- sound / sim separation ----------------------------------------------------------------
 

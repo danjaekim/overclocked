@@ -9,15 +9,21 @@
 
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { analyzeChain } from '../rig/chain.js';
-import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, BENCH } from '../rig/editor.js';
+import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, BENCH } from '../rig/editor.js';
+import { applyOffer, describeOffer } from '../rig/offers.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const icon = (p, px) => `<svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="${px}" height="${px}"><path d="${p.icon}"/></svg>`;
 const DRAG_START = 6;            // px of movement before a press becomes a drag
 const EDGE = 0.28;               // the outer share of a slot, each side, that counts as "between"
 
-// opts: { rig, offers: [piece id] | null, onDone(rig) }
-export function showRigEditor(overlays, { rig, offers, onDone }) {
+const STAT_ICON = { filled: false, icon: 'M12 5v14 M5 12h14' };
+const CAP_ICON = { filled: false, icon: 'M3 8l9-5 9 5-9 5z M3 13l9 5 9-5 M3 17l9 5 9-5' };
+
+// opts: { rig, offers: [offer] | null, deal(banished) -> offers, rerolls, banishes, onDone(rig, { rerolls, banishes, banished }) }
+// An offer is { kind: 'piece' | 'level' | 'stat' | 'cap', ... } (rig/offers.js). A piece goes to a slot; the others apply at once.
+export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0, banishes = 0, onDone }) {
+  const used = { rerolls, banishes, banished: [] };
   let st = cloneRig(rig);
   let snapshot = cloneRig(rig);
   const history = [];
@@ -52,15 +58,16 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
 
   function chainHtml(ci) {
     const rv = view();
-    const def = { rule: rv.chains[ci].rule, slots: rv.chains[ci].slots };
+    const def = chainDefOf(rv, ci);
     const a = analyzeChain(def);
+    const n = def.slots.length;
     let row = '';
-    for (let i = 0; i < rv.cap; i++) {
+    for (let i = 0; i < n; i++) {
       if (sel) row += `<button class="gap" data-act="gap:${ci}:${i}" aria-label="insert here"></button>`;
       else row += '<span class="gapsp"></span>';
       row += slotHtml(rv, { kind: 'slot', c: ci, i }, `slot:${ci}:${i}`, a.reasons);
     }
-    row += sel ? `<button class="gap" data-act="gap:${ci}:${rv.cap}" aria-label="insert at the end"></button>` : '<span class="gapsp"></span>';
+    row += sel ? `<button class="gap" data-act="gap:${ci}:${n}" aria-label="insert at the end"></button>` : '<span class="gapsp"></span>';
     const first = [...a.reasons.entries()].sort((x, y) => x[0] - y[0])[0];
     const why = first ? ` <span class="why">Greyed: ${esc(PIECES[def.slots[first[0]]].name)} (${esc(first[1])})</span>` : '';
     return `<div class="rstrip"><span class="rbadge" style="background:${CHAIN_COLORS[ci]}">${CHAIN_NAMES[ci]}</span>
@@ -75,9 +82,11 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
         <button class="rbtn" data-act="back">Back</button><button class="rbtn" data-act="skip">Skip</button></div>`;
     }
     if (!pending) return '';
-    return `<div class="rcards">${pending.map((id, k) => {
-      const p = PIECES[id];
-      return `<button class="rcard ${p.type}" data-act="offer:${k}">${icon(p, 30)}<b>${esc(p.name)}</b><span>${esc(p.type)} · ${p.cost}</span><em>${esc(p.desc)}</em></button>`;
+    return `<div class="rcards">${pending.map((o, k) => {
+      const d = describeOffer(st, o);
+      const ic = d.piece || (o.kind === 'stat' ? STAT_ICON : CAP_ICON);
+      const ban = used.banishes > 0 && (o.kind === 'piece' || o.kind === 'level') ? `<button class="rban" data-act="ban:${k}">Ban</button>` : '';
+      return `<div class="rcardw"><button class="rcard ${d.type}" data-act="offer:${k}">${icon(ic, 30)}<b>${esc(d.title)}</b><span>${esc(d.tag)}</span><em>${esc(d.desc)}</em></button>${ban}</div>`;
     }).join('')}</div>`;
   }
 
@@ -93,13 +102,14 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
     } else hint = note || 'Tap a piece, then tap where it goes, or drag it. Drop it between two pieces to slide it in.';
     overlays.show(`
       <div class="rhead"><b>Rig</b>
+        ${pending && deal && used.rerolls > 0 && !incoming ? `<button class="rbtn" data-act="reroll">Reroll ${used.rerolls}</button>` : ''}
         ${pending ? '<button class="rbtn" data-act="skip">Skip</button>' : ''}
         <button class="rbtn" data-act="undo"${history.length ? '' : ' disabled'}>Undo</button>
         <button class="rbtn" data-act="reset">Reset</button>
         <button class="rbtn primary" data-act="done"${pending || incoming ? ' disabled' : ''}>Done</button></div>
       ${offersHtml()}${chains}
       <div class="rbench">${bench}<span class="rlabel">Bench: spare pieces</span></div>
-      <div class="rhint">${pending && !incoming ? 'Pick one of three pieces, or skip.' : hint}</div>`, onAct, 'sheet');
+      <div class="rhint">${pending && !incoming ? 'Pick one, or skip.' : hint}</div>`, onAct, 'sheet');
   }
 
   function commit(next) {
@@ -116,7 +126,7 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
     if (performance.now() < quietUntil) return;
     const [kind, a, b] = act.split(':');
     if (kind === 'done') {
-      if (!pending && !incoming) { ac.abort(); onDone(st); }
+      if (!pending && !incoming) { ac.abort(); onDone(st, used); }
     } else if (kind === 'undo') {
       if (history.length) { st = history.pop(); sel = suggest = null; render(); }
     } else if (kind === 'reset') {
@@ -139,8 +149,26 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
         note = `Sold ${name}.`;
       }
       render();
+    } else if (kind === 'reroll') {
+      if (deal && used.rerolls > 0) { used.rerolls--; pending = deal(used.banished); render(); }
+    } else if (kind === 'ban') {
+      const o = pending[Number(a)];
+      if (deal && used.banishes > 0 && o) { used.banishes--; used.banished.push(o.id); pending = deal(used.banished); render(); }
     } else if (kind === 'offer') {
-      const id = pending[Number(a)];
+      const o = pending[Number(a)];
+      if (o.kind !== 'piece') {                                // a level, a passive or capacity: no slot needed
+        const next = applyOffer(st, o);
+        if (!next) return;
+        const d = describeOffer(st, o);
+        st = next;
+        snapshot = cloneRig(st);
+        history.length = 0;
+        pending = null;
+        note = `${d.title}: ${d.desc}. Tap Done to keep it.`;
+        render();
+        return;
+      }
+      const id = o.id;
       const placed = placeSuggested(st, id);
       if (!placed) {                                          // full: replace a piece, or skip
         incoming = id;

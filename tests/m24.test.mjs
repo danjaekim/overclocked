@@ -2,43 +2,13 @@
 import assert from 'node:assert/strict';
 import { test } from './harness.mjs';
 import { createRng } from '../src/core/rng.js';
-import { evoNeeds, generateOffers, EVO_BOOST } from '../src/game/upgrades.js';
 import { ENEMIES } from '../src/data/enemies.js';
 import { WAVES } from '../src/data/waves.js';
 
 const base = { classId: 'smith', luck: 0, passives: [], perks: [], ownedTags: [], titles: [], banished: [] };
 
-test('evoNeeds lists the passive an in-reach evolution still needs, and not far-off ones', () => {
-  // Ember Bow level 4 is within 3 levels of the 6 the recipe asks for; it needs Wind Sigil
-  const near = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 4, instanceId: 1 }] });
-  assert.equal(near.get('passive:wind_sigil'), 'Storm Volley');
-  assert.equal(near.get('weapon:ember_bow'), 'Storm Volley or Sunpiercer');
-  const far = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 2, instanceId: 1 }] });   // 2 < 6 - 3
-  assert.equal(far.size, 0);
-});
 
-test('a satisfied requirement is not listed, and an already-evolved weapon is skipped', () => {
-  const have = evoNeeds({ ...base, weapons: [{ weaponId: 'ember_bow', level: 8, instanceId: 1 }], passives: [{ id: 'wind_sigil', level: 1 }], perks: [{ id: 'keen_eye', level: 2 }] });   // both branches met
-  assert.equal(have.size, 0);
-  const done = evoNeeds({ ...base, weapons: [{ weaponId: 'storm_volley', level: 1, instanceId: 2 }] });
-  assert.equal(done.size, 0);
-});
 
-test('generateOffers marks needed offers and favours them without forcing them', () => {
-  const state = { ...base, weapons: [{ weaponId: 'ember_bow', level: 4, instanceId: 1 }] };
-  let marked = 0, withMark = 0, runs = 400;
-  for (let s = 1; s <= runs; s++) {
-    const offers = generateOffers(state, createRng(s));
-    for (const o of offers) if (o.evo) { assert.ok(['Storm Volley', 'Sunpiercer', 'Storm Volley or Sunpiercer'].includes(o.evo)); marked++; }
-    if (offers.some((o) => o.id === 'wind_sigil')) withMark++;
-  }
-  assert.ok(marked > 0);
-  assert.ok(withMark > 0 && withMark < runs, 'the passive it needs shows up often but is not forced onto every screen');
-  // no evolution in reach: nothing is marked
-  const none = generateOffers({ ...base, weapons: [{ weaponId: 'ember_bow', level: 2, instanceId: 1 }] }, createRng(5));
-  assert.ok(none.every((o) => !o.evo));
-  assert.ok(EVO_BOOST > 1 && EVO_BOOST <= 2.5, 'a slight preference, not a lock');
-});
 
 test('pacing: goblins are slower than before and late spawn rates ramp up', () => {
   assert.ok(ENEMIES.goblin.speed <= 62);

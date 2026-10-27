@@ -7,6 +7,7 @@ import { SHRINE } from '../data/forge.js';
 // The least crowded of several random candidates wins.
 // `at` ({x, y}) places it exactly (the boss shrine); `force` ignores maxActive.
 export function spawnShrine(run, ttl = SHRINE.ttl, at = null, force = false) {
+  if (run.rigRun) return null;                              // the workbench shrines come in M5; until then a rig run has none
   if (!force && run.shrines.length >= SHRINE.maxActive) return null;
   if (at) {
     const s = { x: at.x, y: at.y, ttl, maxTtl: ttl, progress: 0 };

@@ -10,7 +10,6 @@ import { BEHAVIORS } from '../src/behaviors/index.js';
 import { TEMPERS_BY_BEHAVIOR, ENHANCE } from '../src/data/forge.js';
 import { temperOptions, chooseTemper } from '../src/game/forge.js';
 import { validateData } from '../src/data/validate.js';
-import { buildEntries } from '../src/game/compendium.js';
 import { queueDamage, KIND_HIT } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
 
@@ -65,7 +64,3 @@ test('Crushing: every direct hit staggers the target (half on a boss); Flurry do
   assert.equal(e2.stunT, 0);
 });
 
-test('the compendium lists the shape tempers', () => {
-  const ids = buildEntries({ fusions: [] }).filter((e) => e.tab === 'forge').map((e) => e.id);
-  for (const id of ['temper:5:crushing', 'temper:10:quaking', 'temper:5:longshot', 'temper:10:warband']) assert.ok(ids.includes(id), id);
-});

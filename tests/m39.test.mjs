@@ -12,7 +12,6 @@ import { EVOLUTIONS } from '../src/data/evolutions.js';
 import { evolve, canEvolve } from '../src/game/evolution.js';
 import { levelUpWeapon } from '../src/game/weapons.js';
 import { addPassive, findPassive, levelUpPassive } from '../src/game/passives.js';
-import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 
 const VIEW = { w: 480, h: 1040 };
 const newRun = (classId = 'archer') => {
@@ -124,16 +123,6 @@ test('m39 salvage drops the charges with the weapon; a fusion passes the donor\'
   assert.ok(!run.player.weapons.includes(other));
 });
 
-test('m39 charges survive a snapshot and a resume', () => {
-  const a = newRun('mage');
-  const inst = at(a.player.weapons[0], 11);
-  a.starsteel = 1;
-  quench(a, inst);
-  assert.equal(inst.quench, 2);
-  const snap = JSON.parse(JSON.stringify(snapshotRun(a)));
-  const b = restoreRun(snap, { view: VIEW, debug: { god: true }, sfx: () => {} });
-  assert.equal(b.player.weapons[0].quench, 2);
-});
 
 test('m39 charges survive evolving, and a combo partner\'s charges join the survivor', () => {
   const run = newRun('smith');

@@ -9,7 +9,6 @@ import { masterworkFor, fusionOptions, canFusion, fuse, previewFusion } from '..
 import { MASTERWORKS, FUSION } from '../src/data/fusions.js';
 import { validateData } from '../src/data/validate.js';
 import { createSave, normalize } from '../src/save/save.js';
-import { buildEntries } from '../src/game/compendium.js';
 import { rollReforge, applyReforge } from '../src/game/forge.js';
 import { EFFECTS } from '../src/effects/index.js';
 
@@ -171,21 +170,6 @@ test('Seraph Titan heals on kills', () => {
   assert.ok(run.player.hp > 50, 'healed');
 });
 
-test('discovery: the save keeps found masterworks and the compendium reveals them', () => {
-  const store = new Map();
-  const st = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v) };
-  const save = createSave(st);
-  assert.equal(save.data.version, 3);
-  assert.equal(save.discoverFusion('thunderscythe'), true);
-  assert.equal(save.discoverFusion('thunderscythe'), false);
-  assert.deepEqual(createSave(st).data.discovered.fusions, ['thunderscythe']);
-  assert.deepEqual(normalize({ discovered: { fusions: ['a', 7, 'a'] } }).discovered.fusions, ['a']);
-  assert.deepEqual(normalize({ version: 2 }).discovered.fusions, []);
-  const entries = buildEntries(save.data.discovered).filter((e) => e.tab === 'fusions');
-  assert.ok(entries.some((e) => e.name === 'Thunderscythe'));
-  assert.ok(entries.some((e) => /\+ \?\?\?$/.test(e.name)), 'unfound ones are hidden');
-  assert.ok(entries[0].name.includes('1 / 16'));
-});
 
 test('orbiting blades hit an enemy sitting on their path, not only at tick instants', () => {
   const run = newRun(3);

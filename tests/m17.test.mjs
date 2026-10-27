@@ -2,7 +2,6 @@
 import { test } from './harness.mjs';
 import assert from 'node:assert/strict';
 import { createSave, normalize, entryFromSummary, HISTORY_CAP, DEFAULTS } from '../src/save/save.js';
-import { encodeSave, decodeSave, describeSave } from '../src/save/transfer.js';
 
 function fakeStorage() {
   const m = new Map();
@@ -71,62 +70,10 @@ test('god-mode style: a save with no history defaults are untouched', () => {
   assert.deepEqual(DEFAULTS.history, []);
 });
 
-test('export then import round-trips the whole save', async () => {
-  const save = createSave(fakeStorage());
-  save.unlock('smith');
-  for (let i = 0; i < 30; i++) save.recordRun(summary({ kills: i }), i);
-  const code = await encodeSave(save.data);
-  assert.match(code, /^OCZ?1\.[0-9a-f]{8}\.[A-Za-z0-9_-]+$/);
-  const back = await decodeSave(code);
-  assert.deepEqual(back, save.data);
-});
 
-test('the code is tolerant of pasted whitespace and line breaks', async () => {
-  const save = createSave(fakeStorage());
-  save.recordRun(summary(), 1);
-  const code = await encodeSave(save.data);
-  const messy = '  ' + code.replace(/(.{40})/g, '$1\n') + ' \n';
-  assert.deepEqual(await decodeSave(messy), save.data);
-});
 
-test('damaged, truncated or foreign text is rejected with a readable message', async () => {
-  const code = await encodeSave(createSave(fakeStorage()).data);
-  await assert.rejects(decodeSave(''), /does not look like/);
-  await assert.rejects(decodeSave('hello world'), /does not look like/);
-  await assert.rejects(decodeSave(code.slice(0, -6)), /damaged or cut short/);
-  const flipped = code.slice(0, -3) + (code.endsWith('A') ? 'BBB' : 'AAA');
-  await assert.rejects(decodeSave(flipped), /damaged or cut short/);
-});
 
-test('an import is re-validated: bad fields in a valid-looking code are dropped', async () => {
-  const evil = { version: 2, lastClass: 5, unlocked: ['smith', 7], bests: { time: -5, kills: 9, level: 'x' }, runs: 'many', history: [{ cls: 'smith' }], sound: 'yes' };
-  const payload = Buffer.from(JSON.stringify(evil)).toString('base64url');
-  // plain OC1 code with a correct checksum, built the same way the encoder does
-  let h = 0x811c9dc5;
-  for (let i = 0; i < payload.length; i++) { h ^= payload.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  const out = await decodeSave(`OC1.${h.toString(16).padStart(8, '0')}.${payload}`);
-  assert.equal(out.lastClass, 'archer');
-  assert.deepEqual(out.unlocked, ['smith']);
-  assert.equal(out.bests.time, 0);
-  assert.equal(out.bests.kills, 9);
-  assert.equal(out.runs, 0);
-  assert.deepEqual(out.history, []);
-});
 
-test('replaceAll swaps the save and persists it', async () => {
-  const st = fakeStorage();
-  const a = createSave(st);
-  a.recordRun(summary(), 1);
-  const other = createSave(fakeStorage());
-  other.unlock('mage');
-  other.recordRun(summary({ kills: 99 }), 2);
-  other.recordRun(summary({ kills: 98 }), 3);
-  a.replaceAll(await decodeSave(await encodeSave(other.data)));
-  assert.equal(a.data.history.length, 2);
-  assert.deepEqual(a.data.unlocked, ['mage']);
-  assert.equal(createSave(st).data.history.length, 2);
-  assert.deepEqual(describeSave(a.data), { runs: 2, wins: 2, unlocked: 1, history: 2, bests: a.data.bests });
-});
 
 test('run.summary carries the build ids for the history', async () => {
   const { createRun } = await import('../src/game/run.js');
@@ -138,19 +85,3 @@ test('run.summary carries the build ids for the history', async () => {
   assert.equal(e.cls, 'archer');
 });
 
-test('history model: filters, summary and display names', async () => {
-  const { filterHistory, classesIn, summarize, buildNames, className } = await import('../src/game/history.js');
-  const mk = (cls, won, level, t) => entryFromSummary(summary({ classId: cls, won, level, build: { weapons: [['ember_bow', 3]], passives: [['keen_whetstone', 2]], perks: [['wildfire', 1], ['gone_perk', 2]] } }), t);
-  const h = [mk('archer', false, 5, 1), mk('smith', true, 9, 2), mk('archer', true, 11, 3)];
-  assert.deepEqual(filterHistory(h, {}).map((e) => e.t), [3, 2, 1], 'newest first');
-  assert.deepEqual(filterHistory(h, { cls: 'archer' }).map((e) => e.t), [3, 1]);
-  assert.deepEqual(filterHistory(h, { cls: 'archer', winsOnly: true }).map((e) => e.t), [3]);
-  assert.deepEqual(classesIn(h), ['archer', 'smith']);
-  const s = summarize(h);
-  assert.equal(s.runs, 3); assert.equal(s.wins, 2); assert.equal(s.bestLevel, 11);
-  assert.deepEqual(summarize([]), { runs: 0, wins: 0, winRate: 0, avgLevel: 0, avgKills: 0, bestTime: 0, bestKills: 0, bestLevel: 0 });
-  const b = buildNames(h[0]);
-  assert.equal(b.weapons[0], 'Ember Bow 3');
-  assert.equal(b.perks[1], 'gone_perk 2', 'an id that no longer exists falls back to the raw id');
-  assert.equal(className('smith'), 'Smith');
-});

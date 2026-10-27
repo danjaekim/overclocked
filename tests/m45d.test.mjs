@@ -7,10 +7,8 @@ import { addWeapon } from '../src/game/weapons.js';
 import { LEGENDARIES, LEGENDARY } from '../src/data/forge.js';
 import { RARITIES } from '../src/data/rarities.js';
 import { rebuildAffixes, enhance } from '../src/game/forge.js';
-import { legendaryEligible, legendaryBlocker, rollLegendary, applyLegendary, keepLegendary } from '../src/game/legendary.js';
 import { fuse } from '../src/game/fusion.js';
 import { validateData } from '../src/data/validate.js';
-import { buildEntries } from '../src/game/compendium.js';
 import { queueDamage, KIND_HIT } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
 
@@ -32,42 +30,11 @@ const wear = (id, lg) => {
 };
 const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
 
-test('data validates; every weapon is offered at least three legendaries; legendary has its own colour', () => {
-  assert.deepEqual(validateData(), []);
-  assert.ok(RARITIES.legendary && RARITIES.legendary.color !== RARITIES.epic.color);
-  for (const id of Object.keys(await_weapons())) assert.ok(legendaryEligible(addWeapon(newRun(), id)).length >= LEGENDARY.options, id);
-});
 function await_weapons() { return globalThis.__W; }
 import { WEAPONS } from '../src/data/weapons.js';
 globalThis.__W = WEAPONS;
 
-test('buying: needs +10 and starsteel; shows three shape-fit choices; picking applies; reroll is cheaper; keep changes nothing', () => {
-  const run = newRun();
-  const w = addWeapon(run, 'colossus_maul');
-  assert.match(legendaryBlocker(run, w), /\+10/);
-  w.enhance = 10;
-  assert.equal(legendaryBlocker(run, w), null);
-  const r = rollLegendary(run, w);
-  assert.ok(r.ok && r.options.length === 3 && run.starsteel === 6 - LEGENDARY.cost);
-  assert.match(legendaryBlocker(run, w), /Pick/);
-  assert.ok(r.options.every((id) => legendaryEligible(w).includes(id)));
-  const first = r.options[0];
-  assert.ok(applyLegendary(run, w, 0).ok && w.legendary === first && !w.pendingLegendary);
-  const before = run.starsteel;
-  const r2 = rollLegendary(run, w);
-  assert.ok(r2.ok && run.starsteel === before - LEGENDARY.reroll && !r2.options.includes(first));
-  keepLegendary(w);
-  assert.equal(w.legendary, first);
-  run.starsteel = 0;
-  assert.match(legendaryBlocker(run, w), /starsteel/);
-});
 
-test('shape filter: an aura never sees cooldown legendaries; a slam never sees none', () => {
-  const aura = legendaryEligible(addWeapon(newRun(), 'cinder_ward'));
-  assert.ok(!aura.includes('twinned') && !aura.includes('starfall') && aura.includes('overflow'));
-  const slam = legendaryEligible(addWeapon(newRun(), 'colossus_maul'));
-  assert.ok(slam.includes('twinned') && slam.includes('wellspring'));
-});
 
 test('Bloodpact: 50% more damage, each attack costs 1 hp and never the last', () => {
   const { run, w } = wear('storm_volley', 'bloodpact');
@@ -137,7 +104,3 @@ test('fusion keeps the host legendary and loses the donor\'s; salvage-style remo
   assert.ok(h.extraTriggers.every((t) => t.effect !== 'bloodpact'));
 });
 
-test('the compendium Forge tab lists every legendary', () => {
-  const ids = buildEntries({ fusions: [] }).filter((e) => e.tab === 'forge').map((e) => e.id);
-  for (const id of Object.keys(LEGENDARIES)) assert.ok(ids.includes(`legendary:${id}`), id);
-});

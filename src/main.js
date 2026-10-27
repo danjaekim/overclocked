@@ -11,7 +11,6 @@ import { createDebug, readParams } from './debug/debug.js';
 import { setNumberStyle } from './render/fx.js';
 import { validateData } from './data/validate.js';
 import { createSave, browserStorage } from './save/save.js';
-import { createRunSave } from './save/run-save.js';
 import { createAudio } from './audio/audio.js';
 import { preloadSprites } from './render/sprites.js';
 
@@ -39,8 +38,7 @@ const input = createInput(canvas, { onPause: () => game && game.togglePause(), o
 const save = createSave(browserStorage());
 const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume, sfxVolume: save.data.sfxVolume });
 debug.audioState = () => audio.state;
-const runSave = createRunSave(browserStorage());
-game = createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio, sandboxHost: sandboxEl });
+game = createGame({ view, input, overlays, rotate, debug, params, save, audio, sandboxHost: sandboxEl });
 
 // a soft tick on every menu button
 document.getElementById('ui').addEventListener('click', (e) => {

@@ -5,6 +5,7 @@ import { fmtTime } from '../ui/overlay.js';
 import { xpToNext } from '../game/xp.js';
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { TEST_CHAINS } from '../rig/presets.js';
+import { drawChestArrows } from './shrines.js';
 
 const SLOT = 34;
 const GAP = 4;
@@ -41,7 +42,36 @@ export function drawSandboxHud(ctx, view, run) {
 
   if (run.rig) {
     const rows = run.rig.chains;
-    for (let i = 0; i < rows.length; i++) drawStrip(ctx, run, rows[i], 12, y0 + bh + 32 + i * (SLOT + 34));
+    for (let i = 0; i < rows.length; i++) drawStrip(ctx, run, rows[i], 12, y0 + bh + 32 + i * (SLOT + (run.rigRun ? 22 : 34)));
+  }
+
+  const boss = run.boss;                                         // the boss bar, along the bottom: the top is the rig strips
+  if (boss) {
+    const bwid = 220;
+    const bx0 = view.w / 2 - bwid / 2;
+    const by0 = view.h - 34;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(bx0, by0, bwid, 10);
+    ctx.fillStyle = '#c0392b';
+    ctx.fillRect(bx0, by0, bwid * Math.max(0, boss.hp / boss.maxHp), 10);
+    ctx.fillStyle = '#e8e6df';
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(boss.def.name, view.w / 2, by0 - 2);
+  }
+  if (run.rigRun) drawChestArrows(ctx, view, run);                // an elite's chest waits where it fell: an arrow points at it
+  if (run.toast) {
+    ctx.globalAlpha = Math.min(1, run.toast.ttl * 2);
+    ctx.fillStyle = '#ffd34d';
+    ctx.font = '700 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = 4;
+    ctx.strokeText(run.toast.text, view.w / 2, view.h * 0.62);
+    ctx.fillText(run.toast.text, view.w / 2, view.h * 0.62);
+    ctx.globalAlpha = 1;
   }
 
   const s = 30;                                                  // pause button (top-right), where input.js looks for it
@@ -114,8 +144,8 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.fillStyle = k < pool ? '#ffd34d' : 'rgba(255,255,255,0.18)';
     ctx.fillRect(x + k * 9, y + SLOT + 5, 7, 7);
   }
-  const label = chain.def.key ? TEST_CHAINS[chain.def.key].name : 'Custom';
-  {                                                   // the chain's name, under its strip
+  const label = chain.def.key ? TEST_CHAINS[chain.def.key].name : run.rigRun ? '' : 'Custom';
+  if (label) {                                                   // the chain's name, under its strip
     ctx.fillStyle = color;
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.textAlign = 'left';

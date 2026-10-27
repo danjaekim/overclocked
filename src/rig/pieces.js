@@ -104,3 +104,12 @@ export const RULES = {
   reaper: { name: 'Reaper', on: 'kill', gap: 0.25, desc: 'On any kill, at most 4 times a second', short: 'kills' },
   spite: { name: 'Spite', on: 'hurt', gap: 0.4, desc: 'When you take damage', short: 'hurt' },
 };
+
+// Passive stats an offer can give (about 1 offer in 6). Each pick adds one step; the rig keeps the counts
+// (rig.stats) and game/sandbox.js applyRig turns them into stat modifiers.
+export const RIG_STATS = {
+  speed: { name: 'Swift feet', desc: '+8% move speed', mod: { stat: 'moveSpeed', op: 'inc', value: 0.08 } },
+  hp: { name: 'Tough hide', desc: '+15 max HP', mod: { stat: 'maxHp', op: 'flat', value: 15 } },
+  magnet: { name: 'Magnet', desc: '+25% pickup range', mod: { stat: 'pickupRadius', op: 'inc', value: 0.25 } },
+  armor: { name: 'Plating', desc: '+1 armor', mod: { stat: 'armor', op: 'flat', value: 1 } },
+};

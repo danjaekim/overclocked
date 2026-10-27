@@ -1,12 +1,14 @@
 // The rig as the editor sees it, and the moves the editor makes. Pure data in, new data out: nothing here
 // touches the engine, so the rules can be tested without a run.
 //
-//   rig  { cap, chains: [{ rule, slots: [piece id | null] * cap, key }], bench: [piece id | null] * BENCH }
+//   rig  { cap, chains: [{ rule, slots: [piece id | null], key, bonus }], bench: [piece id | null] * BENCH, levels, stats }
+//        A chain has as many slots as it has unlocked (3 to cap in a run, cap in the sandbox); bonus is extra energy.
+//        levels is { piece id: 2..5 } (all copies of a piece share a level); stats is { RIG_STATS id: times taken }.
 //
 // A location is { kind: 'slot', c, i } | { kind: 'bench', i }. A drop target may also be a gap,
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
-import { PIECES } from './pieces.js';
+import { PIECES, RULES, DEFAULT_ENERGY, MAX_CHAINS, MAX_LEVEL } from './pieces.js';
 
 export const BENCH = 3;
 export const SLOTS = 6;
@@ -14,8 +16,10 @@ export const SLOTS = 6;
 export function newRig(chainDefs, cap = SLOTS) {
   return {
     cap,
-    chains: chainDefs.map((d) => ({ rule: d.rule, key: d.key || null, slots: padSlots(d.slots, cap) })),
+    chains: chainDefs.map((d) => ({ rule: d.rule, key: d.key || null, bonus: d.bonus || 0, slots: padSlots(d.slots, d.size || cap) })),
     bench: new Array(BENCH).fill(null),
+    levels: {},
+    stats: {},
   };
 }
 
@@ -26,7 +30,7 @@ export function padSlots(slots, cap = SLOTS) {
 }
 
 export function cloneRig(rig) {
-  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice() };
+  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats } };
 }
 
 export function pieceAt(rig, loc) {
@@ -146,6 +150,61 @@ function appendTo(rig, c, id) {
   return { kind: 'slot', c, i };
 }
 
+// What the engine and the analyzer read for chain c: its rule card, slots, energy pool and the piece levels.
+export function chainDefOf(rig, c) {
+  const ch = rig.chains[c];
+  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: DEFAULT_ENERGY + (ch.bonus || 0), levels: rig.levels };
+}
+
 export function chainDefsOf(rig) {
-  return rig.chains.map((c) => ({ rule: c.rule, slots: c.slots, key: c.key }));
+  return rig.chains.map((_, c) => chainDefOf(rig, c));
+}
+
+// ---- levels and capacity: pure, each returns a new rig ----
+
+export const pieceLevel = (rig, id) => (rig.levels && rig.levels[id]) || 1;
+
+export function owned(rig) {
+  const ids = new Set(rig.bench.filter(Boolean));
+  for (const c of rig.chains) for (const id of c.slots) if (id) ids.add(id);
+  return ids;
+}
+
+export function levelUp(rig, id) {
+  const next = cloneRig(rig);
+  next.levels[id] = Math.min(MAX_LEVEL, pieceLevel(rig, id) + 1);
+  return next;
+}
+
+export function takeStat(rig, id) {
+  const next = cloneRig(rig);
+  next.stats[id] = (next.stats[id] || 0) + 1;
+  return next;
+}
+
+// The chain a +1 slot would go to: the one with the fewest slots (the first, on a tie), or -1 when all are full.
+export function slotTarget(rig) {
+  let best = -1;
+  rig.chains.forEach((c, i) => { if (c.slots.length < rig.cap && (best < 0 || c.slots.length < rig.chains[best].slots.length)) best = i; });
+  return best;
+}
+
+export function addSlot(rig, c) {
+  if (rig.chains[c].slots.length >= rig.cap) return null;
+  const next = cloneRig(rig);
+  next.chains[c].slots.push(null);
+  return next;
+}
+
+export function addChain(rig, rule, size = 3) {
+  if (rig.chains.length >= MAX_CHAINS || !RULES[rule]) return null;
+  const next = cloneRig(rig);
+  next.chains.push({ rule, key: null, bonus: 0, slots: padSlots([], size) });
+  return next;
+}
+
+export function addEnergy(rig, c, n = 3) {
+  const next = cloneRig(rig);
+  next.chains[c].bonus = (next.chains[c].bonus || 0) + n;
+  return next;
 }

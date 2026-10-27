@@ -8,7 +8,7 @@ import { addPerk } from '../src/game/perks.js';
 import { queueDamage, KIND_PROC, KIND_DOT, CAUSE } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
 import { statsSnapshot, recentDps } from '../src/game/run-stats.js';
-import { buildHtml, resultsDamageHtml } from '../src/ui/build.js';
+import { resultsDamageHtml } from '../src/ui/damage.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -69,14 +69,10 @@ test('stats: evolution keeps the record under the new name; salvage marks it gon
   assert.equal(statsSnapshot(run).weapons[0].gone, false);
 });
 
-test('build panel renders every section without throwing, with and without damage', () => {
+test('the results damage breakdown renders, and is empty without stats', () => {
   const run = newRun();
-  addPerk(run, 'kindling');
   addWeapon(run, 'cinder_ward');
   tick(run, 3);
-  const html = buildHtml(run);
-  assert.ok(html.includes('Weapons') && html.includes('Techniques') && html.includes('Kindling'));
-  assert.ok(buildHtml(run, { withDamage: false }).length > 0);
   assert.equal(resultsDamageHtml(null), '');
-  assert.ok(resultsDamageHtml(run.summary().stats).includes('By weapon') || run.summary().stats.total === 0);
+  assert.ok(resultsDamageHtml(run.summary().stats).includes('By piece') || run.summary().stats.total === 0);
 });

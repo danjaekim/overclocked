@@ -8,7 +8,6 @@ import { addWeapon, levelUpWeapon, canLevelUp } from '../src/game/weapons.js';
 import { MUTATIONS, STARFORGE } from '../src/data/starforge.js';
 import { validateData } from '../src/data/validate.js';
 import { starforge, mutationOf } from '../src/game/starforge.js';
-import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 
 const VIEW = { w: 480, h: 1040 };
 const STEP = 1 / 60;
@@ -187,17 +186,3 @@ test('m41 pulse wake: patches of a starred trail send a cyan ring as they fade',
   for (let i = 0; i < 60 * 6; i++) { step(plain); assert.ok(!plain.hazards.some((h) => h.pulse || h.color === STARFORGE.color)); }
 });
 
-test('m41 stars survive a snapshot with the new state in flight (echoes, marks, pulses)', () => {
-  const run = newRun();
-  const a = maxed(run, ALL.arc);
-  const r = maxed(run, ALL.rod);
-  const t = maxed(run, ALL.trail);
-  run.starsteel = 6;
-  for (const w of [a, r, t]) starforge(run, w);
-  arena(run, [40, 80]);
-  tick(run, 60 * 2);
-  const snap = snapshotRun(run);
-  const back = restoreRun(JSON.parse(JSON.stringify(snap)), { view: VIEW });
-  assert.ok(back.player.weapons.every((w) => w.star));
-  tick(back, 60);
-});

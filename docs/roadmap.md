@@ -1,6 +1,6 @@
 # Roadmap after the prototype (M9 onward)
 
-> **Overclocked.** This roadmap (M9 onward) is Overforged's. Overclocked has its own milestones, M0 to M5, in `docs/overclocked-spec.md`. Status: M0 (setup) is done; M1 (chain engine) is built (v0.0.3, `src/rig/`, `tests/rig.test.mjs`). M2 (the sandbox, v0.2.1 and v0.2.2) is done. M3 (the rig editor, v0.3.1) is built and waiting for a phone test.
+> **Overclocked.** This roadmap (M9 onward) is Overforged's. Overclocked has its own milestones, M0 to M5, in `docs/overclocked-spec.md`. Status: M0 (setup) is done; M1 (chain engine) is built (v0.0.3, `src/rig/`, `tests/rig.test.mjs`). M2 (the sandbox, v0.2.1 and v0.2.2) is done. M3 (the rig editor, v0.3.1 to v0.3.3) is done. M4 (the first test build, v0.4.1 and v0.4.2) is built: the default boot is the full run; the old title, class, forge, compendium, history and backup screens are removed. Bots do not finish a run yet, so the first balance pass (M5) comes next.
 
 The prototype milestones (M0 to M8, `docs/architecture.md` §10) are done: the loop, two open classes plus
 the Berserker, five weapons, the forge, shrines, evolutions, a boss, titles, saving and install support.

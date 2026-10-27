@@ -46,7 +46,7 @@ export function killEnemy(run, e) {
     }
   }
   spawnGem(run, e.x, e.y, e.def.xp * (e.elite ? ELITE.xpMult : 1));
-  const ore = e.def.ore;
+  const ore = run.rigRun ? null : e.def.ore;                 // ore has no use in a rig run until the workbench (M5)
   if (ore && ORES[ore.type].bank === 'starsteel') {
     run.starsteel += ore.count || 1;               // starsteel is banked at once, so the boss chest can use it
   } else if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {

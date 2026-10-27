@@ -3,7 +3,8 @@
 
 import { TEST_CHAINS } from '../rig/presets.js';
 
-export function mountSandboxPanel(host, { getKeys, onPick, onEdit, onLevel }) {
+// With no getKeys (the real run) only the Rig tab shows: it opens the editor.
+export function mountSandboxPanel(host, { getKeys = null, onPick, onEdit, onLevel }) {
   host.innerHTML = '';
   const tab = document.createElement('button');
   tab.className = 'sbx-tab';
@@ -14,7 +15,10 @@ export function mountSandboxPanel(host, { getKeys, onPick, onEdit, onLevel }) {
   const edit = document.createElement('button');
   edit.className = 'sbx-tab sbx-edit';
   edit.textContent = 'Rig';
-  host.append(panel, tab, edit);
+  host.append(panel);
+  if (getKeys) host.append(tab);
+  else edit.style.left = '8px';
+  host.append(edit);
 
   function render() {
     const keys = getKeys();
