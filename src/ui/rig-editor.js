@@ -8,6 +8,7 @@ import { analyzeChain } from '../rig/chain.js';
 import { cloneRig, moveTo, pieceAt, placeSuggested, sameLoc, chainDefsOf, BENCH } from '../rig/editor.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const icon = (p, px) => `<svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="${px}" height="${px}"><path d="${p.icon}"/></svg>`;
 
 // opts: { rig, offers: [piece id] | null, onDone(rig) }
 export function showRigEditor(overlays, { rig, offers, onDone }) {
@@ -28,7 +29,7 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
     if (p && reasons && reasons.has(loc.i)) cls.push('dead');
     if (sel && sameLoc(sel, loc)) cls.push('sel');
     if (suggest && sameLoc(suggest, loc)) cls.push('suggest');
-    return `<button class="${cls.join(' ')}" data-act="${act}">${p ? `<b>${p.glyph}</b><i>${p.cost}</i>` : ''}</button>`;
+    return `<button class="${cls.join(' ')}" data-act="${act}">${p ? `${icon(p, 24)}<b>${esc(p.short)}</b><i>${p.cost}</i>` : ''}</button>`;
   }
 
   function chainHtml(c, ci) {
@@ -44,8 +45,8 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
     const first = [...a.reasons.entries()].sort((x, y) => x[0] - y[0])[0];
     const why = first ? ` <span class="why">Greyed: ${esc(PIECES[def.slots[first[0]]].name)} (${esc(first[1])})</span>` : '';
     return `<div class="rstrip"><span class="rbadge" style="background:${CHAIN_COLORS[ci]}">${CHAIN_NAMES[ci]}</span>
-      <span class="rrule">${esc(RULES[def.rule].name)}</span><div class="rslots">${row}</div></div>
-      <div class="rpreview">${esc(a.text)}${why}</div>`;
+      <div class="rslots">${row}</div></div>
+      <div class="rpreview"><b>${esc(RULES[def.rule].name)}</b> \u00b7 ${esc(a.text)}${why}</div>`;
   }
 
   function render() {
@@ -55,12 +56,12 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
     let hint;
     if (sel) {
       const p = piece(pieceAt(st, sel));
-      hint = `<b>${esc(p.name)}</b> (${p.cost}): ${esc(p.desc)}. Tap a slot to swap, or a gap to insert.`;
+      hint = `<b>${esc(p.name)}</b> (${p.type}, costs ${p.cost}): ${esc(p.desc)}. Tap a slot to swap, or a gap to insert.`;
     } else hint = note || 'Tap a piece, then tap where it goes.';
     const cards = pending
       ? `<div class="rcards">${pending.map((id, k) => {
         const p = PIECES[id];
-        return `<button class="rcard ${p.type}" data-act="offer:${k}"><b>${esc(p.name)}</b><span>${esc(p.type)} · ${p.cost}</span><em>${esc(p.desc)}</em></button>`;
+        return `<button class="rcard ${p.type}" data-act="offer:${k}">${icon(p, 30)}<b>${esc(p.name)}</b><span>${esc(p.type)} · ${p.cost}</span><em>${esc(p.desc)}</em></button>`;
       }).join('')}</div>`
       : '';
     overlays.show(`
@@ -69,7 +70,7 @@ export function showRigEditor(overlays, { rig, offers, onDone }) {
         <button class="rbtn" data-act="reset">Reset</button>
         <button class="rbtn primary" data-act="done"${pending ? ' disabled' : ''}>Done</button></div>
       ${cards}${chains}
-      <div class="rbench"><span class="rlabel">Bench</span>${bench}</div>
+      <div class="rbench">${bench}<span class="rlabel">Bench: spare pieces</span></div>
       <div class="rhint">${pending ? 'Pick one of three pieces.' : hint}</div>`, onAct, 'sheet');
   }
 

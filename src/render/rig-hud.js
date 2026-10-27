@@ -6,7 +6,7 @@ import { xpToNext } from '../game/xp.js';
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 
-const SLOT = 30;
+const SLOT = 34;
 const GAP = 4;
 const TYPE_COLOR = { weapon: '#e8a33d', modifier: '#5ec8d8', trigger: '#b98cff' };
 const FLASH = 0.35;
@@ -100,9 +100,12 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.strokeStyle = lit > 0 ? '#ffffff' : TYPE_COLOR[piece.type];
     ctx.lineWidth = lit > 0 ? 2 : 1;
     ctx.strokeRect(sx + 0.5, y + 0.5, SLOT - 1, SLOT - 1);
+    drawIcon(ctx, piece, sx + (SLOT - 20) / 2, y + 2, 20);
     ctx.fillStyle = '#fff';
-    ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText(piece.glyph, sx + SLOT / 2, y + SLOT / 2 + 1);
+    ctx.font = '700 8px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(piece.short, sx + SLOT / 2, y + SLOT - 3);
     ctx.globalAlpha = 1;
   }
 
@@ -119,4 +122,26 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.textBaseline = 'top';
     ctx.fillText(label, x, y + SLOT + 15);
   }
+}
+
+// A piece's icon (rig/pieces.js, SVG path data on a 24-unit square) at (x, y), size px, in white.
+const paths = new Map();
+function drawIcon(ctx, piece, x, y, px) {
+  let p = paths.get(piece);
+  if (!p) paths.set(piece, p = new Path2D(piece.icon));
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(px / 24, px / 24);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (piece.filled) {
+    ctx.globalAlpha *= 0.3;
+    ctx.fillStyle = '#fff';
+    ctx.fill(p);
+    ctx.globalAlpha /= 0.3;
+  }
+  ctx.stroke(p);
+  ctx.restore();
 }
