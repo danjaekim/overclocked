@@ -6,7 +6,7 @@
 //   modifier  held, then applied to the next weapon only
 //   trigger   attaches to the weapon before it; everything to its right is the payload it runs later
 
-export const DEFAULT_ENERGY = 10;
+export const DEFAULT_ENERGY = 16;       // a chain's energy pool: it was 10, which six slots could not afford (v0.3.3)
 
 // Scatter: the next weapon fires `copies` attacks at `mult` power each, spread out: on a ring of radius `ring` around the origin, and aimed `fan` radians apart.
 export const SCATTER = { copies: 5, mult: 0.25, ring: 28, fan: 0.15 };

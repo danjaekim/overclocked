@@ -29,7 +29,9 @@ export function createInput(canvas, { onPause = () => {}, onBuild = () => {} } =
   document.addEventListener('visibilitychange', reset);
 
   // Block page zoom / long-press menus on iOS.
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => e.preventDefault());
+  // Safari ignores the viewport's user-scalable=no; a two-finger touchmove is the pinch itself.
+  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   canvas.addEventListener('pointerdown', (e) => {

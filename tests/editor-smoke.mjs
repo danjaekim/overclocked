@@ -36,6 +36,33 @@ await page.click('[data-act="offer:0"]');
 await shot('e5-placed.png');
 await page.click('[data-act="done"]'); await page.waitForTimeout(300);
 const f = await info(); if (f.state !== 'run') fail('offer Done did not resume');
-console.log('ok', JSON.stringify(f), m);
+// drag a piece onto the edge between two others: the preview slides, the drop inserts
+await page.click('.sbx-edit'); await page.waitForSelector('.overlay.sheet');
+const before = (await info()).slots[0];
+const box = async (sel) => (await page.locator(sel).first().boundingBox());
+const src = await box('[data-act="slot:0:2"]'); const dst = await box('[data-act="slot:0:0"]');
+await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2); await page.mouse.down();
+await page.mouse.move(dst.x + 4, dst.y + dst.height / 2, { steps: 8 });
+if (!(await page.locator('.dragghost').count())) fail('no drag ghost');
+if (!(await page.locator('.slot.ghost').count())) fail('no insert preview while dragging over an edge');
+await shot('e6-drag.png');
+await page.mouse.up(); await page.waitForTimeout(150);
+await page.click('[data-act="done"]'); await page.waitForTimeout(300);
+const g = await info(); if (g.slots[0] === before) fail('drag did not change the chain: ' + g.slots[0]);
+// a full rig: take an offer with no room -> replace banner, skip
+await page.evaluate(() => { const r = window.__overclocked.game.run; r.rigState.chains.forEach((c) => c.slots.forEach((s, i) => { if (!s) c.slots[i] = 'blaster'; })); r.rigState.bench.forEach((s, i) => { if (!s) r.rigState.bench[i] = 'blaster'; }); });
+await page.click('.sbx-tab'); await page.click('[data-level]'); await page.waitForSelector('.rcard');
+await page.click('[data-act="offer:0"]');
+if (!(await page.locator('.rfull').count())) fail('no full-rig banner');
+await shot('e7-full.png');
+await page.click('[data-act="skip"]');
+if (await page.locator('.rcard').count()) fail('skip left offers up');
+await page.click('[data-act="slot:0:0"]'); await page.click('[data-act="sell"]');
+const sl = await page.evaluate(() => window.__overclocked.game.run.rigState.chains[0].slots[0]);
+await page.click('[data-act="done"]'); await page.waitForTimeout(300);
+// pinch zoom is off at the root
+const ta = await page.evaluate(() => getComputedStyle(document.body).touchAction);
+if (ta !== 'pan-x pan-y') fail('body touch-action ' + ta);
+console.log('ok', JSON.stringify(f), m, 'sold->', sl);
 if (errs.length) { console.log('console errors', errs); process.exit(1); }
 await b.close(); server.close();

@@ -19,9 +19,9 @@ const newRun = () => {
 };
 const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
 const tick = (run, s, move = { x: 0, y: 0 }) => { for (let i = 0; i < Math.round(s / STEP); i++) run.update(STEP, move); };
-const rigWith = (key, opts = {}) => {
+const rigWith = (key, opts = {}) => {      // the pool is pinned to 10, which the numbers below were worked out for (the game default is 16)
   const run = newRun();
-  const rig = installRig(run, [{ ...TEST_CHAINS[key], ...opts }], { log: true });
+  const rig = installRig(run, [{ ...TEST_CHAINS[key], energy: 10, ...opts }], { log: true });
   return { run, rig, chain: rig.chains[0] };
 };
 const events = (rig, ev, piece) => rig.log.filter((l) => l.ev === ev && (piece === undefined || l.piece === piece));
@@ -208,7 +208,7 @@ test('with no enemy in range a piece does not fire and spends nothing', () => {
 
 test('a second chain runs on its own timer and pool', () => {
   const run = newRun();
-  const rig = installRig(run, [TEST_CHAINS.blaster, { rule: 'pulse', slots: ['nova'] }], { log: true });
+  const rig = installRig(run, [{ ...TEST_CHAINS.blaster, energy: 10 }, { rule: 'pulse', slots: ['nova'], energy: 10 }], { log: true });
   dummy(run, 90, 0);
   tick(run, 0.4);
   const acts = events(rig, 'activate');

@@ -43,18 +43,32 @@ export const sameLoc = (a, b) => a.kind === b.kind && a.i === b.i && a.c === b.c
 
 // Moves the piece at `from` to `to`. A slot or bench target swaps with whatever is there; a gap target
 // inserts, pushing the pieces to its right along into the nearest empty slot (or the left, if there is none
-// on the right). Returns the new rig, or null when the move is not possible (nothing to move, or no room).
-export function moveTo(rig, from, to) {
+// on the right). Returns { rig, landed } (the new rig and where the piece ended up), or null when the move is
+// not possible (nothing to move, or no room).
+export function planMove(rig, from, to) {
   const id = pieceAt(rig, from);
   if (id === null || id === undefined) return null;
   const next = cloneRig(rig);
   if (to.kind === 'gap') {
     setAt(next, from, null);
-    return insertAt(next, to.c, to.i, id) >= 0 ? next : null;
+    const at = insertAt(next, to.c, to.i, id);
+    return at >= 0 ? { rig: next, landed: { kind: 'slot', c: to.c, i: at } } : null;
   }
   if (sameLoc(from, to)) return null;
   setAt(next, from, pieceAt(rig, to));
   setAt(next, to, id);
+  return { rig: next, landed: to };
+}
+
+export function moveTo(rig, from, to) {
+  const plan = planMove(rig, from, to);
+  return plan ? plan.rig : null;
+}
+
+// A copy of the rig with `id` (or an empty slot, for null) at `loc`. Selling a piece is setPiece(rig, loc, null).
+export function setPiece(rig, loc, id) {
+  const next = cloneRig(rig);
+  setAt(next, loc, id);
   return next;
 }
 
