@@ -12,12 +12,37 @@ import { stagger } from '../systems/status.js';
 import { addPuff, addBurst, BURST_SLAM } from '../render/fx.js';
 import { drawHammer } from '../render/melee.js';
 import { activeMutation } from '../game/starforge.js';
+import { playerCtx } from '../game/fire-ctx.js';
 import { STARFORGE } from '../data/starforge.js';
 
 const TELEGRAPH = 0.22;
 const NEIGHBOUR = 60;          // how close counts as "in the crowd" when choosing the densest spot
 const THROW = 2.6;             // knockback multiplier on top of the weapon's own knockback stat
 const isAlive = (o) => o.alive;
+
+// Starts one slam from (ctx.x, ctx.y): a shadow on the densest spot, the crater 0.22 s later. False when nothing is in range.
+function fire(inst, run, ctx) {
+  const range = param(run, inst, 'range');
+  const spot = densestSpot(run, ctx, range);
+  if (!spot) return false;
+  const radius = param(run, inst, 'radius');
+  const count = Math.max(1, Math.round(param(run, inst, 'count')));
+  const mult = ctx.mult;
+  inst.pend.push({ x: spot.x, y: spot.y, t: TELEGRAPH, r: radius, mult, atk: ctx.atk });
+  const aim = Math.atan2(spot.y - ctx.y, spot.x - ctx.x);
+  const dist = Math.max(Math.hypot(spot.x - ctx.x, spot.y - ctx.y), radius * 1.25 + 20);   // far enough that the second crater is its own
+  for (let k = 1; k < count; k++) {                          // the hammer comes down behind you too (evenly round for more)
+    const a = aim + (k * Math.PI * 2) / count;
+    inst.pend.push({ x: ctx.x + Math.cos(a) * dist, y: ctx.y + Math.sin(a) * dist, t: TELEGRAPH, r: radius, mult, atk: null });
+  }
+  inst.aim = aim;
+  inst.aimX = spot.x;
+  inst.aimY = spot.y;
+  ctx.ax = spot.x;
+  ctx.ay = spot.y;
+  ctx.aa = aim;
+  return true;
+}
 
 export default {
   uses: ['damage', 'cooldown', 'area', 'projectiles', 'critChance', 'critMult', 'knockback'],
@@ -27,6 +52,8 @@ export default {
     inst.pend = [];            // slams waiting to land: { x, y, t, r }
   },
 
+  fire,
+
   update(inst, dt, run) {
     const pend = inst.pend;
     for (let i = pend.length - 1; i >= 0; i--) {
@@ -34,27 +61,12 @@ export default {
       s.t -= dt;
       if (s.t <= 0) { pend.splice(i, 1); land(inst, run, s); }
     }
+    if (inst.manual) return;
     inst.cd -= dt;
     if (inst.cd > 0) return;
-
-    const p = run.player;
-    const range = param(run, inst, 'range');
-    const spot = densestSpot(run, p, range);
-    if (!spot) { inst.cd = 0; return; }
-    const radius = param(run, inst, 'radius');
-    const count = Math.max(1, Math.round(param(run, inst, 'count')));
-    pend.push({ x: spot.x, y: spot.y, t: TELEGRAPH, r: radius });
-    const aim = Math.atan2(spot.y - p.y, spot.x - p.x);
-    const dist = Math.max(Math.hypot(spot.x - p.x, spot.y - p.y), radius * 1.25 + 20);   // far enough that the second crater is its own
-    for (let k = 1; k < count; k++) {                          // the hammer comes down behind you too (evenly round for more)
-      const a = aim + (k * Math.PI * 2) / count;
-      const d = dist;
-      pend.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, t: TELEGRAPH, r: radius });
-    }
+    const ctx = playerCtx(run.player);
+    if (!fire(inst, run, ctx)) { inst.cd = 0; return; }
     inst.cd += param(run, inst, 'cooldown');
-    inst.aim = Math.atan2(spot.y - p.y, spot.x - p.x);
-    inst.aimX = spot.x;
-    inst.aimY = spot.y;
   },
 
   draw(inst, ctx) {
@@ -124,7 +136,7 @@ function activeEchoDelay(inst) {
 function land(inst, run, s) {
   const w = run.world;
   const def = inst.def.base;
-  const dmg = param(run, inst, 'damage') * (s.echo ? s.frac : 1);
+  const dmg = param(run, inst, 'damage') * (s.echo ? s.frac : s.mult);
   const stun = (def.stun || 0.35) * run.player.stats.getFor('statusDuration', inst.tags);
   const n = w.hash.queryRadius(s.x, s.y, s.r + MAX_ENEMY_RADIUS, w.scratch);
   for (let i = 0; i < n; i++) {
@@ -149,5 +161,6 @@ function land(inst, run, s) {
   addBurst(run, s.x, s.y, s.r, el ? el.main : '#e8c690', BURST_SLAM, el ? el.light : '#fff1d6');
   addPuff(run, s.x, s.y, s.r / 2.4, el ? el.main : '#d9c3a0');
   if (star) inst.pend.push({ x: s.x, y: s.y, t: star.delay, r: s.r * star.radius, echo: true, frac: star.frac, pull: star.pull });
-  attackTriggers(run, inst, s.x, s.y, inst.aim || 0);
+  if (s.atk && inst.onRig !== null) inst.onRig(run, 'impact', s.atk, s.x, s.y, null);      // a rig chain's On Impact: the crater has landed
+  if (!inst.manual) attackTriggers(run, inst, s.x, s.y, inst.aim || 0);
 }

@@ -13,6 +13,7 @@ import { KIND_HIT, KIND_DOT, CAUSE } from './damage-queue.js';
 import { recordDamage, recordKill } from '../game/run-stats.js';
 import { onClassKill } from '../game/class-traits.js';
 import { breakCrate } from './crates.js';
+import { rigEvent } from '../rig/rig.js';
 import { ST } from '../data/statuses.js';
 import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike, stagger } from './status.js';
 
@@ -26,6 +27,7 @@ const ARMOR_FLOOR = 0.4;   // armor never takes more than 60% off a hit
 
 export function killEnemy(run, e) {
   run.kills++;
+  rigEvent(run, 'kill');                                     // Reaper
   run.sfx('kill');
   run.lastKillTime = run.time;
   addPuff(run, e.x, e.y, e.r, e.def.color);
@@ -194,6 +196,7 @@ export function damagePlayer(run, amount) {
   p.iframes = IFRAMES;
   p.hurtFlash = HURT_FLASH;
   run.cam.shake = 7;
+  rigEvent(run, 'hurt');                                     // Spite
   if (run.debug.god) return;
   let dmg = Math.max(1, amount - p.stats.get('armor'));
   if (p.shield > 0) {                    // the shield soaks damage first

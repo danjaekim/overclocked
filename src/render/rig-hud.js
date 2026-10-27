@@ -64,7 +64,7 @@ function drawStrip(ctx, run, chain, x, y) {
   ctx.textBaseline = 'middle';
   ctx.fillText(CHAIN_NAMES[chain.index], x + 11, y + SLOT / 2 + 1);
   x += 24;
-  const waiting = rule.while === 'moving' && !run.player.moving;
+  const waiting = (rule.while === 'moving' && !run.player.moving) || (rule.while === 'still' && run.player.moving);
   ctx.fillStyle = waiting ? 'rgba(40,40,52,0.7)' : 'rgba(60,60,80,0.85)';        // Stride is dim while you stand still
   ctx.fillRect(x, y, 54, SLOT);
   ctx.fillStyle = '#e8e6df';
@@ -74,7 +74,7 @@ function drawStrip(ctx, run, chain, x, y) {
   ctx.fillText(rule.name, x + 27, y + SLOT / 2 - 5);
   ctx.font = '10px system-ui, sans-serif';
   ctx.fillStyle = '#b9bbc6';
-  ctx.fillText(rule.every + 's', x + 27, y + SLOT / 2 + 8);
+  ctx.fillText(rule.short, x + 27, y + SLOT / 2 + 8);
 
   const slots = chain.def.slots;
   const dead = new Set(chain.problems.map((q) => q.idx));

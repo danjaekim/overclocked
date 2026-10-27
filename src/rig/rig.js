@@ -13,7 +13,7 @@
 import { BEHAVIORS } from '../behaviors/index.js';
 import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
-import { PIECES, ELEMENTS, SCATTER, CHAIN_COLORS } from './pieces.js';
+import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { reactOnHit } from './reactions.js';
 
@@ -37,7 +37,7 @@ function weaponDef(id) {
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [] };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], flags: { kill: false, hurt: false } };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
@@ -52,7 +52,7 @@ export function removeRig(run) {
 function buildChain(run, rig, def, index) {
   const c = compileChain(def);
   const rule = ruleOf(def.rule);
-  const chain = { index, def, rule, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.first === undefined ? rule.every : rule.first,
+  const chain = { index, def, rule, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.on ? 0 : rule.first,
     act: null,                          // the latest activation: its pool is what the HUD's energy pips show
     flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
   const stack = [...c.nodes];
@@ -73,7 +73,12 @@ function makeInstance(run, rig, node, chain) {
     inst.addTags.push(e.tag);
   }
   if (inst.addTags.length) inst.tags = instanceTagSet(inst);
+  for (const id of node.mods) {                      // modifiers that are plain stat changes (Heavy, Pierce)
+    const mods = PIECES[id].mods;
+    if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
+  }
   inst.reactAt = -1e9;
+  node.count = 0;                                    // Every 3rd: how many times the cursor has reached it
   inst.onRig = (r, ev, atk, x, y, target, depth) => onEvent(r, rig, chain, node, inst, ev, atk, x, y, target, depth);
   return inst;
 }
@@ -83,16 +88,16 @@ function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
   if (run.rig !== rig) return;
   if (ev === 'hit') {                   // the node's own direct hits drive its element reaction
     if (node.reaction !== null && depth === 0 && target !== null) reactOnHit(run, node, inst, target);
-    return;
   }
   const trig = node.trigger;
   if (trig === null || trig.on !== ev) return;
+  if (ev === 'hit' && (depth !== 0 || target === null)) return;       // On Hit listens to direct hits only, so a blast does not feed it
   let act;
   if (ev === 'impact') {                // once per attack, at its first hit or landing
     if (atk === null || !atk.armed || atk.landed) return;
     atk.landed = true;
     act = atk.act;
-  } else {
+  } else {                              // kill, hit
     if (!inst.rigArmed) return;
     act = inst.rigAct;
   }
@@ -119,7 +124,9 @@ function runNodes(run, rig, nodes, x, y, act) {
 
 const TAU = Math.PI * 2;
 
-function fireNode(run, rig, chain, node, x, y, act) {
+// One launch of a node's weapon at (x, y): Scatter makes its copies. Leaves the attacks that carry an On Impact
+// token in rig.atks. Returns how many copies fired.
+function launch(run, rig, node, x, y, act, mult, armed) {
   const inst = node.inst;
   const behavior = BEHAVIORS[inst.def.behavior];
   const ctx = rig.ctx;
@@ -133,19 +140,27 @@ function fireNode(run, rig, chain, node, x, y, act) {
       ctx.x = x + Math.cos(a) * SCATTER.ring;
       ctx.y = y + Math.sin(a) * SCATTER.ring;
       ctx.da = (c - (copies - 1) / 2) * SCATTER.fan;
-      ctx.mult = SCATTER.mult;
+      ctx.mult = SCATTER.mult * mult;
     } else {
       ctx.x = x;
       ctx.y = y;
       ctx.da = 0;
-      ctx.mult = 1;
+      ctx.mult = mult;
     }
-    const atk = node.trigger !== null && node.trigger.on === 'impact' ? { act, landed: false, armed: false } : null;
+    const atk = node.trigger !== null && node.trigger.on === 'impact' ? { act, landed: false, armed } : null;
     ctx.atk = atk;
     if (!behavior.fire(inst, run, ctx)) continue;
     fired++;
     if (atk !== null) atks.push(atk);
   }
+  return fired;
+}
+
+function fireNode(run, rig, chain, node, x, y, act) {
+  const inst = node.inst;
+  const mult = node.power * (node.echo ? ECHO.mult : 1);
+  const armed = node.trigger !== null && act.pool - node.cost >= node.trigger.cost;     // the trigger is paid for if the attack fires (an impact can come in the same tick)
+  const fired = launch(run, rig, node, x, y, act, mult, armed);
   if (fired === 0) {                    // nothing in range: no attack, no energy spent
     note(run, rig, 'skip', { act: act.id, piece: node.piece, pool: act.pool });
     return;
@@ -153,14 +168,15 @@ function fireNode(run, rig, chain, node, x, y, act) {
   act.pool -= node.cost;
   act.spent += node.cost;
   inst.rigAct = act;
-  let armed = false;
-  if (node.trigger !== null && act.pool >= node.trigger.cost) {
+  if (armed) {
     act.pool -= node.trigger.cost;
     act.spent += node.trigger.cost;
-    armed = true;
   }
   inst.rigArmed = armed;
-  for (let i = 0; i < atks.length; i++) atks[i].armed = armed;
+  if (node.echo) rig.delayed.push({ t: ECHO.delay, node, x, y, act, mult, armed });
+  if (armed && node.trigger.on === 'every' && ++node.count % node.trigger.every === 0 && rig.queue.length - rig.head < MAX_QUEUE) {
+    rig.queue.push({ trig: node.trigger, act, x: run.player.x, y: run.player.y, chain });   // Every 3rd: the payload runs from the player
+  }
   chain.flash[node.idx] = run.time;
   if (rig.pings.length < 32) rig.pings.push({ x, y, t0: run.time, color: CHAIN_COLORS[chain.index % CHAIN_COLORS.length] });   // a ring where this chain's piece ran
   for (let i = 0; i < node.modIdx.length; i++) chain.flash[node.modIdx[i]] = run.time;
@@ -182,12 +198,33 @@ export function updateRig(run, dt) {
   const p = run.player;
   for (let i = 0; i < rig.chains.length; i++) {
     const chain = rig.chains[i];
-    if (chain.rule.while === 'moving' && !p.moving) continue;
+    const rule = chain.rule;
+    if (rule.on) {                                             // Reaper, Spite: an event starts it, at most once per `gap`
+      if (chain.t > 0) chain.t -= dt;
+      if (rig.flags[rule.on] && chain.t <= 0) {
+        chain.t = rule.gap;
+        activate(run, rig, chain);
+      }
+      continue;
+    }
+    if (rule.while === 'moving' && !p.moving) continue;
+    if (rule.while === 'still' && p.moving) continue;
     chain.t -= dt;
     if (chain.t > 0) continue;
-    chain.t += chain.rule.every;
-    if (chain.t <= 0) chain.t = chain.rule.every;
+    chain.t += rule.every;
+    if (chain.t <= 0) chain.t = rule.every;
     activate(run, rig, chain);
+  }
+  rig.flags.kill = rig.flags.hurt = false;
+
+  const dl = rig.delayed;                                      // Echo: the second shot
+  for (let i = dl.length - 1; i >= 0; i--) {
+    const d = dl[i];
+    d.t -= dt;
+    if (d.t > 0) continue;
+    dl.splice(i, 1);
+    const fired = launch(run, rig, d.node, d.x, d.y, d.act, d.mult, d.armed);
+    if (fired > 0) note(run, rig, 'echo', { act: d.act.id, piece: d.node.piece, copies: fired });
   }
 
   const q = rig.queue;
@@ -207,6 +244,11 @@ export function updateRig(run, dt) {
     const inst = rig.insts[i];
     BEHAVIORS[inst.def.behavior].update(inst, dt, run);
   }
+}
+
+// Rule-card events from the rest of the game: an enemy died ('kill'), the player was hit ('hurt').
+export function rigEvent(run, name) {
+  if (run.rig !== null) run.rig.flags[name] = true;
 }
 
 export function drawRig(ctx, run) {

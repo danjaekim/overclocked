@@ -14,10 +14,43 @@ import { attackTriggers } from '../game/triggers.js';
 import { queueDamage, KIND_PROC, CAUSE } from '../systems/damage-queue.js';
 import { applyShock, forkChain } from '../systems/status.js';
 import { activeMutation } from '../game/starforge.js';
+import { playerCtx } from '../game/fire-ctx.js';
 
 const FALLOFF = 0.88;
 const MAX_JUMPS = 14;
 const MAX_STRUCK = 32;
+
+// One bolt from (ctx.x, ctx.y) at the nearest enemy in range. False when there is none.
+function fire(inst, run, ctx) {
+  const range = param(run, inst, 'range');
+  const first = run.world.hash.queryNearest(ctx.x, ctx.y, range, (o) => o.alive && o.hp > 0);
+  if (!first) return false;
+
+  const b = inst.def.base;
+  const jumps = Math.min(MAX_JUMPS, b.chains + Math.round(run.player.stats.getFor('chains', inst.tags)) + 2 * (Math.max(1, Math.round(param(run, inst, 'count'))) - 1));
+  const jump = param(run, inst, 'jump');
+  const dmg = param(run, inst, 'damage') * ctx.mult;
+  const d0 = Math.hypot(first.x - ctx.x, first.y - ctx.y) || 1;
+  const aim = Math.atan2(first.y - ctx.y, first.x - ctx.x);
+  addArc(run, ctx.x, ctx.y, first.x, first.y, arcColor(inst));
+  strike(run, inst, first, dmg, (first.x - ctx.x) / d0, (first.y - ctx.y) / d0);
+  inst.seen[0] = first.uid;
+  if (ctx.atk !== null && inst.onRig !== null) inst.onRig(run, 'impact', ctx.atk, first.x, first.y, first);      // a rig chain's On Impact: the bolt has landed
+  const star = activeMutation(inst);
+  if (b.fork) {                                          // Forked Chain on a branching bolt: three bolts leave every strike instead of two
+    forkChain(run, inst, first, dmg, Math.min(4, b.fork.gens + Math.max(1, Math.round(param(run, inst, 'count'))) - 1), star ? Math.max(b.fork.falloff, star.keep) : b.fork.falloff, jump, 0, star ? star.branches : 2);
+  } else {
+    const ns = chainFrom(run, inst, first, jumps, dmg, jump, 1);
+    if (star) {                                          // Forked Chain: a second chain leaves the first target the other way
+      const half = Math.max(1, Math.ceil(jumps / 2));
+      chainFrom(run, inst, first, half, (dmg * star.frac) / FALLOFF, jump, ns);
+    }
+  }
+  ctx.ax = first.x;
+  ctx.ay = first.y;
+  ctx.aa = aim;
+  return true;
+}
 
 export default {
   uses: ['damage', 'cooldown', 'area', 'projectiles', 'critChance', 'critMult', 'knockback'],
@@ -27,38 +60,16 @@ export default {
     inst.seen = new Int32Array(MAX_STRUCK);
   },
 
+  fire,
+
   update(inst, dt, run) {
+    if (inst.manual) return;
     inst.cd -= dt;
     if (inst.cd > 0) return;
-    const p = run.player;
-    const b = inst.def.base;
-    const range = param(run, inst, 'range');
-    const first = run.world.hash.queryNearest(p.x, p.y, range, (o) => o.alive && o.hp > 0);
-    if (!first) { inst.cd = 0; return; }
-
-    const w = run.world;
-    const jumps = Math.min(MAX_JUMPS, b.chains + Math.round(run.player.stats.getFor('chains', inst.tags)) + 2 * (Math.max(1, Math.round(param(run, inst, 'count'))) - 1));
-    const jump = param(run, inst, 'jump');
-    let dmg = param(run, inst, 'damage');
-    const d0 = Math.hypot(first.x - p.x, first.y - p.y) || 1;
-    addArc(run, p.x, p.y, first.x, first.y, arcColor(inst));
-    strike(run, inst, first, dmg, (first.x - p.x) / d0, (first.y - p.y) / d0);
-    inst.seen[0] = first.uid;
-    const star = activeMutation(inst);
-    if (b.fork) {                                          // Forked Chain on a branching bolt: three bolts leave every strike instead of two
-      forkChain(run, inst, first, dmg, Math.min(4, b.fork.gens + Math.max(1, Math.round(param(run, inst, 'count'))) - 1), star ? Math.max(b.fork.falloff, star.keep) : b.fork.falloff, jump, 0, star ? star.branches : 2);
-      inst.cd += param(run, inst, 'cooldown');
-      attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
-      return;
-    }
-    let ns = 1;
-    ns = chainFrom(run, inst, first, jumps, dmg, jump, ns);
-    if (star) {                                            // Forked Chain: a second chain leaves the first target the other way
-      const half = Math.max(1, Math.ceil(jumps / 2));
-      chainFrom(run, inst, first, half, (dmg * star.frac) / FALLOFF, jump, ns);
-    }
+    const ctx = playerCtx(run.player);
+    if (!fire(inst, run, ctx)) { inst.cd = 0; return; }
     inst.cd += param(run, inst, 'cooldown');
-    attackTriggers(run, inst, first.x, first.y, Math.atan2(first.y - p.y, first.x - p.x));
+    attackTriggers(run, inst, ctx.ax, ctx.ay, ctx.aa);
   },
 };
 

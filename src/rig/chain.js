@@ -8,21 +8,25 @@
 //   4. Energy: see rig.js. The cost fields here are what the rig charges.
 //
 // compileChain(def) -> { rule, energy, nodes, problems }
-//   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, cost, trigger }
-//   trigger  { piece, idx, on, cost, payload: [node] }
+//   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, echo, power, cost, trigger }
+//   trigger  { piece, idx, on, every, cost, payload: [node] }
+//   power    damage multiplier from piece levels (def.levels: { piece id: 1..5 }): +20% a level for the weapon,
+//            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
-import { PIECES, REACTIONS, RULES, DEFAULT_ENERGY, SCATTER } from './pieces.js';
+import { PIECES, REACTIONS, RULES, DEFAULT_ENERGY, SCATTER, EVERY, LEVEL_STEP } from './pieces.js';
+
+const lvlMult = (levels, id) => 1 + LEVEL_STEP * (((levels && levels[id]) || 1) - 1);
 
 export function compileChain(def) {
   const slots = def.slots;
   const problems = [];
-  const nodes = parse(slots, 0, problems);
+  const nodes = parse(slots, 0, problems, def.levels || null, 1);
   return { rule: def.rule, energy: def.energy === undefined ? DEFAULT_ENERGY : def.energy, nodes, problems };
 }
 
 // Parses slots[start..] as one segment: the top level, or one payload.
-function parse(slots, start, problems) {
+function parse(slots, start, problems, levels, outer) {
   const nodes = [];
   let held = [];                              // modifiers waiting for a weapon: { id, idx }
   let last = null;                            // the nearest weapon so far in this segment
@@ -35,7 +39,7 @@ function parse(slots, start, problems) {
     } else if (piece.type === 'modifier') {
       held.push({ id, idx: i });
     } else if (piece.type === 'weapon') {
-      last = makeNode(id, i, held);
+      last = makeNode(id, i, held, levels, outer);
       held = [];
       nodes.push(last);
     } else {                                  // trigger
@@ -46,7 +50,7 @@ function parse(slots, start, problems) {
         for (let k = i + 1; k < slots.length; k++) if (slots[k] !== null && slots[k] !== undefined) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
         return nodes;
       }
-      last.trigger = { piece: id, idx: i, on: piece.on, cost: piece.cost, payload: parse(slots, i + 1, problems) };
+      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? EVERY : 0, cost: piece.cost, payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id)) };
       return nodes;                           // the rest of the slots belong to the payload
     }
   }
@@ -54,18 +58,22 @@ function parse(slots, start, problems) {
   return nodes;
 }
 
-function makeNode(id, idx, held) {
+function makeNode(id, idx, held, levels, outer) {
   const elements = [];
   let scatter = false;
+  let echo = false;
   let cost = PIECES[id].cost;
+  let power = outer * lvlMult(levels, id);
   for (const h of held) {
     const m = PIECES[h.id];
     cost += m.cost;
+    power *= lvlMult(levels, h.id);
     if (m.scatter) scatter = true;
+    if (m.echo) echo = true;
     if (m.element && !elements.includes(m.element)) elements.push(m.element);
   }
   const reaction = elements.length >= 2 ? REACTIONS[`${elements[0]}>${elements[1]}`] || null : null;
-  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, cost, trigger: null };
+  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, echo, power, cost, trigger: null };
 }
 
 // Energy the whole chain uses if every attack lands and every trigger fires once: the number the
@@ -131,6 +139,7 @@ export function analyzeChain(def) {
   return { text: `${rule.desc}: ${body} (cost ${used} of ${c.energy})`, cost: used, energy: c.energy, reasons };
 }
 
+const TRIGGER_WORDS = { impact: 'on impact', kill: 'on kill', hit: 'on every hit', every: `every ${EVERY}rd time` };
 const REACTION_NAMES = { steam: 'Steam', shatter: 'Shatter' };
 
 function describe(nodes) {
@@ -138,7 +147,7 @@ function describe(nodes) {
     const mods = n.mods.filter((m) => m !== 'scatter').map((m) => PIECES[m].name);
     let t = `${n.scatter ? `${SCATTER.copies}\u00d7 ` : ''}${[...mods, PIECES[n.piece].name].join(' ')}`;
     if (n.reaction) t += ` [${REACTION_NAMES[n.reaction]}]`;
-    if (n.trigger) t += `, ${n.trigger.on === 'impact' ? 'on impact' : 'on kill'}: ${n.trigger.payload.length ? describe(n.trigger.payload) : 'nothing'}`;
+    if (n.trigger) t += `, ${TRIGGER_WORDS[n.trigger.on]}: ${n.trigger.payload.length ? describe(n.trigger.payload) : 'nothing'}`;
     return t;
   }).join(', then ');
 }
