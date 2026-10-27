@@ -85,7 +85,7 @@ test('analyze: a line that says what the chain does, with its cost, and a reason
   const bad = analyzeChain({ rule: 'pulse', slots: ['on_impact', 'nova', null] });
   assert.equal(bad.reasons.get(0), 'no weapon before this trigger');
   assert.ok(bad.text.includes('nothing to run yet'));
-  assert.equal(analyzeChain({ rule: 'stride', slots: [] }).text, 'Every 0.5 s while moving: nothing to run yet (cost 0 of 16)');
+  assert.equal(analyzeChain({ rule: 'stride', slots: [] }).text, 'Every 0.5 s while moving: nothing to run yet (cost 0 of 12)');
 });
 
 test('analyze: pieces beyond the energy pool are greyed as out of energy', () => {
@@ -137,10 +137,10 @@ test('applying an edit rebuilds the live rig; an edited chain stops carrying its
   assert.deepEqual(run.rig.chains[1].def.slots, [...TEST_CHAINS.kill_chain.slots, null]);
 });
 
-test('the default energy pool is 16: the spec example uses 10 of it and a full six slots fit', () => {
+test('the default energy pool is 12: the spec example uses 10 of it and a full six slots fit', () => {
   const a = analyzeChain({ rule: 'pulse', slots: TEST_CHAINS.cluster_mortar.slots });
-  assert.equal(a.energy, 16);
-  assert.ok(a.text.endsWith('(cost 10 of 16)'));
+  assert.equal(a.energy, 12);
+  assert.ok(a.text.endsWith('(cost 10 of 12)'));
   const full = analyzeChain({ rule: 'pulse', slots: ['scatter', 'flame', 'mortar', 'on_impact', 'scatter', 'nova'] });
   assert.equal(full.reasons.size, 0);
   assert.equal(full.cost, 12);
