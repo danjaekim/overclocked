@@ -2,19 +2,23 @@
 // A piece lights up when it runs, so you can see which piece caused what in the arena.
 
 import { fmtTime } from '../ui/overlay.js';
+import { xpToNext } from '../game/xp.js';
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 
 const SLOT = 30;
 const GAP = 4;
 const TYPE_COLOR = { weapon: '#e8a33d', modifier: '#5ec8d8', trigger: '#b98cff' };
-const GLYPH = { mortar: 'Mo', nova: 'No', blaster: 'Bl', scatter: 'Sc', flame: 'Fl', frost: 'Fr', on_impact: 'Im', on_kill: 'Ki' };
 const FLASH = 0.35;
 
 export function drawSandboxHud(ctx, view, run) {
   const p = run.player;
   const y0 = view.insetTop + 16;
 
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';                             // XP bar: levels give a piece offer
+  ctx.fillRect(0, view.insetTop, view.w, 7);
+  ctx.fillStyle = '#6ec5ff';
+  ctx.fillRect(0, view.insetTop, view.w * Math.min(1, p.xp / xpToNext(p.level)), 7);
   const bw = 140;
   const bh = 14;
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -33,7 +37,7 @@ export function drawSandboxHud(ctx, view, run) {
   ctx.textAlign = 'left';
   ctx.font = '13px system-ui, sans-serif';
   ctx.fillStyle = '#b9bbc6';
-  ctx.fillText('Kills ' + run.kills + '   Sandbox', 12, y0 + bh + 6);
+  ctx.fillText('Lv ' + p.level + '   Kills ' + run.kills, 12, y0 + bh + 6);
 
   if (run.rig) {
     const rows = run.rig.chains;
@@ -77,6 +81,14 @@ function drawStrip(ctx, run, chain, x, y) {
   for (let i = 0; i < slots.length; i++) {
     const sx = x + 54 + GAP + i * (SLOT + GAP);
     const piece = PIECES[slots[i]];
+    if (!piece) {                                                 // an empty slot
+      ctx.fillStyle = 'rgba(20,22,30,0.5)';
+      ctx.fillRect(sx, y, SLOT, SLOT);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx + 0.5, y + 0.5, SLOT - 1, SLOT - 1);
+      continue;
+    }
     const lit = Math.max(0, 1 - (run.time - chain.flash[i]) / FLASH);
     ctx.fillStyle = 'rgba(20,22,30,0.8)';
     ctx.fillRect(sx, y, SLOT, SLOT);
@@ -90,7 +102,7 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.strokeRect(sx + 0.5, y + 0.5, SLOT - 1, SLOT - 1);
     ctx.fillStyle = '#fff';
     ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText(GLYPH[slots[i]], sx + SLOT / 2, y + SLOT / 2 + 1);
+    ctx.fillText(piece.glyph, sx + SLOT / 2, y + SLOT / 2 + 1);
     ctx.globalAlpha = 1;
   }
 
@@ -99,12 +111,12 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.fillStyle = k < pool ? '#ffd34d' : 'rgba(255,255,255,0.18)';
     ctx.fillRect(x + k * 9, y + SLOT + 5, 7, 7);
   }
-  const preset = TEST_CHAINS[chain.def.key];
-  if (preset) {                                                   // the chain's name, under its strip
+  const label = chain.def.key ? TEST_CHAINS[chain.def.key].name : 'Custom';
+  {                                                   // the chain's name, under its strip
     ctx.fillStyle = color;
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(preset.name, x, y + SLOT + 15);
+    ctx.fillText(label, x, y + SLOT + 15);
   }
 }

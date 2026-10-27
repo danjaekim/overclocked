@@ -10,7 +10,6 @@ export function xpToNext(level) {
 
 // Adds XP (already multiplied by the xpGain stat by the caller) and processes level-ups.
 export function gainXp(run, amount) {
-  if (run.sandbox) return;                      // the sandbox has no levels
   const p = run.player;
   p.xp += amount;
   let need = xpToNext(p.level);

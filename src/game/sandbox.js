@@ -5,6 +5,7 @@
 import { createRun } from './run.js';
 import { spawnEnemy } from './director.js';
 import { installRig } from '../rig/rig.js';
+import { newRig, padSlots, chainDefsOf } from '../rig/editor.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 
 export const SANDBOX = {
@@ -41,9 +42,7 @@ function sandboxDirector(run) {
   };
 }
 
-export function chainDefs(keys) {
-  return keys.map((k) => ({ rule: TEST_CHAINS[k].rule, slots: TEST_CHAINS[k].slots, key: k }));
-}
+const presetDef = (key) => ({ rule: TEST_CHAINS[key].rule, slots: TEST_CHAINS[key].slots, key });
 
 export function createSandboxRun({ seed, view, debug, sfx }) {
   const run = createRun({ seed, view, debug: { ...debug, god: true }, sfx });
@@ -51,13 +50,26 @@ export function createSandboxRun({ seed, view, debug, sfx }) {
   run.player.weapons.length = 0;                                 // the class weapon: chains are the only attacks here
   run.player.stats.removeBySource('weapon:');                    // and what it added to the stats
   run.director = sandboxDirector(run);
-  run.chainKeys = START_CHAINS.slice();
-  installRig(run, chainDefs(run.chainKeys));
+  run.rigState = newRig(START_CHAINS.map(presetDef));            // what the editor shows; applyRig turns it into the live rig
+  applyRig(run);
   return run;
+}
+
+// Builds the live rig from run.rigState. A chain that no longer matches its test chain stops carrying its name.
+export function applyRig(run) {
+  for (const c of run.rigState.chains) {
+    if (c.key && (c.rule !== TEST_CHAINS[c.key].rule || c.slots.join() !== padSlots(TEST_CHAINS[c.key].slots, run.rigState.cap).join())) c.key = null;
+  }
+  installRig(run, chainDefsOf(run.rigState));
 }
 
 // Puts a test chain in slot `index` (0 or 1), keeping the other chain as it is.
 export function loadChain(run, index, key) {
-  run.chainKeys[index] = key;
-  installRig(run, chainDefs(run.chainKeys));
+  const c = run.rigState.chains[index];
+  c.rule = TEST_CHAINS[key].rule;
+  c.slots = padSlots(TEST_CHAINS[key].slots, run.rigState.cap);
+  c.key = key;
+  applyRig(run);
 }
+
+export const chainKeys = (run) => run.rigState.chains.map((c) => c.key);

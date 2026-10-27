@@ -28,7 +28,8 @@ const debug = createDebug(params);
 
 const view = createView(stage, canvas);
 const rotate = createRotatePrompt(view);
-const overlays = createOverlays(document.getElementById('ui'));
+const sandboxEl = document.getElementById('sandbox');
+const overlays = createOverlays(document.getElementById('ui'), { onChange: (open) => { sandboxEl.style.visibility = open ? 'hidden' : 'visible'; } });   // the sandbox tabs hide under any menu
 const renderer = createRenderer(canvas, view);
 
 preloadSprites();
@@ -39,7 +40,7 @@ const save = createSave(browserStorage());
 const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume, sfxVolume: save.data.sfxVolume });
 debug.audioState = () => audio.state;
 const runSave = createRunSave(browserStorage());
-game = createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio, sandboxHost: document.getElementById('sandbox') });
+game = createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio, sandboxHost: sandboxEl });
 
 // a soft tick on every menu button
 document.getElementById('ui').addEventListener('click', (e) => {

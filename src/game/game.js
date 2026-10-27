@@ -27,7 +27,9 @@ import { showHistory } from '../ui/history.js';
 import { showBackup } from '../ui/backup.js';
 import { encodeSave, decodeSave, describeSave } from '../save/transfer.js';
 import { snapshotRun, restoreRun } from './run-snapshot.js';
-import { createSandboxRun, loadChain } from './sandbox.js';
+import { createSandboxRun, loadChain, applyRig, chainKeys } from './sandbox.js';
+import { showRigEditor } from '../ui/rig-editor.js';
+import { makeOffers } from '../rig/offers.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params, save, runSave, audio, sandboxHost }) {
@@ -77,7 +79,33 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     scene('run');
     if (audio) audio.music.duck(false);
     game.state = 'run';
-    if (sandboxHost) panel = mountSandboxPanel(sandboxHost, { getKeys: () => game.run.chainKeys, onPick: (i, key) => loadChain(game.run, i, key) });
+    if (sandboxHost) panel = mountSandboxPanel(sandboxHost, {
+      getKeys: () => chainKeys(game.run),
+      onPick: (i, key) => loadChain(game.run, i, key),
+      onEdit: () => openRigEditor(false),
+      onLevel: () => { game.run.pendingLevelUps++; },
+    });
+  }
+
+  // The rig editor (ui/rig-editor.js) over a paused game. A level-up opens it with three offers; the Rig tab opens it without.
+  // It reuses the level-up state, so the run is frozen and saved like any other pause.
+  function openRigEditor(withOffers) {
+    const run = game.run;
+    game.state = 'levelup';
+    input.reset();
+    if (withOffers) sfx('levelup');
+    run.cam.y = run.player.y + view.h * 0.2;                   // the sheet covers the lower part: lift the player into the clear top
+    showRigEditor(overlays, {
+      rig: run.rigState,
+      offers: withOffers ? makeOffers(run.rng, run.rigState) : null,
+      onDone(rig) {
+        run.rigState = rig;
+        applyRig(run);
+        if (withOffers) run.pendingLevelUps--;
+        overlays.hide();
+        game.state = 'run';
+      },
+    });
   }
 
   function toTitle() {
@@ -345,7 +373,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     run.update(dt, input.getMove());
     scene(run.bossAlive ? 'boss' : 'run');
     if (run.over) finishRun();
-    else if (run.pendingLevelUps > 0) openLevelUp();
+    else if (run.pendingLevelUps > 0) { if (run.sandbox) openRigEditor(true); else openLevelUp(); }
     else if (run.pendingChests.length > 0) openTreasure();
     else if (run.forgeReady) openForge();
   };

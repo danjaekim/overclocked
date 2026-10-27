@@ -12,7 +12,7 @@
 //   trigger  { piece, idx, on, cost, payload: [node] }
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
-import { PIECES, REACTIONS, RULES, DEFAULT_ENERGY } from './pieces.js';
+import { PIECES, REACTIONS, RULES, DEFAULT_ENERGY, SCATTER } from './pieces.js';
 
 export function compileChain(def) {
   const slots = def.slots;
@@ -28,6 +28,7 @@ function parse(slots, start, problems) {
   let last = null;                            // the nearest weapon so far in this segment
   for (let i = start; i < slots.length; i++) {
     const id = slots[i];
+    if (id === null || id === undefined) continue;             // an empty slot
     const piece = PIECES[id];
     if (!piece) {
       problems.push({ idx: i, why: 'unknown piece' });
@@ -42,7 +43,7 @@ function parse(slots, start, problems) {
       held = [];
       if (!last) {
         problems.push({ idx: i, why: 'no weapon before this trigger' });
-        for (let k = i + 1; k < slots.length; k++) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
+        for (let k = i + 1; k < slots.length; k++) if (slots[k] !== null && slots[k] !== undefined) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
         return nodes;
       }
       last.trigger = { piece: id, idx: i, on: piece.on, cost: piece.cost, payload: parse(slots, i + 1, problems) };
@@ -82,4 +83,62 @@ export function ruleOf(id) {
   const r = RULES[id];
   if (!r) throw new Error(`Unknown rule card "${id}"`);
   return r;
+}
+
+// What the editor shows for a chain: one line saying what it does, its energy cost, and a reason for every
+// slot that will not run (a compile problem, or "out of energy" counted as if each attack lands once).
+//   analyzeChain(def) -> { text, cost, energy, reasons: Map(slot idx -> why) }
+export function analyzeChain(def) {
+  const c = compileChain(def);
+  const reasons = new Map();
+  for (const p of c.problems) if (!reasons.has(p.idx)) reasons.set(p.idx, p.why);
+  let left = c.energy;
+  let used = 0;
+  const dry = (n) => {
+    const stack = [n];
+    while (stack.length) {
+      const m = stack.pop();
+      for (const i of [m.idx, ...m.modIdx]) reasons.set(i, 'out of energy');
+      if (m.trigger) {
+        reasons.set(m.trigger.idx, 'out of energy');
+        stack.push(...m.trigger.payload);
+      }
+    }
+  };
+  const walk = (nodes) => {
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (n.cost > left) {
+        for (let k = i; k < nodes.length; k++) dry(nodes[k]);
+        return;
+      }
+      left -= n.cost;
+      used += n.cost;
+      if (!n.trigger) continue;
+      if (n.trigger.cost > left) {
+        reasons.set(n.trigger.idx, 'out of energy');
+        for (const m of n.trigger.payload) dry(m);
+        continue;
+      }
+      left -= n.trigger.cost;
+      used += n.trigger.cost;
+      walk(n.trigger.payload);
+    }
+  };
+  walk(c.nodes);
+  const rule = ruleOf(def.rule);
+  const body = c.nodes.length ? describe(c.nodes) : 'nothing to run yet';
+  return { text: `${rule.desc}: ${body} (cost ${used} of ${c.energy})`, cost: used, energy: c.energy, reasons };
+}
+
+const REACTION_NAMES = { steam: 'Steam', shatter: 'Shatter' };
+
+function describe(nodes) {
+  return nodes.map((n) => {
+    const mods = n.mods.filter((m) => m !== 'scatter').map((m) => PIECES[m].name);
+    let t = `${n.scatter ? `${SCATTER.copies}\u00d7 ` : ''}${[...mods, PIECES[n.piece].name].join(' ')}`;
+    if (n.reaction) t += ` [${REACTION_NAMES[n.reaction]}]`;
+    if (n.trigger) t += `, ${n.trigger.on === 'impact' ? 'on impact' : 'on kill'}: ${n.trigger.payload.length ? describe(n.trigger.payload) : 'nothing'}`;
+    return t;
+  }).join(', then ');
 }

@@ -218,9 +218,9 @@ If the concept check fails, we stop and rethink the pieces before building the e
 
 **M3: Rig editor**
 
-- [ ] Pause the game while the editor is open, reusing the level-up state
-- [ ] Editor strips, tap-to-move, suggested slot, live preview line, undo and reset
-- [ ] Level-up offers drawn from the 10 proof-of-concept pieces
+- [x] Pause the game while the editor is open, reusing the level-up state
+- [x] Editor strips, tap-to-move, suggested slot, live preview line, undo and reset (drag is not built; tap covers it)
+- [x] Level-up offers drawn from the proof-of-concept pieces (the 8 pieces; the 2 rule cards are not offered yet)
 
 **M4: First test build**
 

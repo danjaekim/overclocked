@@ -1,7 +1,7 @@
 // M2: the sandbox (game/sandbox.js) and the Steam and Shatter reactions (rig/reactions.js).
 
 import { test, assert } from './harness.mjs';
-import { createSandboxRun, loadChain, SANDBOX, START_CHAINS } from '../src/game/sandbox.js';
+import { createSandboxRun, loadChain, chainKeys, SANDBOX, START_CHAINS } from '../src/game/sandbox.js';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { installRig } from '../src/rig/rig.js';
@@ -25,19 +25,18 @@ test('sandbox: starts with two chains, no class weapon, and an arena that fills 
   const run = sandbox();
   assert.equal(run.player.weapons.length, 0);
   assert.deepEqual(run.rig.chains.map((c) => c.def.key), START_CHAINS);
+  assert.deepEqual(chainKeys(run), START_CHAINS);
   tick(run, 10);
   assert.ok(run.world.enemies.count >= SANDBOX.target - 10 && run.world.enemies.count <= SANDBOX.target, `enemies ${run.world.enemies.count}`);
 });
 
-test('sandbox: the chains kill things, nothing levels up, the player cannot die and the run never ends', () => {
+test('sandbox: the chains kill things, the player cannot die and the run never ends, and XP levels you up', () => {
   const run = sandbox();
   tick(run, 90);
   assert.ok(run.kills > 20, `kills ${run.kills}`);
-  assert.equal(run.pendingLevelUps, 0);
-  assert.equal(run.player.level, 1);
   assert.equal(run.over, false);
-  gainXp(run, 1e6);
-  assert.equal(run.pendingLevelUps, 0);
+  assert.ok(run.player.level > 1, 'kills gave XP');
+  assert.equal(run.pendingLevelUps, run.player.level - 1);
   assert.equal(run.player.hp, run.player.maxHp);
 });
 
@@ -45,8 +44,8 @@ test('sandbox: loading a chain replaces one slot and keeps the other', () => {
   const run = sandbox();
   tick(run, 2);
   loadChain(run, 1, 'kill_chain');
-  assert.deepEqual(run.chainKeys, ['cluster_mortar', 'kill_chain']);
-  assert.deepEqual(run.rig.chains.map((c) => c.def.slots), [TEST_CHAINS.cluster_mortar.slots, TEST_CHAINS.kill_chain.slots]);
+  assert.deepEqual(chainKeys(run), ['cluster_mortar', 'kill_chain']);
+  assert.deepEqual(run.rig.chains.map((c) => c.def.slots.filter(Boolean)), [TEST_CHAINS.cluster_mortar.slots, TEST_CHAINS.kill_chain.slots]);
   tick(run, 5);
   assert.ok(run.kills > 0);
 });

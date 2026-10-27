@@ -14,7 +14,7 @@ await page.waitForTimeout(4500); if(out)await page.screenshot({path:out+'a.png'}
 await page.click('.sbx-tab'); await page.waitForTimeout(300); if(out)await page.screenshot({path:out+'b.png'});
 await page.click('[data-chain="1"][data-key="steam_nova"]'); await page.click('[data-chain="0"][data-key="shatter_shell"]'); await page.click('.sbx-tab'); await page.waitForTimeout(3500);
 if(out)await page.screenshot({path:out+'c.png'});
-console.log(JSON.stringify(await page.evaluate(()=>{const r=window.__overclocked.game.run; return {state:window.__overclocked.game.state,t:r.time,kills:r.kills,en:r.world.enemies.count,keys:r.chainKeys,hz:r.hazards.length};})), errs);
+console.log(JSON.stringify(await page.evaluate(()=>{const r=window.__overclocked.game.run; return {state:window.__overclocked.game.state,t:r.time,kills:r.kills,en:r.world.enemies.count,keys:r.rigState.chains.map(c=>c.key),hz:r.hazards.length};})), errs);
 await b.close(); server.close();
 const info=JSON.parse(JSON.stringify({}));
 if(errs.length){console.log('console errors');process.exit(1);}

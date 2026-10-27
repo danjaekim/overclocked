@@ -1,7 +1,7 @@
 // DOM overlays for menus (gameplay itself is canvas). One overlay is mounted at a time
 // inside #ui, which sits on top of the portrait stage. Buttons use data-act="name".
 
-export function createOverlays(uiEl) {
+export function createOverlays(uiEl, { onChange = () => {} } = {}) {
   let onAct = null;
 
   uiEl.addEventListener('click', (e) => {
@@ -13,11 +13,13 @@ export function createOverlays(uiEl) {
     show(html, handler, className = '') {
       onAct = handler;
       uiEl.innerHTML = `<div class="overlay ${className}">${html}</div>`;
+      onChange(true);
       return uiEl.firstChild;
     },
     hide() {
       onAct = null;
       uiEl.innerHTML = '';
+      onChange(false);
     },
     get visible() {
       return uiEl.firstChild !== null;
