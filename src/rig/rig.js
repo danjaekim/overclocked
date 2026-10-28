@@ -92,7 +92,10 @@ function makeInstance(run, rig, node, chain) {
 function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
   if (run.rig !== rig) return;
   if (ev === 'hit') {                   // the node's own direct hits drive its element reaction
-    if (node.reaction !== null && depth === 0 && target !== null) reactOnHit(run, node, inst, target);
+    if (node.reaction !== null && depth === 0 && target !== null) {
+      reactOnHit(run, node, inst, target);
+      if (run.discover) run.discover(node.reaction);                  // the compendium notes the first time a reaction happens
+    }
   }
   const trig = node.trigger;
   if (trig === null || trig.on !== ev) return;

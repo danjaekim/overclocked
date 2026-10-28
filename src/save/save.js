@@ -19,7 +19,7 @@ export const DEFAULTS = {
   musicVolume: 0.6,                   // 0..1
   sfxVolume: 1,                       // sound effects, 0..1 (1 = the original level)
   history: [],                        // finished runs, oldest first (see entryFromSummary), capped
-  discovered: { fusions: [] },         // masterwork ids found at the forge (v3)
+  discovered: { fusions: [], reactions: [] },   // masterwork ids found at the forge (v3); element reactions seen in a run (the compendium)
 };
 
 export const HISTORY_CAP = 100;
@@ -51,7 +51,17 @@ export function entryFromSummary(summary, now = Date.now()) {
     perks: pairs(b.perks),
     fusions: cleanFusions(b.fusions),
     titles: Array.isArray(summary.titleIds) ? summary.titleIds.map(String) : [],
+    rig: cleanRig(summary.rig),
   };
+}
+
+// The rig of a finished run, compact: [{ rule, slots: [piece ids] }] and { piece id: level }. Strings and small numbers only.
+function cleanRig(r) {
+  if (!r || !Array.isArray(r.chains)) return null;
+  const chains = r.chains.slice(0, 4).map((c) => ({ rule: String(c.rule).slice(0, 20), slots: (Array.isArray(c.slots) ? c.slots : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => x.slice(0, 20)) }));
+  const levels = {};
+  if (r.levels && typeof r.levels === 'object') for (const [k, v] of Object.entries(r.levels).slice(0, 20)) if (Number.isFinite(v)) levels[String(k).slice(0, 20)] = Math.max(1, Math.min(5, Math.floor(v)));
+  return { chains, levels };
 }
 
 // Per-weapon forge marks, aligned with `weapons`: [enhance, starforged, tempers, effects, legendary]. Old entries have none.
@@ -72,6 +82,7 @@ function cleanEntry(e) {
     gear: cleanGear(e.gear),
     weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks), fusions: cleanFusions(e.fusions || e.grafts),
     titles: Array.isArray(e.titles) ? e.titles.filter((x) => typeof x === 'string').slice(0, 12) : [],
+    rig: cleanRig(e.rig),
   };
 }
 
@@ -122,6 +133,7 @@ export function normalize(raw) {
   if (Array.isArray(found)) {
     out.discovered.fusions = [...new Set(found.filter((x) => typeof x === 'string'))].slice(0, 100);
   }
+  if (raw.discovered && Array.isArray(raw.discovered.reactions)) out.discovered.reactions = [...new Set(raw.discovered.reactions.filter((x) => typeof x === 'string'))].slice(0, 30);
   return out;
 }
 
@@ -181,6 +193,14 @@ export function createSave(storage) {
     discoverFusion(id) {
       if (data.discovered.fusions.includes(id)) return false;
       data.discovered.fusions.push(id);
+      persist();
+      return true;
+    },
+
+    // Marks an element reaction as seen. Returns true the first time.
+    discoverReaction(id) {
+      if (data.discovered.reactions.includes(id)) return false;
+      data.discovered.reactions.push(id);
       persist();
       return true;
     },

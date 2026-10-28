@@ -252,3 +252,32 @@ test('Spite heals you a little each time it fires, and a piece in several slots 
   const names = run.statsSnapshot().weapons.map((w) => w.name);
   assert.equal(new Set(names).size, names.length, 'one row per piece');
 });
+
+test('the compendium: reactions are found once and persist, a finished run keeps its rig in the history, and the screens render', async () => {
+  const { createSave } = await import('../src/save/save.js');
+  const { showCompendium } = await import('../src/ui/compendium.js');
+  const m = new Map();
+  const storage = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v) };
+  const save = createSave(storage);
+  assert.equal(save.discoverReaction('steam'), true);
+  assert.equal(save.discoverReaction('steam'), false);
+  assert.deepEqual(createSave(storage).data.discovered.reactions, ['steam']);
+  const run = newRun();
+  run.rigState = levelUp(run.rigState, 'blaster');
+  run.over = true;
+  save.recordRun(run.summary());
+  const entry = save.data.history[save.data.history.length - 1];
+  assert.deepEqual(entry.rig.chains[0].slots, ['blaster']);
+  assert.equal(entry.rig.levels.blaster, 2);
+  let html = '';
+  const overlays = { show: (h) => { html = h; return null; } };
+  for (const tab of ['how', 'pieces', 'rules', 'reactions', 'runs']) {
+    let handler;
+    showCompendium({ show: (h, fn) => { html = h; handler = fn; } }, { save, onBack: () => {} });
+    handler(`tab:${tab}`);
+    assert.ok(html.includes('Compendium') && html.length > 300, tab);
+    if (tab === 'reactions') assert.ok(html.includes('Steam') && html.includes('???') && html.includes('1 of 9'));
+    if (tab === 'runs') assert.ok(html.includes('Blaster'));
+    if (tab === 'pieces') assert.ok(html.includes('Mortar') && html.includes('+1 copy'));
+  }
+});

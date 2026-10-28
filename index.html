@@ -64,6 +64,19 @@
     .rhead b { flex: 1; font-size: 16px; color: var(--ember); }
     .rhead .gold { font: 700 13px system-ui, sans-serif; color: #ffd34d; }
     .rcard.dim { opacity: 0.55; }
+    .overlay.compendium { justify-content: flex-start; overflow: hidden; }
+    .cmptabs { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin: 4px 0; }
+    .cmpbody { width: 100%; max-width: 420px; flex: 1; min-height: 0; overflow-y: auto; text-align: left; font-size: 13px; line-height: 1.35; padding: 0 4px; }
+    .cmpbody h3 { margin: 10px 0 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+    .cmp { display: flex; gap: 10px; align-items: flex-start; padding: 7px 8px; margin: 4px 0; border: 1px solid #343748; border-radius: 8px; }
+    .cmp.col { flex-direction: column; gap: 4px; }
+    .cmp.dim { opacity: 0.5; }
+    .cmp small { color: var(--dim); font-size: 11px; }
+    .cmp em { font-style: normal; color: var(--ember); font-size: 12px; }
+    .cmpi { flex: none; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid #4a4d60; border-radius: 6px; }
+    .cmpi.weapon { border-color: #e8a33d; color: #ffc46b; } .cmpi.modifier { border-color: #5ec8d8; color: #7fe3f0; } .cmpi.trigger { border-color: #b98cff; color: #d0b0ff; }
+    .cmprow { font-size: 12px; } .cmprow i { font-style: normal; padding: 1px 5px; margin-right: 3px; border: 1px solid #4a4d60; border-radius: 5px; font-size: 11px; }
+    .cmprow i.weapon { border-color: #e8a33d; } .cmprow i.modifier { border-color: #5ec8d8; } .cmprow i.trigger { border-color: #b98cff; }
     .rcard .price { margin-top: auto; font: 700 12px system-ui, sans-serif; color: #ffd34d; }
     .rbtn {
       min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #4a4d60;

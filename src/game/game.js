@@ -20,6 +20,8 @@ import { makeOffers, CAPACITY_LEVELS } from '../rig/offers.js';
 import { openRigChest } from '../rig/chests.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
 import { showWorkbench } from '../ui/workbench.js';
+import { showCompendium } from '../ui/compendium.js';
+import { REACTION_INFO } from '../rig/pieces.js';
 import { stockUp } from '../rig/workbench.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params, save, audio, sandboxHost }) {
@@ -57,6 +59,9 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     input.reset();
     overlays.hide();
     game.run = run;
+    run.discover = (id) => {                                   // a reaction seen for the first time goes in the compendium
+      if (save.discoverReaction(id)) run.toast = { text: `New reaction: ${REACTION_INFO[id].name}`, ttl: 3 };
+    };
     scene('run');
     if (audio) audio.music.duck(false);
     game.state = 'run';
@@ -132,6 +137,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const show = () => showPause(overlays, {
       ...musicUi(show),
       onResume: resume,
+      onCompendium: () => showCompendium(overlays, { save, onBack: show }),
       onRig: () => { overlays.hide(); if (audio) audio.music.duck(false); openRigEditor(false); },
       onSandbox: game.run.sandbox ? null : () => startSandbox(),
       onQuit: () => startRun(),

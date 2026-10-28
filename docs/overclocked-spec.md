@@ -233,7 +233,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 
 - [x] Workbench at shrines with ore as gold (v0.5.2: shrines at 2:00, 4:00, 6:30, 8:30 and the boss; a visit stocks 2 pieces, a level and a rule card; reroll). Mastery twists became the level 3 and 5 signature effects (v0.5.0)
 - [x] All six reactions plus Intensify (v0.5.1)
-- [ ] Compendium entries
+- [x] Compendium entries (v0.5.3: pause -> Compendium: how chains run, pieces, rule cards, reactions found, past rigs)
 - [ ] A first balance pass, with a bench table posted first and your go-ahead before any long run
 
 ## Decisions

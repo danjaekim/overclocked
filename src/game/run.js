@@ -72,6 +72,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
     director: null,
     rigRun: false,          // the full run (game/ovrun.js): the rig is the only build, no shrines or ore
     sandbox: false,         // the endless chain sandbox (game/sandbox.js): no level-ups, no end
+    discover: null,         // set by game.js: called with a reaction id the first time it happens (the compendium)
     rig: null,              // the chain rig (src/rig/rig.js), or null when the run uses ordinary weapons
 
     update(dt, move) {
