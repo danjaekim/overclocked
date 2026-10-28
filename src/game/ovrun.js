@@ -13,6 +13,7 @@ import { initClassTrait } from './class-traits.js';
 export const BASE = [
   { stat: 'maxHp', op: 'flat', value: 30 },
   { stat: 'regen', op: 'flat', value: 0.5 },
+  { stat: 'vsShocked', op: 'inc', value: 0.15 },          // Storm's mark: a shocked enemy takes 15% more from every source
 ];
 
 export const START_CHAIN = { rule: 'pulse', slots: ['blaster'], size: 3 };

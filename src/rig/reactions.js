@@ -17,7 +17,7 @@ import { CAUSE } from '../systems/damage-queue.js';
 
 export const STEAM = { radius: 55, ttl: 2.2, every: 0.5 };           // a node makes at most one cloud per `every` seconds
 export const SHATTER = { radius: 62, frac: 0.35 };                     // shard damage as a share of the weapon's hit
-export const OVERLOAD = { radius: 60, frac: 0.4, tele: 0.08 };       // the burst's damage as a share of the weapon's hit
+export const OVERLOAD = { radius: 60, frac: 0.3, tele: 0.08 };       // the burst's damage as a share of the weapon's hit
 export const PLASMA = { radius: 34, ttl: 2.2, tick: 0.5, frac: 0.3, every: 0.45 };
 export const STATIC = { radius: 75, ttl: 1.1, pull: 70, every: 0.8 };
 export const SUPERCONDUCT_CRIT = 0.75;

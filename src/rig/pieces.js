@@ -94,9 +94,9 @@ export const PIECES = {
   },
 
   scatter: { glyph: 'Sc', short: 'Scatter', icon: 'M3 12L21 3 M3 12L21 7.5 M3 12h18 M3 12l18 4.5 M3 12l18 9', filled: false, type: 'modifier', name: 'Scatter', cost: 2, desc: 'The next weapon fires 5 copies at 40% power each, spread out', scatter: true },
-  flame: { glyph: 'Fl', short: 'Flame', icon: 'M13 2c0 4 5 6 5 12a6 6 0 0 1-12 0c0-3 1.5-5 3-6 .5 2 1 3 2 3 0-3-1-6 2-9z', filled: true, type: 'modifier', name: 'Flame', cost: 1, desc: 'Adds fire: the attack burns', element: 'fire' },
+  flame: { glyph: 'Fl', short: 'Flame', icon: 'M13 2c0 4 5 6 5 12a6 6 0 0 1-12 0c0-3 1.5-5 3-6 .5 2 1 3 2 3 0-3-1-6 2-9z', filled: true, type: 'modifier', name: 'Flame', cost: 1, desc: 'Adds fire: each hit burns for 80% of its damage over 3 s', element: 'fire' },
   frost: { glyph: 'Fr', short: 'Frost', icon: 'M12 2v20 M3.3 7l17.4 10 M3.3 17l17.4-10 M9 4l3 3 3-3 M9 20l3-3 3 3', filled: false, type: 'modifier', name: 'Frost', cost: 1, desc: 'Adds frost: the attack chills', element: 'frost' },
-  storm: { glyph: 'St', short: 'Storm', icon: 'M13 2L4 14h7l-1 8 9-12h-7z', filled: true, type: 'modifier', name: 'Storm', cost: 1, desc: 'Adds storm: the attack shocks', element: 'storm' },
+  storm: { glyph: 'St', short: 'Storm', icon: 'M13 2L4 14h7l-1 8 9-12h-7z', filled: true, type: 'modifier', name: 'Storm', cost: 1, desc: 'Adds storm: each hit arcs to 2 more enemies for 35%, and shocked enemies take 15% more from everything', element: 'storm' },
   heavy: { glyph: 'He', short: 'Heavy', icon: 'M7 8h10l3 12H4z M9 8a3 3 0 0 1 6 0', filled: true, type: 'modifier', name: 'Heavy', cost: 2, desc: 'Double damage and area, slower shots', mods: [{ stat: 'damage', op: 'more', value: 1 }, { stat: 'area', op: 'inc', value: 1 }, { stat: 'projSpeed', op: 'inc', value: -0.3 }] },
   echo: { glyph: 'Ec', short: 'Echo', icon: 'M12 18h.01 M8.5 14.5a5 5 0 0 1 7 0 M5 11a10 10 0 0 1 14 0 M2 7.5a15 15 0 0 1 20 0', filled: false, type: 'modifier', name: 'Echo', cost: 2, desc: 'The next weapon fires twice, 0.2 s apart, at 75% each', echo: true },
   pierce: { glyph: 'Pi', short: 'Pierce', icon: 'M2 12h20 M16 6l6 6-6 6 M9 4v16', filled: false, type: 'modifier', name: 'Pierce', cost: 1, desc: 'Shots pass through 2 more enemies', mods: [{ stat: 'pierce', op: 'flat', value: 2 }] },
@@ -109,9 +109,9 @@ export const PIECES = {
 
 // Stat modifiers an element puts on the weapon it is held for (applied to that piece's instance only).
 export const ELEMENTS = {
-  fire: { tag: 'fire', mods: [{ stat: 'burnChance', op: 'flat', value: 1 }] },
+  fire: { tag: 'fire', mods: [{ stat: 'burnChance', op: 'flat', value: 1 }, { stat: 'burnPower', op: 'flat', value: 0.3 }] },   // each hit adds 80% of itself to a burn over 3 s
   frost: { tag: 'frost', mods: [{ stat: 'chillChance', op: 'flat', value: 1 }, { stat: 'chillStacks', op: 'flat', value: 1 }] },
-  storm: { tag: 'storm', mods: [{ stat: 'shockChance', op: 'flat', value: 1 }] },
+  storm: { tag: 'storm', mods: [{ stat: 'shockChance', op: 'flat', value: 1 }, { stat: 'chains', op: 'flat', value: 1 }, { stat: 'chainDamage', op: 'flat', value: -0.15 }] },   // each hit arcs to 2 enemies for 35%; shocked enemies take more from everything (game/ovrun.js)
 };
 
 // First element then second, in the order the modifiers sit in the chain; the same element twice is an Intensify.
