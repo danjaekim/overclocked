@@ -91,9 +91,9 @@ test('1 Blaster: one volley per pulse, 2 energy, full power, from the player', (
   const prs = run.world.projectiles.active;
   assert.equal(prs.length, 1);
   approx(prs[0].dmg, param(run, chain.nodes[0].inst, 'damage'), 1e-9);
-  tick(run, 1);                                                       // the next pulse refills the pool
+  tick(run, 1);                                                       // no recharge here: the next pulse spends from what is left
   assert.equal(events(rig, 'fire').length, 2);
-  assert.equal(events(rig, 'fire')[1].pool, 8);
+  assert.equal(events(rig, 'fire')[1].pool, 6);
 });
 
 test('2 Scatter shot: five shots at 40% power, aimed apart, for 4 energy', () => {
@@ -213,6 +213,69 @@ test('a second chain runs on its own timer and pool', () => {
   const acts = events(rig, 'activate');
   assert.deepEqual(acts.map((a) => a.chain), [0, 1]);
   assert.deepEqual(events(rig, 'fire').map((f) => f.pool), [8, 7]);
+});
+
+test('battery: it recharges at the chain\'s rate up to its size, and a starved chain fires its front pieces only', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'pulse', slots: ['blaster', 'nova'], energy: 6, recharge: 2 }], { log: true });
+  dummy(run, 90, 0);
+  tick(run, 0.4);                                                     // full at the start: 2 + 3 of 6 at 0.3 s
+  assert.deepEqual(events(rig, 'fire').map((f) => f.piece), ['blaster', 'nova']);
+  approx(rig.chains[0].bat.pool, 1 + 2 * 0.1, 0.05);
+  tick(run, 1);                                                       // 1 + 2 = 3 at the next pulse: the Blaster, not the Nova
+  assert.deepEqual(events(rig, 'fire').map((f) => f.piece), ['blaster', 'nova', 'blaster']);
+  assert.equal(events(rig, 'dry', 'nova').length, 1);
+  tick(run, 5);
+  assert.ok(rig.chains[0].bat.pool <= 6, 'never past the battery size');
+});
+
+test('battery: Strider and Anchor charge only while moving or standing still; Reaper and Spite chassis charge on kills and hits', async () => {
+  const { rigEvent } = await import('../src/rig/rig.js');
+  const run = newRun();
+  const rig = installRig(run, [
+    { rule: 'pulse', slots: [], energy: 20, recharge: 10, chargeWhile: 'moving' },
+    { rule: 'pulse', slots: [], energy: 20, recharge: 10, chargeWhile: 'still' },
+    { rule: 'pulse', slots: [], energy: 20, recharge: 0, quirk: { killCharge: 0.5, hurtCharge: 2 } },
+  ]);
+  for (const c of rig.chains) c.bat.pool = 0;
+  tick(run, 0.5);
+  assert.deepEqual(rig.chains.map((c) => Math.round(c.bat.pool)), [0, 5, 0], 'standing still');
+  tick(run, 0.5, { x: 1, y: 0 });
+  assert.deepEqual(rig.chains.slice(0, 2).map((c) => Math.round(c.bat.pool)), [5, 5], 'moving');
+  for (let i = 0; i < 4; i++) rigEvent(run, 'kill');
+  rigEvent(run, 'hurt');
+  tick(run, STEP);
+  approx(rig.chains[2].bat.pool, 4 * 0.5 + 2, 1e-9);
+});
+
+test('battery: a Charge chain fires each time its battery fills, at most once a second', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'charge', slots: ['blaster', 'blaster'], energy: 8, recharge: 2 }], { log: true });
+  dummy(run, 90, 0);
+  tick(run, 1.1);                                                     // the first check finds nothing in range; a second later it fires
+  assert.equal(events(rig, 'activate').length >= 1 && events(rig, 'fire').length, 2);
+  const t0 = events(rig, 'fire')[0].t;
+  tick(run, 1.5);
+  assert.equal(events(rig, 'fire').length, 2, 'still filling: 4 spent at 2/s');
+  tick(run, 0.6);
+  assert.equal(events(rig, 'fire').length, 4);
+  approx(events(rig, 'fire')[2].t - t0, 2, 0.05);
+});
+
+test('chassis quirks: extra cost, free elements, free payloads, and power', () => {
+  const slots = ['flame', 'mortar', 'on_impact', 'nova'];
+  const plain = compileChain({ rule: 'pulse', slots });
+  const over = compileChain({ rule: 'pulse', slots, quirk: { costAdd: 1, power: 1.3 } });
+  assert.equal(over.nodes[0].cost, plain.nodes[0].cost + 2, 'Flame and Mortar cost 1 more each');
+  assert.equal(over.nodes[0].trigger.cost, plain.nodes[0].trigger.cost + 1);
+  approx(over.nodes[0].power, plain.nodes[0].power * 1.3, 1e-9);
+  const kiln = compileChain({ rule: 'pulse', slots, quirk: { elementFree: true, elemPower: 1.25 } });
+  assert.equal(kiln.nodes[0].cost, PIECES.mortar.cost);
+  approx(kiln.nodes[0].power, plain.nodes[0].power * 1.25, 1e-9);
+  approx(kiln.nodes[0].trigger.payload[0].power, plain.nodes[0].trigger.payload[0].power, 1e-9, 'the Nova has no element');
+  const relay = compileChain({ rule: 'pulse', slots, quirk: { payloadFree: true, payloadPower: 1.25 } });
+  assert.equal(relay.nodes[0].trigger.payload[0].cost, 0);
+  approx(relay.nodes[0].trigger.payload[0].power, plain.nodes[0].trigger.payload[0].power * 1.25, 1e-9);
 });
 
 test('installing a rig again replaces the first; its shots in flight set nothing off', () => {

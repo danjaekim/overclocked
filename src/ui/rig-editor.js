@@ -7,10 +7,11 @@
 // sold. Undo steps back one move, Reset returns to how the rig was when the editor opened (or right after an
 // offer). With an offer on the table and the rig full, you replace a piece (it is sold) or skip the offer.
 
-import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
+import { PIECES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { analyzeChain } from '../rig/chain.js';
-import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, BENCH } from '../rig/editor.js';
+import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, replaceChassis, BENCH } from '../rig/editor.js';
 import { applyOffer, describeOffer } from '../rig/offers.js';
+import { chassisName, scrapGold } from '../rig/chassis.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 export const icon = (p, px) => `<svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="${px}" height="${px}"><path d="${p.icon}"/></svg>`;
@@ -19,13 +20,15 @@ const EDGE = 0.28;               // the outer share of a slot, each side, that c
 
 const STAT_ICON = { filled: false, icon: 'M12 5v14 M5 12h14' };
 const CAP_ICON = { filled: false, icon: 'M3 8l9-5 9 5-9 5z M3 13l9 5 9-5 M3 17l9 5 9-5' };
+const CHASSIS_ICON = { filled: false, icon: 'M3 7h18v10H3z M7 7v10 M12 7v10 M17 7v10 M1 10v4 M23 10v4' };
 
 // opts: { rig, offers: [offer] | null, deal(banished) -> offers, rerolls, banishes, onDone(rig, { rerolls, banishes, banished }) }
-// An offer is { kind: 'piece' | 'level' | 'stat' | 'cap', ... } (rig/offers.js). A piece goes to a slot; the others apply at once.
+// An offer is { kind: 'piece' | 'level' | 'stat' | 'cap' | 'chassis', ... } (rig/offers.js). A piece goes to a slot; a chassis
+// with every chain taken asks which chain it replaces (or scraps it for gold, used.gold); the others apply at once.
 let active = null;             // the open editor's AbortController: a new editor closes the old one's listeners
 
 export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0, banishes = 0, onDone }) {
-  const used = { rerolls, banishes, banished: [] };
+  const used = { rerolls, banishes, banished: [], gold: 0 };
   let st = cloneRig(rig);
   let snapshot = cloneRig(rig);
   const history = [];
@@ -33,6 +36,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
   let suggest = null;             // where an offer was put, outlined until the next move
   let pending = offers;           // offers still to pick from, or null
   let incoming = null;            // an offer taken while the rig was full: a piece to swap in for one you sell
+  let swap = null;                // a chassis offer taken with every chain in use: which chain does it replace?
   let note = '';
   let drag = null;                // { from, to, plan, ghost, rects } while a piece is held
   let press = null;               // a pointer that went down on a piece and has not become a drag yet
@@ -76,7 +80,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
     const why = first ? ` <span class="why">Greyed: ${esc(PIECES[def.slots[first[0]]].name)} (${esc(first[1])})</span>` : '';
     return `<div class="rstrip"><span class="rbadge" style="background:${CHAIN_COLORS[ci]}">${CHAIN_NAMES[ci]}</span>
       <div class="rslots" data-chain="${ci}">${row}</div></div>
-      <div class="rpreview"><b>${esc(RULES[def.rule].name)}</b> · ${esc(a.text)}${why}</div>`;
+      <div class="rpreview"><b>${esc(chassisName(rv.chains[ci]))}</b> · ${esc(a.text)}${why}</div>`;
   }
 
   function offersHtml() {
@@ -85,10 +89,20 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
       return `<div class="rfull">${icon(p, 28)}<span><b>${esc(p.name)}</b> needs a slot. The rig is full: tap a piece to replace it (the old piece is sold), or skip.</span>
         <button class="rbtn" data-act="back">Back</button><button class="rbtn" data-act="skip">Skip</button></div>`;
     }
+    if (swap) {
+      const d = describeOffer(st, swap);
+      const btns = st.chains.map((c, i) => {
+        const r = replaceChassis(st, i, swap.chassis, swap.mk);
+        const lost = r.sold.length ? `, sells ${r.sold.map((id) => PIECES[id].short).join(' ')}` : r.benched.length ? `, ${r.benched.length} to bench` : '';
+        return `<button class="rbtn" data-act="swap:${i}" style="border-color:${CHAIN_COLORS[i]}">Replace ${CHAIN_NAMES[i]}: ${esc(chassisName(c))}${esc(lost)}</button>`;
+      }).join('');
+      return `<div class="rfull wrap">${icon(CHASSIS_ICON, 28)}<span><b>${esc(d.title)}</b>: ${esc(d.desc)} Every chain is in use: pick one to replace (its pieces move over, upgrades bought for it are lost), or scrap it.</span>
+        ${btns}<button class="rbtn" data-act="scrap">Scrap +${scrapGold(swap.mk)} gold</button><button class="rbtn" data-act="back">Back</button></div>`;
+    }
     if (!pending) return '';
     return `<div class="rcards">${pending.map((o, k) => {
       const d = describeOffer(st, o);
-      const ic = d.piece || (o.kind === 'stat' ? STAT_ICON : CAP_ICON);
+      const ic = d.piece || (o.kind === 'stat' ? STAT_ICON : o.kind === 'chassis' ? CHASSIS_ICON : CAP_ICON);
       const ban = used.banishes > 0 && (o.kind === 'piece' || o.kind === 'level') ? `<button class="rban" data-act="ban:${k}">Ban</button>` : '';
       return `<div class="rcardw"><button class="rcard ${d.type}" data-act="offer:${k}">${icon(ic, 30)}<b>${esc(d.title)}</b><span>${esc(d.tag)}</span><em>${esc(d.desc)}</em></button>${ban}</div>`;
     }).join('')}</div>`;
@@ -106,14 +120,14 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
     } else hint = note || 'Tap a piece, then tap where it goes, or drag it. Drop it between two pieces to slide it in.';
     overlays.show(`
       <div class="rhead"><b>Rig</b>
-        ${pending && deal && used.rerolls > 0 && !incoming ? `<button class="rbtn" data-act="reroll">Reroll ${used.rerolls}</button>` : ''}
+        ${pending && deal && used.rerolls > 0 && !incoming && !swap ? `<button class="rbtn" data-act="reroll">Reroll ${used.rerolls}</button>` : ''}
         ${pending ? '<button class="rbtn" data-act="skip">Skip</button>' : ''}
         <button class="rbtn" data-act="undo"${history.length ? '' : ' disabled'}>Undo</button>
         <button class="rbtn" data-act="reset">Reset</button>
-        <button class="rbtn primary" data-act="done"${pending || incoming ? ' disabled' : ''}>Done</button></div>
+        <button class="rbtn primary" data-act="done"${pending || incoming || swap ? ' disabled' : ''}>Done</button></div>
       ${offersHtml()}${chains}
       <div class="rbench">${bench}<span class="rlabel">Bench: spare pieces</span></div>
-      <div class="rhint">${pending && !incoming ? 'Pick one, or skip.' : hint}</div>`, onAct, 'sheet');
+      <div class="rhint">${pending && !incoming && !swap ? 'Pick one, or skip.' : hint}</div>`, onAct, 'sheet');
   }
 
   function commit(next) {
@@ -131,7 +145,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
     if (performance.now() < quietUntil) return;
     const [kind, a, b] = act.split(':');
     if (kind === 'done') {
-      if (!pending && !incoming) { ac.abort(); onDone(st, used); }
+      if (!pending && !incoming && !swap) { ac.abort(); onDone(st, used); }
     } else if (kind === 'undo') {
       if (history.length) { st = history.pop(); sel = suggest = null; render(); }
     } else if (kind === 'reset') {
@@ -141,11 +155,27 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
       note = 'Back to how it was.';
       render();
     } else if (kind === 'skip') {
-      pending = incoming = null;
+      pending = incoming = swap = null;
       note = 'Skipped. Nothing taken.';
       render();
     } else if (kind === 'back') {
-      incoming = null;
+      incoming = swap = null;
+      render();
+    } else if (kind === 'swap') {
+      const r = swap && replaceChassis(st, Number(a), swap.chassis, swap.mk);
+      if (!r) return;
+      const d = describeOffer(st, swap);
+      st = r.rig;
+      snapshot = cloneRig(st);
+      history.length = 0;
+      pending = swap = null;
+      note = `Chain ${CHAIN_NAMES[Number(a)]} is now a ${d.title}.${r.benched.length ? ` ${r.benched.length} piece${r.benched.length > 1 ? 's' : ''} went to the bench.` : ''}${r.sold.length ? ` Sold ${r.sold.map((id) => PIECES[id].name).join(', ')}.` : ''} Tap Done to keep it.`;
+      render();
+    } else if (kind === 'scrap') {
+      if (!swap) return;
+      used.gold += scrapGold(swap.mk);
+      note = `Scrapped for ${scrapGold(swap.mk)} gold.`;
+      pending = swap = null;
       render();
     } else if (kind === 'sell') {
       if (sel) {
@@ -161,8 +191,9 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
       if (deal && used.banishes > 0 && o) { used.banishes--; used.banished.push(o.id); pending = deal(used.banished); render(); }
     } else if (kind === 'offer') {
       const o = pending[Number(a)];
-      if (o.kind !== 'piece') {                                // a level, a passive or capacity: no slot needed
+      if (o.kind !== 'piece') {                                // a level, a passive, capacity or a chassis: no slot needed
         const next = applyOffer(st, o);
+        if (!next && o.kind === 'chassis') { swap = o; sel = null; render(); return; }   // every chain in use: replace one
         if (!next) return;
         const d = describeOffer(st, o);
         st = next;
@@ -301,7 +332,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, rerolls = 0,
 
   document.addEventListener('pointerdown', (e) => {
     const el = e.target.closest && e.target.closest('.overlay.sheet .slot[data-act]');
-    if (!el || incoming) return;
+    if (!el || incoming || swap) return;
     const [kind, a, b] = el.dataset.act.split(':');
     const loc = locOf(kind, a, b);
     if (!validLoc(st, loc) || !pieceAt(st, loc)) return;

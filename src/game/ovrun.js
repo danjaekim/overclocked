@@ -34,7 +34,7 @@ export function createOverclockedRun({ seed, view, debug, sfx }) {
   run.summary = () => ({
     ...base(),
     rig: {                                                       // for the results screen
-      chains: run.rigState.chains.map((c) => ({ rule: c.rule, slots: c.slots.slice(), bonus: c.bonus || 0 })),
+      chains: run.rigState.chains.map((c) => ({ chassis: c.chassis, mk: c.mk, rule: c.rule, slots: c.slots.slice(), charge: c.charge || 0, cell: c.cell || 0 })),
       levels: { ...run.rigState.levels },
       bench: run.rigState.bench.slice(),
       stats: { ...run.rigState.stats },

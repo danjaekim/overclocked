@@ -25,11 +25,11 @@ const rigOf = (slots, extra = {}) => {
 };
 const events = (rig, ev, piece) => rig.log.filter((l) => l.ev === ev && (piece === undefined || l.piece === piece));
 
-test('the full piece set: 5 weapons, 7 modifiers, 4 triggers and 5 rule cards', () => {
+test('the full piece set: 5 weapons, 7 modifiers, 4 triggers and 7 rule cards', () => {
   const n = { weapon: 0, modifier: 0, trigger: 0 };
   for (const p of Object.values(PIECES)) n[p.type]++;
   assert.deepEqual(n, { weapon: 5, modifier: 7, trigger: 4 });
-  assert.equal(Object.keys(RULES).length, 5);
+  assert.equal(Object.keys(RULES).length, 7);
 });
 
 test('Chain Bolt hits the nearest enemy and jumps, and carries its On Impact', () => {

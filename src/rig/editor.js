@@ -1,14 +1,17 @@
 // The rig as the editor sees it, and the moves the editor makes. Pure data in, new data out: nothing here
 // touches the engine, so the rules can be tested without a run.
 //
-//   rig  { cap, chains: [{ rule, slots: [piece id | null], key, bonus }], bench: [piece id | null] * BENCH, levels, stats }
-//        A chain has as many slots as it has unlocked (3 to cap in a run, cap in the sandbox); bonus is extra energy.
+//   rig  { cap, chains: [{ chassis, mk, rule, slots: [piece id | null], key, charge, cell }], bench: [piece id | null] * BENCH, levels, stats }
+//        A chain is a chassis (rig/chassis.js): it fixes the rule card, the battery and recharge, and how far the slots can
+//        grow (cap is the hard limit for every chain; the sandbox fills chains to it). charge and cell count the recharge
+//        and battery upgrades bought for this chassis.
 //        levels is { piece id: 2..5 } (all copies of a piece share a level); stats is { RIG_STATS id: times taken }.
 //
 // A location is { kind: 'slot', c, i } | { kind: 'bench', i }. A drop target may also be a gap,
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
-import { PIECES, RULES, DEFAULT_ENERGY, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
+import { PIECES, RULES, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
+import { CHASSIS, chassisStats, chassisForRule, MK_MAX } from './chassis.js';
 
 export const BENCH = 3;
 export const SLOTS = 6;
@@ -16,11 +19,16 @@ export const SLOTS = 6;
 export function newRig(chainDefs, cap = SLOTS) {
   return {
     cap,
-    chains: chainDefs.map((d) => ({ rule: d.rule, key: d.key || null, bonus: d.bonus || 0, slots: padSlots(d.slots, d.size || cap) })),
+    chains: chainDefs.map((d) => chainState(d.chassis || chassisForRule(d.rule), d.mk || 1, padSlots(d.slots, d.size || cap), d)),
     bench: new Array(BENCH).fill(null),
     levels: {},
     stats: {},
   };
+}
+
+// One chain's state. `d` can carry key, charge and cell (a saved chain, a preset).
+function chainState(chassis, mk, slots, d = {}) {
+  return { chassis, mk, rule: CHASSIS[chassis].rule, key: d.key || null, charge: d.charge || 0, cell: d.cell || 0, slots };
 }
 
 export function padSlots(slots, cap = SLOTS) {
@@ -163,10 +171,12 @@ function appendTo(rig, c, id) {
   return { kind: 'slot', c, i };
 }
 
-// What the engine and the analyzer read for chain c: its rule card, slots, energy pool and the piece levels.
+// What the engine and the analyzer read for chain c: its rule card, slots, battery, recharge, quirk and the piece levels.
 export function chainDefOf(rig, c) {
   const ch = rig.chains[c];
-  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: DEFAULT_ENERGY + (ch.bonus || 0), levels: rig.levels };
+  const s = chassisStats(ch);
+  const d = CHASSIS[ch.chassis];
+  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels };
 }
 
 export function chainDefsOf(rig) {
@@ -204,33 +214,59 @@ export function takeStat(rig, id) {
   return next;
 }
 
+// How many slots chain c can grow to: its chassis's max, never past the rig's cap.
+export const slotMax = (rig, c) => Math.min(rig.cap, chassisStats(rig.chains[c]).max);
+export const hasSlotRoom = (rig, c) => rig.chains[c].slots.length < slotMax(rig, c);
+
 // The chain a +1 slot would go to: the one with the fewest slots (the first, on a tie), or -1 when all are full.
 export function slotTarget(rig) {
   let best = -1;
-  rig.chains.forEach((c, i) => { if (c.slots.length < rig.cap && (best < 0 || c.slots.length < rig.chains[best].slots.length)) best = i; });
+  rig.chains.forEach((c, i) => { if (hasSlotRoom(rig, i) && (best < 0 || c.slots.length < rig.chains[best].slots.length)) best = i; });
   return best;
 }
 
-// +1 slot also gives that chain SLOT_ENERGY more energy: power comes from longer chains as well as more of them.
-export const SLOT_ENERGY = 2;
-
 export function addSlot(rig, c) {
-  if (rig.chains[c].slots.length >= rig.cap) return null;
+  if (!rig.chains[c] || !hasSlotRoom(rig, c)) return null;
   const next = cloneRig(rig);
   next.chains[c].slots.push(null);
-  next.chains[c].bonus = (next.chains[c].bonus || 0) + SLOT_ENERGY;   // a longer chain needs more to run it
   return next;
 }
 
-export function addChain(rig, rule, size = 3) {
-  if (rig.chains.length >= MAX_CHAINS || !RULES[rule]) return null;
+// +CHARGE_STEP recharge (kind 'charge') or +CELL_STEP battery (kind 'cell') for chain c.
+export function addPower(rig, c, kind) {
+  if (!rig.chains[c] || (kind !== 'charge' && kind !== 'cell')) return null;
   const next = cloneRig(rig);
-  next.chains.push({ rule, key: null, bonus: 0, slots: padSlots([], size) });
+  next.chains[c][kind] = (next.chains[c][kind] || 0) + 1;
   return next;
 }
 
-export function addEnergy(rig, c, n = 3) {
+// A new chain on `chassis`, when there is room for one.
+export function addChassis(rig, chassis, mk = 1) {
+  if (rig.chains.length >= MAX_CHAINS || !CHASSIS[chassis]) return null;
   const next = cloneRig(rig);
-  next.chains[c].bonus = (next.chains[c].bonus || 0) + n;
+  next.chains.push(chainState(chassis, Math.min(MK_MAX, mk), padSlots([], Math.min(rig.cap, chassisStats({ chassis, mk }).start))));
   return next;
+}
+
+// What replacing chain c's chassis does: { rig, benched: [ids], sold: [ids] }. The pieces move onto the new chassis in
+// order; the ones that do not fit go to the bench, and once the bench is full they are sold. Upgrades bought for the old
+// chassis go with it. The new chassis starts with max(its starting slots, the old slot count) slots, up to its max, so a
+// replacement never strands pieces it has room for.
+export function replaceChassis(rig, c, chassis, mk = 1) {
+  if (!rig.chains[c] || !CHASSIS[chassis]) return null;
+  const next = cloneRig(rig);
+  const old = next.chains[c];
+  const s = chassisStats({ chassis, mk });
+  const size = Math.min(rig.cap, s.max, Math.max(s.start, old.slots.length));
+  const pieces = old.slots.filter(Boolean);
+  const slots = padSlots(pieces.slice(0, size), size);
+  next.chains[c] = chainState(chassis, Math.min(MK_MAX, mk), slots);
+  const benched = [];
+  const sold = [];
+  for (const id of pieces.slice(size)) {
+    const b = next.bench.indexOf(null);
+    if (b < 0) sold.push(id);
+    else { next.bench[b] = id; benched.push(id); }
+  }
+  return { rig: next, benched, sold };
 }

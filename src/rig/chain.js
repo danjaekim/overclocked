@@ -7,7 +7,8 @@
 //   3. A trigger attaches to the nearest weapon on its left; everything to its right is its payload.
 //   4. Energy: see rig.js. The cost fields here are what the rig charges.
 //
-// compileChain(def) -> { rule, energy, nodes, problems }
+// compileChain(def) -> { rule, energy, recharge, nodes, problems }
+//   def.quirk  the chassis quirk (rig/chassis.js): power, costAdd, elementFree, elemPower, payloadFree, payloadPower
 //   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, echo, power, cost, trigger }
 //   trigger  { piece, idx, on, every, cost, payload: [node] }
 //   power    damage multiplier from piece levels (def.levels: { piece id: 1..5 }): +20% a level for the weapon,
@@ -26,12 +27,15 @@ const lvlMult = (levels, id) => {
 export function compileChain(def) {
   const slots = def.slots;
   const problems = [];
-  const nodes = parse(slots, 0, problems, def.levels || null, 1);
-  return { rule: def.rule, energy: def.energy === undefined ? DEFAULT_ENERGY : def.energy, nodes, problems };
+  const q = def.quirk || NO_QUIRK;
+  const nodes = parse(slots, 0, problems, def.levels || null, q.power || 1, q);
+  return { rule: def.rule, energy: def.energy === undefined ? DEFAULT_ENERGY : def.energy, recharge: def.recharge || 0, nodes, problems };
 }
 
 // Parses slots[start..] as one segment: the top level, or one payload (inPayload: its pieces cost 1 less).
-function parse(slots, start, problems, levels, outer, inPayload = false) {
+const NO_QUIRK = {};
+
+function parse(slots, start, problems, levels, outer, q, inPayload = false) {
   const nodes = [];
   let held = [];                              // modifiers waiting for a weapon: { id, idx }
   let last = null;                            // the nearest weapon so far in this segment
@@ -44,7 +48,7 @@ function parse(slots, start, problems, levels, outer, inPayload = false) {
     } else if (piece.type === 'modifier') {
       held.push({ id, idx: i });
     } else if (piece.type === 'weapon') {
-      last = makeNode(id, i, held, levels, outer, inPayload);
+      last = makeNode(id, i, held, levels, outer, q, inPayload);
       held = [];
       nodes.push(last);
     } else {                                  // trigger
@@ -55,7 +59,7 @@ function parse(slots, start, problems, levels, outer, inPayload = false) {
         for (let k = i + 1; k < slots.length; k++) if (slots[k] !== null && slots[k] !== undefined) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
         return nodes;
       }
-      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost, payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_BONUS * (piece.on === 'every' ? EVERY_BONUS : 1) * sigPower(levels, id), true) };
+      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost + (q.costAdd || 0), payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_BONUS * (piece.on === 'every' ? EVERY_BONUS : 1) * sigPower(levels, id) * (inPayload ? 1 : q.payloadPower || 1), q, true) };
       return nodes;                           // the rest of the slots belong to the payload
     }
   }
@@ -63,12 +67,12 @@ function parse(slots, start, problems, levels, outer, inPayload = false) {
   return nodes;
 }
 
-function makeNode(id, idx, held, levels, outer, inPayload) {
+function makeNode(id, idx, held, levels, outer, q, inPayload) {
   const elements = [];
   const seq = [];                                              // every element held, in order, repeats included
   let scatter = false;
   let echo = false;
-  let cost = PIECES[id].cost;
+  let cost = PIECES[id].cost + (q.costAdd || 0);
   let power = outer * lvlMult(levels, id);
   let copies = SCATTER.copies + sigCount(levels, 'scatter');
   const sigMods = [];
@@ -76,7 +80,7 @@ function makeNode(id, idx, held, levels, outer, inPayload) {
   addSig(id);
   for (const h of held) {
     const m = PIECES[h.id];
-    cost += m.cost;
+    cost += m.element && q.elementFree ? 0 : m.cost + (q.costAdd || 0);
     power *= lvlMult(levels, h.id);
     if (m.scatter) scatter = true;
     if (m.echo) echo = true;
@@ -86,7 +90,8 @@ function makeNode(id, idx, held, levels, outer, inPayload) {
       if (!elements.includes(m.element)) elements.push(m.element);
     }
   }
-  if (inPayload) cost = Math.max(1, cost - 1);
+  if (inPayload) cost = q.payloadFree ? 0 : Math.max(1, cost - 1);
+  if (elements.length && q.elemPower) power *= q.elemPower;
   const sc = sigCount(levels, 'echo');
   const echoMult = sc >= 1 ? ECHO.boosted : ECHO.mult;
   const echoShots = sc >= 2 ? 2 : 1;                           // extra shots after the first
@@ -155,7 +160,7 @@ export function analyzeChain(def) {
   walk(c.nodes);
   const rule = ruleOf(def.rule);
   const body = c.nodes.length ? describe(c.nodes) : 'nothing to run yet';
-  return { text: `${rule.desc}: ${body} (cost ${used} of ${c.energy})`, cost: used, energy: c.energy, reasons };
+  return { text: `${rule.desc}: ${body} (cost ${used} of ${c.energy}${c.recharge ? `, +${c.recharge}/s` : ''})`, cost: used, energy: c.energy, recharge: c.recharge, reasons };
 }
 
 const TRIGGER_WORDS = { impact: 'on impact', kill: 'on kill', hit: 'on every hit', every: `every ${EVERY}rd time` };

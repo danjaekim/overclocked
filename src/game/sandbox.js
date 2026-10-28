@@ -8,6 +8,7 @@ import { installRig } from '../rig/rig.js';
 import { newRig, padSlots, chainDefsOf } from '../rig/editor.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 import { RIG_STATS } from '../rig/pieces.js';
+import { chassisForRule } from '../rig/chassis.js';
 
 export const SANDBOX = {
   target: 45,            // enemies kept alive
@@ -43,7 +44,7 @@ function sandboxDirector(run) {
   };
 }
 
-const presetDef = (key) => ({ rule: TEST_CHAINS[key].rule, slots: TEST_CHAINS[key].slots, key });
+const presetDef = (key) => ({ rule: TEST_CHAINS[key].rule, slots: TEST_CHAINS[key].slots, key, mk: 3 });   // the sandbox is for trying chains: top-mark chassis
 
 export function createSandboxRun({ seed, view, debug, sfx }) {
   const run = createRun({ seed, view, debug: { ...debug, god: true }, sfx });
@@ -79,6 +80,7 @@ export function applyRigStats(run) {
 export function loadChain(run, index, key) {
   const c = run.rigState.chains[index];
   c.rule = TEST_CHAINS[key].rule;
+  c.chassis = chassisForRule(c.rule);
   c.slots = padSlots(TEST_CHAINS[key].slots, run.rigState.cap);
   c.key = key;
   applyRig(run);

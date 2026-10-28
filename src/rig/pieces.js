@@ -6,7 +6,7 @@
 //   modifier  held, then applied to the next weapon only
 //   trigger   attaches to the weapon before it; everything to its right is the payload it runs later
 
-export const DEFAULT_ENERGY = 12;       // a chain's energy pool: it was 10, which six slots could not afford; 16 felt too high (v0.3.3)
+export const DEFAULT_ENERGY = 12;       // a chain's battery when its definition names none (tests, tools); a run's chains take theirs from the chassis
 
 // Scatter: the next weapon fires `copies` attacks at `mult` power each, spread out: on a ring of radius `ring` around the origin, and aimed `fan` radians apart.
 export const SCATTER = { copies: 5, mult: 0.4, ring: 28, fan: 0.15 };
@@ -144,10 +144,11 @@ export const REACTION_INFO = {
 // Chain identity in the HUD and the arena: strip badge, and the ring where each of its pieces runs.
 export const CHAIN_COLORS = ['#ff7ac6', '#9be564', '#6cc8ff', '#ffc857'];
 export const CHAIN_NAMES = 'ABCD';
-export const MAX_CHAINS = 4;
+export const MAX_CHAINS = 3;            // each chain is a chassis (rig/chassis.js); a new one past this replaces one
 
 // When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. A card with `on` is not
-// timed: it runs when that event happens ('kill': any enemy dies; 'hurt': you take damage), at most once per `gap` seconds.
+// timed: it runs when that event happens ('kill': any enemy dies; 'hurt': you take damage; 'full': the chain's battery
+// is full), at most once per `gap` seconds. Each chassis (rig/chassis.js) carries one.
 // `short` is the second line of the HUD badge.
 // Spite: each firing heals this share of max hp, and the more hp you are missing the harder it hits and the more it heals (x2 at death's door).
 export const SPITE_HEAL = 0.06;
@@ -156,6 +157,8 @@ export const RULES = {
   pulse: { name: 'Pulse', every: 1, first: 0.3, desc: 'Every 1 s', short: '1s' },
   stride: { name: 'Stride', every: 0.5, first: 0.3, while: 'moving', desc: 'Every 0.5 s while moving', short: '0.5s' },
   anchor: { name: 'Anchor', every: 0.6, first: 0.3, while: 'still', desc: 'Every 0.6 s while standing still', short: 'still' },
+  rapid: { name: 'Rapid', every: 0.6, first: 0.3, desc: 'Every 0.6 s', short: '0.6s' },
+  charge: { name: 'Charge', on: 'full', gap: 1, desc: 'When its battery is full, at most once a second', short: 'full' },
   reaper: { name: 'Reaper', on: 'kill', gap: 0.25, desc: 'On any kill, at most 4 times a second', short: 'kills' },
   spite: { name: 'Spite', on: 'hurt', gap: 0.4, heal: SPITE_HEAL, scales: true, desc: 'When you take damage; the lower your hp, the harder it hits and the more it heals', short: 'hurt' },
 };

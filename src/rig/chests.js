@@ -5,7 +5,7 @@
 
 import { CHEST } from '../data/elites.js';
 import { placeSuggested } from './editor.js';
-import { offerWeights, pieceCandidates, capacityOffers, applyOffer, describeOffer } from './offers.js';
+import { offerWeights, pieceCandidates, upgradeOffers, applyOffer, describeOffer, chassisCards } from './offers.js';
 
 const WEIGHTS = { piece: 0.4, level: 0.35, cap: 0.25 };
 
@@ -40,7 +40,7 @@ function rollOne(rng, rig, wantCap) {
   const cands = pieceCandidates(rig);
   const newPieces = cands.filter((c) => c.kind === 'piece' && placeSuggested(rig, c.id));
   const levels = cands.filter((c) => c.kind === 'level');
-  const caps = capacityOffers(rng, rig);
+  const caps = upgradeOffers(rng, rig);
   const kinds = [];
   if (wantCap && caps.length) kinds.push('cap');
   else {
@@ -61,7 +61,17 @@ function rollOne(rng, rig, wantCap) {
   return { rig: applyOffer(rig, offer), roll: { ...describeOffer(rig, offer), kind, placed: null, offer } };
 }
 
-// Opens a chest: returns { count, rolls, rig } with every roll applied to the returned rig. `first`: no elite chest has been opened yet.
+// Chassis in a chest: about one elite chest in two holds one (Mk II about one time in three), and a boss chest
+// always holds two Mk II or Mk III to pick from. They are not applied: the editor offers them, since one may replace a chain.
+export const CHASSIS_DROP = { elite: 0.5, eliteMk2: 0.35, bossMk3: 0.4 };
+export function chestChassis(rng, tier) {
+  if (tier === 1) return chassisCards(rng, 2, rng.next() < CHASSIS_DROP.bossMk3 ? 3 : 2);
+  if (rng.next() >= CHASSIS_DROP.elite) return [];
+  return chassisCards(rng, 1, rng.next() < CHASSIS_DROP.eliteMk2 ? 2 : 1);
+}
+
+// Opens a chest: returns { count, rolls, rig, chassis } with every roll applied to the returned rig, and chassis cards
+// for the editor to offer. `first`: no elite chest has been opened yet.
 export function openRigChest(rng, rig, tier, first = false) {
   const count = chestCount(rng, tier, first);
   const rolls = [];
@@ -72,5 +82,5 @@ export function openRigChest(rng, rig, tier, first = false) {
     cur = r.rig;
     rolls.push(r.roll);
   }
-  return { count: rolls.length, rolls, rig: cur };
+  return { count: rolls.length, rolls, rig: cur, chassis: chestChassis(rng, tier) };
 }

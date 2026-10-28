@@ -1,10 +1,12 @@
 // The rig at runtime: each chain owns hidden weapon instances (one per weapon piece), a rule-card timer
-// and an energy pool, and runs the tree that rig/chain.js compiled. docs/overclocked-spec.md has the rules.
+// and a battery, and runs the tree that rig/chain.js compiled. docs/overclocked-spec.md has the rules.
 //
-//   activation   the rule card fires: the pool refills and the top-level pieces run, left to right, from the player
+//   battery      each chain's energy. It recharges at the chain's rate (only while moving or still, for some chassis)
+//                up to its size, and starts full. Activations and their payloads spend it; nothing else refills it
+//   activation   the rule card fires: the top-level pieces run, left to right, from the player
 //   payload      what sits right of a trigger. When the trigger's event happens the rig queues a payload run from
-//                that point; it runs on the next tick, paying from the pool of the activation that fired the attack
-//   energy       a piece is charged when it runs. A piece the pool cannot pay for does not run, and neither does
+//                that point; it runs on the next tick, paying from the battery of the chain that fired the attack
+//   energy       a piece is charged when it runs. A piece the battery cannot pay for does not run, and neither does
 //                anything after it in its segment. This is the only thing that ends a chain reaction
 //
 // Attacks come from the behaviors' fire(inst, run, ctx) (game/fire-ctx.js). Events come back through
@@ -34,11 +36,11 @@ function weaponDef(id) {
   return d;
 }
 
-// Builds the rig from chain definitions [{ rule, slots, energy? }] and installs it as run.rig, replacing any
+// Builds the rig from chain definitions [{ rule, slots, energy?, recharge?, chargeWhile?, quirk? }] (editor.js chainDefOf) and installs it as run.rig, replacing any
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], flags: { kill: false, hurt: false } };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], flags: { kill: false, hurt: false }, kills: 0, hurts: 0 };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
@@ -53,8 +55,10 @@ export function removeRig(run) {
 function buildChain(run, rig, def, index) {
   const c = compileChain(def);
   const rule = ruleOf(def.rule);
+  const q = def.quirk || {};
   const chain = { index, def, rule, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.on ? 0 : rule.first,
-    act: null,                          // the latest activation: its pool is what the HUD's energy pips show
+    bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: q.killCharge || 0, hurt: q.hurtCharge || 0 },
+    act: null,                          // the latest activation
     flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
   const stack = [...c.nodes];
   while (stack.length) {
@@ -192,8 +196,10 @@ function fireNode(run, rig, chain, node, x, y, act) {
   note(run, rig, 'fire', { act: act.id, piece: node.piece, mods: node.mods, copies: fired, x, y, armed, pool: act.pool });
 }
 
+// An activation pays from its chain's battery, so a payload that runs later sees what is left then.
 function activate(run, rig, chain, scale = 1) {
-  const act = { id: ++rig.actN, chain: chain.index, pool: chain.energy, spent: 0, scale };
+  const bat = chain.bat;
+  const act = { id: ++rig.actN, chain: chain.index, bat, spent: 0, scale, get pool() { return bat.pool; }, set pool(v) { bat.pool = v; } };
   chain.act = act;
   note(run, rig, 'activate', { act: act.id, chain: chain.index, pool: act.pool });
   const p = run.player;
@@ -207,6 +213,18 @@ export function updateRig(run, dt) {
   for (let i = 0; i < rig.chains.length; i++) {
     const chain = rig.chains[i];
     const rule = chain.rule;
+    const bat = chain.bat;
+    if (!bat.while || (bat.while === 'moving') === !!p.moving) bat.pool += bat.rate * dt;
+    bat.pool += bat.kill * rig.kills + bat.hurt * rig.hurts;
+    if (bat.pool > bat.size) bat.pool = bat.size;
+    if (rule.on === 'full') {                                  // Charge: fires each time the battery fills
+      if (chain.t > 0) chain.t -= dt;
+      if (bat.pool >= bat.size - 1e-6 && chain.t <= 0) {
+        chain.t = rule.gap;
+        activate(run, rig, chain);
+      }
+      continue;
+    }
     if (rule.on) {                                             // Reaper, Spite: an event starts it, at most once per `gap`
       if (chain.t > 0) chain.t -= dt;
       if (rig.flags[rule.on] && chain.t <= 0) {
@@ -226,6 +244,7 @@ export function updateRig(run, dt) {
     activate(run, rig, chain);
   }
   rig.flags.kill = rig.flags.hurt = false;
+  rig.kills = rig.hurts = 0;
 
   const dl = rig.delayed;                                      // Echo: the second shot
   for (let i = dl.length - 1; i >= 0; i--) {
@@ -258,7 +277,10 @@ export function updateRig(run, dt) {
 
 // Rule-card events from the rest of the game: an enemy died ('kill'), the player was hit ('hurt').
 export function rigEvent(run, name) {
-  if (run.rig !== null) run.rig.flags[name] = true;
+  if (run.rig === null) return;
+  run.rig.flags[name] = true;
+  if (name === 'kill') run.rig.kills++;
+  else if (name === 'hurt') run.rig.hurts++;
 }
 
 export function drawRig(ctx, run) {

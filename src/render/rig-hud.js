@@ -4,6 +4,7 @@
 import { fmtTime } from '../ui/overlay.js';
 import { xpToNext } from '../game/xp.js';
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
+import { chainCost } from '../rig/chain.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 import { drawChestArrows, drawShrineArrows } from './shrines.js';
 
@@ -139,10 +140,16 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.globalAlpha = 1;
   }
 
-  const pool = chain.act ? chain.act.pool : chain.energy;        // energy pips: they empty as pieces and payloads run
-  for (let k = 0; k < chain.energy; k++) {
-    ctx.fillStyle = k < pool ? '#ffd34d' : 'rgba(255,255,255,0.18)';
-    ctx.fillRect(x + k * 9, y + SLOT + 5, 7, 7);
+  const bat = chain.bat;                                          // the battery: it drains as pieces run and refills at the chain's rate
+  const w = 54 + slots.length * (SLOT + GAP);
+  if (chain.cost === undefined) chain.cost = chainCost(chain.nodes);
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.fillRect(x, y + SLOT + 5, w, 6);
+  ctx.fillStyle = bat.pool >= chain.cost ? '#ffd34d' : '#c98a2e';   // dimmer while it cannot pay for the whole chain
+  ctx.fillRect(x, y + SLOT + 5, w * Math.max(0, bat.pool) / bat.size, 6);
+  if (chain.cost > 0 && chain.cost < bat.size) {                  // a tick at what one full run of the chain costs
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + Math.round(w * chain.cost / bat.size) - 1, y + SLOT + 3, 2, 10);
   }
   const label = chain.def.key ? TEST_CHAINS[chain.def.key].name : run.rigRun ? '' : 'Custom';
   if (label) {                                                   // the chain's name, under its strip

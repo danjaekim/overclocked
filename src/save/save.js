@@ -55,10 +55,10 @@ export function entryFromSummary(summary, now = Date.now()) {
   };
 }
 
-// The rig of a finished run, compact: [{ rule, slots: [piece ids] }] and { piece id: level }. Strings and small numbers only.
+// The rig of a finished run, compact: [{ rule, chassis?, mk?, slots: [piece ids] }] and { piece id: level }. Strings and small numbers only.
 function cleanRig(r) {
   if (!r || !Array.isArray(r.chains)) return null;
-  const chains = r.chains.slice(0, 4).map((c) => ({ rule: String(c.rule).slice(0, 20), slots: (Array.isArray(c.slots) ? c.slots : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => x.slice(0, 20)) }));
+  const chains = r.chains.slice(0, 4).map((c) => ({ rule: String(c.rule).slice(0, 20), ...(typeof c.chassis === 'string' ? { chassis: c.chassis.slice(0, 20), mk: Math.max(1, Math.min(3, Math.floor(Number(c.mk)) || 1)) } : {}), slots: (Array.isArray(c.slots) ? c.slots : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => x.slice(0, 20)) }));
   const levels = {};
   if (r.levels && typeof r.levels === 'object') for (const [k, v] of Object.entries(r.levels).slice(0, 20)) if (Number.isFinite(v)) levels[String(k).slice(0, 20)] = Math.max(1, Math.min(5, Math.floor(v)));
   return { chains, levels };

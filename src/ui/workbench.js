@@ -1,8 +1,10 @@
 // The workbench screen (rig/workbench.js): a sheet over the lower part of the screen, like the rig editor, with the
-// stock as cards and the gold you have. Buying a rule card asks which chain gets it.
+// stock as cards and the gold you have. Buying a chassis or capacity asks which chain gets it.
 
-import { PIECES, CHAIN_COLORS, CHAIN_NAMES, RULES } from '../rig/pieces.js';
-import { GOLD_NAME, describeItem, buyItem, rerollPrice, needsChain } from '../rig/workbench.js';
+import { PIECES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
+import { GOLD_NAME, describeItem, buyItem, rerollPrice, needsChain, NEW_CHAIN, canTakeNew } from '../rig/workbench.js';
+import { hasSlotRoom } from '../rig/editor.js';
+import { chassisName } from '../rig/chassis.js';
 import { icon } from './rig-editor.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -13,7 +15,7 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
   let g = gold;
   let items = stock;
   let rerolls = 0;
-  let pick = null;                     // index of an item (rule card, slot, energy) waiting for a chain
+  let pick = null;                     // index of an item (chassis, slot, recharge, battery) waiting for a chain
   let note = '';
   let placed = false;
 
@@ -22,16 +24,19 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
     const bought = it.sold;
     const can = !bought && g >= it.price;
     const ic = d.piece;
-    const type = d.piece && it.kind !== 'overclock' ? d.piece.type : 'cap';
+    const type = it.kind === 'chassis' ? 'chassis' : d.piece && it.kind !== 'overclock' ? d.piece.type : 'cap';
     return `<div class="rcardw"><button class="rcard ${type}${can ? '' : ' dim'}" data-act="buy:${k}"${bought ? ' disabled' : ''}>${ic ? icon(ic, 30) : ''}<b>${esc(d.title)}</b><span>${bought ? 'bought' : esc(d.tag)}</span><em>${esc(d.desc)}</em><strong class="price">${bought ? '' : `${it.price} ${GOLD_NAME.toLowerCase()}`}</strong></button></div>`;
   }
 
   function render() {
     const rpr = rerollPrice(rerolls);
     const pi = pick === null ? null : items[pick];
-    const what = pi === null ? '' : pi.kind === 'rule' ? RULES[pi.rule].name : pi.kind === 'slot' ? '+1 slot' : '+3 energy';
-    const ok = (c) => pi.kind !== 'slot' || c.slots.length < st.cap;
-    const chains = pi === null ? '' : `<div class="rfull"><span><b>${esc(what)}</b> goes on which chain?</span>${st.chains.map((c, i) => (ok(c) ? `<button class="rbtn" data-act="chain:${i}" style="border-color:${CHAIN_COLORS[i]}">${CHAIN_NAMES[i]} (${esc(RULES[c.rule].name)}, ${c.slots.length})</button>` : '')).join('')}<button class="rbtn" data-act="cancel">Back</button></div>`;
+    const what = pi === null ? '' : describeItem(st, pi).title;
+    const ok = (i) => pi.kind !== 'slot' || hasSlotRoom(st, i);
+    const isCh = pi !== null && pi.kind === 'chassis';
+    const ask = isCh ? (canTakeNew(st) ? 'is a new chain, or replaces which?' : 'replaces which chain? Its pieces move over; upgrades bought for it are lost.') : 'goes on which chain?';
+    const fresh = isCh && canTakeNew(st) ? `<button class="rbtn" data-act="chain:${NEW_CHAIN}">New chain</button>` : '';
+    const chains = pi === null ? '' : `<div class="rfull wrap"><span><b>${esc(what)}</b> ${ask}</span>${fresh}${st.chains.map((c, i) => (ok(i) ? `<button class="rbtn" data-act="chain:${i}" style="border-color:${CHAIN_COLORS[i]}">${isCh ? 'Replace ' : ''}${CHAIN_NAMES[i]} (${esc(chassisName(c))}, ${c.slots.length})</button>` : '')).join('')}<button class="rbtn" data-act="cancel">Back</button></div>`;
     overlays.show(`
       <div class="rhead"><b>Workbench</b><span class="gold">${g} ${GOLD_NAME.toLowerCase()}</span>
         <button class="rbtn" data-act="reroll"${g < rpr ? ' disabled' : ''}>Reroll ${rpr}</button>
@@ -50,7 +55,8 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
     it.sold = true;
     if (res.placed) placed = true;
     onChange(st, g, it);
-    note = it.kind === 'piece' ? `${PIECES[it.id].name} bought. Arrange it in the rig editor after.` : 'Bought.';
+    note = it.kind === 'piece' ? `${PIECES[it.id].name} bought. Arrange it in the rig editor after.` : res.sold && res.sold.length ? `Bought. Sold ${res.sold.map((id) => PIECES[id].name).join(', ')}: no room for them.` : 'Bought.';
+    if (it.kind === 'chassis') placed = true;            // open the editor after, to arrange the new chain
     pick = null;
     render();
   }

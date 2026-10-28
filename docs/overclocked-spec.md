@@ -26,14 +26,14 @@ A run lasts about 10 minutes, the same as Overforged, on the same arena with the
 
 ## The rig
 
-The rig holds up to 4 chains, plus a bench of 3 slots for pieces you're keeping but not using. A run starts with 1 chain, and the proof of concept has 2. Each chain has a rule card and 3 slots, growing to 6.
+The rig holds up to 3 chains, plus a bench of 3 slots for pieces you're keeping but not using. A run starts with 1 chain, and the proof of concept has 2. Since v0.6.0 each chain is built on a **chassis** (see "Chassis" below), which sets its rule card, how many slots it starts with and can grow to (never past 6), its battery and recharge, and a quirk.
 
-**How a chain runs.** When its rule card fires, the chain gets its full **energy** (10 at the start) and a cursor reads the slots left to right:
+**How a chain runs.** When its rule card fires, a cursor reads the slots left to right, paying each piece from the chain's **battery**:
 
 1. **Modifier.** It's held and applied to the *next* weapon only, then cleared. Several modifiers in a row all apply to that weapon in order, and their order decides element reactions.
 2. **Weapon.** It fires one attack of its Overforged behavior from the player, with the held modifiers. Weapons next to each other with nothing between them fire together as a volley.
 3. **Trigger.** It attaches to the weapon just before it. Everything to its right becomes that trigger's *payload*. The payload runs later, when the trigger's event happens, from where it happens and aimed away from the player. A trigger with no weapon before it does nothing and shows a warning.
-4. **Energy.** Every piece costs energy each time it runs, and payloads draw from the same pool as the activation that started them. If a Nova with On Hit strikes 12 enemies, it keeps firing payloads until the pool runs out. That's what ends chain reactions, and there's no separate cap. The pool refills the next time the rule card fires.
+4. **Energy.** Every piece costs energy each time it runs, and payloads draw from the same battery. If a Nova with On Hit strikes 12 enemies, it keeps firing payloads until the battery runs out. That's what ends chain reactions, and there's no separate cap. The battery recharges over time at the chain's rate, up to its size; it does not refill when the rule card fires (v0.6.0). A chain that costs more than it recharges fires its front pieces and drops its tail until the battery catches up.
 
 ```text
 Pulse (pool of 10) -> Flame (1) -> Mortar (3) -> On Impact (1) -> Scatter (2) -> Nova (3)
@@ -106,6 +106,29 @@ A reaction happens when two element modifiers are held for the same weapon, one 
 
 The compendium records each reaction the first time it happens in a run.
 
+## Chassis
+
+Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy binds, and a new chassis after the third replaces one. Design doc: https://claude.ai/artifact/4Cf2LP4yKbwCnmtkePxYJt. Numbers live in `src/rig/chassis.js`.
+
+| Chassis | Rule | Slots | Battery | Recharge | Quirk |
+| --- | --- | --- | --- | --- | --- |
+| Standard (start) | Pulse 1 s | 3-5 | 10 | 6/s | None |
+| Long frame | Pulse 1 s | 5-6 | 12 | 6/s | None |
+| Capacitor | Charge: when full, at most once a second | 4-6 | 24 | 5/s | x1.5 power |
+| Overdrive | Rapid 0.6 s | 3-4 | 8 | 8/s | x1.3 power, every piece costs 1 more |
+| Kiln | Pulse 1 s | 4-6 | 12 | 6/s | Element modifiers cost 0; elemental attacks x1.25 |
+| Relay | Pulse 1 s | 5-6 | 14 | 6/s | Payload pieces cost 0 |
+| Strider | Stride 0.5 s | 4-6 | 10 | 7/s, only while moving | None |
+| Anchor | Anchor 0.6 s | 4-6 | 16 | 8/s, only while still | None |
+| Reaper | On kill | 4-5 | 12 | 5/s | Each kill adds 0.5 energy |
+| Spite | When hurt | 4-5 | 20 | 5/s | Heals as before; each hit adds 2 energy |
+
+- Mk II and Mk III add a starting slot (up to the max), 25% battery and +1/s each.
+- Upgrades bought for a chain (+1/s recharge, +50% battery) belong to its chassis and go when it is replaced.
+- Replacing: the pieces move onto the new chassis in order, which keeps at least as many slots as the old chain had (up to its max). Extras go to the bench, and once the bench is full they are sold. Scrapping a chassis instead pays 20 gold a mark.
+- Sources: levels 5 and 10 offer 2 Mk I chassis and a slot while a chain is free (then slot, recharge and battery cards); about 1 elite chest in 2 holds one (Mk II about 1 in 3); a boss chest holds 2 Mk II or Mk III to pick from; the workbench stocks one on about 1 visit in 2 (60/90/120 gold by mark).
+- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.1, after a playtest of v0.6.0.
+
 ## Progression
 
 Power comes from five layers during a run and one between runs, which comes after the first test build. Each layer is tied to a moment in the run that Overforged already has.
@@ -114,8 +137,8 @@ Power comes from five layers during a run and one between runs, which comes afte
 | --- | --- | --- |
 | New pieces | Level-up, pick 1 of 3 | New verbs. Offers lean toward pieces that fit the rig you have, so a rig with a weapon and no trigger is more likely to be offered a trigger |
 | Piece levels | Level-up: an offer for a piece you already own levels it up, to a maximum of 5 | Each level adds +10% to the piece's main number; levels 3 and 5 add a **signature effect** (Scatter +1 copy, Heavy +30% area, Pierce +1, Echo's third shot, Every 3rd becoming every 2nd, ...; `SIGNATURE` in `rig/pieces.js`). Mastery twists (M5) are still to come |
-| Capacity | Elite and boss chests, plus levels 5, 10, 15 and 20 | +1 slot in a chain, a new chain with a rule card, or +3 energy to one chain |
-| Workbench | Shrines on the wave timeline. Gold drops from chests and elites | Buy a chosen piece, reroll, level up a piece, or swap a rule card |
+| Capacity | Elite and boss chests, plus levels 5, 10, 15 and 20 | A chassis (a new chain, or a replacement for one), +1 slot in a chain, +1/s recharge or +50% battery for one chain |
+| Workbench | Shrines on the wave timeline. Gold drops from chests and elites | Buy a chosen piece, reroll, level up a piece, buy capacity or a chassis |
 | Passive stats | About 1 offer in 6 at level-up | Move speed, max HP, magnet range, armor |
 | Unlocks (later) | Firsts: first boss kill, first reaction found, and so on | New pieces and rule cards join the offer pool. The compendium logs your discoveries |
 
@@ -146,7 +169,7 @@ Power comes from five layers during a run and one between runs, which comes afte
 
 - A small rig strip in the HUD flashes each piece as it runs, so you can see the cause of each effect in the arena.
 - Each element and reaction has its own color and shape in the arena, using Overforged's element colors.
-- An energy pip under each chain empties as payloads run, so you can see a chain reaction drain the pool.
+- A battery bar under each chain drains as pieces and payloads run and refills at the recharge rate. A tick marks one full run of the chain, and the bar dims while it is below that.
 
 **Compendium.** One entry per piece and rule card, a "How chains run" page covering the four evaluation rules, a reactions page that fills in as you discover them, and the rigs from past runs in the history.
 
@@ -250,6 +273,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Capacity: levels 5, 10, 15 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
 - Duplicates and capacity (v0.5.6): level-ups, chests and the shop offer copies of pieces you own (all copies share one level). Capacity cards offer +1 slot for the two shortest chains and energy; a new chain is offered only once every chain has 4 slots, and +1 slot also gives that chain +2 energy. The workbench stocks two pieces (new or copies), an upgrade (a level, or an Overclock to level 6 or 7, x1.25 power each, shop only), +1 slot (50, +25 per slot bought) or +3 energy for a chain you pick, and a rule card on about one visit in three.
 - Elements (v0.5.5): Flame burns for 80% of each hit over 3 s; Storm arcs to 2 nearby enemies for 35% each and marks them, and a shocked enemy takes 15% more from everything; Frost chills (10% slow a stack, freeze at 4). The Warlord hits for 18 (25 in Overforged).
+- Chassis chains and a recharging battery (v0.6.0) replace the per-activation energy pool, rule cards as items, 4 chains, "+3 energy" and the 4-slot gate on new chains. See "Chassis". The 12-seed bot matched v0.5.6 (4/12 wins, level 16, about 1600 kills) after one tuning step (+1/s recharge on every chassis).
 - Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 15, an elite pays 25 and the boss 100. Prices: piece 40, level 30-60, rule card 60, reroll 10 and rising.
 
 ## Open questions

@@ -3,11 +3,15 @@
 //           trigger is more likely to be offered a trigger
 //   level   a piece you already own, one level up (to a maximum of 5)
 //   stat    a passive: move speed, max HP, pickup range or armor. About 1 card in 6
-//   cap     capacity, offered at levels 5, 10, 15 and 20 instead of the above: +1 slot, a new chain, or +3 energy
+//   cap     capacity, offered at levels 5, 10, 15 and 20 instead of the above: two chassis to pick from while you have
+//           fewer than MAX_CHAINS chains, then +1 slot, +1/s recharge or a bigger battery
+//   chassis a chain to build on (rig/chassis.js): a new chain while there is room, else it replaces one (the editor asks which)
 // Pure: every function takes a rig and an rng (anything with next() in [0, 1)).
 
-import { PIECES, RULES, RIG_STATS, MAX_LEVEL, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS } from './pieces.js';
-import { owned, pieceLevel, levelUp, takeStat, slotTarget, addSlot, addChain, addEnergy } from './editor.js';
+import { PIECES, RIG_STATS, MAX_LEVEL, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
+import { owned, pieceLevel, levelUp, takeStat, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
+import { CHASSIS, START_CHASSIS, CHARGE_STEP, CELL_STEP, MK_NAMES, chassisStats } from './chassis.js';
+import { compileChain, chainCost } from './chain.js';
 
 export const OFFER_COUNT = 3;
 export const STAT_CHANCE = 1 / 6;
@@ -65,22 +69,38 @@ export function pieceCandidates(rig, banished = []) {
   return out;
 }
 
-// Capacity cards: +1 slot (and +2 energy) for each of the two shortest chains with room, a new chain (only once every chain has at least
-// CHAIN_AFTER slots, so rows fill before more rows come), then +3 energy for chains to make up three cards.
-export const CHAIN_AFTER = 4;
-export function capacityOffers(rng, rig) {
+// `n` different chassis cards of mark `mk`, never the starting chassis.
+export function chassisCards(rng, n, mk = 1) {
+  const ids = Object.keys(CHASSIS).filter((id) => id !== START_CHASSIS);
   const out = [];
-  const room = rig.chains.map((c, i) => [c.slots.length, i]).filter(([n]) => n < rig.cap).sort((a, b) => a[0] - b[0]);
-  for (const [, c] of room.slice(0, 2)) out.push({ kind: 'cap', cap: 'slot', c });
-  if (rig.chains.length < MAX_CHAINS && rig.chains.every((c) => c.slots.length >= CHAIN_AFTER)) {
-    const rules = Object.keys(RULES);
-    out.push({ kind: 'cap', cap: 'chain', rule: rules[Math.floor(rng.next() * rules.length)] });
-  }
-  const order = rig.chains.map((_, i) => i).sort(() => rng.next() - 0.5);
-  for (const c of order) {
-    if (out.length >= 3) break;
-    out.push({ kind: 'cap', cap: 'energy', c });
-  }
+  while (out.length < n && ids.length) out.push({ kind: 'chassis', chassis: ids.splice(Math.floor(rng.next() * ids.length), 1)[0], mk });
+  return out;
+}
+
+// How far chain c is from paying for itself: its full cost over what it recharges in a second (higher = more starved).
+export function starved(rig, c) {
+  const def = chainDefOf(rig, c);
+  return chainCost(compileChain(def).nodes) / Math.max(0.1, def.recharge);
+}
+
+// Upgrade cards for the chains you have: +1 slot for the shortest chain with room, +1/s recharge for the most starved
+// chain, and a bigger battery for another (the next most starved).
+export function upgradeOffers(rng, rig) {
+  const out = [];
+  const room = rig.chains.map((c, i) => [c.slots.length, i]).filter(([, i]) => hasSlotRoom(rig, i)).sort((a, b) => a[0] - b[0]);
+  if (room.length) out.push({ kind: 'cap', cap: 'slot', c: room[0][1] });
+  const order = rig.chains.map((_, i) => [starved(rig, i), rng.next(), i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).map((x) => x[2]);
+  out.push({ kind: 'cap', cap: 'charge', c: order[0] });
+  out.push({ kind: 'cap', cap: 'cell', c: order[1 % order.length] });
+  return out;
+}
+
+// Capacity cards: two chassis and +1 slot while there is room for another chain, else the upgrade cards.
+export function capacityOffers(rng, rig) {
+  if (rig.chains.length >= MAX_CHAINS) return upgradeOffers(rng, rig);
+  const out = chassisCards(rng, 2);
+  const slot = upgradeOffers(rng, rig).find((o) => o.cap === 'slot');
+  out.push(slot || upgradeOffers(rng, rig)[0]);
   return out;
 }
 
@@ -109,9 +129,9 @@ export function applyOffer(rig, o) {
   if (o.kind === 'stat') return takeStat(rig, o.id);
   if (o.kind === 'cap') {
     if (o.cap === 'slot') return addSlot(rig, o.c);
-    if (o.cap === 'chain') return addChain(rig, o.rule);
-    if (o.cap === 'energy') return addEnergy(rig, o.c, 3);
+    return addPower(rig, o.c, o.cap);
   }
+  if (o.kind === 'chassis') return addChassis(rig, o.chassis, o.mk);     // null when every chain is taken: the editor asks which to replace
   return null;
 }
 
@@ -132,7 +152,15 @@ export function describeOffer(rig, o) {
     const s = RIG_STATS[o.id];
     return { title: s.name, tag: 'passive', desc: s.desc, piece: null, type: 'stat' };
   }
-  if (o.cap === 'slot') return { title: 'More room', tag: 'capacity', desc: `+1 slot and +2 energy in chain ${'ABCD'[o.c]}`, piece: null, type: 'cap' };
-  if (o.cap === 'chain') return { title: 'New chain', tag: 'capacity', desc: `A chain with the ${RULES[o.rule].name} rule card: ${RULES[o.rule].desc.toLowerCase()}`, piece: null, type: 'cap' };
-  return { title: 'More power', tag: 'capacity', desc: `+3 energy for chain ${'ABCD'[o.c]}`, piece: null, type: 'cap' };
+  if (o.kind === 'chassis') return { ...describeChassis(o.chassis, o.mk), tag: `chassis · ${rig.chains.length < MAX_CHAINS ? 'new chain' : 'replaces one'}` };
+  if (o.cap === 'slot') return { title: 'More room', tag: 'capacity', desc: `+1 slot in chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };
+  if (o.cap === 'charge') return { title: 'Faster recharge', tag: 'capacity', desc: `+${CHARGE_STEP}/s recharge for chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };
+  return { title: 'Bigger battery', tag: 'capacity', desc: `+${Math.round(CELL_STEP * 100)}% battery for chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };
+}
+
+// A chassis card's words: its name and mark, its quirk (which says when it fires, if not every second), slots, battery and recharge.
+export function describeChassis(id, mk = 1) {
+  const d = CHASSIS[id];
+  const s = chassisStats({ chassis: id, mk });
+  return { title: `${d.name} ${MK_NAMES[mk]}`, tag: 'chassis', desc: `${d.desc}. ${s.start === d.max ? s.start : `${s.start}-${d.max}`} slots, battery ${s.battery}, +${s.recharge}/s.`, piece: null, type: 'chassis' };
 }

@@ -1,25 +1,29 @@
-// Fixed-scenario piece bench: node tools/piecebench.mjs [--secs 15]
+// Fixed-scenario piece bench: node tools/piecebench.mjs [--secs 15] [--only pieces|chassis]
 // Each case is one Pulse chain run for a few simulated seconds against the same standing crowd (and a single target),
 // so the numbers are deterministic and comparable with no bot and no full run. Prints damage dealt, the chain's energy
-// cost and damage per energy, for weapons, modifiers, reactions and triggers.
+// cost and damage per energy, for weapons, modifiers, reactions and triggers. The piece rows get a battery that never runs
+// short, so they compare pieces; the chassis rows run the same chains on each chassis's own battery, recharge and quirk.
 
 import { createOverclockedRun } from '../src/game/ovrun.js';
 import { installRig } from '../src/rig/rig.js';
 import { analyzeChain } from '../src/rig/chain.js';
+import { newRig, chainDefOf } from '../src/rig/editor.js';
+import { CHASSIS } from '../src/rig/chassis.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { statsSnapshot } from '../src/game/run-stats.js';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
 const SECS = Number(arg('--secs', 15));
+const ONLY = arg('--only', null);
 const STEP = 1 / 60;
 const VIEW = { w: 390, h: 844, insetTop: 0 };
 let HP = 150;                                        // a few hits, so kills happen and On Kill has something to do
 
-function measure(slots, { crowd, levels = {} }) {
+function measure(slots, { crowd, levels = {}, def = null }) {
   const run = createOverclockedRun({ seed: 5, view: VIEW, debug: { god: true }, sfx: () => {} });
   run.director.update = () => {};
-  run.rigState = { ...run.rigState, chains: [{ rule: 'pulse', slots, key: null, bonus: 0 }] };
-  const rig = installRig(run, [{ rule: 'pulse', slots, energy: 12, levels }]);
+  const rig = installRig(run, [def || { rule: 'pulse', slots, energy: 12, recharge: 1000, levels }]);
+  const move = { x: 0, y: 0 };
   const spots = [];
   if (crowd) for (let i = 0; i < 30; i++) { const a = (i / 30) * Math.PI * 2 * 2.3; const d = 70 + (i % 5) * 22; spots.push([Math.cos(a) * d, Math.sin(a) * d]); }
   else spots.push([110, 0]);
@@ -31,7 +35,8 @@ function measure(slots, { crowd, levels = {} }) {
       e.speed = 0; e.hp = e.maxHp = HP;
       live[i] = e;
     });
-    run.update(STEP, { x: 0, y: 0 });
+    if (def && def.chargeWhile === 'moving') move.x = Math.floor(t * STEP * 4) % 2 ? 1 : -1;   // Strider: step side to side
+    run.update(STEP, move);
     run.player.hp = run.player.maxHp;
   }
   void rig;
@@ -51,6 +56,28 @@ const section = (t) => console.log(`\n== ${t} ==`);
 const W = ['mortar', 'nova', 'blaster', 'chain_bolt', 'slam'];
 const M = ['scatter', 'flame', 'frost', 'storm', 'heavy', 'echo', 'pierce'];
 
+if (ONLY !== 'chassis') pieces();
+if (ONLY !== 'pieces') chassis();
+
+function chassis() {
+  HP = 150;
+  const chains = [['blaster'], ['flame', 'mortar', 'on_impact', 'scatter', 'nova'], ['heavy', 'blaster', 'on_kill', 'echo', 'nova', 'slam']];
+  section('chassis (Mk I): the same chains on each chassis, sustained dps over the run (cost = one full run of the chain)');
+  console.log(`${'chassis'.padEnd(12)} ${chains.map((c) => c.join(' ').padEnd(44)).join('')}`);
+  for (const id of Object.keys(CHASSIS)) {
+    const cells = chains.map((slots) => {
+      const rig = newRig([{ chassis: id, mk: 1, slots, size: 6 }]);
+      const def = chainDefOf(rig, 0);
+      const c = analyzeChain({ ...def, energy: 1000 }).cost;
+      const crowd = measure(slots, { crowd: true, def });
+      const one = measure(slots, { crowd: false, def });
+      return `c${String(c).padStart(2)} crowd ${String(crowd).padStart(5)} one ${String(one).padStart(4)}`.padEnd(44);
+    });
+    console.log(`${id.padEnd(12)} ${cells.join('')}`);
+  }
+}
+
+function pieces() {
 section('weapons alone');
 for (const w of W) row(w, [w]);
 
@@ -76,3 +103,4 @@ section('On Kill needs kills: a Heavy Blaster against a weak crowd (HP 60), Nova
 HP = 60;
 row('heavy blaster + nova (no trigger)', ['heavy', 'blaster', 'nova']);
 for (const t of ['on_impact', 'on_kill', 'on_hit', 'every_3rd']) row(`heavy blaster ${t} nova`, ['heavy', 'blaster', t, 'nova']);
+}

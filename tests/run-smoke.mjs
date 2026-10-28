@@ -25,17 +25,24 @@ await page.waitForSelector('.rcard'); await shot('r2-levelup.png');
 await page.click('.rcard >> nth=0'); await shot('r3-picked.png');
 await page.click('[data-act="done"]'); await page.waitForTimeout(300);
 s = await info(); if (s.state !== 'run') fail('level-up Done did not resume: ' + s.state);
-// a capacity level-up (level 10 gives capacity cards)
+// a capacity level-up (level 10 gives two chassis and a slot while a chain is free)
 await page.evaluate(() => { const r = window.__overclocked.game.run; r.player.level = 10; r.pendingLevelUps++; });
-await page.waitForSelector('.rcard.cap'); await shot('r4-capacity.png');
-const caps = await page.locator('.rcard.cap').count(); if (caps < 2) fail('capacity cards: ' + caps);
-await page.click('.rcard.cap >> nth=0'); await page.click('[data-act="done"]'); await page.waitForTimeout(300);
-// a chest: the reveal, then the editor
-await page.evaluate(() => { window.__overclocked.game.run.pendingChests.push(1); });
-await page.waitForSelector('.card.reveal'); await page.waitForTimeout(2600); await shot('r5-chest.png');
-await page.click('[data-act="done"]'); await page.waitForTimeout(300);
-if ((await info()).state === 'treasure') fail('Collect did not leave the chest screen');
-if (await page.locator('.overlay.sheet').count()) { await shot('r6-after-chest.png'); await page.click('[data-act="done"]'); await page.waitForTimeout(300); }
+await page.waitForSelector('.rcard.chassis'); await shot('r4-capacity.png');
+const chs = await page.locator('.rcard.chassis').count(); if (chs !== 2) fail('chassis cards: ' + chs);
+await page.click('.rcard.chassis >> nth=0'); await page.click('[data-act="done"]'); await page.waitForTimeout(300);
+s = await info(); if (s.chains.length !== 2) fail('the chassis did not add a chain: ' + s.chains);
+// boss chests: the reveal, then the editor offers their chassis. The first fills the third chain, the second replaces one.
+for (let k = 0; k < 2; k++) {
+  await page.evaluate(() => { window.__overclocked.game.run.pendingChests.push(1); });
+  await page.waitForSelector('.card.reveal'); await page.waitForTimeout(2600); await shot(`r5-chest${k}.png`);
+  await page.click('[data-act="done"]'); await page.waitForTimeout(300);
+  if ((await info()).state === 'treasure') fail('Collect did not leave the chest screen');
+  await page.waitForSelector('.rcard.chassis');
+  await page.click('.rcard.chassis >> nth=0');
+  if (k === 1) { await page.waitForSelector('[data-act="swap:1"]'); await shot('r6-swap.png'); await page.click('[data-act="swap:1"]'); }
+  await page.click('[data-act="done"]'); await page.waitForTimeout(300);
+}
+s = await info(); if (s.chains.length !== 3 || s.state !== 'run') fail('after the chests: ' + JSON.stringify(s));
 // pause: the menu has the debug sandbox
 await page.mouse.click(360, 40);                                 // the pause button
 await page.waitForSelector('[data-act="sandbox"]'); await shot('r7-pause.png');

@@ -115,6 +115,9 @@
     .dragghost[data-type=weapon] { color: #ffc46b; } .dragghost[data-type=modifier] { color: #7fe3f0; } .dragghost[data-type=trigger] { color: #d0b0ff; }
     .rfull { display: flex; gap: 6px; align-items: center; padding: 6px; border-radius: 8px; border: 1px solid #d98a6a; font: 12px/1.3 system-ui, sans-serif; color: var(--ink); }
     .rfull span { flex: 1; }
+    .rfull.wrap { flex-wrap: wrap; }
+    .rfull.wrap span { flex: 1 1 calc(100% - 40px); }
+    .rfull.wrap .rbtn { flex: 1 1 40%; }
     .rbtn.sell { min-height: 28px; margin-left: 4px; color: #ffb4a0; border-color: #a65a46; }
     .slot.suggest { outline: 2px solid var(--ember); outline-offset: 1px; animation: rpulse 0.9s ease-in-out infinite; }
     @keyframes rpulse { 50% { outline-color: transparent; } }
@@ -142,6 +145,7 @@
     .rcard.trigger { border-color: #b98cff; }
     .rcard.stat, .rcard.stat .ico { border-color: #8ad06a; color: #8ad06a; }
     .rcard.cap, .rcard.cap .ico { border-color: #ffd34d; color: #ffd34d; }
+    .rcard.chassis, .rcard.chassis .ico { border-color: #b48cff; color: #b48cff; }
     .rrig { width: 100%; max-width: 420px; text-align: left; }
     .rrig .sub { margin: 4px 0; text-align: center; }
     .rrhead { display: flex; align-items: center; gap: 6px; margin: 8px 0 3px; }

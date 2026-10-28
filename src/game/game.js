@@ -16,7 +16,7 @@ import { xpToNext, gainXp } from './xp.js';
 import { LEVELUP } from '../data/progression.js';
 import { createSandboxRun, loadChain, applyRig, chainKeys } from './sandbox.js';
 import { showRigEditor } from '../ui/rig-editor.js';
-import { makeOffers, CAPACITY_LEVELS } from '../rig/offers.js';
+import { makeOffers, CAPACITY_LEVELS, describeOffer } from '../rig/offers.js';
 import { openRigChest } from '../rig/chests.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
 import { showWorkbench } from '../ui/workbench.js';
@@ -90,9 +90,10 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
-  // The rig editor (ui/rig-editor.js) over a paused game. A level-up opens it with three offers; the Rig tab opens it without.
+  // The rig editor (ui/rig-editor.js) over a paused game. A level-up opens it with three offers; the Rig tab opens it without;
+  // a chest with a chassis in it opens it with those (`extra`, which no level-up pays for and no reroll redeals).
   // It reuses the level-up state, so the run is frozen like any other pause.
-  function openRigEditor(withOffers) {
+  function openRigEditor(withOffers, extra = null) {
     const run = game.run;
     if (game.state === 'levelup' || game.state === 'results' || game.state === 'workbench') return;     // an editor is already open (the panel's Rig button stays reachable above it)
     game.state = 'levelup';
@@ -100,18 +101,19 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (withOffers) sfx('levelup');
     run.cam.y = run.player.y + view.h * 0.2;                   // the sheet covers the lower part: lift the player into the clear top
     const level = run.player.level - (run.pendingLevelUps - 1);
-    const capacity = withOffers && !run.sandbox && CAPACITY_LEVELS.includes(level);
+    const capacity = withOffers && !extra && !run.sandbox && CAPACITY_LEVELS.includes(level);
     const deal = (banished) => makeOffers(run.rng, run.rigState, { banished: [...run.banished, ...banished], capacity });
     showRigEditor(overlays, {
       rig: run.rigState,
-      offers: withOffers ? deal([]) : null,
-      deal: withOffers && !capacity ? deal : null,
-      rerolls: withOffers && !run.sandbox ? run.rerolls : 0,
-      banishes: withOffers && !run.sandbox ? run.banishes : 0,
+      offers: extra || (withOffers ? deal([]) : null),
+      deal: withOffers && !capacity && !extra ? deal : null,
+      rerolls: withOffers && !extra && !run.sandbox ? run.rerolls : 0,
+      banishes: withOffers && !extra && !run.sandbox ? run.banishes : 0,
       onDone(rig, used) {
         run.rigState = rig;
+        run.ore += used.gold;                                    // a chassis scrapped for gold
         applyRig(run);
-        if (withOffers) {
+        if (withOffers && !extra) {
           run.pendingLevelUps--;
           run.rerolls = used.rerolls;
           run.banishes = used.banishes;
@@ -178,12 +180,16 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     run.rigState = result.rig;
     applyRig(run);
     const placed = result.rolls.some((r) => r.placed);
+    const chassis = result.chassis;
     showTreasure(overlays, {
       ...result,
+      rolls: [...result.rolls, ...chassis.map((o) => ({ ...describeOffer(run.rigState, o), kind: 'chassis', placed: null }))],
+      pick: chassis.length > 0,
       boss: tier === 1,
       sfx,
       onDone() {
         overlays.hide();
+        if (chassis.length) { openRigEditor(false, chassis); return; }     // pick where the chassis goes (or pass on it)
         if (placed) { openRigEditor(false); return; }
         run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);
         game.state = 'run';

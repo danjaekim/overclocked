@@ -6,11 +6,11 @@
 
 import { createOverclockedRun } from '../src/game/ovrun.js';
 import { applyRig } from '../src/game/sandbox.js';
-import { makeOffers, applyOffer, CAPACITY_LEVELS } from '../src/rig/offers.js';
-import { placeSuggested, owned, slotTarget } from '../src/rig/editor.js';
+import { makeOffers, applyOffer, CAPACITY_LEVELS, starved } from '../src/rig/offers.js';
+import { placeSuggested, owned, slotTarget, addChassis, replaceChassis } from '../src/rig/editor.js';
 import { openRigChest } from '../src/rig/chests.js';
-import { stockUp, buyItem } from '../src/rig/workbench.js';
-import { PIECES } from '../src/rig/pieces.js';
+import { stockUp, buyItem, NEW_CHAIN } from '../src/rig/workbench.js';
+import { PIECES, MAX_CHAINS } from '../src/rig/pieces.js';
 import { WAVES, RATE_RAMP } from '../src/data/waves.js';
 import { ENEMIES } from '../src/data/enemies.js';
 
@@ -40,13 +40,28 @@ const types = (rig) => {
 function score(o, rig) {
   if (POLICY === 'first') return 0;
   const n = types(rig);
-  if (o.kind === 'cap') return o.cap === 'chain' ? 70 : o.cap === 'slot' ? 65 : 45;
+  if (o.kind === 'chassis') return chassisTarget(rig, o) === null ? -1 : 72;
+  if (o.kind === 'cap') return o.cap === 'slot' ? 65 : o.cap === 'charge' ? (starved(rig, o.c) > 1.5 ? 60 : 40) : 35;
   if (o.kind === 'stat') return o.id === 'hp' ? 30 : 15;
   if (o.kind === 'level') return PIECES[o.id].type === 'weapon' ? 55 + o.to : 40 + o.to;
   const p = PIECES[o.id];
   if (p.type === 'weapon') return n.weapon < 2 ? 80 : n.weapon < 4 ? 50 : 20;
   if (p.type === 'trigger') return n.weapon > n.trigger ? 75 : 25;
   return n.modifier < n.weapon * 2 ? 60 : 25;
+}
+
+// Where the bot puts a chassis: a new chain while there is room, else it replaces the lowest-mark chain below the offer's
+// mark (the first, on a tie), else nowhere (null): it passes on a chassis that is no better than any it has.
+function chassisTarget(rig, o) {
+  if (rig.chains.length < MAX_CHAINS) return NEW_CHAIN;
+  let best = null;
+  rig.chains.forEach((c, i) => { if ((c.mk || 1) < o.mk && (best === null || c.mk < rig.chains[best].mk)) best = i; });
+  return best;
+}
+function takeChassis(rig, o) {
+  const at = chassisTarget(rig, o);
+  if (at === null) return null;
+  return at === NEW_CHAIN ? addChassis(rig, o.chassis, o.mk) : replaceChassis(rig, at, o.chassis, o.mk).rig;
 }
 
 export function playRig(seed, { god = GOD, onTick = null } = {}) {
@@ -96,12 +111,14 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
 
     if (run.forgeReady) {                                          // the workbench: buy what scores best while the gold lasts
       run.forgeReady = false;
-      const items = stockUp(run.rng, run.rigState, run.banished, { slotBuys }).filter((i) => i.kind !== 'rule');
-      const shopScore = (it) => (it.kind === 'slot' ? 66 : it.kind === 'energy' ? 35 : it.kind === 'overclock' ? 50 : score(it, run.rigState));
+      const items = stockUp(run.rng, run.rigState, run.banished, { slotBuys });
+      const shopScore = (it) => (it.kind === 'slot' ? 66 : it.kind === 'charge' ? 45 : it.kind === 'cell' ? 30 : it.kind === 'overclock' ? 50 : score(it, run.rigState));
       items.sort((a, b) => shopScore(b) - shopScore(a));
       for (const it of items) {
-        if (run.ore < it.price) continue;
-        const res = buyItem(run.rigState, it, it.kind === 'slot' ? Math.max(0, slotTarget(run.rigState)) : 0);
+        if (run.ore < it.price || shopScore(it) < 0) continue;
+        const target = it.kind === 'slot' ? Math.max(0, slotTarget(run.rigState)) : it.kind === 'chassis' ? chassisTarget(run.rigState, it)
+          : it.kind === 'charge' || it.kind === 'cell' ? run.rigState.chains.map((_, i) => i).sort((a, b) => starved(run.rigState, b) - starved(run.rigState, a))[0] : 0;
+        const res = buyItem(run.rigState, it, target);
         if (!res) continue;
         run.rigState = res.rig;
         run.ore -= it.price;
@@ -114,6 +131,8 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
       const r = openRigChest(run.rng, run.rigState, run.pendingChests.shift(), run.chestsOpened === 0);
       run.chestsOpened++;
       run.rigState = r.rig;
+      const ch = r.chassis.sort((a, b) => b.mk - a.mk)[0];
+      if (ch) { const next = takeChassis(run.rigState, ch); if (next) run.rigState = next; }
       applyRig(run);
       chests++;
     }
@@ -124,7 +143,8 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
       let done = false;
       for (const o of offers) {
         let next = null;
-        if (o.kind === 'piece') { const pl = placeSuggested(run.rigState, o.id); next = pl && pl.rig; } else next = applyOffer(run.rigState, o);
+        if (score(o, run.rigState) < 0) continue;
+        if (o.kind === 'piece') { const pl = placeSuggested(run.rigState, o.id); next = pl && pl.rig; } else if (o.kind === 'chassis') next = takeChassis(run.rigState, o); else next = applyOffer(run.rigState, o);
         if (next) { run.rigState = next; done = true; break; }
       }
       if (done) applyRig(run);
