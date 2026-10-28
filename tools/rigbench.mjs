@@ -11,7 +11,16 @@ import { placeSuggested, owned } from '../src/rig/editor.js';
 import { openRigChest } from '../src/rig/chests.js';
 import { stockUp, buyItem } from '../src/rig/workbench.js';
 import { PIECES } from '../src/rig/pieces.js';
+import { WAVES, RATE_RAMP } from '../src/data/waves.js';
+import { ENEMIES } from '../src/data/enemies.js';
 
+// Experiments on the enemy side, applied before any run: RAMP_END (the late spawn-rate ramp's end, data/waves.js),
+// HP_MID / HP_LATE (hpScale of the 3:00-6:00 and 6:00-10:00 segments), BOSS_DMG / BOSS_HP (Warlord multipliers).
+if (process.env.RAMP_END) RATE_RAMP.end = Number(process.env.RAMP_END);
+if (process.env.HP_MID) WAVES[2].hpScale = Number(process.env.HP_MID);
+if (process.env.HP_LATE) WAVES[3].hpScale = Number(process.env.HP_LATE);
+if (process.env.BOSS_DMG) ENEMIES.warlord.damage *= Number(process.env.BOSS_DMG);
+if (process.env.BOSS_HP) ENEMIES.warlord.hp *= Number(process.env.BOSS_HP);
 // PIECE='{"blaster":{"count":3}}' overrides base numbers of weapon pieces for an experiment.
 if (process.env.PIECE) for (const [id, b] of Object.entries(JSON.parse(process.env.PIECE))) Object.assign(PIECES[id].def.base, b);
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };

@@ -248,6 +248,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload also gets x1.3 power (Every 3rd: x2 more) and each payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own. Spite's power and heal scale with missing hp (x2 at death's door).
 - A run starts with 130 HP and 0.5 HP/s regeneration (the stat default plus the Archer's numbers from Overforged). This is a first guess, tuned in M5.
 - Capacity: levels 5, 10, 15 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
+- Elements (v0.5.5): Flame burns for 80% of each hit over 3 s; Storm arcs to 2 nearby enemies for 35% each and marks them, and a shocked enemy takes 15% more from everything; Frost chills (10% slow a stack, freeze at 4). The Warlord hits for 18 (25 in Overforged).
 - Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 15, an elite pays 25 and the boss 100. Prices: piece 40, level 30-60, rule card 60, reroll 10 and rising.
 
 ## Open questions

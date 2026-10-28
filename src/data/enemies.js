@@ -62,7 +62,7 @@ export const ENEMIES = {
   },
   warlord: {
     name: 'Warlord',
-    hp: 1800, speed: 52, damage: 25, radius: 34,
+    hp: 1800, speed: 52, damage: 18, radius: 34,          // 25 in Overforged; bots in a rig run died to it within 20-40 s at full hp (v0.5.5)
     xp: 100,
     ore: { chance: 1, type: 'starsteel', count: 2 },
     ai: 'boss_charge',
