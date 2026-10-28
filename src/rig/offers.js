@@ -3,7 +3,7 @@
 //           trigger is more likely to be offered a trigger
 //   level   a piece you already own, one level up (to a maximum of 5)
 //   stat    a passive: move speed, max HP, pickup range or armor. About 1 card in 6
-//   cap     capacity, offered at levels 10 and 20 instead of the above: +1 slot, a new chain, or +3 energy
+//   cap     capacity, offered at levels 5, 10, 15 and 20 instead of the above: +1 slot, a new chain, or +3 energy
 // Pure: every function takes a rig and an rng (anything with next() in [0, 1)).
 
 import { PIECES, RULES, RIG_STATS, MAX_LEVEL, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS } from './pieces.js';
@@ -11,7 +11,7 @@ import { owned, pieceLevel, levelUp, takeStat, slotTarget, addSlot, addChain, ad
 
 export const OFFER_COUNT = 3;
 export const STAT_CHANCE = 1 / 6;
-export const CAPACITY_LEVELS = [10, 20];
+export const CAPACITY_LEVELS = [5, 10, 15, 20];
 
 function counts(rig) {
   const n = { weapon: 0, modifier: 0, trigger: 0 };

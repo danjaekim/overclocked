@@ -114,7 +114,7 @@ Power comes from five layers during a run and one between runs, which comes afte
 | --- | --- | --- |
 | New pieces | Level-up, pick 1 of 3 | New verbs. Offers lean toward pieces that fit the rig you have, so a rig with a weapon and no trigger is more likely to be offered a trigger |
 | Piece levels | Level-up: an offer for a piece you already own levels it up, to a maximum of 5 | Each level adds +10% to the piece's main number; levels 3 and 5 add a **signature effect** (Scatter +1 copy, Heavy +30% area, Pierce +1, Echo's third shot, Every 3rd becoming every 2nd, ...; `SIGNATURE` in `rig/pieces.js`). Mastery twists (M5) are still to come |
-| Capacity | Elite and boss chests, plus levels 10 and 20 | +1 slot in a chain, a new chain with a rule card, or +3 energy to one chain |
+| Capacity | Elite and boss chests, plus levels 5, 10, 15 and 20 | +1 slot in a chain, a new chain with a rule card, or +3 energy to one chain |
 | Workbench | Shrines on the wave timeline. Gold drops from chests and elites | Buy a chosen piece, reroll, level up a piece, or swap a rule card |
 | Passive stats | About 1 offer in 6 at level-up | Move speed, max HP, magnet range, armor |
 | Unlocks (later) | Firsts: first boss kill, first reaction found, and so on | New pieces and rule cards join the offer pool. The compendium logs your discoveries |
@@ -247,7 +247,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. From M4 it opens from the pause menu ("Chain sandbox (debug)"); `?sandbox=1` boots it directly, for tests.
 - Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload also gets x1.3 power (Every 3rd: x2 more) and each payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own. Spite's power and heal scale with missing hp (x2 at death's door).
 - A run starts with 130 HP and 0.5 HP/s regeneration (the stat default plus the Archer's numbers from Overforged). This is a first guess, tuned in M5.
-- Capacity: levels 10 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
+- Capacity: levels 5, 10, 15 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
 - Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 15, an elite pays 25 and the boss 100. Prices: piece 40, level 30-60, rule card 60, reroll 10 and rising.
 
 ## Open questions

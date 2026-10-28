@@ -144,7 +144,7 @@ test('offers: three cards, no repeats, about one in six a passive', () => {
   assert.ok(share > 0.1 && share < 0.25, `passives were ${(share * 100).toFixed(0)}% of cards`);
 });
 
-test('offers: levels 10 and 20 give capacity cards instead', () => {
+test('offers: levels 5, 10, 15 and 20 give capacity cards instead', () => {
   const r = rigOf(['blaster']);
   const o = makeOffers(createRng(1), r, { capacity: true });
   assert.deepEqual(o.map((c) => c.cap).sort(), ['chain', 'energy', 'slot']);
