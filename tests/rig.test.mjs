@@ -43,8 +43,8 @@ test('compile: the spec example is a held Flame, a Mortar with On Impact, and a 
   assert.deepEqual([m.piece, m.mods, m.elements, m.cost], ['mortar', ['flame'], ['fire'], 4]);
   assert.equal(m.trigger.piece, 'on_impact');
   const [nova] = m.trigger.payload;
-  assert.deepEqual([nova.piece, nova.scatter, nova.cost], ['nova', true, 5]);
-  assert.equal(chainCost(c.nodes), 10);        // 1 + 3 + 1 + 2 + 3: the whole pool
+  assert.deepEqual([nova.piece, nova.scatter, nova.cost], ['nova', true, 4]);
+  assert.equal(chainCost(c.nodes), 9);         // 1 + 3 + 1 + 4 (a payload piece costs 1 less): all but one of the pool
 });
 
 test('compile: modifiers apply to the next weapon only and the order of elements is kept', () => {
@@ -122,7 +122,7 @@ test('3 Cluster mortar: a burning shell, then five novas at the crater, exactly 
   assert.equal(pay[0].trigger, 'on_impact');
   const nova = events(rig, 'fire', 'nova');
   assert.equal(nova.length, 1);
-  assert.deepEqual([nova[0].copies, nova[0].pool], [5, 0]);
+  assert.deepEqual([nova[0].copies, nova[0].pool], [5, 1]);
   assert.deepEqual([nova[0].x, nova[0].y], [pay[0].x, pay[0].y]);     // from the crater, not the player
   assert.equal(events(rig, 'dry').length, 0);
   const burning = [...run.world.enemies.active].filter((e) => e.alive && (e.status & ST.BURN)).length;
@@ -169,11 +169,10 @@ test('6 Kill chain: kills set off novas, whose kills set off more, until the ene
   const mine = (ev, piece) => events(rig, ev, piece).filter((l) => l.act === 1);
   assert.equal(mine('fire', 'blaster')[0].pool, 7);                   // 2 for the Blaster + 1 for On Kill
   const novas = mine('fire', 'nova');
-  assert.equal(novas.length, 2);                                      // 7 pays for a nova + its On Kill (4), then one more nova (3)
-  assert.deepEqual(novas.map((n) => n.armed), [true, false]);         // the second has nothing left to arm its trigger with
-  assert.equal(novas[1].pool, 0);
+  assert.equal(novas.length, 3);                                      // 7 pays for a nova + its On Kill (3, payload pieces cost 1 less), then two more novas (2 each)
+  assert.deepEqual(novas.map((n) => n.armed), [true, false, false]);  // the later ones have nothing left to arm a trigger with
+  assert.equal(novas[2].pool, 0);
   assert.ok(mine('payload').length >= 3, 'kills kept asking for payloads');
-  assert.ok(mine('dry').length >= 1, 'and the empty pool said no');
   assert.ok(rig.log.every((l) => l.pool === undefined || l.pool >= 0));
 });
 

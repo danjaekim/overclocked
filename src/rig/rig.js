@@ -74,6 +74,7 @@ function makeInstance(run, rig, node, chain) {
     inst.addTags.push(e.tag);
   }
   if (inst.addTags.length) inst.tags = instanceTagSet(inst);
+  for (const m of node.sigMods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });   // level 3 and 5 signature effects
   for (const id of node.mods) {                      // modifiers that are plain stat changes (Heavy, Pierce)
     const mods = PIECES[id].mods;
     if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
@@ -133,7 +134,7 @@ function launch(run, rig, node, x, y, act, mult, armed) {
   const ctx = rig.ctx;
   const atks = rig.atks;
   atks.length = 0;
-  const copies = node.scatter ? SCATTER.copies : 1;
+  const copies = node.scatter ? node.copies : 1;
   let fired = 0;
   for (let c = 0; c < copies; c++) {
     if (node.scatter) {
@@ -159,7 +160,7 @@ function launch(run, rig, node, x, y, act, mult, armed) {
 
 function fireNode(run, rig, chain, node, x, y, act) {
   const inst = node.inst;
-  const mult = node.power * (node.echo ? ECHO.mult : 1);
+  const mult = node.power * act.scale * (node.echo ? node.echoMult : 1);
   const armed = node.trigger !== null && act.pool - node.cost >= node.trigger.cost;     // the trigger is paid for if the attack fires (an impact can come in the same tick)
   const fired = launch(run, rig, node, x, y, act, mult, armed);
   if (fired === 0) {                    // nothing in range: no attack, no energy spent
@@ -174,7 +175,7 @@ function fireNode(run, rig, chain, node, x, y, act) {
     act.spent += node.trigger.cost;
   }
   inst.rigArmed = armed;
-  if (node.echo) rig.delayed.push({ t: ECHO.delay, node, x, y, act, mult, armed });
+  if (node.echo) for (let k = 1; k <= node.echoShots; k++) rig.delayed.push({ t: ECHO.delay * k, node, x, y, act, mult, armed });
   if (armed && node.trigger.on === 'every' && ++node.count % node.trigger.every === 0 && rig.queue.length - rig.head < MAX_QUEUE) {
     rig.queue.push({ trig: node.trigger, act, x: run.player.x, y: run.player.y, chain });   // Every 3rd: the payload runs from the player
   }
@@ -185,8 +186,8 @@ function fireNode(run, rig, chain, node, x, y, act) {
   note(run, rig, 'fire', { act: act.id, piece: node.piece, mods: node.mods, copies: fired, x, y, armed, pool: act.pool });
 }
 
-function activate(run, rig, chain) {
-  const act = { id: ++rig.actN, chain: chain.index, pool: chain.energy, spent: 0 };
+function activate(run, rig, chain, scale = 1) {
+  const act = { id: ++rig.actN, chain: chain.index, pool: chain.energy, spent: 0, scale };
   chain.act = act;
   note(run, rig, 'activate', { act: act.id, chain: chain.index, pool: act.pool });
   const p = run.player;
@@ -204,8 +205,9 @@ export function updateRig(run, dt) {
       if (chain.t > 0) chain.t -= dt;
       if (rig.flags[rule.on] && chain.t <= 0) {
         chain.t = rule.gap;
-        if (rule.heal) healPlayer(run, rule.heal);
-        activate(run, rig, chain);
+        const missing = rule.scales ? 1 - Math.max(0, p.hp) / p.maxHp : 0;     // Spite: the lower your hp, the more it gives
+        if (rule.heal) healPlayer(run, rule.heal * (1 + missing));
+        activate(run, rig, chain, 1 + missing);
       }
       continue;
     }

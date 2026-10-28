@@ -6,7 +6,7 @@
 //   cap     capacity, offered at levels 10 and 20 instead of the above: +1 slot, a new chain, or +3 energy
 // Pure: every function takes a rig and an rng (anything with next() in [0, 1)).
 
-import { PIECES, RULES, RIG_STATS, MAX_LEVEL, MAX_CHAINS, LEVEL_STEP } from './pieces.js';
+import { PIECES, RULES, RIG_STATS, MAX_LEVEL, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS } from './pieces.js';
 import { owned, pieceLevel, levelUp, takeStat, slotTarget, addSlot, addChain, addEnergy } from './editor.js';
 
 export const OFFER_COUNT = 3;
@@ -28,8 +28,8 @@ export function offerWeights(rig) {
   for (const [id, p] of Object.entries(PIECES)) {
     let x = 1;
     if (p.type === 'weapon' && n.weapon === 0) x = 4;
-    if (p.type === 'trigger' && n.weapon > 0 && n.trigger === 0) x = 3;
-    if (p.type === 'modifier' && n.weapon > 0 && n.modifier === 0) x = 2;
+    if (p.type === 'trigger' && n.weapon > 0) x = n.trigger === 0 ? 3 : n.trigger < n.weapon ? 2 : 1;     // lean toward what the rig lacks: a trigger for each weapon
+    if (p.type === 'modifier' && n.weapon > 0) x = n.modifier === 0 ? 2 : n.modifier > n.weapon * 2 ? 0.5 : 1;
     w[id] = x;
   }
   return w;
@@ -114,7 +114,7 @@ export function describeOffer(rig, o) {
   if (o.kind === 'level') {
     const p = PIECES[o.id];
     const what = p.type === 'trigger' ? 'its payload' : p.type === 'modifier' ? 'the weapon it is held for' : 'its attack';
-    return { title: p.name, tag: `level ${o.to - 1} → ${o.to}`, desc: `${pct(LEVEL_STEP)} damage to ${what}`, piece: p, type: p.type };
+    return { title: p.name, tag: `level ${o.to - 1} → ${o.to}`, desc: `${pct(LEVEL_STEP)} damage to ${what}${SIG_LEVELS.includes(o.to) && SIGNATURE[o.id] ? `; ${SIGNATURE[o.id].text}` : ''}`, piece: p, type: p.type };
   }
   if (o.kind === 'stat') {
     const s = RIG_STATS[o.id];

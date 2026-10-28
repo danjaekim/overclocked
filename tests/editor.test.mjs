@@ -78,7 +78,7 @@ test('suggested slots fall back to the bench, and to nothing when everything is 
 
 test('analyze: a line that says what the chain does, with its cost, and a reason for each greyed slot', () => {
   const a = analyzeChain({ rule: 'pulse', slots: TEST_CHAINS.cluster_mortar.slots, energy: 10 });
-  assert.equal(a.text, 'Every 1 s: Flame Mortar, on impact: 5× Nova (cost 10 of 10)');
+  assert.equal(a.text, 'Every 1 s: Flame Mortar, on impact: 5× Nova (cost 9 of 10)');
   assert.equal(a.reasons.size, 0);
   const n = analyzeChain({ rule: 'pulse', slots: ['frost', 'flame', 'nova'] });
   assert.ok(n.text.includes('Frost Flame Nova [Shatter]'));
@@ -94,9 +94,9 @@ test('analyze: pieces beyond the energy pool are greyed as out of energy', () =>
   assert.equal(a.reasons.get(3), 'out of energy');
   assert.equal(a.reasons.has(2), false);
   const p = analyzeChain({ rule: 'pulse', slots: ['mortar', 'on_kill', 'nova', 'on_kill', 'nova', 'nova'], energy: 10 });
-  assert.equal(p.cost, 8);                                   // 3 + 1 + 3 + 1, and the last two Novas need 3 with 2 left
-  assert.equal(p.reasons.get(4), 'out of energy');
+  assert.equal(p.cost, 9);                                   // 3 + 1 + 2 + 1 + 2 (a payload piece costs 1 less), and the last Nova needs 2 with 1 left
   assert.equal(p.reasons.get(5), 'out of energy');
+  assert.equal(p.reasons.has(4), false);
   assert.equal(p.reasons.has(2), false);
 });
 
@@ -137,11 +137,11 @@ test('applying an edit rebuilds the live rig; an edited chain stops carrying its
   assert.deepEqual(run.rig.chains[1].def.slots, [...TEST_CHAINS.kill_chain.slots, null]);
 });
 
-test('the default energy pool is 12: the spec example uses 10 of it and a full six slots fit', () => {
+test('the default energy pool is 12: the spec example uses 9 of it and a full six slots fit', () => {
   const a = analyzeChain({ rule: 'pulse', slots: TEST_CHAINS.cluster_mortar.slots });
   assert.equal(a.energy, 12);
-  assert.ok(a.text.endsWith('(cost 10 of 12)'));
+  assert.ok(a.text.endsWith('(cost 9 of 12)'));
   const full = analyzeChain({ rule: 'pulse', slots: ['scatter', 'flame', 'mortar', 'on_impact', 'scatter', 'nova'] });
   assert.equal(full.reasons.size, 0);
-  assert.equal(full.cost, 12);
+  assert.equal(full.cost, 11);
 });

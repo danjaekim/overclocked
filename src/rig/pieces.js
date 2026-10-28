@@ -12,14 +12,43 @@ export const DEFAULT_ENERGY = 12;       // a chain's energy pool: it was 10, whi
 export const SCATTER = { copies: 5, mult: 0.25, ring: 28, fan: 0.15 };
 
 // Echo: the next weapon fires again `delay` seconds later, both at `mult` power.
-export const ECHO = { delay: 0.2, mult: 0.6 };
+export const ECHO = { delay: 0.2, mult: 0.6, boosted: 0.75 };
 
 // Every 3rd: its payload runs once for every `n` times the cursor reaches it.
 export const EVERY = 3;
 
 // Piece levels: each level after the first adds this to the piece's main number (an attack's damage, a payload's damage).
-export const LEVEL_STEP = 0.2;
+export const LEVEL_STEP = 0.1;
 export const MAX_LEVEL = 5;
+
+// A trigger's payload is conditional, so it hits harder: its power is multiplied by this, and each payload piece costs 1 less energy (never below 1).
+export const TRIGGER_BONUS = 1.5;
+
+// Signature effects: at levels 3 and 5 a piece gains something of its own, on top of the +10% a level. `mods` are stat
+// modifiers applied to the weapon the piece is (or is held for); `text` is what the card says. Scatter, Echo and the
+// triggers have code behind them (rig/chain.js): copies, echo shots, payload power.
+export const SIG_LEVELS = [3, 5];
+export const sigCount = (levels, id) => { const lv = (levels && levels[id]) || 1; return lv >= 5 ? 2 : lv >= 3 ? 1 : 0; };
+export const SIGNATURE = {
+  blaster: { text: '+1 shot', mods: [{ stat: 'projectiles', op: 'flat', value: 1 }] },
+  nova: { text: '+2 shots in the ring', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }] },
+  mortar: { text: '+25% blast radius', mods: [{ stat: 'area', op: 'inc', value: 0.25 }] },
+  slam: { text: '+25% shockwave radius', mods: [{ stat: 'area', op: 'inc', value: 0.25 }] },
+  chain_bolt: { text: '+1 jump', mods: [{ stat: 'chains', op: 'flat', value: 1 }] },
+  scatter: { text: '+1 copy' },
+  heavy: { text: '+30% more area', mods: [{ stat: 'area', op: 'inc', value: 0.3 }] },
+  pierce: { text: 'pierces 1 more enemy', mods: [{ stat: 'pierce', op: 'flat', value: 1 }] },
+  flame: { text: '+50% burn damage', mods: [{ stat: 'burnPower', op: 'inc', value: 0.5 }] },
+  frost: { text: 'chills deeper (+1 stack)', mods: [{ stat: 'chillStacks', op: 'flat', value: 1 }] },
+  storm: { text: '+1 shock jump', mods: [{ stat: 'chains', op: 'flat', value: 1 }] },
+  echo: { text: 'echoes hit harder, then a third shot' },
+  on_impact: { text: 'payload +25% power' },
+  on_kill: { text: 'payload +25% power' },
+  on_hit: { text: 'payload +25% power' },
+  every_3rd: { text: 'payload +25% power, then every 2nd time' },
+};
+export const SIG_TRIGGER_STEP = 1.25;
+
 
 // Each piece has an `icon` (SVG path data on a 24-unit square, drawn as strokes; `filled` adds a soft fill) and a `short`
 // name for tight places. The editor draws them as SVG and the HUD strip as Path2D, from the same data.
@@ -97,14 +126,15 @@ export const MAX_CHAINS = 4;
 // When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. A card with `on` is not
 // timed: it runs when that event happens ('kill': any enemy dies; 'hurt': you take damage), at most once per `gap` seconds.
 // `short` is the second line of the HUD badge.
-export const SPITE_HEAL = 0.06;     // a share of max hp, each time a Spite chain fires
+// Spite: each firing heals this share of max hp, and the more hp you are missing the harder it hits and the more it heals (x2 at death's door).
+export const SPITE_HEAL = 0.06;
 
 export const RULES = {
   pulse: { name: 'Pulse', every: 1, first: 0.3, desc: 'Every 1 s', short: '1s' },
   stride: { name: 'Stride', every: 0.5, first: 0.3, while: 'moving', desc: 'Every 0.5 s while moving', short: '0.5s' },
   anchor: { name: 'Anchor', every: 0.6, first: 0.3, while: 'still', desc: 'Every 0.6 s while standing still', short: 'still' },
   reaper: { name: 'Reaper', on: 'kill', gap: 0.25, desc: 'On any kill, at most 4 times a second', short: 'kills' },
-  spite: { name: 'Spite', on: 'hurt', gap: 0.4, heal: SPITE_HEAL, desc: 'When you take damage, and it heals you a little', short: 'hurt' },
+  spite: { name: 'Spite', on: 'hurt', gap: 0.4, heal: SPITE_HEAL, scales: true, desc: 'When you take damage; the lower your hp, the harder it hits and the more it heals', short: 'hurt' },
 };
 
 // Passive stats an offer can give (about 1 offer in 6). Each pick adds one step; the rig keeps the counts

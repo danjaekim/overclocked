@@ -133,22 +133,51 @@ test('Spite runs when the player is hit', () => {
   assert.equal(events(rig, 'activate').length, 1);
 });
 
-test('piece levels add 20% a level to the attack, to each held modifier, and to a trigger\'s payload', () => {
+test('piece levels add 10% a level to the attack, to each held modifier, and to a trigger\'s payload', () => {
   const slots = ['flame', 'mortar', 'on_impact', 'nova'];
   const base = compileChain({ rule: 'pulse', slots });
   assert.equal(base.nodes[0].power, 1);
   const lv = compileChain({ rule: 'pulse', slots, levels: { mortar: 3, flame: 2, on_impact: 5 } });
-  approx(lv.nodes[0].power, 1.4 * 1.2, 1e-9);
-  approx(lv.nodes[0].trigger.payload[0].power, 1.8, 1e-9);
+  approx(lv.nodes[0].power, 1.2 * 1.1, 1e-9);
+  approx(lv.nodes[0].trigger.payload[0].power, 1.4 * 1.5 * 1.25 * 1.25, 1e-9);   // level 5 trigger, the payload bonus, two signature steps
   const { run, rig } = rigOf(['blaster'], { levels: { blaster: 5 } });
   dummy(run, 120, 0);
   tick(run, 0.4);
-  approx(run.world.projectiles.active[0].dmg, param(run, rig.chains[0].nodes[0].inst, 'damage') * 1.8, 1e-9);
+  approx(run.world.projectiles.active[0].dmg, param(run, rig.chains[0].nodes[0].inst, 'damage') * 1.4, 1e-9);
 });
 
 test('analyze words the new triggers and costs Every 3rd at nothing', () => {
   const a = analyzeChain({ rule: 'reaper', slots: ['blaster', 'every_3rd', 'echo', 'nova'], energy: 12 });
   assert.ok(a.text.startsWith('On any kill, at most 4 times a second:'));
   assert.ok(a.text.includes('every 3rd time'));
-  assert.equal(a.cost, 2 + 0 + 2 + 3);
+  assert.equal(a.cost, 2 + 0 + (2 + 3 - 1));
+});
+
+test('signature levels: Scatter gains copies at 3 and 5, Heavy and Pierce gain stat mods, triggers boost the payload and Every 3rd speeds up', () => {
+  const sc = (lv) => compileChain({ rule: 'pulse', slots: ['scatter', 'nova'], levels: { scatter: lv } }).nodes[0];
+  assert.deepEqual([1, 3, 5].map((l) => sc(l).copies), [5, 6, 7]);
+  const hv = compileChain({ rule: 'pulse', slots: ['heavy', 'pierce', 'blaster'], levels: { heavy: 5, pierce: 3, blaster: 3 } }).nodes[0];
+  assert.deepEqual(hv.sigMods.map((m) => m.stat).sort(), ['area', 'area', 'pierce', 'projectiles']);
+  const ev = (lv) => compileChain({ rule: 'pulse', slots: ['blaster', 'every_3rd', 'nova'], levels: { every_3rd: lv } }).nodes[0].trigger;
+  assert.deepEqual([1, 3, 5].map((l) => ev(l).every), [3, 3, 2]);
+  approx(ev(1).payload[0].power, 1.5, 1e-9);                                       // the payload bonus alone
+  approx(ev(3).payload[0].power, 1.2 * 1.5 * 1.25, 1e-9);
+  const ec = (lv) => compileChain({ rule: 'pulse', slots: ['echo', 'nova'], levels: { echo: lv } }).nodes[0];
+  assert.deepEqual([1, 3, 5].map((l) => [ec(l).echoMult, ec(l).echoShots]), [[0.6, 1], [0.75, 1], [0.75, 2]]);
+});
+
+test('Spite hits harder and heals more the lower your hp is', () => {
+  const heal = (hp) => {
+    const run = newRun();
+    installRig(run, [{ rule: 'spite', slots: ['nova'], energy: 10 }], { log: true });
+    run.player.hp = hp;
+    const rig = run.rig;
+    rigEvent(run, 'hurt');
+    tick(run, 0.05);
+    return { healed: run.player.hp - hp, scale: rig.log.find((l) => l.ev === 'activate') && rig.chains[0].act.scale };
+  };
+  const hi = heal(run0max());
+  function run0max() { const r = newRun(); return r.player.maxHp - 1; }
+  const lo = heal(10);
+  assert.ok(lo.scale > hi.scale && lo.healed > hi.healed, JSON.stringify([lo, hi]));
 });
