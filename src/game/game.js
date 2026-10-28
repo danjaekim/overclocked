@@ -23,8 +23,9 @@ import { showWorkbench } from '../ui/workbench.js';
 import { showCompendium } from '../ui/compendium.js';
 import { REACTION_INFO } from '../rig/pieces.js';
 import { stockUp } from '../rig/workbench.js';
+import { snapshotRun, restoreRun } from './run-snapshot.js';
 
-export function createGame({ view, input, overlays, rotate, debug, params, save, audio, sandboxHost }) {
+export function createGame({ view, input, overlays, rotate, debug, params, save, runSave = null, audio, sandboxHost }) {
   const game = { state: 'run', run: null };
   let nextSeed = params.seed;
   const sfx = (name) => audio && audio.play(name);
@@ -73,10 +74,41 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     return seed;
   };
 
+  // The run in progress is written to the run save whenever the game stops at a menu (pause, level-up, chest, workbench),
+  // and dropped when the run ends or a new one starts, so closing the app and coming back lands in the same run.
+  // Debug (god) runs and the sandbox never save.
+  function saveRun() {
+    const run = game.run;
+    if (!runSave || !run || run.sandbox || run.over || debug.god) return;
+    try {
+      if (!runSave.save(snapshotRun(run))) runSave.clear();
+    } catch (e) {
+      runSave.clear();                                         // a run that cannot be frozen is not offered again
+    }
+  }
+
   // The full run: ten minutes, elites and a boss, a one-chain rig that you grow.
   function startRun() {
+    if (runSave) runSave.clear();
     begin(createOverclockedRun({ seed: takeSeed(), view, debug, sfx }));
     if (sandboxHost) panel = mountSandboxPanel(sandboxHost, { onEdit: () => openRigEditor(false) });
+  }
+
+  // Boot: pick up a saved run at its pause menu, or start a new one (also when the save cannot be read: a changed version, say).
+  function resumeOrStart() {
+    const snap = nextSeed == null && runSave && !debug.god ? runSave.load() : null;
+    if (snap) {
+      try {
+        begin(restoreRun(snap, { view, debug, sfx }));
+        if (sandboxHost) panel = mountSandboxPanel(sandboxHost, { onEdit: () => openRigEditor(false) });
+        pause();
+        return;
+      } catch (e) {
+        console.warn('could not resume the saved run', e);
+        runSave.clear();
+      }
+    }
+    startRun();
   }
 
   // The chain sandbox (game/sandbox.js): an endless arena with test chains, for trying things.
@@ -98,6 +130,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (game.state === 'levelup' || game.state === 'results' || game.state === 'workbench') return;     // an editor is already open (the panel's Rig button stays reachable above it)
     game.state = 'levelup';
     input.reset();
+    saveRun();
     if (withOffers) sfx('levelup');
     run.cam.y = run.player.y + view.h * 0.2;                   // the sheet covers the lower part: lift the player into the clear top
     const level = run.player.level - (run.pendingLevelUps - 1);
@@ -135,6 +168,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
 
   function openPause() {
     input.reset();
+    saveRun();
     if (audio) audio.music.duck(true);
     const show = () => showPause(overlays, {
       ...musicUi(show),
@@ -158,6 +192,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   }
 
   function finishRun() {
+    if (runSave) runSave.clear();
     game.state = 'results';
     input.reset();
     unmountPanel();
@@ -172,6 +207,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   // then opens the editor if a piece landed somewhere, so you can see where it went and move it.
   function openTreasure() {
     const run = game.run;
+    saveRun();                                                 // before the chest is taken off the list
     const tier = run.pendingChests.shift();
     game.state = 'treasure';
     input.reset();
@@ -200,6 +236,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   // The workbench at a shrine (run frozen): spend gold (run.ore) on a piece, a level or a rule card.
   function openWorkbench() {
     const run = game.run;
+    saveRun();                                                 // while the shrine is still waiting
     run.forgeReady = false;
     game.state = 'workbench';
     input.reset();
@@ -250,6 +287,6 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
-  if (params.sandbox) startSandbox(); else startRun();
+  if (params.sandbox) startSandbox(); else resumeOrStart();
   return game;
 }

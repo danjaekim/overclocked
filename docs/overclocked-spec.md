@@ -129,7 +129,7 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 - Sources: levels 5 and 10 offer 2 Mk I chassis and a slot while a chain is free (then slot, recharge and battery cards); about 1 elite chest in 2 holds one (Mk II about 1 in 3); a boss chest holds 2 Mk II or Mk III to pick from; the workbench stocks one on about 1 visit in 2 (60/90/120 gold by mark).
 - Full rig (v0.6.3): with no free slot or bench space, level cards and fuse cards draw 2.5x as often and new pieces 0.4x. A copy of a piece you already own is dropped from the offers, except a copy of a maxed piece, which becomes a **fuse**: it merges into your piece as one Overclock level (to 7, +25% power each), using no slot. That is the whole fusion mechanic; there is no separate fuse screen.
 - The rig screen shows each piece's level (L1 and up, gold once overclocked) beside its cost. A chain's cost line shows what one run of the whole chain costs; a piece that costs more than the whole battery is greyed with the numbers.
-- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.4, after a playtest of v0.6.0.
+- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.5, after a playtest of v0.6.0.
 
 ## Progression
 
@@ -277,6 +277,8 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Elements (v0.5.5): Flame burns for 80% of each hit over 3 s; Storm arcs to 2 nearby enemies for 35% each and marks them, and a shocked enemy takes 15% more from everything; Frost chills (10% slow a stack, freeze at 4). The Warlord hits for 18 (25 in Overforged).
 - Chassis chains and a recharging battery (v0.6.0) replace the per-activation energy pool, rule cards as items, 4 chains, "+3 energy" and the 4-slot gate on new chains. See "Chassis". The 12-seed bot matched v0.5.6 (4/12 wins, level 16, about 1600 kills) after one tuning step (+1/s recharge on every chassis).
 - Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 15, an elite pays 25 and the boss 100. Prices: piece 40, level 30-60, rule card 60, reroll 10 and rising.
+
+- Resume (v0.6.4): the run in progress is frozen to JSON (`game/run-snapshot.js`, key `overclocked.run.v1`, `save/run-save.js`) whenever the game stops at a menu (pause, level-up, chest, workbench), and dropped when the run ends or a new one starts. Booting with a save lands on the pause menu of that run. The chain rig is rebuilt from `run.rigState` instead of copied, so queued payloads and Echo shots in flight start over; each chain's battery is kept. A save that cannot be read (older format, changed rig) is dropped and a new run starts. Debug (god) runs and the sandbox never save. Test: `tests/resume.test.mjs`, `tests/resume-smoke.mjs`.
 
 ## Open questions
 
