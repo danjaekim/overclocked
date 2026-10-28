@@ -55,4 +55,7 @@ export function chassisStats(ch) {
   };
 }
 
+// Replacing a chain with the same chassis at an equal or higher mark keeps what was bought for it (recharge and battery upgrades).
+export const keepsUpgrades = (old, chassis, mk = 1) => old.chassis === chassis && (old.mk || 1) <= mk;
+
 export const chassisName = (ch) => `${(CHASSIS[ch.chassis] || CHASSIS[START_CHASSIS]).name} ${MK_NAMES[Math.max(1, Math.min(MK_MAX, ch.mk || 1))]}`;

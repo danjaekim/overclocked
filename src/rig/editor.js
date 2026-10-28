@@ -11,7 +11,7 @@
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
 import { PIECES, RULES, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
-import { CHASSIS, chassisStats, chassisForRule, MK_MAX } from './chassis.js';
+import { CHASSIS, chassisStats, chassisForRule, keepsUpgrades, MK_MAX } from './chassis.js';
 
 export const BENCH = 3;
 export const SLOTS = 6;
@@ -250,7 +250,7 @@ export function addChassis(rig, chassis, mk = 1) {
 
 // What replacing chain c's chassis does: { rig, benched: [ids], sold: [ids] }. The pieces move onto the new chassis in
 // order; the ones that do not fit go to the bench, and once the bench is full they are sold. Upgrades bought for the old
-// chassis go with it. The new chassis starts with max(its starting slots, the old slot count) slots, up to its max, so a
+// chassis go with it, unless the new one is the same chassis at an equal or higher mark (it is an upgrade of the same frame). The new chassis starts with max(its starting slots, the old slot count) slots, up to its max, so a
 // replacement never strands pieces it has room for.
 export function replaceChassis(rig, c, chassis, mk = 1) {
   if (!rig.chains[c] || !CHASSIS[chassis]) return null;
@@ -260,7 +260,7 @@ export function replaceChassis(rig, c, chassis, mk = 1) {
   const size = Math.min(rig.cap, s.max, Math.max(s.start, old.slots.length));
   const pieces = old.slots.filter(Boolean);
   const slots = padSlots(pieces.slice(0, size), size);
-  next.chains[c] = chainState(chassis, Math.min(MK_MAX, mk), slots);
+  next.chains[c] = chainState(chassis, Math.min(MK_MAX, mk), slots, keepsUpgrades(old, chassis, mk) ? { charge: old.charge, cell: old.cell, key: null } : {});
   const benched = [];
   const sold = [];
   for (const id of pieces.slice(size)) {

@@ -198,6 +198,19 @@ test('energy: the activation stops at the first piece it cannot pay for', () => 
   assert.equal(events(rig, 'dry')[0].pool, 1);
 });
 
+test('battery: an attack dearer than the whole battery fires on a full one, goes into debt and recharges back', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'pulse', slots: ['mortar'], energy: 2, recharge: 2 }], { log: true });
+  crowd(run, 130, 0);
+  tick(run, 0.4);
+  assert.equal(events(rig, 'fire').length, 1, 'a Mortar costs 3 against a battery of 2');
+  assert.equal(events(rig, 'fire')[0].pool, -1);
+  tick(run, 0.5);
+  assert.equal(events(rig, 'fire').length, 1, 'not again until the battery is full');
+  tick(run, 1.5);                                                     // -1 back to 2 takes 1.5 s, and the next pulse is at 2.3 s
+  assert.equal(events(rig, 'fire').length, 2);
+});
+
 test('with no enemy in range a piece does not fire and spends nothing', () => {
   const { run, rig } = rigWith('blaster');
   tick(run, 0.5);

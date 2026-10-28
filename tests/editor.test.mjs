@@ -100,11 +100,13 @@ test('analyze: pieces beyond the energy pool are greyed as out of energy', () =>
   assert.equal(p.reasons.has(2), false);
 });
 
-test('analyze: a weapon that costs more than the whole battery is greyed with the numbers, not just "out of energy"', () => {
+test('analyze: a stack dearer than the whole battery is not greyed: it fires on a full battery and the cost line says so', () => {
   const a = analyzeChain({ rule: 'pulse', slots: ['scatter', 'echo', 'storm', 'slam'], energy: 12, quirk: { costAdd: 1 } });
   assert.equal(a.cost, 13);
-  assert.match(a.reasons.get(3), /costs 13, the battery holds 12/);
-  assert.match(a.reasons.get(0), /costs 13/, 'its modifiers are greyed too');
+  assert.equal(a.reasons.size, 0);
+  assert.match(a.text, /cost 13 of 12.*full battery/);
+  const two = analyzeChain({ rule: 'pulse', slots: ['scatter', 'echo', 'storm', 'slam', 'blaster'], energy: 12, quirk: { costAdd: 1 } });
+  assert.equal(two.reasons.get(4), 'out of energy', 'what follows an overdraft has nothing left');
 });
 
 test('empty slots are skipped by the compiler and keep their positions', () => {

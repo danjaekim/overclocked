@@ -126,7 +126,10 @@ function runNodes(run, rig, nodes, x, y, act) {
   const chains = rig.chains;
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    if (act.pool < node.cost) {
+    // A piece that costs more than the whole battery fires when the battery is full and puts it in debt: the pool goes
+    // negative and recharges back up, so an expensive stack is slow rather than dead.
+    const bat = chains[act.chain].bat;
+    if (act.pool < node.cost && !(bat.size > 0 && node.cost > bat.size && act.pool >= bat.size - 1e-6)) {
       note(run, rig, 'dry', { act: act.id, piece: node.piece, need: node.cost, pool: act.pool });
       return;
     }
@@ -171,7 +174,7 @@ function launch(run, rig, node, x, y, act, mult, armed) {
 function fireNode(run, rig, chain, node, x, y, act) {
   const inst = node.inst;
   const mult = node.power * act.scale * (node.echo ? node.echoMult : 1);
-  const armed = node.trigger !== null && act.pool - node.cost >= node.trigger.cost;     // the trigger is paid for if the attack fires (an impact can come in the same tick)
+  const armed = node.trigger !== null && act.pool - node.cost >= node.trigger.cost && act.pool >= node.cost;     // the trigger is paid for if the attack fires (an impact can come in the same tick)
   const fired = launch(run, rig, node, x, y, act, mult, armed);
   if (fired === 0) {                    // nothing in range: no attack, no energy spent
     note(run, rig, 'skip', { act: act.id, piece: node.piece, pool: act.pool });

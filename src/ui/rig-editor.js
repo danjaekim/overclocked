@@ -11,7 +11,7 @@ import { PIECES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { analyzeChain } from '../rig/chain.js';
 import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, replaceChassis, BENCH } from '../rig/editor.js';
 import { applyOffer, describeOffer } from '../rig/offers.js';
-import { chassisName } from '../rig/chassis.js';
+import { chassisName, keepsUpgrades } from '../rig/chassis.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 export const icon = (p, px) => `<svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="${px}" height="${px}"><path d="${p.icon}"/></svg>`;
@@ -94,10 +94,10 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
       const d = describeOffer(st, swap);
       const btns = st.chains.map((c, i) => {
         const r = replaceChassis(st, i, swap.chassis, swap.mk);
-        const lost = r.sold.length ? `, sells ${r.sold.map((id) => PIECES[id].short).join(' ')}` : r.benched.length ? `, ${r.benched.length} to bench` : '';
+        const lost = (r.sold.length ? `, sells ${r.sold.map((id) => PIECES[id].short).join(' ')}` : r.benched.length ? `, ${r.benched.length} to bench` : '') + (keepsUpgrades(c, swap.chassis, swap.mk) && (c.charge || c.cell) ? ', keeps upgrades' : '');
         return `<button class="rbtn" data-act="swap:${i}" style="border-color:${CHAIN_COLORS[i]}">Replace ${CHAIN_NAMES[i]}: ${esc(chassisName(c))}${esc(lost)}</button>`;
       }).join('');
-      return `<div class="rfull wrap">${icon(CHASSIS_ICON, 28)}<span><b>${esc(d.title)}</b>: ${esc(d.desc)} Every chain is in use: pick one to replace (its pieces move over, upgrades bought for it are lost), or pass for an upgrade.</span>
+      return `<div class="rfull wrap">${icon(CHASSIS_ICON, 28)}<span><b>${esc(d.title)}</b>: ${esc(d.desc)} Every chain is in use: pick one to replace (its pieces move over; upgrades bought for it are lost unless this is the same chassis at an equal or higher mark), or pass for an upgrade.</span>
         ${btns}${upgrades ? '<button class="rbtn" data-act="pass">Pass: pick an upgrade instead</button>' : ''}<button class="rbtn" data-act="back">Back</button></div>`;
     }
     if (!pending) return '';

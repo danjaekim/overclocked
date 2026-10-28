@@ -145,6 +145,19 @@ test('capacity: a slot goes to the shortest chain up to its chassis max; chassis
   assert.deepEqual([chassisStats({ chassis: 'standard', mk: 3 }).battery, chassisStats({ chassis: 'standard', mk: 3 }).recharge], [15, 8]);
 });
 
+test('replacing a chassis with the same one at an equal or higher mark keeps its upgrades; a different chassis does not', () => {
+  let r = rigOf(['blaster']);
+  r = addChassis(r, 'overdrive', 1);
+  r = addPower(addPower(addPower(r, 1, 'charge'), 1, 'cell'), 1, 'cell');
+  const up = replaceChassis(r, 1, 'overdrive', 2).rig.chains[1];
+  assert.deepEqual([up.mk, up.charge, up.cell], [2, 1, 2]);
+  assert.deepEqual([replaceChassis(r, 1, 'overdrive', 1).rig.chains[1].charge, replaceChassis(r, 1, 'overdrive', 1).rig.chains[1].cell], [1, 2], 'a side-grade keeps them too');
+  const other = replaceChassis(r, 1, 'kiln', 3).rig.chains[1];
+  assert.deepEqual([other.charge, other.cell], [0, 0]);
+  const down = replaceChassis(addChassis(rigOf(['blaster']), 'overdrive', 3), 1, 'overdrive', 1).rig.chains[1];
+  assert.equal(down.mk, 1);
+});
+
 test('replacing a chassis: pieces move over in order, extras go to the bench and then are sold, upgrades go with the old one', () => {
   let r = rigOf(['blaster', 'flame', 'nova']);
   for (let i = 0; i < 2; i++) r = addSlot(r, 0);

@@ -34,7 +34,7 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
     const what = pi === null ? '' : describeItem(st, pi).title;
     const ok = (i) => pi.kind !== 'slot' || hasSlotRoom(st, i);
     const isCh = pi !== null && pi.kind === 'chassis';
-    const ask = isCh ? (canTakeNew(st) ? 'is a new chain, or replaces which?' : 'replaces which chain? Its pieces move over; upgrades bought for it are lost.') : 'goes on which chain?';
+    const ask = isCh ? (canTakeNew(st) ? 'is a new chain, or replaces which?' : 'replaces which chain? Its pieces move over; upgrades bought for it are lost unless it is the same chassis at an equal or higher mark.') : 'goes on which chain?';
     const fresh = isCh && canTakeNew(st) ? `<button class="rbtn" data-act="chain:${NEW_CHAIN}">New chain</button>` : '';
     const chains = pi === null ? '' : `<div class="rfull wrap"><span><b>${esc(what)}</b> ${ask}</span>${fresh}${st.chains.map((c, i) => (ok(i) ? `<button class="rbtn" data-act="chain:${i}" style="border-color:${CHAIN_COLORS[i]}">${isCh ? 'Replace ' : ''}${CHAIN_NAMES[i]} (${esc(chassisName(c))}, ${c.slots.length})</button>` : '')).join('')}<button class="rbtn" data-act="cancel">Back</button></div>`;
     overlays.show(`
