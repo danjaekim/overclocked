@@ -214,7 +214,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - [x] Sandbox as the default start screen: the arena with steady waves, no level-ups
 - [x] Two chains, with buttons to load each test chain
 - [x] HUD rig strip, energy pips, and the Steam and Shatter reactions
-- [ ] Playtest on your phone: the concept check
+- [x] Playtest on your phone: the concept check (checked off by Dan, 2026-10-28: the core concept has legs)
 
 **M3: Rig editor**
 
@@ -227,12 +227,13 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - [x] Remove Overforged's build systems from `run.js` and the UI (title, class select, level-up, forge, build screen, compendium, history, backup and run-resume screens and their code are gone; the engine-era modules that the stat and status tests still use stay, see docs/architecture.md)
 - [x] All 16 pieces and 5 rule cards, piece levels, and chests with capacity items
 - [x] Full 10-minute runs with elites and bosses, and the run's rig on the results screen
-- [ ] Playtest on your phone: the M4 gate (a full run plays start to finish, and two runs feel different). Bot runs do not finish yet (see the bench numbers in the thread), so this gate may need the first balance pass
+- [x] Playtest on your phone: the M4 gate (checked off by Dan, 2026-10-28)
 
 **M5: Depth**
 
-- [ ] Workbench at shrines with ore as gold, and mastery twists
-- [ ] All six reactions and compendium entries
+- [x] Workbench at shrines with ore as gold (v0.5.2: shrines at 2:00, 4:00, 6:30, 8:30 and the boss; a visit stocks 2 pieces, a level and a rule card; reroll). Mastery twists became the level 3 and 5 signature effects (v0.5.0)
+- [x] All six reactions plus Intensify (v0.5.1)
+- [ ] Compendium entries
 - [ ] A first balance pass, with a bench table posted first and your go-ahead before any long run
 
 ## Decisions
@@ -247,7 +248,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload also gets x1.5 power and each payload piece costs 1 less energy (v0.5.0), so reactions are a multiplier on their own. Spite's power and heal scale with missing hp (x2 at death's door).
 - A run starts with 130 HP and 0.5 HP/s regeneration (the stat default plus the Archer's numbers from Overforged). This is a first guess, tuned in M5.
 - Capacity: levels 10 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
-- Shrines and ore are off in a run until the M5 workbench.
+- Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 15, an elite pays 25 and the boss 100. Prices: piece 40, level 30-60, rule card 60, reroll 10 and rising.
 
 ## Open questions
 

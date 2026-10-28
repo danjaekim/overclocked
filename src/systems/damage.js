@@ -23,6 +23,8 @@ const HIT_FLASH = 0.08;
 const WARD_MULT = 0.5;     // damage taken inside a Shaman's ward
 const MARK_MULT = 1.2;     // damage taken by an enemy marked by Hunter's Mark
 const BLESS_MULT = 1.1;    // damage taken by a blessed enemy
+// Gold in a rig run (ore, spent at the workbench, rig/workbench.js): what an ore drop is worth, and what elites and the boss pay.
+export const GOLD = { perOre: 15, elite: 25, boss: 100 };
 const ARMOR_FLOOR = 0.4;   // armor never takes more than 60% off a hit
 
 export function killEnemy(run, e) {
@@ -46,14 +48,15 @@ export function killEnemy(run, e) {
     }
   }
   spawnGem(run, e.x, e.y, e.def.xp * (e.elite ? ELITE.xpMult : 1));
-  const ore = run.rigRun ? null : e.def.ore;                 // ore has no use in a rig run until the workbench (M5)
+  const ore = e.def.ore;                                     // in a rig run ore is gold, spent at the workbench
   if (ore && ORES[ore.type].bank === 'starsteel') {
     run.starsteel += ore.count || 1;               // starsteel is banked at once, so the boss chest can use it
   } else if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
-    spawnOre(run, e.x + 6, e.y - 4, ore.type, ore.count || 1);
+    spawnOre(run, e.x + 6, e.y - 4, ore.type, (ore.count || 1) * (run.rigRun ? GOLD.perOre : 1));
   }
   if (e.elite) {
     spawnChest(run, e.x, e.y, 0);
+    if (run.rigRun) run.ore += GOLD.elite;
     // starsteel for evolutions: the first elite always drops one, later ones with a chance
     if (run.eliteKills++ === 0 || run.rng.next() < ELITE.starsteelChance) {
       run.starsteel += 1;
@@ -66,6 +69,7 @@ export function killEnemy(run, e) {
     run.boss = null;
     spawnShrine(run, SHRINE.bossShrineTtl, { x: e.x, y: e.y }, true);
     spawnChest(run, e.x - 40, e.y, 1);
+    if (run.rigRun) run.ore += GOLD.boss;
     run.toast = { text: `${e.def.name} slain!`, ttl: 3 };
     onMilestone(run, 'boss', 1);
   }

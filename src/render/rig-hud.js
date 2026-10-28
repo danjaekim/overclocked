@@ -5,7 +5,7 @@ import { fmtTime } from '../ui/overlay.js';
 import { xpToNext } from '../game/xp.js';
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { TEST_CHAINS } from '../rig/presets.js';
-import { drawChestArrows } from './shrines.js';
+import { drawChestArrows, drawShrineArrows } from './shrines.js';
 
 const SLOT = 34;
 const GAP = 4;
@@ -38,7 +38,7 @@ export function drawSandboxHud(ctx, view, run) {
   ctx.textAlign = 'left';
   ctx.font = '13px system-ui, sans-serif';
   ctx.fillStyle = '#b9bbc6';
-  ctx.fillText('Lv ' + p.level + '   Kills ' + run.kills, 12, y0 + bh + 6);
+  ctx.fillText('Lv ' + p.level + '   Kills ' + run.kills + (run.rigRun ? '   Gold ' + run.ore : ''), 12, y0 + bh + 6);
 
   if (run.rig) {
     const rows = run.rig.chains;
@@ -60,7 +60,7 @@ export function drawSandboxHud(ctx, view, run) {
     ctx.textBaseline = 'bottom';
     ctx.fillText(boss.def.name, view.w / 2, by0 - 2);
   }
-  if (run.rigRun) drawChestArrows(ctx, view, run);                // an elite's chest waits where it fell: an arrow points at it
+  if (run.rigRun) { drawChestArrows(ctx, view, run); drawShrineArrows(ctx, view, run); }                // an elite's chest waits where it fell: an arrow points at it
   if (run.toast) {
     ctx.globalAlpha = Math.min(1, run.toast.ttl * 2);
     ctx.fillStyle = '#ffd34d';

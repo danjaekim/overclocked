@@ -19,6 +19,8 @@ import { showRigEditor } from '../ui/rig-editor.js';
 import { makeOffers, CAPACITY_LEVELS } from '../rig/offers.js';
 import { openRigChest } from '../rig/chests.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
+import { showWorkbench } from '../ui/workbench.js';
+import { stockUp } from '../rig/workbench.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params, save, audio, sandboxHost }) {
   const game = { state: 'run', run: null };
@@ -87,7 +89,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   // It reuses the level-up state, so the run is frozen like any other pause.
   function openRigEditor(withOffers) {
     const run = game.run;
-    if (game.state === 'levelup' || game.state === 'results') return;     // an editor is already open (the panel's Rig button stays reachable above it)
+    if (game.state === 'levelup' || game.state === 'results' || game.state === 'workbench') return;     // an editor is already open (the panel's Rig button stays reachable above it)
     game.state = 'levelup';
     input.reset();
     if (withOffers) sfx('levelup');
@@ -183,6 +185,29 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     });
   }
 
+  // The workbench at a shrine (run frozen): spend gold (run.ore) on a piece, a level or a rule card.
+  function openWorkbench() {
+    const run = game.run;
+    run.forgeReady = false;
+    game.state = 'workbench';
+    input.reset();
+    run.cam.y = run.player.y + view.h * 0.2;
+    const restock = () => stockUp(run.rng, run.rigState, run.banished);
+    showWorkbench(overlays, {
+      rig: run.rigState,
+      gold: run.ore,
+      stock: restock(),
+      restock,
+      onChange(rig, gold) { run.rigState = rig; run.ore = gold; applyRig(run); },
+      onDone(placed) {
+        overlays.hide();
+        if (placed) { game.state = 'run'; openRigEditor(false); return; }
+        run.player.iframes = Math.max(run.player.iframes, LEVELUP.iframesAfter);
+        game.state = 'run';
+      },
+    });
+  }
+
   game.openBuild = () => { if (game.state === 'run') pause(); };
   game.togglePause = () => (game.state === 'run' ? pause() : game.state === 'paused' ? resume() : undefined);
   game.isSimulating = () => game.state === 'run' && !rotate.blocked;
@@ -195,6 +220,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (run.over) finishRun();
     else if (run.pendingLevelUps > 0) openRigEditor(true);
     else if (run.pendingChests.length > 0) openTreasure();
+    else if (run.forgeReady) openWorkbench();
   };
 
   // Out of view: pause, so the run waits. In the editor or a chest the run is already frozen.

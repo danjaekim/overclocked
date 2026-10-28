@@ -13,7 +13,7 @@ import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDe
 import { applyOffer, describeOffer } from '../rig/offers.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const icon = (p, px) => `<svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="${px}" height="${px}"><path d="${p.icon}"/></svg>`;
+export const icon = (p, px) => `<svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="${px}" height="${px}"><path d="${p.icon}"/></svg>`;
 const DRAG_START = 6;            // px of movement before a press becomes a drag
 const EDGE = 0.28;               // the outer share of a slot, each side, that counts as "between"
 

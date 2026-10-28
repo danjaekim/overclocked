@@ -4,7 +4,11 @@ import { test, assert, approx } from './harness.mjs';
 import { createRng } from '../src/core/rng.js';
 import { createOverclockedRun, START_CHAIN } from '../src/game/ovrun.js';
 import { applyRig, applyRigStats } from '../src/game/sandbox.js';
-import { spawnShrine } from '../src/systems/shrines.js';
+import { spawnShrine, updateShrines } from '../src/systems/shrines.js';
+import { stockUp, buyItem, levelPrice, rerollPrice, describeItem } from '../src/rig/workbench.js';
+import { spawnEnemy } from '../src/game/director.js';
+import { queueDamage } from '../src/systems/damage-queue.js';
+import { flushDamage } from '../src/systems/damage.js';
 import { newRig, levelUp, addSlot, addChain, addEnergy, slotTarget, chainDefOf, owned, pieceLevel, placeSuggested } from '../src/rig/editor.js';
 import { makeOffers, applyOffer, describeOffer, capacityOffers, pieceCandidates } from '../src/rig/offers.js';
 import { openRigChest, chestCount } from '../src/rig/chests.js';
@@ -30,11 +34,49 @@ test('a run starts with one Pulse chain of three slots holding a Blaster, and no
   assert.equal(run.trait && Object.keys(run.trait).length, 0);
 });
 
-test('a run has no shrines and drops no ore, and its first chest is an elite chest', () => {
+test('a run has shrines (the workbench), and the first chest is an elite chest', () => {
   const run = newRun();
-  assert.equal(spawnShrine(run), null);
-  assert.equal(spawnShrine(run, 10, { x: 0, y: 0 }, true), null);
-  assert.equal(run.shrines.length, 0);
+  const sh = spawnShrine(run);
+  assert.ok(sh && run.shrines.length === 1);
+  assert.equal(spawnShrine(run), null, 'one shrine at a time');
+  assert.ok(spawnShrine(run, 10, { x: 0, y: 0 }, true));
+  run.player.x = sh.x; run.player.y = sh.y;
+  for (let i = 0; i < 60; i++) updateShrines(run, 1 / 30);          // stand in it long enough
+  assert.equal(run.forgeReady, true);
+});
+
+test('the workbench: stock, prices, buying a piece, a level and a rule card', () => {
+  const r = rigOf(['blaster']);
+  const stock = stockUp(createRng(4), r);
+  assert.deepEqual(stock.map((i) => i.kind).sort(), ['level', 'piece', 'piece', 'rule']);
+  assert.ok(stock.every((i) => i.price > 0));
+  assert.deepEqual([2, 3, 4, 5].map(levelPrice), [30, 40, 50, 60]);
+  assert.deepEqual([0, 1, 2].map(rerollPrice), [10, 20, 30]);
+  const piece = stock.find((i) => i.kind === 'piece');
+  const bought = buyItem(r, piece);
+  assert.ok(owned(bought.rig).has(piece.id) && bought.placed);
+  const lv = buyItem(r, { kind: 'level', id: 'blaster', to: 2 });
+  assert.equal(pieceLevel(lv.rig, 'blaster'), 2);
+  assert.equal(buyItem(rigOf(['blaster']), { kind: 'rule', rule: 'reaper' }, 0).rig.chains[0].rule, 'reaper');
+  assert.equal(buyItem(rigOf(['blaster']), { kind: 'rule', rule: 'reaper' }, 3), null, 'no such chain');
+  let full = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo'], ['pierce', 'on_impact', 'on_kill']);
+  full.bench = ['slam', 'chain_bolt', 'on_hit'];
+  assert.equal(buyItem(full, { kind: 'piece', id: 'every_3rd', price: 40 }), null, 'no room');
+  assert.ok(describeItem(r, piece).title && describeItem(r, stock.find((i) => i.kind === 'rule')).desc);
+});
+
+test('ore is gold in a run: enemies drop it', () => {
+  const run = newRun();
+  let dropped = 0;
+  for (let i = 0; i < 400; i++) {
+    const e = spawnEnemy(run, 'brute', 300, 0);
+    e.hp = 1;
+    const before = run.world.pickups.count;
+    queueDamage(run, e, 99, false, 0, 0, 0, null);
+    flushDamage(run);
+    dropped += run.world.pickups.count - before;
+  }
+  assert.ok(dropped > 0);
 });
 
 test('the rig a run built is on the summary, for the results screen', () => {
