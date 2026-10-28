@@ -16,7 +16,7 @@ import { makeFireCtx } from '../game/fire-ctx.js';
 import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { healPlayer } from '../systems/pickups.js';
-import { reactOnHit } from './reactions.js';
+import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
 
 const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the rest wait in the queue
 const MAX_QUEUE = 256;                 // queued payload runs; further events are dropped
@@ -79,6 +79,9 @@ function makeInstance(run, rig, node, chain) {
     const mods = PIECES[id].mods;
     if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
   }
+  const mods = node.reaction === 'superconduct' ? [{ stat: 'critChance', op: 'flat', value: SUPERCONDUCT_CRIT }]
+    : node.reaction && node.reaction.startsWith('intensify_') ? INTENSIFY[node.reaction.slice(10)] : null;
+  if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
   inst.reactAt = -1e9;
   node.count = 0;                                    // Every 3rd: how many times the cursor has reached it
   inst.onRig = (r, ev, atk, x, y, target, depth) => onEvent(r, rig, chain, node, inst, ev, atk, x, y, target, depth);

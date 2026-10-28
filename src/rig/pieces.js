@@ -112,10 +112,28 @@ export const ELEMENTS = {
   storm: { tag: 'storm', mods: [{ stat: 'shockChance', op: 'flat', value: 1 }] },
 };
 
-// First element then second, in the order the modifiers sit in the chain. Effects are M2 work.
+// First element then second, in the order the modifiers sit in the chain; the same element twice is an Intensify.
 export const REACTIONS = {
   'fire>frost': 'steam',
   'frost>fire': 'shatter',
+  'fire>storm': 'overload',
+  'storm>fire': 'plasma',
+  'frost>storm': 'superconduct',
+  'storm>frost': 'static',
+  'fire>fire': 'intensify_fire',
+  'frost>frost': 'intensify_frost',
+  'storm>storm': 'intensify_storm',
+};
+export const REACTION_INFO = {
+  steam: { name: 'Steam', recipe: 'Flame then Frost', desc: 'A cloud that slows enemies and blinds them so they wander for 2 s. Defensive' },
+  shatter: { name: 'Shatter', recipe: 'Frost then Flame', desc: 'Chilled enemies hit by the attack crack, and ice shards hit the enemies around them. Clears packs' },
+  overload: { name: 'Overload', recipe: 'Flame then Storm', desc: 'Burning enemies explode when hit, hurting their neighbours. Grows with crowd density' },
+  plasma: { name: 'Plasma', recipe: 'Storm then Flame', desc: 'Hits leave burning ground. Zone control' },
+  superconduct: { name: 'Superconduct', recipe: 'Frost then Storm', desc: '+50% crit chance on the weapon' },
+  static: { name: 'Static field', recipe: 'Storm then Frost', desc: 'Hits draw nearby enemies together. Sets up area attacks' },
+  intensify_fire: { name: 'Intensify: fire', recipe: 'Flame twice', desc: 'Burns for double damage' },
+  intensify_frost: { name: 'Intensify: frost', recipe: 'Frost twice', desc: 'Chills 2 stacks a hit, so enemies freeze sooner' },
+  intensify_storm: { name: 'Intensify: storm', recipe: 'Storm twice', desc: 'Shocks jump 2 more times' },
 };
 
 // Chain identity in the HUD and the arena: strip badge, and the ring where each of its pieces runs.

@@ -181,3 +181,39 @@ test('Spite hits harder and heals more the lower your hp is', () => {
   const lo = heal(10);
   assert.ok(lo.scale > hi.scale && lo.healed > hi.healed, JSON.stringify([lo, hi]));
 });
+
+test('reactions: every ordered pair of elements has one, the same element twice intensifies', () => {
+  const r = (a, b) => compileChain({ rule: 'pulse', slots: [a, b, 'blaster'] }).nodes[0].reaction;
+  assert.deepEqual(
+    [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm'], ['storm', 'flame'], ['frost', 'storm'], ['storm', 'frost'], ['flame', 'flame'], ['frost', 'frost'], ['storm', 'storm']].map(([a, b]) => r(a, b)),
+    ['steam', 'shatter', 'overload', 'plasma', 'superconduct', 'static', 'intensify_fire', 'intensify_frost', 'intensify_storm']);
+  assert.equal(compileChain({ rule: 'pulse', slots: ['flame', 'pierce', 'frost', 'blaster'] }).nodes[0].reaction, 'steam');   // held in order, neighbours in the element sequence
+  assert.equal(compileChain({ rule: 'pulse', slots: ['flame', 'blaster'] }).nodes[0].reaction, null);
+});
+
+test('reactions: Overload bursts a burning enemy and spends its fire, Plasma leaves burning ground, Static pulls enemies in', () => {
+  const ov = rigOf(['flame', 'storm', 'blaster']);
+  const a = dummy(ov.run, 100, 0);
+  const b = dummy(ov.run, 100, 30);
+  tick(ov.run, 1.6);                                          // the first hit lights it, a later one sets it off
+  assert.ok(b.hp < b.maxHp, 'the neighbour took blast damage');
+  const pl = rigOf(['storm', 'flame', 'blaster']);
+  dummy(pl.run, 100, 0);
+  tick(pl.run, 0.8);
+  assert.ok(pl.run.hazards.length > 0, 'burning ground');
+  const st = rigOf(['storm', 'frost', 'blaster']);
+  const c = dummy(st.run, 100, 0);
+  const d = dummy(st.run, 100, 60);
+  tick(st.run, 0.7);
+  assert.ok(Math.abs(d.y - c.y) < 60, 'pulled together');
+});
+
+test('reactions: Superconduct adds crit chance and Intensify adds status power to the weapon only', () => {
+  const sc = rigOf(['frost', 'storm', 'blaster', 'nova']);
+  const [blaster, nova] = sc.chain.nodes.map((n) => n.inst);
+  const base = sc.run.player.stats.getFor('critChance', nova.tags);
+  approx(sc.run.player.stats.getFor('critChance', blaster.tags) - base, 0.5, 1e-9);
+  const it = rigOf(['flame', 'flame', 'blaster', 'nova']);
+  const [b2, n2] = it.chain.nodes.map((n) => n.inst);
+  assert.ok(it.run.player.stats.getFor('burnPower', b2.tags) > it.run.player.stats.getFor('burnPower', n2.tags));
+});
