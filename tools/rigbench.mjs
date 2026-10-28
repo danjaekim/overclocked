@@ -7,7 +7,7 @@
 import { createOverclockedRun } from '../src/game/ovrun.js';
 import { applyRig } from '../src/game/sandbox.js';
 import { makeOffers, applyOffer, CAPACITY_LEVELS } from '../src/rig/offers.js';
-import { placeSuggested, owned } from '../src/rig/editor.js';
+import { placeSuggested, owned, slotTarget } from '../src/rig/editor.js';
 import { openRigChest } from '../src/rig/chests.js';
 import { stockUp, buyItem } from '../src/rig/workbench.js';
 import { PIECES } from '../src/rig/pieces.js';
@@ -56,6 +56,7 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
   const move = { x: 0, y: 0 };
   let chests = 0;
   let bought = 0;
+  let slotBuys = 0;
   let bossSeen = false;
   const at = {};
   while (!run.over && run.time < 601) {
@@ -95,14 +96,16 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
 
     if (run.forgeReady) {                                          // the workbench: buy what scores best while the gold lasts
       run.forgeReady = false;
-      const items = stockUp(run.rng, run.rigState, run.banished).filter((i) => i.kind !== 'rule');
-      items.sort((a, b) => score(b, run.rigState) - score(a, run.rigState));
+      const items = stockUp(run.rng, run.rigState, run.banished, { slotBuys }).filter((i) => i.kind !== 'rule');
+      const shopScore = (it) => (it.kind === 'slot' ? 66 : it.kind === 'energy' ? 35 : it.kind === 'overclock' ? 50 : score(it, run.rigState));
+      items.sort((a, b) => shopScore(b) - shopScore(a));
       for (const it of items) {
         if (run.ore < it.price) continue;
-        const res = buyItem(run.rigState, it);
+        const res = buyItem(run.rigState, it, it.kind === 'slot' ? Math.max(0, slotTarget(run.rigState)) : 0);
         if (!res) continue;
         run.rigState = res.rig;
         run.ore -= it.price;
+        if (it.kind === 'slot') slotBuys++;
         bought++;
       }
       applyRig(run);

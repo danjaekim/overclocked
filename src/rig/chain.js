@@ -14,10 +14,14 @@
 //            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
+import { OVERCLOCK_STEP, MAX_LEVEL as MAXL } from './pieces.js';
 import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_BONUS, EVERY_BONUS, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
 const sigPower = (levels, id) => Math.pow(SIG_TRIGGER_STEP, sigCount(levels, id));
-const lvlMult = (levels, id) => 1 + LEVEL_STEP * (((levels && levels[id]) || 1) - 1);
+const lvlMult = (levels, id) => {
+  const lv = (levels && levels[id]) || 1;
+  return (1 + LEVEL_STEP * (Math.min(lv, MAXL) - 1)) * Math.pow(OVERCLOCK_STEP, Math.max(0, lv - MAXL));   // past 5: overclocked
+};
 
 export function compileChain(def) {
   const slots = def.slots;

@@ -217,3 +217,10 @@ test('reactions: Superconduct adds crit chance and Intensify adds status power t
   const [b2, n2] = it.chain.nodes.map((n) => n.inst);
   assert.ok(it.run.player.stats.getFor('burnPower', b2.tags) > it.run.player.stats.getFor('burnPower', n2.tags));
 });
+
+test('overclocked levels 6 and 7 add x1.25 power each on top of level 5', () => {
+  const p = (lv) => compileChain({ rule: 'pulse', slots: ['blaster'], levels: { blaster: lv } }).nodes[0].power;
+  approx(p(5), 1.4, 1e-9);
+  approx(p(6), 1.4 * 1.25, 1e-9);
+  approx(p(7), 1.4 * 1.25 * 1.25, 1e-9);
+});

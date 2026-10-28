@@ -8,7 +8,7 @@
 // A location is { kind: 'slot', c, i } | { kind: 'bench', i }. A drop target may also be a gap,
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
-import { PIECES, RULES, DEFAULT_ENERGY, MAX_CHAINS, MAX_LEVEL } from './pieces.js';
+import { PIECES, RULES, DEFAULT_ENERGY, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
 
 export const BENCH = 3;
 export const SLOTS = 6;
@@ -189,6 +189,15 @@ export function levelUp(rig, id) {
   return next;
 }
 
+// The workbench's Overclock: a maxed piece goes one level further, up to OVERCLOCK_MAX.
+export function overclock(rig, id) {
+  const lv = pieceLevel(rig, id);
+  if (lv < MAX_LEVEL || lv >= OVERCLOCK_MAX) return null;
+  const next = cloneRig(rig);
+  next.levels[id] = lv + 1;
+  return next;
+}
+
 export function takeStat(rig, id) {
   const next = cloneRig(rig);
   next.stats[id] = (next.stats[id] || 0) + 1;
@@ -202,10 +211,14 @@ export function slotTarget(rig) {
   return best;
 }
 
+// +1 slot also gives that chain SLOT_ENERGY more energy: power comes from longer chains as well as more of them.
+export const SLOT_ENERGY = 2;
+
 export function addSlot(rig, c) {
   if (rig.chains[c].slots.length >= rig.cap) return null;
   const next = cloneRig(rig);
   next.chains[c].slots.push(null);
+  next.chains[c].bonus = (next.chains[c].bonus || 0) + SLOT_ENERGY;   // a longer chain needs more to run it
   return next;
 }
 

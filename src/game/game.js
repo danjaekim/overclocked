@@ -198,13 +198,13 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     game.state = 'workbench';
     input.reset();
     run.cam.y = run.player.y + view.h * 0.2;
-    const restock = () => stockUp(run.rng, run.rigState, run.banished);
+    const restock = () => stockUp(run.rng, run.rigState, run.banished, { slotBuys: run.slotBuys || 0 });
     showWorkbench(overlays, {
       rig: run.rigState,
       gold: run.ore,
       stock: restock(),
       restock,
-      onChange(rig, gold) { run.rigState = rig; run.ore = gold; applyRig(run); },
+      onChange(rig, gold, item) { run.rigState = rig; run.ore = gold; if (item && item.kind === 'slot') run.slotBuys = (run.slotBuys || 0) + 1; applyRig(run); },
       onDone(placed) {
         overlays.hide();
         if (placed) { game.state = 'run'; openRigEditor(false); return; }

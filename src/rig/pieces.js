@@ -20,6 +20,9 @@ export const EVERY = 3;
 // Piece levels: each level after the first adds this to the piece's main number (an attack's damage, a payload's damage).
 export const LEVEL_STEP = 0.1;
 export const MAX_LEVEL = 5;
+// Overclock: the workbench alone takes a maxed piece past level 5, to OVERCLOCK_MAX, each step x OVERCLOCK_STEP power.
+export const OVERCLOCK_MAX = 7;
+export const OVERCLOCK_STEP = 1.25;
 
 // A trigger's payload is conditional, so it hits harder: its power is multiplied by this, and each payload piece costs 1 less energy (never below 1).
 export const TRIGGER_BONUS = 1.3;

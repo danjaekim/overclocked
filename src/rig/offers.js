@@ -49,28 +49,38 @@ function pick(rng, pool, weight) {
   return pool.splice(k, 1)[0];
 }
 
-// The piece cards for a rig: new pieces and level-ups, weighted, without repeats.
+// The piece cards for a rig: new pieces, level-ups, and copies of pieces you own (all copies share one level), weighted.
+export const COPY_WEIGHT = 0.6;
 export function pieceCandidates(rig, banished = []) {
   const have = owned(rig);
   const out = [];
   for (const id of Object.keys(PIECES)) {
     if (banished.includes(id)) continue;
     if (!have.has(id)) out.push({ kind: 'piece', id });
-    else if (pieceLevel(rig, id) < MAX_LEVEL) out.push({ kind: 'level', id, to: pieceLevel(rig, id) + 1 });
+    else {
+      if (pieceLevel(rig, id) < MAX_LEVEL) out.push({ kind: 'level', id, to: pieceLevel(rig, id) + 1 });
+      out.push({ kind: 'piece', id, copy: true });
+    }
   }
   return out;
 }
 
-// Capacity cards: +1 slot (in the chain with the fewest), a new chain with a random rule card, +3 energy to a random chain.
+// Capacity cards: +1 slot (and +2 energy) for each of the two shortest chains with room, a new chain (only once every chain has at least
+// CHAIN_AFTER slots, so rows fill before more rows come), then +3 energy for chains to make up three cards.
+export const CHAIN_AFTER = 4;
 export function capacityOffers(rng, rig) {
   const out = [];
-  const s = slotTarget(rig);
-  if (s >= 0) out.push({ kind: 'cap', cap: 'slot', c: s });
-  if (rig.chains.length < MAX_CHAINS) {
+  const room = rig.chains.map((c, i) => [c.slots.length, i]).filter(([n]) => n < rig.cap).sort((a, b) => a[0] - b[0]);
+  for (const [, c] of room.slice(0, 2)) out.push({ kind: 'cap', cap: 'slot', c });
+  if (rig.chains.length < MAX_CHAINS && rig.chains.every((c) => c.slots.length >= CHAIN_AFTER)) {
     const rules = Object.keys(RULES);
     out.push({ kind: 'cap', cap: 'chain', rule: rules[Math.floor(rng.next() * rules.length)] });
   }
-  out.push({ kind: 'cap', cap: 'energy', c: Math.floor(rng.next() * rig.chains.length) });
+  const order = rig.chains.map((_, i) => i).sort(() => rng.next() - 0.5);
+  for (const c of order) {
+    if (out.length >= 3) break;
+    out.push({ kind: 'cap', cap: 'energy', c });
+  }
   return out;
 }
 
@@ -85,7 +95,9 @@ export function makeOffers(rng, rig, { count = OFFER_COUNT, banished = [], capac
     if (stats.length && (rng.next() < STAT_CHANCE || !pool.length)) {
       out.push({ kind: 'stat', id: stats.splice(Math.floor(rng.next() * stats.length), 1)[0] });
     } else {
-      out.push(pick(rng, pool, (c) => (c.kind === 'level' ? LEVEL_WEIGHT : w[c.id])));
+      const c = pick(rng, pool, (x) => (x.kind === 'level' ? LEVEL_WEIGHT : w[x.id] * (x.copy ? COPY_WEIGHT : 1)));
+      out.push(c);
+      for (let k = pool.length - 1; k >= 0; k--) if (pool[k].id === c.id) pool.splice(k, 1);   // one card per piece
     }
   }
   return out;
@@ -109,7 +121,7 @@ const pct = (n) => `+${Math.round(n * 100)}%`;
 export function describeOffer(rig, o) {
   if (o.kind === 'piece') {
     const p = PIECES[o.id];
-    return { title: p.name, tag: `new ${p.type} · ${p.cost}`, desc: p.desc, piece: p, type: p.type };
+    return { title: p.name, tag: `${o.copy ? 'copy' : 'new'} ${p.type} · ${p.cost}`, desc: o.copy ? `Another ${p.name}, at the level yours already has. ${p.desc}` : p.desc, piece: p, type: p.type };
   }
   if (o.kind === 'level') {
     const p = PIECES[o.id];
@@ -120,7 +132,7 @@ export function describeOffer(rig, o) {
     const s = RIG_STATS[o.id];
     return { title: s.name, tag: 'passive', desc: s.desc, piece: null, type: 'stat' };
   }
-  if (o.cap === 'slot') return { title: 'More room', tag: 'capacity', desc: `+1 slot in chain ${'ABCD'[o.c]}`, piece: null, type: 'cap' };
+  if (o.cap === 'slot') return { title: 'More room', tag: 'capacity', desc: `+1 slot and +2 energy in chain ${'ABCD'[o.c]}`, piece: null, type: 'cap' };
   if (o.cap === 'chain') return { title: 'New chain', tag: 'capacity', desc: `A chain with the ${RULES[o.rule].name} rule card: ${RULES[o.rule].desc.toLowerCase()}`, piece: null, type: 'cap' };
   return { title: 'More power', tag: 'capacity', desc: `+3 energy for chain ${'ABCD'[o.c]}`, piece: null, type: 'cap' };
 }
