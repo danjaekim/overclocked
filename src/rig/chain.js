@@ -14,7 +14,7 @@
 //            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
-import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_BONUS, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
+import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_BONUS, EVERY_BONUS, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
 const sigPower = (levels, id) => Math.pow(SIG_TRIGGER_STEP, sigCount(levels, id));
 const lvlMult = (levels, id) => 1 + LEVEL_STEP * (((levels && levels[id]) || 1) - 1);
@@ -51,7 +51,7 @@ function parse(slots, start, problems, levels, outer, inPayload = false) {
         for (let k = i + 1; k < slots.length; k++) if (slots[k] !== null && slots[k] !== undefined) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
         return nodes;
       }
-      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost, payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_BONUS * sigPower(levels, id), true) };
+      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost, payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_BONUS * (piece.on === 'every' ? EVERY_BONUS : 1) * sigPower(levels, id), true) };
       return nodes;                           // the rest of the slots belong to the payload
     }
   }

@@ -68,13 +68,13 @@ test('Storm shocks, Heavy doubles damage and area and slows shots, Pierce adds 2
   assert.equal(chain.nodes[0].cost, 2 + 1 + 2 + 1 + 1 - 1 + 0);  // blaster 2 + storm 1 + heavy 2 + pierce 1
 });
 
-test('Echo fires the weapon twice, 0.2 s apart, at 60% each, for one payment', () => {
+test('Echo fires the weapon twice, 0.2 s apart, at 75% each, for one payment', () => {
   const { run, rig } = rigOf(['echo', 'blaster']);
   dummy(run, 120, 0);
   tick(run, 0.31);
   assert.equal(events(rig, 'fire').length, 1);
   const first = run.world.projectiles.active[0];
-  approx(first.dmg, param(run, rig.chains[0].nodes[0].inst, 'damage') * 0.6, 1e-9);
+  approx(first.dmg, param(run, rig.chains[0].nodes[0].inst, 'damage') * 0.75, 1e-9);
   assert.equal(events(rig, 'fire')[0].pool, 40 - 4);
   tick(run, 0.25);
   assert.equal(events(rig, 'echo').length, 1);
@@ -139,7 +139,7 @@ test('piece levels add 10% a level to the attack, to each held modifier, and to 
   assert.equal(base.nodes[0].power, 1);
   const lv = compileChain({ rule: 'pulse', slots, levels: { mortar: 3, flame: 2, on_impact: 5 } });
   approx(lv.nodes[0].power, 1.2 * 1.1, 1e-9);
-  approx(lv.nodes[0].trigger.payload[0].power, 1.4 * 1.5 * 1.25 * 1.25, 1e-9);   // level 5 trigger, the payload bonus, two signature steps
+  approx(lv.nodes[0].trigger.payload[0].power, 1.4 * 1.3 * 1.25 * 1.25, 1e-9);   // level 5 trigger, the payload bonus, two signature steps
   const { run, rig } = rigOf(['blaster'], { levels: { blaster: 5 } });
   dummy(run, 120, 0);
   tick(run, 0.4);
@@ -160,10 +160,10 @@ test('signature levels: Scatter gains copies at 3 and 5, Heavy and Pierce gain s
   assert.deepEqual(hv.sigMods.map((m) => m.stat).sort(), ['area', 'area', 'pierce', 'projectiles']);
   const ev = (lv) => compileChain({ rule: 'pulse', slots: ['blaster', 'every_3rd', 'nova'], levels: { every_3rd: lv } }).nodes[0].trigger;
   assert.deepEqual([1, 3, 5].map((l) => ev(l).every), [3, 3, 2]);
-  approx(ev(1).payload[0].power, 1.5, 1e-9);                                       // the payload bonus alone
-  approx(ev(3).payload[0].power, 1.2 * 1.5 * 1.25, 1e-9);
+  approx(ev(1).payload[0].power, 1.3 * 2, 1e-9);                                   // the payload bonus and Every 3rd's own x2
+  approx(ev(3).payload[0].power, 1.2 * 1.3 * 2 * 1.25, 1e-9);
   const ec = (lv) => compileChain({ rule: 'pulse', slots: ['echo', 'nova'], levels: { echo: lv } }).nodes[0];
-  assert.deepEqual([1, 3, 5].map((l) => [ec(l).echoMult, ec(l).echoShots]), [[0.6, 1], [0.75, 1], [0.75, 2]]);
+  assert.deepEqual([1, 3, 5].map((l) => [ec(l).echoMult, ec(l).echoShots]), [[0.75, 1], [0.9, 1], [0.9, 2]]);
 });
 
 test('Spite hits harder and heals more the lower your hp is', () => {
@@ -212,7 +212,7 @@ test('reactions: Superconduct adds crit chance and Intensify adds status power t
   const sc = rigOf(['frost', 'storm', 'blaster', 'nova']);
   const [blaster, nova] = sc.chain.nodes.map((n) => n.inst);
   const base = sc.run.player.stats.getFor('critChance', nova.tags);
-  approx(sc.run.player.stats.getFor('critChance', blaster.tags) - base, 0.5, 1e-9);
+  approx(sc.run.player.stats.getFor('critChance', blaster.tags) - base, 0.75, 1e-9);
   const it = rigOf(['flame', 'flame', 'blaster', 'nova']);
   const [b2, n2] = it.chain.nodes.map((n) => n.inst);
   assert.ok(it.run.player.stats.getFor('burnPower', b2.tags) > it.run.player.stats.getFor('burnPower', n2.tags));

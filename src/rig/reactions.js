@@ -7,7 +7,7 @@
 //   overload  fire then storm: a burning enemy that is hit explodes (its burn is spent), hitting its neighbours
 //   plasma    storm then fire: a hit leaves burning ground that scorches whatever walks through it
 //   static    storm then frost: a hit draws nearby enemies in together, setting up area attacks
-//   superconduct  frost then storm: +50% crit chance on the weapon (set where the instance is built)
+//   superconduct  frost then storm: +75% crit chance on the weapon (set where the instance is built)
 //   intensify_*   the same element twice: a stronger status (stat changes set where the instance is built)
 
 import { ST } from '../data/statuses.js';
@@ -16,11 +16,11 @@ import { addSteam, addShatter, addBlast, addPatch, addVortex } from '../systems/
 import { CAUSE } from '../systems/damage-queue.js';
 
 export const STEAM = { radius: 55, ttl: 2.2, every: 0.5 };           // a node makes at most one cloud per `every` seconds
-export const SHATTER = { radius: 62, frac: 0.6 };                     // shard damage as a share of the weapon's hit
-export const OVERLOAD = { radius: 60, frac: 0.9, tele: 0.08 };       // the burst's damage as a share of the weapon's hit
+export const SHATTER = { radius: 62, frac: 0.35 };                     // shard damage as a share of the weapon's hit
+export const OVERLOAD = { radius: 60, frac: 0.4, tele: 0.08 };       // the burst's damage as a share of the weapon's hit
 export const PLASMA = { radius: 34, ttl: 2.2, tick: 0.5, frac: 0.3, every: 0.45 };
 export const STATIC = { radius: 75, ttl: 1.1, pull: 70, every: 0.8 };
-export const SUPERCONDUCT_CRIT = 0.5;
+export const SUPERCONDUCT_CRIT = 0.75;
 // The same element twice: stat modifiers on the weapon (see makeInstance in rig.js).
 export const INTENSIFY = {
   fire: [{ stat: 'burnPower', op: 'inc', value: 1 }],

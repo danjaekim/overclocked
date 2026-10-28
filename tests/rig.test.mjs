@@ -96,7 +96,7 @@ test('1 Blaster: one volley per pulse, 2 energy, full power, from the player', (
   assert.equal(events(rig, 'fire')[1].pool, 8);
 });
 
-test('2 Scatter shot: five shots at 25% power, aimed apart, for 4 energy', () => {
+test('2 Scatter shot: five shots at 40% power, aimed apart, for 4 energy', () => {
   const { run, rig, chain } = rigWith('scatter_shot');
   dummy(run, 150, 0);
   tick(run, 0.4);
@@ -105,7 +105,7 @@ test('2 Scatter shot: five shots at 25% power, aimed apart, for 4 energy', () =>
   const prs = run.world.projectiles.active;
   assert.equal(prs.length, 5);
   const full = param(run, chain.nodes[0].inst, 'damage');
-  for (const pr of prs) approx(pr.dmg, full * 0.25, 1e-9);
+  for (const pr of prs) approx(pr.dmg, full * 0.4, 1e-9);
   assert.equal(new Set(prs.map((pr) => pr.dy.toFixed(3))).size, 5);
 });
 

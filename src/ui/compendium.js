@@ -11,7 +11,7 @@ const TABS = [['how', 'How it works'], ['pieces', 'Pieces'], ['rules', 'Rule car
 const HOW = [
   ['Read left to right', 'A chain is a rule card and a row of slots. When the rule card fires, the chain runs its pieces from the left, one after another.'],
   ['Modifiers wait for a weapon', 'A modifier is held and applies to the next weapon only, then it is spent. Several in a row all apply, and the order of elements decides the reaction.'],
-  ['Triggers own what follows', `A trigger attaches to the weapon just before it. Everything to its right is its payload, which runs later, from where the event happens. A payload hits harder (x1.5) and costs a little less. Every ${EVERY}rd runs it every ${EVERY}rd time.`],
+  ['Triggers own what follows', `A trigger attaches to the weapon just before it. Everything to its right is its payload, which runs later, from where the event happens. A payload hits harder (x1.3) and costs a little less. Every ${EVERY}rd runs it every ${EVERY}rd time.`],
   ['Energy ends chain reactions', 'Every piece costs energy each time it runs. A payload pays from the same pool as the activation that started it. When the pool is empty the chain stops until its next activation.'],
   ['Levels', 'Each level adds 10% damage. Levels 3 and 5 add an effect of the piece\'s own.'],
 ];
