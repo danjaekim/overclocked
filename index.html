@@ -229,6 +229,9 @@
     .overlay.levelup { justify-content: center; gap: 10px; }
     .overlay.levelup h2 { margin: 0; color: var(--ember); }
     .overlay.levelup .sub { margin: 0 0 8px; }
+    .overlay.treasure { justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0; }
+    .overlay.treasure > :first-child { margin-top: auto; }
+    .overlay.treasure > .btn { position: sticky; bottom: calc(env(safe-area-inset-bottom) + 14px); flex: none; margin: auto 0 calc(env(safe-area-inset-bottom) + 14px); box-shadow: 0 0 0 10px rgba(10, 11, 16, 0.9); }
     .overlay.compendium { background: rgba(10, 11, 16, 0.97); justify-content: flex-start; gap: 8px; padding-top: calc(env(safe-area-inset-top) + 18px); }
     .overlay.compendium h2 { margin: 0; color: var(--ember); }
     .ctabs { display: flex; gap: 6px; width: 100%; max-width: 400px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }

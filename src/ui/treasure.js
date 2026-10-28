@@ -17,7 +17,7 @@ export function showTreasure(overlays, { count, rolls, boss = false, pick = fals
      <div class="cards">${cards}</div>
      <button class="btn primary reveal" style="animation-delay:${total.toFixed(2)}s" data-act="done" disabled>${pick ? 'Collect and pick a chassis' : rolls.some((r) => r.placed) ? 'Collect and edit' : 'Collect'}</button>`,
     (act) => { if (act === 'done') onDone(); },
-    'levelup'
+    'levelup treasure'
   );
   rolls.forEach((_, i) => setTimeout(() => sfx('chest'), (0.45 + i * STEP) * 1000));
   setTimeout(() => {
