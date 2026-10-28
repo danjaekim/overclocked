@@ -90,14 +90,21 @@ test('analyze: a line that says what the chain does, with its cost, and a reason
 
 test('analyze: pieces beyond the energy pool are greyed as out of energy', () => {
   const a = analyzeChain({ rule: 'pulse', slots: ['mortar', 'mortar', 'mortar', 'mortar', null, null], energy: 10 });
-  assert.equal(a.cost, 9);
+  assert.equal(a.cost, 12, 'cost is the whole chain, whether or not the battery covers it');
   assert.equal(a.reasons.get(3), 'out of energy');
   assert.equal(a.reasons.has(2), false);
   const p = analyzeChain({ rule: 'pulse', slots: ['mortar', 'on_kill', 'nova', 'on_kill', 'nova', 'nova'], energy: 10 });
-  assert.equal(p.cost, 9);                                   // 3 + 1 + 2 + 1 + 2 (a payload piece costs 1 less), and the last Nova needs 2 with 1 left
+  assert.equal(p.cost, 11);                                  // 3 + 1 + 2 + 1 + 2 + 2 (a payload piece costs 1 less); the last Nova needs 2 with 1 left
   assert.equal(p.reasons.get(5), 'out of energy');
   assert.equal(p.reasons.has(4), false);
   assert.equal(p.reasons.has(2), false);
+});
+
+test('analyze: a weapon that costs more than the whole battery is greyed with the numbers, not just "out of energy"', () => {
+  const a = analyzeChain({ rule: 'pulse', slots: ['scatter', 'echo', 'storm', 'slam'], energy: 12, quirk: { costAdd: 1 } });
+  assert.equal(a.cost, 13);
+  assert.match(a.reasons.get(3), /costs 13, the battery holds 12/);
+  assert.match(a.reasons.get(0), /costs 13/, 'its modifiers are greyed too');
 });
 
 test('empty slots are skipped by the compiler and keep their positions', () => {

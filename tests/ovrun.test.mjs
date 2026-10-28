@@ -12,7 +12,7 @@ import { flushDamage } from '../src/systems/damage.js';
 import { newRig, levelUp, addSlot, addChassis, addPower, replaceChassis, slotTarget, chainDefOf, owned, pieceLevel, placeSuggested } from '../src/rig/editor.js';
 import { CHASSIS, chassisStats } from '../src/rig/chassis.js';
 import { NEW_CHAIN, chassisPrice } from '../src/rig/workbench.js';
-import { makeOffers, applyOffer, describeOffer, capacityOffers, pieceCandidates } from '../src/rig/offers.js';
+import { makeOffers, applyOffer, describeOffer, capacityOffers, pieceCandidates, passOffers, rigFull } from '../src/rig/offers.js';
 import { openRigChest, chestCount } from '../src/rig/chests.js';
 import { PIECES, RULES, MAX_LEVEL, MAX_CHAINS } from '../src/rig/pieces.js';
 import { rigHtml } from '../src/ui/results.js';
@@ -172,6 +172,36 @@ test('offers: a piece you own is offered as a level or a copy, a piece you lack 
   assert.ok(!pieceCandidates(r).some((c) => c.id === 'blaster' && c.kind === 'level'), 'no level past 5');
   assert.ok(pieceCandidates(r).some((c) => c.id === 'blaster' && c.copy), 'copies still come');
   assert.ok(!pieceCandidates(rigOf(['blaster']), ['nova']).some((c) => c.id === 'nova'), 'a banished piece is not offered');
+});
+
+test('a full rig favors upgrades: copies of maxed pieces fuse into an Overclock level, other copies drop out, levels draw more', () => {
+  let r = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo']);
+  r.bench = ['slam', 'chain_bolt', 'on_hit'];
+  assert.ok(rigFull(r) && !rigFull(rigOf(['blaster'])));
+  for (let i = 0; i < 4; i++) r = levelUp(r, 'blaster');
+  const c = pieceCandidates(r);
+  assert.deepEqual(c.find((x) => x.id === 'blaster' && x.kind === 'fuse'), { kind: 'fuse', id: 'blaster', to: 6 });
+  assert.ok(!c.some((x) => x.copy), 'no copies when there is nowhere to put one');
+  assert.ok(c.some((x) => x.id === 'nova' && x.kind === 'level'));
+  assert.equal(pieceLevel(applyOffer(r, { kind: 'fuse', id: 'blaster', to: 6 }), 'blaster'), 6);
+  assert.ok(describeOffer(r, { kind: 'fuse', id: 'blaster', to: 6 }).title.startsWith('Fuse'));
+  let upg = 0;
+  let cards = 0;
+  for (let i = 0; i < 300; i++) for (const o of makeOffers(createRng(i), r)) { cards++; if (o.kind === 'level' || o.kind === 'fuse') upg++; }
+  const open = rigOf(['blaster']);
+  let upgOpen = 0;
+  let cardsOpen = 0;
+  for (let i = 0; i < 300; i++) for (const o of makeOffers(createRng(i), open)) { cardsOpen++; if (o.kind === 'level') upgOpen++; }
+  assert.ok(upg / cards > 2 * (upgOpen / cardsOpen), `upgrades ${(100 * upg / cards).toFixed(0)}% full vs ${(100 * upgOpen / cardsOpen).toFixed(0)}% open`);
+});
+
+test('passing on a chassis offers upgrades: a slot (if there is room), recharge, battery and a piece level', () => {
+  const r = rigOf(['blaster', 'nova']);
+  const o = passOffers(createRng(3), r);
+  assert.deepEqual(o.map((x) => x.cap || x.kind), ['slot', 'charge', 'cell', 'level']);
+  for (const x of o) assert.ok(applyOffer(r, x), JSON.stringify(x));
+  const maxed = [0].reduce((x, c) => { while (addSlot(x, c)) x = addSlot(x, c); return x; }, r);
+  assert.deepEqual(passOffers(createRng(3), maxed).map((x) => x.cap || x.kind), ['charge', 'cell', 'level']);
 });
 
 test('offers: three cards, no repeats, about one in six a passive', () => {

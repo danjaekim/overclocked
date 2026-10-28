@@ -13,7 +13,7 @@ const HOW = [
   ['Read left to right', 'A chain is a rule card and a row of slots. When the rule card fires, the chain runs its pieces from the left, one after another.'],
   ['Modifiers wait for a weapon', 'A modifier is held and applies to the next weapon only, then it is spent. Several in a row all apply, and the order of elements decides the reaction.'],
   ['Triggers own what follows', `A trigger attaches to the weapon just before it. Everything to its right is its payload, which runs later, from where the event happens. A payload hits harder (x1.3) and costs a little less. Every ${EVERY}rd runs it every ${EVERY}rd time.`],
-  ['A chain is a chassis', `Each chain sits on a chassis: it sets when the chain fires, how many slots it can grow to, its battery and recharge, and a quirk. You can run ${MAX_CHAINS} chains; a new chassis after that replaces one (its pieces move over) or is scrapped for gold.`],
+  ['A chain is a chassis', `Each chain sits on a chassis: it sets when the chain fires, how many slots it can grow to, its battery and recharge, and a quirk. You can run ${MAX_CHAINS} chains; a new chassis after that replaces one (its pieces move over) or you pass on it for an upgrade card.`],
   ['The battery ends chain reactions', 'Every piece costs energy each time it runs, paid from the chain\'s battery, and a payload pays from it too. The battery refills over time at the chain\'s recharge rate. When it runs low, the chain fires its first pieces and stops at the one it cannot pay for, so a long chain runs in full only as often as its recharge allows.'],
   ['Levels', 'Each level adds 10% damage. Levels 3 and 5 add an effect of the piece\'s own.'],
 ];

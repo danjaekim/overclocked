@@ -42,6 +42,7 @@ function score(o, rig) {
   const n = types(rig);
   if (o.kind === 'chassis') return chassisTarget(rig, o) === null ? -1 : 72;
   if (o.kind === 'cap') return o.cap === 'slot' ? 65 : o.cap === 'charge' ? (starved(rig, o.c) > 1.5 ? 60 : 40) : 35;
+  if (o.kind === 'fuse') return 58;
   if (o.kind === 'stat') return o.id === 'hp' ? 30 : 15;
   if (o.kind === 'level') return PIECES[o.id].type === 'weapon' ? 55 + o.to : 40 + o.to;
   const p = PIECES[o.id];

@@ -8,8 +8,8 @@
 //   chassis a chain to build on (rig/chassis.js): a new chain while there is room, else it replaces one (the editor asks which)
 // Pure: every function takes a rig and an rng (anything with next() in [0, 1)).
 
-import { PIECES, RIG_STATS, MAX_LEVEL, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
-import { owned, pieceLevel, levelUp, takeStat, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
+import { PIECES, RIG_STATS, MAX_LEVEL, OVERCLOCK_MAX, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
+import { owned, pieceLevel, levelUp, overclock, takeStat, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
 import { CHASSIS, START_CHASSIS, CHARGE_STEP, CELL_STEP, MK_NAMES, chassisStats } from './chassis.js';
 import { compileChain, chainCost } from './chain.js';
 
@@ -53,19 +53,40 @@ function pick(rng, pool, weight) {
   return pool.splice(k, 1)[0];
 }
 
+// No empty slot in any chain and no free bench space: a new piece would have to replace one.
+export const rigFull = (rig) => rig.bench.every(Boolean) && rig.chains.every((c) => c.slots.every(Boolean));
+
 // The piece cards for a rig: new pieces, level-ups, and copies of pieces you own (all copies share one level), weighted.
+// With the rig full there is nowhere for a copy to go, so a copy of a maxed piece becomes a fuse: it merges into the
+// piece you have, one Overclock level (to OVERCLOCK_MAX). A copy of a piece below its maximum is left out, since its level card is the same gain.
 export const COPY_WEIGHT = 0.6;
 export function pieceCandidates(rig, banished = []) {
   const have = owned(rig);
+  const full = rigFull(rig);
   const out = [];
   for (const id of Object.keys(PIECES)) {
     if (banished.includes(id)) continue;
     if (!have.has(id)) out.push({ kind: 'piece', id });
     else {
-      if (pieceLevel(rig, id) < MAX_LEVEL) out.push({ kind: 'level', id, to: pieceLevel(rig, id) + 1 });
-      out.push({ kind: 'piece', id, copy: true });
+      const lv = pieceLevel(rig, id);
+      if (lv < MAX_LEVEL) out.push({ kind: 'level', id, to: lv + 1 });
+      if (!full) out.push({ kind: 'piece', id, copy: true });
+      else if (lv >= MAX_LEVEL && lv < OVERCLOCK_MAX) out.push({ kind: 'fuse', id, to: lv + 1 });
     }
   }
+  return out;
+}
+
+// With the rig full, upgrades are worth more than pieces that need a slot: levels and fuses draw this much more, new pieces this much less.
+export const FULL_UPGRADE_WEIGHT = 2.5;
+export const FULL_PIECE_WEIGHT = 0.4;
+
+// What passing on a chassis offers instead: a slot, +1/s recharge, +50% battery, and a level for a piece you own.
+export function passOffers(rng, rig) {
+  const out = upgradeOffers(rng, rig);
+  const lv = pieceCandidates(rig).filter((c) => c.kind === 'level' && PIECES[c.id].type === 'weapon');
+  const any = lv.length ? lv : pieceCandidates(rig).filter((c) => c.kind === 'level' || c.kind === 'fuse');
+  if (any.length) out.push(any[Math.floor(rng.next() * any.length)]);
   return out;
 }
 
@@ -109,13 +130,14 @@ export function makeOffers(rng, rig, { count = OFFER_COUNT, banished = [], capac
   if (capacity) return capacityOffers(rng, rig).slice(0, count);
   const w = offerWeights(rig);
   const pool = pieceCandidates(rig, banished);
+  const full = rigFull(rig);
   const stats = Object.keys(RIG_STATS);
   const out = [];
   while (out.length < count && (pool.length || stats.length)) {
     if (stats.length && (rng.next() < STAT_CHANCE || !pool.length)) {
       out.push({ kind: 'stat', id: stats.splice(Math.floor(rng.next() * stats.length), 1)[0] });
     } else {
-      const c = pick(rng, pool, (x) => (x.kind === 'level' ? LEVEL_WEIGHT : w[x.id] * (x.copy ? COPY_WEIGHT : 1)));
+      const c = pick(rng, pool, (x) => (x.kind === 'level' || x.kind === 'fuse' ? LEVEL_WEIGHT * (full ? FULL_UPGRADE_WEIGHT : 1) : w[x.id] * (x.copy ? COPY_WEIGHT : 1) * (full ? FULL_PIECE_WEIGHT : 1)));
       out.push(c);
       for (let k = pool.length - 1; k >= 0; k--) if (pool[k].id === c.id) pool.splice(k, 1);   // one card per piece
     }
@@ -126,6 +148,7 @@ export function makeOffers(rng, rig, { count = OFFER_COUNT, banished = [], capac
 // Applies a card that does not need a slot. Returns the new rig, or null for a piece (the editor places it) or when it cannot apply.
 export function applyOffer(rig, o) {
   if (o.kind === 'level') return levelUp(rig, o.id);
+  if (o.kind === 'fuse') return overclock(rig, o.id);
   if (o.kind === 'stat') return takeStat(rig, o.id);
   if (o.kind === 'cap') {
     if (o.cap === 'slot') return addSlot(rig, o.c);
@@ -147,6 +170,10 @@ export function describeOffer(rig, o) {
     const p = PIECES[o.id];
     const what = p.type === 'trigger' ? 'its payload' : p.type === 'modifier' ? 'the weapon it is held for' : 'its attack';
     return { title: p.name, tag: `level ${o.to - 1} → ${o.to}`, desc: `${pct(LEVEL_STEP)} damage to ${what}${SIG_LEVELS.includes(o.to) && SIGNATURE[o.id] ? `; ${SIGNATURE[o.id].text}` : ''}`, piece: p, type: p.type };
+  }
+  if (o.kind === 'fuse') {
+    const p = PIECES[o.id];
+    return { title: `Fuse ${p.name}`, tag: `overclock → level ${o.to}`, desc: `Merge a spare ${p.name} into yours: +25% power, and no slot used`, piece: p, type: p.type };
   }
   if (o.kind === 'stat') {
     const s = RIG_STATS[o.id];

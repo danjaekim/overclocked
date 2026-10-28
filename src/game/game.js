@@ -16,7 +16,7 @@ import { xpToNext, gainXp } from './xp.js';
 import { LEVELUP } from '../data/progression.js';
 import { createSandboxRun, loadChain, applyRig, chainKeys } from './sandbox.js';
 import { showRigEditor } from '../ui/rig-editor.js';
-import { makeOffers, CAPACITY_LEVELS, describeOffer } from '../rig/offers.js';
+import { makeOffers, CAPACITY_LEVELS, describeOffer, passOffers } from '../rig/offers.js';
 import { openRigChest } from '../rig/chests.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
 import { showWorkbench } from '../ui/workbench.js';
@@ -107,11 +107,11 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       rig: run.rigState,
       offers: extra || (withOffers ? deal([]) : null),
       deal: withOffers && !capacity && !extra ? deal : null,
+      upgrades: run.sandbox ? null : (r) => passOffers(run.rng, r),
       rerolls: withOffers && !extra && !run.sandbox ? run.rerolls : 0,
       banishes: withOffers && !extra && !run.sandbox ? run.banishes : 0,
       onDone(rig, used) {
         run.rigState = rig;
-        run.ore += used.gold;                                    // a chassis scrapped for gold
         applyRig(run);
         if (withOffers && !extra) {
           run.pendingLevelUps--;

@@ -125,9 +125,11 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 
 - Mk II and Mk III add a starting slot (up to the max), 25% battery and +1/s each.
 - Upgrades bought for a chain (+1/s recharge, +50% battery) belong to its chassis and go when it is replaced.
-- Replacing: the pieces move onto the new chassis in order, which keeps at least as many slots as the old chain had (up to its max). Extras go to the bench, and once the bench is full they are sold. Scrapping a chassis instead pays 20 gold a mark.
+- Replacing: the pieces move onto the new chassis in order, which keeps at least as many slots as the old chain had (up to its max). Extras go to the bench, and once the bench is full they are sold. Passing on a chassis instead gives a pick of upgrade cards (+1 slot, +1/s recharge, +50% battery, or a piece level).
 - Sources: levels 5 and 10 offer 2 Mk I chassis and a slot while a chain is free (then slot, recharge and battery cards); about 1 elite chest in 2 holds one (Mk II about 1 in 3); a boss chest holds 2 Mk II or Mk III to pick from; the workbench stocks one on about 1 visit in 2 (60/90/120 gold by mark).
-- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.3, after a playtest of v0.6.0.
+- Full rig (v0.6.3): with no free slot or bench space, level cards and fuse cards draw 2.5x as often and new pieces 0.4x. A copy of a piece you already own is dropped from the offers, except a copy of a maxed piece, which becomes a **fuse**: it merges into your piece as one Overclock level (to 7, +25% power each), using no slot. That is the whole fusion mechanic; there is no separate fuse screen.
+- The rig screen shows each piece's level (L1 and up, gold once overclocked) beside its cost. A chain's cost line shows what one run of the whole chain costs; a piece that costs more than the whole battery is greyed with the numbers.
+- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.4, after a playtest of v0.6.0.
 
 ## Progression
 

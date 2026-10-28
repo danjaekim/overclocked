@@ -125,12 +125,13 @@ export function analyzeChain(def) {
   const reasons = new Map();
   for (const p of c.problems) if (!reasons.has(p.idx)) reasons.set(p.idx, p.why);
   let left = c.energy;
-  let used = 0;
+  // A piece that costs more than the whole battery can never run; one that only lacks what earlier pieces spent is "out of energy".
+  const why = (m) => (m.cost > c.energy ? `costs ${m.cost}, the battery holds ${c.energy}` : 'out of energy');
   const dry = (n) => {
     const stack = [n];
     while (stack.length) {
       const m = stack.pop();
-      for (const i of [m.idx, ...m.modIdx]) reasons.set(i, 'out of energy');
+      for (const i of [m.idx, ...m.modIdx]) reasons.set(i, why(m));
       if (m.trigger) {
         reasons.set(m.trigger.idx, 'out of energy');
         stack.push(...m.trigger.payload);
@@ -145,7 +146,6 @@ export function analyzeChain(def) {
         return;
       }
       left -= n.cost;
-      used += n.cost;
       if (!n.trigger) continue;
       if (n.trigger.cost > left) {
         reasons.set(n.trigger.idx, 'out of energy');
@@ -153,14 +153,14 @@ export function analyzeChain(def) {
         continue;
       }
       left -= n.trigger.cost;
-      used += n.trigger.cost;
       walk(n.trigger.payload);
     }
   };
   walk(c.nodes);
   const rule = ruleOf(def.rule);
   const body = c.nodes.length ? describe(c.nodes) : 'nothing to run yet';
-  return { text: `${rule.desc}: ${body} (cost ${used} of ${c.energy}${c.recharge ? `, +${c.recharge}/s` : ''})`, cost: used, energy: c.energy, recharge: c.recharge, reasons };
+  const full = chainCost(c.nodes);                                  // what one run of the whole chain costs, whether or not the battery covers it
+  return { text: `${rule.desc}: ${body} (cost ${full} of ${c.energy}${c.recharge ? `, +${c.recharge}/s` : ''})`, cost: full, energy: c.energy, recharge: c.recharge, reasons };
 }
 
 const TRIGGER_WORDS = { impact: 'on impact', kill: 'on kill', hit: 'on every hit', every: `every ${EVERY}rd time` };

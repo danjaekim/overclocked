@@ -56,6 +56,3 @@ export function chassisStats(ch) {
 }
 
 export const chassisName = (ch) => `${(CHASSIS[ch.chassis] || CHASSIS[START_CHASSIS]).name} ${MK_NAMES[Math.max(1, Math.min(MK_MAX, ch.mk || 1))]}`;
-
-// Gold for scrapping a chassis you do not want.
-export const scrapGold = (mk = 1) => 20 * Math.max(1, Math.min(MK_MAX, mk));
