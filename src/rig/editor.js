@@ -102,7 +102,8 @@ function insertAt(rig, c, i, id) {
 // every slot and bench space is taken.
 //   weapon    the end of the first chain with room
 //   modifier  just before the first weapon that has no modifier in front of it
-//   trigger   the end of the first chain that has a weapon and no trigger
+//   trigger   the end of the first chain that has a weapon and no trigger, with room for a payload after it; with no
+//             such room it waits on the bench, since a trigger in the last slot has nothing to run
 export function placeSuggested(rig, id) {
   const type = PIECES[id].type;
   const next = cloneRig(rig);
@@ -125,7 +126,12 @@ export function placeSuggested(rig, id) {
     for (let c = 0; c < next.chains.length && !loc; c++) {
       const s = next.chains[c].slots;
       const kinds = s.filter((x) => x !== null).map((x) => PIECES[x].type);
-      if (kinds.includes('weapon') && !kinds.includes('trigger') && hasRoom(s)) loc = appendTo(next, c, id);
+      if (kinds.includes('weapon') && !kinds.includes('trigger') && roomAfterLast(s) >= 2) loc = appendTo(next, c, id);
+    }
+    if (!loc && next.bench.includes(null)) {
+      const b = next.bench.indexOf(null);
+      next.bench[b] = id;
+      loc = { kind: 'bench', i: b };
     }
   }
   for (let c = 0; c < next.chains.length && !loc; c++) if (hasRoom(next.chains[c].slots)) loc = appendTo(next, c, id);
@@ -139,6 +145,13 @@ export function placeSuggested(rig, id) {
 }
 
 const hasRoom = (slots) => slots.includes(null);
+
+// Empty slots after the chain's last piece.
+function roomAfterLast(s) {
+  let last = -1;
+  for (let k = 0; k < s.length; k++) if (s[k] !== null) last = k;
+  return s.length - 1 - last;
+}
 
 // The slot after the chain's last piece, or the first empty slot if the last slot is taken.
 function appendTo(rig, c, id) {
