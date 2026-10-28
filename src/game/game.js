@@ -183,7 +183,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const chassis = result.chassis;
     showTreasure(overlays, {
       ...result,
-      rolls: [...result.rolls, ...chassis.map((o) => ({ ...describeOffer(run.rigState, o), kind: 'chassis', placed: null }))],
+      rolls: chassis.length ? [...result.rolls, { kind: 'chassis', title: 'A chassis', tag: chassis.length > 1 ? `pick 1 of ${chassis.length}` : 'optional', desc: `${chassis.map((o) => describeOffer(run.rigState, o).title).join(' or ')}. You choose next, or skip it.`, placed: null }] : result.rolls,
       pick: chassis.length > 0,
       boss: tier === 1,
       sfx,

@@ -127,7 +127,7 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 - Upgrades bought for a chain (+1/s recharge, +50% battery) belong to its chassis and go when it is replaced.
 - Replacing: the pieces move onto the new chassis in order, which keeps at least as many slots as the old chain had (up to its max). Extras go to the bench, and once the bench is full they are sold. Scrapping a chassis instead pays 20 gold a mark.
 - Sources: levels 5 and 10 offer 2 Mk I chassis and a slot while a chain is free (then slot, recharge and battery cards); about 1 elite chest in 2 holds one (Mk II about 1 in 3); a boss chest holds 2 Mk II or Mk III to pick from; the workbench stocks one on about 1 visit in 2 (60/90/120 gold by mark).
-- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.2, after a playtest of v0.6.0.
+- Combo cards (rig-wide rules that reward an arrangement) are planned for v0.6.3, after a playtest of v0.6.0.
 
 ## Progression
 
