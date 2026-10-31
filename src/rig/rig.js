@@ -17,6 +17,7 @@ import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
 import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
+import { addLabel } from '../render/fx.js';
 import { healPlayer } from '../systems/pickups.js';
 import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
 
@@ -282,6 +283,9 @@ export function updateRig(run, dt) {
     const job = q[rig.head++];
     note(run, rig, 'payload', { act: job.act.id, trigger: job.trig.piece, x: job.x, y: job.y, pool: job.act.pool, gen: job.gen || 0 });
     job.chain.flash[job.trig.idx] = run.time;
+    if (rig.pings.length < 32) rig.pings.push({ x: job.x, y: job.y, t0: run.time, color: CHAIN_COLORS[job.chain.index % CHAIN_COLORS.length], big: true });   // the payload going off: a bigger, whiter ring
+    run.sfx('proc');
+    if (job.gen > 0) addLabel(run, job.x, job.y - 14, `x${job.gen + 1}`, '#ffe08a');          // a cascade, counting up
     runNodes(run, rig, job.trig.payload, job.x, job.y, job.act, job.trig.free === true, job.gen || 0);
   }
   if (rig.head >= q.length) {
@@ -313,8 +317,14 @@ export function drawRig(ctx, run) {
     ctx.globalAlpha = 0.85 * (1 - u);
     ctx.strokeStyle = g.color;
     ctx.beginPath();
-    ctx.arc(g.x, g.y, 14 + 26 * u, 0, Math.PI * 2);
+    ctx.arc(g.x, g.y, g.big ? 22 + 42 * u : 14 + 26 * u, 0, Math.PI * 2);
     ctx.stroke();
+    if (g.big) {                                  // a white edge, so a payload reads differently from a piece firing
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.lineWidth = 3;
+    }
   }
   ctx.globalAlpha = 1;
   const insts = run.rig.insts;

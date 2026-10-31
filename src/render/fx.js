@@ -51,6 +51,24 @@ export function addDamageNumber(run, x, y, amount, crit, color = '') {
   w.fxNumbers++;
 }
 
+// A short floating word (a cascade count): drawn like a crit number, in `color`.
+export function addLabel(run, x, y, text, color) {
+  const w = run.world;
+  if (w.fxNumbers >= maxNumbers) return;
+  const f = w.fx.acquire();
+  if (!f) return;
+  f.kind = KIND_NUMBER;
+  f.x = x;
+  f.y = y;
+  f.vx = 0;
+  f.vy = -50;
+  f.ttl = f.maxTtl = 0.7;
+  f.crit = true;
+  f.c2 = color;
+  f.text = text;
+  w.fxNumbers++;
+}
+
 export function addPuff(run, x, y, radius, color) {
   const w = run.world;
   if (w.fx.count >= MAX_PUFFS_POOL) return;

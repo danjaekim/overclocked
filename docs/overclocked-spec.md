@@ -131,6 +131,7 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 - Sources: levels 5 and 10 offer 2 Mk I chassis and a slot while a chain is free (then slot, recharge and battery cards); about 1 elite chest in 2 holds one (Mk II about 1 in 3); a boss chest holds 2 Mk II or Mk III to pick from; the workbench stocks one on about 1 visit in 2 (60/90/120 gold by mark).
 - Full rig (v0.6.3): with no free slot or bench space, level cards and fuse cards draw 2.5x as often and new pieces 0.4x. A copy of a piece you already own is dropped from the offers, except a copy of a maxed piece, which becomes a **fuse**: it merges into your piece as one Overclock level (to 7, +25% power each), using no slot. That is the whole fusion mechanic; there is no separate fuse screen.
 - The rig screen shows each piece's level (L1 and up, gold once overclocked) beside its cost. A chain's cost line shows what one run of the whole chain costs; a piece that costs more than the whole battery is greyed with the numbers.
+- A trigger's payload going off shows a larger, white-edged ring, plays a short blip (`proc` sfx, at most one per 0.08 s), and an On Kill cascade shows its depth as a floating x2, x3 or x4 (v0.6.9).
 - Combo cards were dropped (2026-10-31); the plan in docs/plan-v066-v07.md reworks passives instead.
 
 ## Progression
