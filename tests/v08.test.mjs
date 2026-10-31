@@ -118,3 +118,48 @@ test('v08 hordes: the timeline has three, in time order, and one puts count enem
   const r = Math.hypot(VIEW.w, VIEW.h) / 2 + 30;
   for (const e of run.world.enemies.active) assert.ok(Math.abs(Math.hypot(e.x - 50, e.y + 20) - r) < 1);
 });
+
+import { checkEscort } from '../src/systems/enemy-ai.js';
+import { ENEMIES } from '../src/data/enemies.js';
+
+const bossRun = (dps, enemy = 'warlord') => {
+  const run = directed(240);
+  run.stats.rawSec = new Array(240).fill(dps);
+  RUN_EVENTS.boss(run, { enemy });
+  return run;
+};
+
+test('v08 boss hp follows your recent dps: 1x for a weak rig, dps x 25 s for a strong one, capped at 6x', () => {
+  assert.equal(bossRun(100).boss.maxHp, ENEMIES.warlord.hp);                     // raw 100/s x 0.2 x 25 s = 500, under the base
+  assert.equal(bossRun(1000).boss.maxHp, 5000);                                  // 1000 x 0.2 x 25
+  assert.equal(bossRun(20000).boss.maxHp, ENEMIES.warlord.hp * 6);
+  assert.equal(bossRun(5000, 'seer').boss.maxHp, 12000);                         // 5000 x 0.06 x 40
+  assert.equal(bossRun(10).boss.hp, bossRun(10).boss.maxHp);
+  assert.equal(bossRun(1000).boss.hpMult, 5000 / ENEMIES.warlord.hp);
+});
+
+test('v08 a boss calls an escort at 66% and 33% hp, once each', () => {
+  const run = bossRun(10);
+  const b = run.boss;
+  const base = aliveCount(run);
+  checkEscort(run, b);
+  assert.equal(aliveCount(run), base);
+  b.hp = b.maxHp * 0.6;
+  checkEscort(run, b); checkEscort(run, b);
+  assert.equal(aliveCount(run) - base, 22);
+  b.hp = b.maxHp * 0.3;
+  checkEscort(run, b);
+  assert.equal(aliveCount(run) - base, 44);
+});
+
+test('v08 the Warlord winds up faster below half hp', () => {
+  const run = bossRun(10);
+  const b = run.boss;
+  b.aiCd = 0;
+  const c = ENEMIES.warlord.charge;
+  run.update(STEP, { x: 0, y: 0 });
+  assert.ok(Math.abs(b.aiT - (c.windup - STEP)) < 0.1 || b.ai === 1);
+  b.ai = 0; b.aiCd = 0; b.hp = b.maxHp * 0.4;
+  run.update(STEP, { x: 0, y: 0 });
+  assert.ok(b.aiT <= c.windupRage + 1e-6, `windup ${b.aiT}`);
+});

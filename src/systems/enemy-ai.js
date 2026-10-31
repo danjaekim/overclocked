@@ -1,7 +1,9 @@
 // Enemy movement: chase the player, push apart from close neighbours (every other tick,
 // at most 4 neighbours), decay knockback, teleport stragglers back to the spawn perimeter.
 
-import { randomPerimeterPoint } from '../game/director.js';
+import { randomPerimeterPoint, spawnEnemy, pickTopUp } from '../game/director.js';
+import { ESCORT } from '../data/enemies.js';
+import { RUN } from '../data/waves.js';
 import { affixDefs } from '../data/elites.js';
 import { spawnEnemyShot } from './enemy-shots.js';
 import { castMeteors, castSlam } from './boss-zones.js';
@@ -22,7 +24,7 @@ function bossStep(e, p, dt) {
   const c = e.def.charge;
   if (e.ai === AI_CHASE) {
     e.aiCd -= dt;
-    if (e.aiCd <= 0) { e.ai = AI_WINDUP; e.aiT = c.windup; }
+    if (e.aiCd <= 0) { e.ai = AI_WINDUP; e.aiT = c.rageAt && e.hp <= e.maxHp * c.rageAt ? c.windupRage : c.windup; }
   } else if (e.ai === AI_WINDUP) {
     e.aiT -= dt;
     e.flash = 0.05;                                   // flicker white as the telegraph
@@ -88,6 +90,24 @@ function rangedStep(run, e, d, dt) {
   return e.ai === AI_WINDUP || d < r.range;
 }
 
+// A boss calls an escort the first time its hp falls below each ESCORT.at fraction: wave enemies plus a couple of brutes
+// from the view edge. e.escort counts the calls made. The escort drops no ore.
+export function checkEscort(run, e) {
+  while ((e.escort || 0) < ESCORT.at.length && e.hp <= e.maxHp * ESCORT.at[e.escort || 0]) {
+    e.escort = (e.escort || 0) + 1;
+    const t = run.time / (RUN.length / RUN.designLength);
+    for (let k = 0; k < ESCORT.count + ESCORT.brutes; k++) {
+      const id = k < ESCORT.brutes ? 'brute' : pickTopUp(run, t);
+      if (!id) continue;
+      randomPerimeterPoint(run, tmpEsc);
+      const m = spawnEnemy(run, id, tmpEsc.x, tmpEsc.y, run.director.hpScale);
+      if (m) m.fodder = 1;
+    }
+    run.toast = { text: `${e.def.name} calls for help!`, ttl: 3 };
+  }
+}
+const tmpEsc = { x: 0, y: 0 };
+
 export function updateEnemies(run, dt) {
   const w = run.world;
   const p = run.player;
@@ -140,6 +160,7 @@ export function updateEnemies(run, dt) {
       e.sy = py;
     }
 
+    if (e.def.boss && e.alive) checkEscort(run, e);
     const stunned = e.stunT > 0;                        // staggered by a slam: no moving, shooting or charging
     if (stunned) e.stunT -= dt;
     if (e.def.charge && !stunned) bossStep(e, p, dt);

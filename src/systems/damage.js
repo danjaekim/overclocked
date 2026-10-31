@@ -156,7 +156,7 @@ export function flushDamage(run) {
     run.overkill = amount > e.hp ? amount - e.hp : 0;          // for Overflow
     run.killBlow = amount;
     const dealt = amount < e.hp ? amount : e.hp;          // overkill is not damage dealt
-    recordDamage(run, src, q.cause[i], dealt > 0 ? dealt : 0, q.crit[i] === 1);
+    recordDamage(run, src, q.cause[i], dealt > 0 ? dealt : 0, q.crit[i] === 1, amount > 0 ? amount : 0);
     run.hitFrozen = (e.status & ST.FROZEN) !== 0;           // for Glacier Maul's shatter
     e.hp -= amount;
     e.lastHitT = run.time;

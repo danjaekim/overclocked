@@ -7,6 +7,7 @@ export function createStats() {
   return {
     total: 0,
     sec: [],                          // damage dealt in each whole second of the run
+    rawSec: [],                       // damage thrown in each whole second, overkill included: it measures the rig, not the enemy hp supply (boss hp, run-events.js)
     causes: new Array(CAUSE_NAMES.length).fill(0),
     src: new Map(),                   // weapon instanceId -> { name, dmg, kills, crits, byCause[] }
   };
@@ -23,13 +24,15 @@ function rec(run, inst) {
   return r;
 }
 
-export function recordDamage(run, src, cause, dealt, crit) {
+export function recordDamage(run, src, cause, dealt, crit, raw = dealt) {
   const st = run.stats;
   st.total += dealt;
   st.causes[cause] += dealt;
   const s = Math.floor(run.time);
   while (st.sec.length <= s) st.sec.push(0);
   st.sec[s] += dealt;
+  while (st.rawSec.length <= s) st.rawSec.push(0);
+  st.rawSec[s] += raw;
   if (src) {
     const r = rec(run, src);
     r.dmg += dealt;
@@ -50,6 +53,17 @@ export function markGone(run, inst) {
 // Damage per second over the last `window` whole seconds (the current second is partial, so skipped).
 export function recentDps(run, window = 5) {
   const sec = run.stats.sec;
+  const end = Math.min(Math.floor(run.time), sec.length);
+  const start = Math.max(0, end - window);
+  if (end <= start) return 0;
+  let sum = 0;
+  for (let i = start; i < end; i++) sum += sec[i];
+  return sum / (end - start);
+}
+
+// Raw damage per second over the last `window` whole seconds, overkill included.
+export function recentRawDps(run, window = 20) {
+  const sec = run.stats.rawSec;
   const end = Math.min(Math.floor(run.time), sec.length);
   const start = Math.max(0, end - window);
   if (end <= start) return 0;

@@ -5,6 +5,7 @@ import { spawnCrate } from '../systems/crates.js';
 import { spawnEnemy, spawnElite, randomPerimeterPoint, pickTopUp } from './director.js';
 import { ELITE } from '../data/elites.js';
 import { RUN } from '../data/waves.js';
+import { recentRawDps } from './run-stats.js';
 
 const tmp = { x: 0, y: 0 };
 
@@ -81,6 +82,13 @@ export const RUN_EVENTS = {
     randomPerimeterPoint(run, tmp);
     const e = spawnEnemy(run, ev.enemy, tmp.x, tmp.y);
     if (!e) return;
+    if (e.def.fight) {                                          // hp from the build: your damage per second over the last 20 s x the fight length, 1x to hpMaxMult x
+      const hp = Math.min(e.def.hp * e.def.hpMaxMult, Math.max(e.def.hp, recentRawDps(run, 20) * e.def.rawShare * e.def.fight));
+      e.maxHp = e.hp = hp;
+      e.hpMult = hp / e.def.hp;
+      run.stats.bossHpMult = run.stats.bossHpMult || {};
+      run.stats.bossHpMult[e.defId] = Math.round(e.hpMult * 100) / 100;
+    }
     run.boss = e;
     run.bossAlive = true;
     run.sfx('boss');

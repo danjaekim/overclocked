@@ -62,12 +62,13 @@ export const ENEMIES = {
   },
   warlord: {
     name: 'Warlord',
-    hp: 1800, speed: 52, damage: 18, radius: 34,          // 25 in Overforged; bots in a rig run died to it within 20-40 s at full hp (v0.5.5)
+    hp: 1800, speed: 52, damage: 18, radius: 34,
+    fight: 25, hpMaxMult: 6, rawShare: 0.2,              // boss hp = your recent raw dps (overkill included, so it follows the rig, not the crowd) x rawShare x `fight` seconds, between 1x and `hpMaxMult` x hp (run-events.js boss)          // 25 in Overforged; bots in a rig run died to it within 20-40 s at full hp (v0.5.5)
     xp: 100,
     ore: { chance: 1, type: 'starsteel', count: 2 },
     ai: 'boss_charge',
     boss: true,
-    charge: { every: 5, windup: 0.9, speed: 340, time: 0.7 },
+    charge: { every: 5, windup: 0.9, speed: 340, time: 0.7, rageAt: 0.5, windupRage: 0.6 },
     color: '#c0392b',
   },
   // Late heavy: slow, thick-skinned, and when it reaches you it stops and slams a marked circle around itself.
@@ -86,6 +87,7 @@ export const ENEMIES = {
   seer: {
     name: 'Ashen Seer',
     hp: 3500, speed: 70, damage: 30, radius: 36,
+    fight: 40, hpMaxMult: 10, rawShare: 0.06,
     xp: 200,
     ore: { chance: 1, type: 'starsteel', count: 3 },
     ai: 'boss_caster',
@@ -94,6 +96,9 @@ export const ENEMIES = {
     color: '#7a4fa0',
   },
 };
+
+// A boss calls an escort at each of these hp fractions (once each): `count` from the wave mix plus `brutes` brutes.
+export const ESCORT = { at: [0.66, 0.33], count: 20, brutes: 2 };
 
 // Props: breakable things that live in the enemy pool, so every weapon, swing and blast hits them with
 // no special cases, but that are not enemies: they never move or hurt you, weapons do not aim at them,
