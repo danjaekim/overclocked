@@ -85,7 +85,7 @@ These are the 16 pieces for the first test build. The proof of concept uses the 
 | Storm | Modifier | 1 | Adds storm: the attack shocks | Storm tag and shock status |  |
 | Heavy | Modifier | 2 | Double damage and area, slower shots | The damage and area params |  |
 | Echo | Modifier | 2 | The next weapon fires twice, 0.2 s apart, at 60% each | Echoing perk logic |  |
-| Pierce | Modifier | 1 | Shots pass through 2 more enemies | The pierce param |  |
+| Sunder | Modifier | 1 | Each hit of the weapon adds a stack to the enemy: every stack makes it take 8% more from everything (5 stacks, 3 s from the last hit); shots also pass through 2 more enemies (v0.6.7; was Pierce) | `SUNDER` in `rig/pieces.js`; stacks on the enemy (`sunderN`, `sunderS`), applied in `systems/damage.js` |  |
 | On Impact | Trigger | 1 | Runs the payload once, where the attack first lands | Hit triggers | PoC |
 | On Kill | Trigger | 1 | Runs the payload from each enemy the attack kills | Kill triggers | PoC |
 | On Hit | Trigger | 2 | Runs the payload from every enemy hit | Hit triggers |  |
@@ -140,7 +140,7 @@ Power comes from five layers during a run and one between runs, which comes afte
 | Layer | Source | What it gives |
 | --- | --- | --- |
 | New pieces | Level-up, pick 1 of 3 | New verbs. Offers lean toward pieces that fit the rig you have, so a rig with a weapon and no trigger is more likely to be offered a trigger |
-| Piece levels | Level-up: an offer for a piece you already own levels it up, to a maximum of 5 | Each level adds +10% to the piece's main number; levels 3 and 5 add a **signature effect** (Scatter +1 copy, Heavy +30% area, Pierce +1, Echo's third shot, Every 3rd becoming every 2nd, ...; `SIGNATURE` in `rig/pieces.js`). Mastery twists (M5) are still to come |
+| Piece levels | Level-up: an offer for a piece you already own levels it up, to a maximum of 5 | Each level adds +10% to the piece's main number; levels 3 and 5 add a **signature effect** (Scatter +1 copy, Heavy +30% area, Sunder +1 max stack, Echo's third shot, Every 3rd becoming every 2nd, ...; `SIGNATURE` in `rig/pieces.js`). Mastery twists (M5) are still to come |
 | Capacity | Elite and boss chests, plus levels 5, 10, 15 and 20 | A chassis (a new chain, or a replacement for one), +1 slot in a chain, +1/s recharge or +50% battery for one chain |
 | Workbench | Shrines on the wave timeline. Gold drops from chests and elites | Buy a chosen piece, reroll, level up a piece, buy capacity or a chassis |
 | Passive stats | About 1 offer in 6 at level-up | Move speed, max HP, magnet range, armor |

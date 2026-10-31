@@ -46,6 +46,7 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   e.chillT = e.freezeT = e.freezeImm = e.shockT = 0;
   e.slowMul = 1;
   e.sunderT = e.blessT = e.markT = 0;
+  e.sunderN = e.sunderS = 0;
   e.stunT = 0;
   e.prop = def.prop ? 1 : 0;
   if (e.prop) e.aiCd = def.ttl;                    // a prop's aiCd counts down its life

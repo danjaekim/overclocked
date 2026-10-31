@@ -23,6 +23,7 @@
 
 import { createOverclockedRun } from './ovrun.js';
 import { applyRig } from './sandbox.js';
+import { migrateRig } from '../rig/editor.js';
 import { removeRig } from '../rig/rig.js';
 import { StatBlock } from '../stats/stats.js';
 import { STATS } from '../stats/stat-defs.js';
@@ -242,6 +243,7 @@ export function restoreRun(snap, { view, debug, sfx }) {
   w.fxNumbers = 0;
   setInstanceCounter(snap.nextInstance);
   run.player.stats.removeBySource('rig:');                   // the saved weapon modifiers belong to the old instances; applyRig makes new ones
+  migrateRig(run.rigState);                                  // a run saved before Pierce became Sunder
   applyRig(run);
   const insts = run.rig.insts;
   for (const [o, k, i, isMap] of fix) {

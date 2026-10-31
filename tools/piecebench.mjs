@@ -52,9 +52,32 @@ function row(label, slots, opts = {}) {
   return { crowd, one, c };
 }
 
+// Two chains in one run against the standing crowd: returns each weapon's dps, to see what one chain does for the other.
+function together(chains) {
+  const run = createOverclockedRun({ seed: 5, view: VIEW, debug: { god: true }, sfx: () => {} });
+  run.director.update = () => {};
+  installRig(run, chains.map((slots) => ({ rule: 'pulse', slots, energy: 12, recharge: 1000, levels: {} })));
+  const spots = [];
+  for (let i = 0; i < 30; i++) { const a = (i / 30) * Math.PI * 2 * 2.3; const d = 70 + (i % 5) * 22; spots.push([Math.cos(a) * d, Math.sin(a) * d]); }
+  const live = spots.map(() => null);
+  for (let t = 0; t < SECS / STEP; t++) {
+    spots.forEach(([x, y], i) => {
+      if (live[i] && live[i].alive) return;
+      const e = spawnEnemy(run, 'goblin', x, y);
+      e.speed = 0; e.hp = e.maxHp = HP;
+      live[i] = e;
+    });
+    run.update(STEP, { x: 0, y: 0 });
+    run.player.hp = run.player.maxHp;
+  }
+  const out = {};
+  for (const w of statsSnapshot(run).weapons) out[w.name] = Math.round(w.dmg / SECS);
+  return out;
+}
+
 const section = (t) => console.log(`\n== ${t} ==`);
 const W = ['mortar', 'nova', 'blaster', 'chain_bolt', 'slam'];
-const M = ['scatter', 'flame', 'frost', 'storm', 'heavy', 'echo', 'pierce'];
+const M = ['scatter', 'flame', 'frost', 'storm', 'heavy', 'echo', 'sunder'];
 
 if (ONLY !== 'chassis') pieces();
 if (ONLY !== 'pieces') chassis();
@@ -83,6 +106,7 @@ for (const w of W) row(w, [w]);
 
 section('modifiers on Blaster and on Nova (compare with the bare weapon above)');
 for (const m of M) { row(`${m} + blaster`, [m, 'blaster']); row(`${m} + nova`, [m, 'nova']); }
+for (const w of ['slam', 'chain_bolt', 'mortar']) row(`sunder + ${w}`, ['sunder', w]);
 
 section('reactions on Nova (a flame/frost/storm pair), against the first element alone');
 for (const [a, b] of [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm'], ['storm', 'flame'], ['frost', 'storm'], ['storm', 'frost'], ['flame', 'flame'], ['frost', 'frost'], ['storm', 'storm']]) {
@@ -90,6 +114,16 @@ for (const [a, b] of [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm']
 }
 for (const e of ['flame', 'frost', 'storm']) row(`${e} nova (no reaction)`, [e, 'nova']);
 
+section('Sunder as support: another chain\'s dps with and without a Sunder Blaster chain beside it (crowd)');
+HP = 1500;                                           // tough enough that the weapons share the damage instead of racing for kills
+for (const w of ['slam', 'chain_bolt', 'mortar']) {
+  const alone = together([[w]]);
+  const withS = together([[w], ['sunder', 'blaster']]);
+  const name = Object.keys(alone)[0];
+  console.log(`${w.padEnd(12)} alone ${String(alone[name]).padStart(5)} dps   beside sunder blaster ${String(withS[name]).padStart(5)} dps   x${(withS[name] / alone[name]).toFixed(2)}`);
+}
+
+HP = 150;
 section('reactions on Blaster (three separate hits a volley), against the first element alone');
 for (const [a, b] of [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm'], ['storm', 'flame'], ['frost', 'storm'], ['storm', 'frost']]) {
   row(`${a}>${b} blaster`, [a, b, 'blaster']);

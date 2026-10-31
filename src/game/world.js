@@ -29,7 +29,7 @@ function makeEnemy() {
     chill: 0, chillT: 0, freezeT: 0, freezeImm: 0,
     shockT: 0,
     slowMul: 1,            // movement multiplier from chill
-    sunderT: 0, blessT: 0, markT: 0, stunT: 0, // armour stripped / marked for extra damage, seconds left (effects/index.js)
+    sunderT: 0, blessT: 0, markT: 0, stunT: 0, sunderN: 0, sunderS: 0, // armour stripped / marked for extra damage, seconds left (effects/index.js)
     armor: 0,              // flat damage taken off every non-DoT hit (data/enemies.js armor, scaled with hp)
   };
 }

@@ -270,3 +270,16 @@ export function replaceChassis(rig, c, chassis, mk = 1) {
   }
   return { rig: next, benched, sold };
 }
+
+// Old saves and resumed runs name the piece Pierce, which became Sunder (v0.6.7): rename it in place wherever a rig keeps piece ids.
+export function migrateRig(rig) {
+  if (!rig) return rig;
+  const ren = (id) => (id === 'pierce' ? 'sunder' : id);
+  for (const c of rig.chains || []) c.slots = c.slots.map(ren);
+  if (rig.bench) rig.bench = rig.bench.map(ren);
+  if (rig.levels && rig.levels.pierce !== undefined) {
+    rig.levels.sunder = Math.max(rig.levels.sunder || 1, rig.levels.pierce);
+    delete rig.levels.pierce;
+  }
+  return rig;
+}

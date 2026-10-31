@@ -267,6 +267,22 @@ export function drawEnemies(ctx, view, run) {
   if (discs) drawStatusRings(ctx, list, x0, x1, y0, y1);        // the tint shows a status on a sprite; plain discs (no art) keep rings
   drawEliteFront(ctx, list, x0, x1, y0, y1, px, py, run.time);
   drawWards(ctx, list, x0, x1, y0, y1);
+  drawSunder(ctx, list, x0, x1, y0, y1);
+}
+
+// The rig's Sunder: one small violet notch under the enemy per stack, all in one path.
+function drawSunder(ctx, list, x0, x1, y0, y1) {
+  let any = false;
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!(e.sunderN > 0) || e.x < x0 || e.x > x1 || e.y < y0 || e.y > y1) continue;
+    if (!any) { ctx.fillStyle = '#c58bff'; ctx.beginPath(); any = true; }
+    const n = e.sunderN;
+    const bx = e.x - (n - 1) * 3;
+    const by = e.y + e.r * 0.7;
+    for (let k = 0; k < n; k++) { ctx.moveTo(bx + k * 6 + 2, by); ctx.arc(bx + k * 6, by, 2, 0, TAU); }
+  }
+  if (any) ctx.fill();
 }
 
 // A Shaman's ward: a faint teal circle on the ground, so the thing making the crowd tough is findable.

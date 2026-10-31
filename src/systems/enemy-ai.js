@@ -174,6 +174,7 @@ export function updateEnemies(run, dt) {
     if (e.sunderT > 0) e.sunderT -= dt;
     if (e.blessT > 0) e.blessT -= dt;
     if (e.markT > 0) e.markT -= dt;
+    if (e.sunderS > 0 && (e.sunderS -= dt) <= 0) e.sunderN = 0;      // the rig's Sunder wears off together
     if (e.wardT > 0) e.wardT -= dt;
     if (e.def.ward) {                                     // Shaman: everything near it takes half damage while it lives
       e.aiCd -= dt;

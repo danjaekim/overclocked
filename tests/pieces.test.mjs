@@ -55,8 +55,8 @@ test('Slam craters the crowd after its shadow, and On Impact fires from the crat
   assert.equal(events(rig, 'payload').length, 1);
 });
 
-test('Storm shocks, Heavy doubles damage and area and slows shots, Pierce adds 2', () => {
-  const { run, chain } = rigOf(['storm', 'heavy', 'pierce', 'blaster']);
+test('Storm shocks, Heavy doubles damage and area and slows shots, Sunder passes through 2 more', () => {
+  const { run, chain } = rigOf(['storm', 'heavy', 'sunder', 'blaster']);
   const inst = chain.nodes[0].inst;
   const plain = rigOf(['blaster']).chain.nodes[0].inst;
   const r2 = rigOf(['blaster']).run;
@@ -65,7 +65,7 @@ test('Storm shocks, Heavy doubles damage and area and slows shots, Pierce adds 2
   approx(param(run, inst, 'radius') / param(r2, plain, 'radius'), 2, 1e-9);
   assert.ok(param(run, inst, 'speed') < param(r2, plain, 'speed'));
   assert.equal(param(run, inst, 'pierce') - param(r2, plain, 'pierce'), 2);
-  assert.equal(chain.nodes[0].cost, 1 + 1 + 2 + 1);  // blaster 1 + storm 1 + heavy 2 + pierce 1
+  assert.equal(chain.nodes[0].cost, 1 + 1 + 2 + 1);  // blaster 1 + storm 1 + heavy 2 + sunder 1
 });
 
 test('Echo fires the weapon twice, 0.2 s apart, at 75% each, for one payment', () => {
@@ -161,11 +161,12 @@ test('analyze words the new triggers and costs Every 3rd at nothing', () => {
   assert.equal(a.cost, 1 + 0 + (2 + 3 - 1));
 });
 
-test('signature levels: Scatter gains copies at 3 and 5, Heavy and Pierce gain stat mods, triggers boost the payload and Every 3rd speeds up', () => {
+test('signature levels: Scatter gains copies at 3 and 5, Heavy and Blaster gain stat mods, triggers boost the payload and Every 3rd speeds up', () => {
   const sc = (lv) => compileChain({ rule: 'pulse', slots: ['scatter', 'nova'], levels: { scatter: lv } }).nodes[0];
   assert.deepEqual([1, 3, 5].map((l) => sc(l).copies), [5, 6, 7]);
-  const hv = compileChain({ rule: 'pulse', slots: ['heavy', 'pierce', 'blaster'], levels: { heavy: 5, pierce: 3, blaster: 3 } }).nodes[0];
-  assert.deepEqual(hv.sigMods.map((m) => m.stat).sort(), ['area', 'area', 'pierce', 'projectiles']);
+  const hv = compileChain({ rule: 'pulse', slots: ['heavy', 'sunder', 'blaster'], levels: { heavy: 5, sunder: 3, blaster: 3 } }).nodes[0];
+  assert.deepEqual(hv.sigMods.map((m) => m.stat).sort(), ['area', 'area', 'projectiles']);
+  assert.equal(hv.sunder, 6, 'Sunder at level 3 holds one more stack');
   const ev = (lv) => compileChain({ rule: 'pulse', slots: ['blaster', 'every_3rd', 'nova'], levels: { every_3rd: lv } }).nodes[0].trigger;
   assert.deepEqual([1, 3, 5].map((l) => ev(l).every), [3, 3, 2]);
   approx(ev(1).payload[0].power, 1.3 * 2, 1e-9);                                   // the payload bonus and Every 3rd's own x2
@@ -195,7 +196,7 @@ test('reactions: every ordered pair of elements has one, the same element twice 
   assert.deepEqual(
     [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm'], ['storm', 'flame'], ['frost', 'storm'], ['storm', 'frost'], ['flame', 'flame'], ['frost', 'frost'], ['storm', 'storm']].map(([a, b]) => r(a, b)),
     ['steam', 'shatter', 'overload', 'plasma', 'superconduct', 'static', 'intensify_fire', 'intensify_frost', 'intensify_storm']);
-  assert.equal(compileChain({ rule: 'pulse', slots: ['flame', 'pierce', 'frost', 'blaster'] }).nodes[0].reaction, 'steam');   // held in order, neighbours in the element sequence
+  assert.equal(compileChain({ rule: 'pulse', slots: ['flame', 'sunder', 'frost', 'blaster'] }).nodes[0].reaction, 'steam');   // held in order, neighbours in the element sequence
   assert.equal(compileChain({ rule: 'pulse', slots: ['flame', 'blaster'] }).nodes[0].reaction, null);
 });
 
@@ -231,4 +232,57 @@ test('overclocked levels 6 and 7 add x1.25 power each on top of level 5', () => 
   approx(p(5), 1.4, 1e-9);
   approx(p(6), 1.4 * 1.25, 1e-9);
   approx(p(7), 1.4 * 1.25 * 1.25, 1e-9);
+});
+
+test('Sunder: each direct hit adds a stack, up to the cap, and the stacks wear off 3 s after the last hit', async () => {
+  const { SUNDER } = await import('../src/rig/pieces.js');
+  const { run, rig } = rigOf(['sunder', 'blaster']);
+  const e = dummy(run, 100, 0);
+  tick(run, 0.55);                                                   // the first 3-shot volley has landed
+  assert.equal(e.sunderN, 3);
+  tick(run, 1.2);                                                    // later volleys cap it
+  assert.equal(e.sunderN, SUNDER.max);
+  rig.chains[0].bat.pool = 0;                                        // stop firing and watch the clock
+  tick(run, SUNDER.duration + 0.3);
+  assert.equal(e.sunderN, 0);
+});
+
+test('Sunder raises the damage an enemy takes by 8% a stack, from any source', async () => {
+  const { SUNDER } = await import('../src/rig/pieces.js');
+  const { resolveHit } = await import('../src/game/hit.js');
+  const { run, rig } = rigOf(['blaster']);
+  const inst = rig.chains[0].nodes[0].inst;
+  const a = dummy(run, 500, 500);
+  const b = dummy(run, -500, -500);
+  b.sunderN = 4; b.sunderS = 10;
+  run.player.stats.add({ stat: 'critChance', op: 'flat', value: -1, tags: [inst.instanceTag], source: 'test' });
+  resolveHit(run, inst, a, 100, 1, 0);
+  resolveHit(run, inst, b, 100, 1, 0);
+  run.update(STEP, { x: 0, y: 0 });
+  approx((1e9 - b.hp) / (1e9 - a.hp), 1 + SUNDER.per * 4, 1e-6);
+});
+
+test('migrateRig renames Pierce to Sunder in slots, bench and levels', async () => {
+  const { migrateRig } = await import('../src/rig/editor.js');
+  const r = migrateRig({ chains: [{ slots: ['pierce', 'blaster', null] }], bench: ['pierce', null], levels: { pierce: 3, blaster: 2 } });
+  assert.deepEqual(r.chains[0].slots, ['sunder', 'blaster', null]);
+  assert.deepEqual(r.bench, ['sunder', null]);
+  assert.deepEqual(r.levels, { blaster: 2, sunder: 3 });
+});
+
+test('a saved run history entry that names Pierce loads as Sunder, and a resumed run does too', async () => {
+  const { entryFromSummary, normalize } = await import('../src/save/save.js');
+  const e = entryFromSummary({ classId: 'smith', time: 1, kills: 1, level: 1, seed: 1, rig: { chains: [{ rule: 'pulse', slots: ['pierce', 'blaster'] }], levels: { pierce: 3 } } }, 1);
+  assert.deepEqual(e.rig.chains[0].slots, ['sunder', 'blaster']);
+  assert.deepEqual(e.rig.levels, { sunder: 3 });
+  const { snapshotRun, restoreRun } = await import('../src/game/run-snapshot.js');
+  const { createOverclockedRun } = await import('../src/game/ovrun.js');
+  const run = createOverclockedRun({ seed: 3, view: { w: 390, h: 844, insetTop: 0 }, debug: {}, sfx: () => {} });
+  run.rigState.bench = ['pierce', null, null];
+  run.rigState.levels.pierce = 2;
+  const back = restoreRun(JSON.parse(JSON.stringify(snapshotRun(run))), { view: { w: 390, h: 844, insetTop: 0 }, debug: {}, sfx: () => {} });
+  assert.equal(back.rigState.bench[0], 'sunder');
+  assert.equal(back.rigState.levels.sunder, 2);
+  assert.equal(back.rigState.levels.pierce, undefined);
+  void normalize;
 });

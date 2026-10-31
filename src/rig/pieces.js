@@ -11,6 +11,9 @@ export const DEFAULT_ENERGY = 12;       // a chain's battery when its definition
 // Scatter: the next weapon fires `copies` attacks at `mult` power each, spread out: on a ring of radius `ring` around the origin, and aimed `fan` radians apart.
 export const SCATTER = { copies: 5, mult: 0.4, ring: 28, fan: 0.15 };
 
+// Sunder: each hit of the weapon it is held for adds a stack to the enemy; every stack makes it take `per` more damage from everything. Stacks last `duration` seconds from the latest hit.
+export const SUNDER = { per: 0.08, max: 5, duration: 3 };
+
 // Echo: the next weapon fires again `delay` seconds later, both at `mult` power.
 export const ECHO = { delay: 0.2, mult: 0.75, boosted: 0.9 };
 
@@ -42,7 +45,7 @@ export const SIGNATURE = {
   chain_bolt: { text: '+1 jump', mods: [{ stat: 'chains', op: 'flat', value: 1 }] },
   scatter: { text: '+1 copy' },
   heavy: { text: '+30% more area', mods: [{ stat: 'area', op: 'inc', value: 0.3 }] },
-  pierce: { text: 'pierces 1 more enemy', mods: [{ stat: 'pierce', op: 'flat', value: 1 }] },
+  sunder: { text: '+1 max stack' },
   flame: { text: '+50% burn damage', mods: [{ stat: 'burnPower', op: 'inc', value: 0.5 }] },
   frost: { text: 'chills deeper (+1 stack)', mods: [{ stat: 'chillStacks', op: 'flat', value: 1 }] },
   storm: { text: '+1 shock jump', mods: [{ stat: 'chains', op: 'flat', value: 1 }] },
@@ -102,7 +105,7 @@ export const PIECES = {
   storm: { glyph: 'St', short: 'Storm', icon: 'M13 2L4 14h7l-1 8 9-12h-7z', filled: true, type: 'modifier', name: 'Storm', cost: 1, desc: 'Adds storm: each hit arcs to 2 more enemies for 35%, and shocked enemies take 15% more from everything', element: 'storm' },
   heavy: { glyph: 'He', short: 'Heavy', icon: 'M7 8h10l3 12H4z M9 8a3 3 0 0 1 6 0', filled: true, type: 'modifier', name: 'Heavy', cost: 2, desc: 'Double damage and area, slower shots', mods: [{ stat: 'damage', op: 'more', value: 1 }, { stat: 'area', op: 'inc', value: 1 }, { stat: 'projSpeed', op: 'inc', value: -0.3 }] },
   echo: { glyph: 'Ec', short: 'Echo', icon: 'M12 18h.01 M8.5 14.5a5 5 0 0 1 7 0 M5 11a10 10 0 0 1 14 0 M2 7.5a15 15 0 0 1 20 0', filled: false, type: 'modifier', name: 'Echo', cost: 2, desc: 'The next weapon fires twice, 0.2 s apart, at 75% each', echo: true },
-  pierce: { glyph: 'Pi', short: 'Pierce', icon: 'M2 12h20 M16 6l6 6-6 6 M9 4v16', filled: false, type: 'modifier', name: 'Pierce', cost: 1, desc: 'Shots pass through 2 more enemies', mods: [{ stat: 'pierce', op: 'flat', value: 2 }] },
+  sunder: { glyph: 'Su', short: 'Sunder', icon: 'M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z M12 3v7l-3 3 4 3-2 5', filled: false, type: 'modifier', name: 'Sunder', cost: 1, desc: 'Each hit sunders: every stack makes the enemy take 8% more from everything (5 stacks, 3 s). Shots also pass through 2 more enemies', sunder: true, mods: [{ stat: 'pierce', op: 'flat', value: 2 }] },
 
   on_impact: { glyph: 'Im', short: 'Impact', icon: 'M12 2l2 7 7-2-5 5 5 5-7-2-2 7-2-7-7 2 5-5-5-5 7 2z', filled: true, type: 'trigger', name: 'On Impact', cost: 1, on: 'impact', desc: 'Runs the payload once, where the attack first lands' },
   on_kill: { glyph: 'Ki', short: 'Kill', icon: 'M12 3a8 8 0 0 0-8 8c0 3 2 5 4 6v4h8v-4c2-1 4-3 4-6a8 8 0 0 0-8-8z M9 11h.01 M15 11h.01 M10 17v3 M14 17v3', filled: true, type: 'trigger', name: 'On Kill', cost: 1, on: 'kill', desc: 'Runs the payload from each enemy the attack kills' },

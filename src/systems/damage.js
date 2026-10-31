@@ -14,6 +14,7 @@ import { recordDamage, recordKill } from '../game/run-stats.js';
 import { onClassKill } from '../game/class-traits.js';
 import { breakCrate } from './crates.js';
 import { rigEvent } from '../rig/rig.js';
+import { SUNDER } from '../rig/pieces.js';
 import { ST } from '../data/statuses.js';
 import { applyBurn, applyChill, applyShock, chainArc, onStatusDeath, chainReaction, forkStrike, stagger } from './status.js';
 
@@ -135,6 +136,7 @@ export function flushDamage(run) {
     let amount = q.amount[i] * targetMult(run, e, src);
     if (e.blessT > 0) amount *= BLESS_MULT;                   // Radiant Halo's mark
     if (e.markT > 0) amount *= MARK_MULT;                     // Hunter's Mark
+    if (e.sunderN > 0) amount *= 1 + SUNDER.per * e.sunderN;   // the rig's Sunder: a stack per hit it took
     if (src && (e.elite || e.def.boss) && run.player.stats.mods.vsElite.length > 0) amount *= run.player.stats.getFor('vsElite', src.tags);   // Bane
     if (e.armor > 0 && e.sunderT <= 0 && kind !== KIND_DOT) {                  // armour: flat loss per hit, so heavy hits and burns beat it
       const left = amount - e.armor;

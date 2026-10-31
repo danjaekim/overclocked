@@ -15,7 +15,7 @@
 import { BEHAVIORS } from '../behaviors/index.js';
 import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
-import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS } from './pieces.js';
+import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { healPlayer } from '../systems/pickups.js';
 import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
@@ -96,6 +96,10 @@ function makeInstance(run, rig, node, chain) {
 function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
   if (run.rig !== rig) return;
   if (ev === 'hit') {                   // the node's own direct hits drive its element reaction
+    if (node.sunder > 0 && depth === 0 && target !== null && target.alive) {     // Sunder: one more stack on the enemy, and the clock restarts
+      target.sunderN = Math.min(node.sunder, (target.sunderN || 0) + 1);
+      target.sunderS = SUNDER.duration;
+    }
     if (node.reaction !== null && depth === 0 && target !== null) {
       reactOnHit(run, node, inst, target);
       if (run.discover) run.discover(node.reaction);                  // the compendium notes the first time a reaction happens

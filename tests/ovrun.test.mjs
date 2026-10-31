@@ -79,7 +79,7 @@ test('the workbench: stock, prices, buying a piece, a level, capacity and a chas
   const swapped = buyItem(rigOf(['blaster']), ch, 0).rig;
   assert.deepEqual([swapped.chains.length, swapped.chains[0].chassis, swapped.chains[0].slots[0]], [1, 'reaper', 'blaster'], 'a replacement keeps the pieces');
   assert.equal(buyItem(rigOf(['blaster']), ch, 3), null, 'no such chain');
-  let full = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo'], ['pierce', 'on_impact', 'on_kill']);
+  let full = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo'], ['sunder', 'on_impact', 'on_kill']);
   full.bench = ['slam', 'chain_bolt', 'on_hit'];
   assert.equal(buyItem(full, { kind: 'piece', id: 'every_3rd', price: 40 }), null, 'no room');
   assert.ok(describeItem(r, piece).title && describeItem(r, ch).desc && describeItem(r, { kind: 'slot' }).title && describeItem(mx, oc).title);
@@ -169,7 +169,7 @@ test('replacing a chassis: pieces move over in order, extras go to the bench and
   const b = replaceChassis(r, 0, 'overdrive');                     // 3 slots, max 4
   assert.deepEqual(b.rig.chains[0].slots, ['blaster', 'flame', 'nova', 'echo']);
   assert.deepEqual([b.benched, b.sold], [['mortar'], []]);
-  r.bench = ['slam', 'pierce', 'heavy'];
+  r.bench = ['slam', 'sunder', 'heavy'];
   const c = replaceChassis(r, 0, 'overdrive');
   assert.deepEqual(c.sold, ['mortar'], 'bench full: sold');
   assert.equal(replaceChassis(r, 4, 'long'), null);
@@ -306,7 +306,7 @@ test('chests: a boss chest always starts with capacity; every roll lands in the 
 });
 
 test('chests: with the rig full, a piece roll only follows a roll that made room, never a lost piece', () => {
-  let r = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo'], ['pierce', 'on_impact', 'on_kill']);
+  let r = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo'], ['sunder', 'on_impact', 'on_kill']);
   r.bench = ['slam', 'chain_bolt', 'on_hit'];
   assert.equal(placeSuggested(r, 'every_3rd'), null);
   for (let i = 0; i < 40; i++) {

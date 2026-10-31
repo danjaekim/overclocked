@@ -15,7 +15,7 @@
 //            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
-import { OVERCLOCK_STEP, MAX_LEVEL as MAXL } from './pieces.js';
+import { OVERCLOCK_STEP, MAX_LEVEL as MAXL, SUNDER } from './pieces.js';
 import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_BONUS, EVERY_BONUS, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
 const sigPower = (levels, id) => Math.pow(SIG_TRIGGER_STEP, sigCount(levels, id));
@@ -72,6 +72,7 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
   const seq = [];                                              // every element held, in order, repeats included
   let scatter = false;
   let echo = false;
+  let sunder = 0;
   let cost = PIECES[id].cost + (q.costAdd || 0);
   let power = outer * lvlMult(levels, id);
   let copies = SCATTER.copies + sigCount(levels, 'scatter');
@@ -84,6 +85,7 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
     power *= lvlMult(levels, h.id);
     if (m.scatter) scatter = true;
     if (m.echo) echo = true;
+    if (m.sunder) sunder = SUNDER.max + sigCount(levels, h.id);
     addSig(h.id);
     if (m.element) {
       seq.push(m.element);
@@ -97,7 +99,7 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
   const echoShots = sc >= 2 ? 2 : 1;                           // extra shots after the first
   let reaction = null;                                         // the first neighbouring pair that makes one
   for (let k = 0; k + 1 < seq.length && !reaction; k++) reaction = REACTIONS[`${seq[k]}>${seq[k + 1]}`] || null;
-  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, copies, echo, echoMult, echoShots, sigMods, power, cost, trigger: null };
+  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, copies, echo, echoMult, echoShots, sunder, sigMods, power, cost, trigger: null };
 }
 
 // Energy the whole chain uses if every attack lands and every trigger fires once: the number the
