@@ -130,12 +130,12 @@ const bossRun = (dps, enemy = 'warlord') => {
 };
 
 test('v08 boss hp follows your recent dps: 1x for a weak rig, dps x 25 s for a strong one, capped at 6x', () => {
-  assert.equal(bossRun(100).boss.maxHp, ENEMIES.warlord.hp);                     // raw 100/s x 0.2 x 25 s = 500, under the base
-  assert.equal(bossRun(1000).boss.maxHp, 5000);                                  // 1000 x 0.2 x 25
-  assert.equal(bossRun(20000).boss.maxHp, ENEMIES.warlord.hp * 6);
-  assert.equal(bossRun(5000, 'seer').boss.maxHp, 12000);                         // 5000 x 0.06 x 40
+  assert.equal(bossRun(100).boss.maxHp, ENEMIES.warlord.hp);                     // raw 100/s x 0.2 x 35 s = 700, under the base
+  assert.equal(bossRun(1000).boss.maxHp, 7000);                                  // 1000 x 0.2 x 35
+  assert.equal(bossRun(20000).boss.maxHp, ENEMIES.warlord.hp * 8);
+  assert.equal(bossRun(5000, 'seer').boss.maxHp, 13500);                         // 5000 x 0.06 x 45
   assert.equal(bossRun(10).boss.hp, bossRun(10).boss.maxHp);
-  assert.equal(bossRun(1000).boss.hpMult, 5000 / ENEMIES.warlord.hp);
+  assert.equal(bossRun(1000).boss.hpMult, 7000 / ENEMIES.warlord.hp);
 });
 
 test('v08 a boss calls an escort at 66% and 33% hp, once each', () => {

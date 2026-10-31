@@ -63,13 +63,13 @@ export const RATE_RAMP = { from: 180, to: 600, end: 1.8 };
 // from the current segment's mix, at most TOPUP_PER_SEC a second, so a strong rig still faces a crowd. A weak rig is
 // already above these numbers and sees the normal waves. `from` and `to` are authored seconds like the segments.
 export const MIN_ALIVE = [
-  { from: 0,   to: 60,  min: 10 },
-  { from: 60,  to: 120, min: 25 },
-  { from: 120, to: 180, min: 50 },
-  { from: 180, to: 240, min: 90 },
-  { from: 240, to: 300, min: 140 },
-  { from: 300, to: 420, min: 200 },
-  { from: 420, to: 600, min: 300 },
+  { from: 0,   to: 60,  min: 11 },
+  { from: 60,  to: 120, min: 27 },
+  { from: 120, to: 180, min: 55 },
+  { from: 180, to: 240, min: 99 },
+  { from: 240, to: 300, min: 154 },
+  { from: 300, to: 420, min: 220 },
+  { from: 420, to: 600, min: 330 },
 ];
 export const TOPUP_PER_SEC = 25;
 export const TOUGH_SHARE = 0.25;     // from minute 5 on, this share of top-ups is picked from the non-goblin entries

@@ -163,7 +163,7 @@ Power comes from five layers during a run and one between runs, which comes afte
 
 **Enemy pressure (v0.8.1).** Waves run at a fixed rate, so the director also keeps a minimum crowd: when fewer than `MIN_ALIVE` enemies are alive (10 in the first minute, rising to 300 from 7:00) it tops the field up at 25 a second from the current wave's mix, and from 5:00 a quarter of the top-ups are the tougher non-goblin entries. Top-ups and horde enemies drop no ore. Three hordes (3:00 60, 6:00 100 plus 2 elites, 8:30 150 plus 3 elites) arrive as a ring just off screen on every side. All of it is data in `src/data/waves.js`.
 
-**Bosses (v0.8.2).** A boss's HP is set when it spawns: your raw damage per second over the last 20 s (overkill included, so it follows the rig and not the crowd) x a share x a fight length (Warlord 0.2 x 25 s, Seer 0.06 x 40 s), never below its base HP and at most 6x (Seer 10x). A weak rig meets the base boss. At 66% and 33% HP a boss calls an escort (20 wave enemies and 2 brutes, no ore). The Warlord's charge windup drops from 0.9 s to 0.6 s below half HP.
+**Bosses (v0.8.2).** A boss's HP is set when it spawns: your raw damage per second over the last 20 s (overkill included, so it follows the rig and not the crowd) x a share x a fight length (Warlord 0.2 x 35 s, Seer 0.06 x 45 s), never below its base HP and at most 8x (Seer 12x). A weak rig meets the base boss. At 66% and 33% HP a boss calls an escort (20 wave enemies and 2 brutes, no ore). The Warlord's charge windup drops from 0.9 s to 0.6 s below half HP.
 
 ## Editing and readability
 
