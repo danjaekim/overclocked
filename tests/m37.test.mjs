@@ -22,26 +22,30 @@ const newRun = (classId = 'archer', god = true, seed = 5) => {
 const rehash = (run) => run.world.hash.rebuild(run.world.enemies.active, run.world.enemies.count);
 const kinds = (run, k) => run.world.pickups.active.filter((g) => g.kind === k);
 
-test('m37 a crate is a prop: found by area queries, skipped by the aiming query', () => {
+test('m37 a crate is a prop: found by area queries, aimed at like an enemy (nearest wins)', () => {
   const run = newRun();
   const c = spawnCrate(run, { x: 60, y: 0 });
   assert.equal(c.prop, 1);
   rehash(run);
   const w = run.world;
   assert.ok(w.hash.queryRadius(0, 0, 100, w.scratch) >= 1, 'area queries see it');
-  assert.equal(w.hash.queryNearest(0, 0, 100, (o) => o.alive), null, 'aiming does not');
+  assert.equal(w.hash.queryNearest(0, 0, 100, (o) => o.alive), c, 'aiming sees it');
   const g = spawnEnemy(run, 'goblin', 80, 0);
   rehash(run);
-  assert.equal(w.hash.queryNearest(0, 0, 200, (o) => o.alive), g);
+  assert.equal(w.hash.queryNearest(0, 0, 200, (o) => o.alive), c, 'the nearer crate wins');
+  const g2 = spawnEnemy(run, 'goblin', 20, 0);
+  rehash(run);
+  assert.equal(w.hash.queryNearest(0, 0, 200, (o) => o.alive), g2);
+  assert.ok(g);
 });
 
-test('m37 a weapon with only a crate in range does not fire; a crate never hurts or moves', () => {
+test('m37 a weapon with only a crate in range shoots it and breaks it; a crate never hurts or moves', () => {
   const run = newRun('archer', false);
-  const c = spawnCrate(run, { x: 30, y: 0 });
-  for (let i = 0; i < 120; i++) run.update(STEP, { x: 0, y: 0 });
-  assert.equal(run.world.projectiles.count, 0);
+  const c = spawnCrate(run, { x: 120, y: 0 });
+  for (let i = 0; i < 240; i++) run.update(STEP, { x: 0, y: 0 });
+  assert.equal(c.alive, false);
   assert.equal(run.player.hp, run.player.maxHp);
-  assert.equal(c.x, 30);
+  assert.equal(c.x, 120);
 });
 
 test('m37 any hit wears a crate down and breaking it is not a kill', () => {
@@ -117,22 +121,22 @@ test('m37 a heart waits for you at full health, then flies in and heals 15% of m
   approx(p.hp - before, p.maxHp * 0.15, 1e-6);
 });
 
-test('m37 a crate fades after its time, and at most two exist at once', () => {
+test('m37 a crate fades after its time, and at most three exist at once', () => {
   const run = newRun();
-  assert.ok(spawnCrate(run) && spawnCrate(run));
+  assert.ok(spawnCrate(run) && spawnCrate(run) && spawnCrate(run));
   assert.equal(spawnCrate(run), null);
-  assert.equal(liveCrates(run), 2);
+  assert.equal(liveCrates(run), 3);
   for (let i = 0; i < Math.ceil((CRATES.ttl + 1) / STEP); i++) run.update(STEP, { x: 0, y: 0 });
   assert.equal(liveCrates(run), 0);
 });
 
-test('m37 the timeline has about one crate every 75 s, in time order, and the director spawns the first', () => {
+test('m37 the timeline has about one crate every 40 s, in time order, and the director spawns the first', () => {
   const times = EVENTS.filter((e) => e.event === 'crate').map((e) => e.at);
-  assert.ok(times.length >= 6 && times.length <= 8, `${times.length}`);
-  for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 60);
+  assert.ok(times.length >= 12 && times.length <= 15, `${times.length}`);
+  for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 30);
   for (let i = 1; i < EVENTS.length; i++) assert.ok(EVENTS[i].at >= EVENTS[i - 1].at);
   const run = createRun({ seed: 5, view: VIEW, debug: { god: true }, classId: 'archer' });
-  for (let i = 0; i < Math.ceil(60 / STEP); i++) { run.update(STEP, { x: 0, y: 0 }); run.pendingLevelUps = 0; }
-  assert.ok(liveCrates(run) >= 1, 'the first crate arrived by 60 s');
+  for (let i = 0; i < Math.ceil(45 / STEP); i++) { run.update(STEP, { x: 0, y: 0 }); run.pendingLevelUps = 0; }
+  assert.ok(liveCrates(run) >= 1, 'the first crate arrived by 45 s');
 });
 

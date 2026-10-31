@@ -1,8 +1,9 @@
 // Supply crates: sparse breakable props that drop a little help (data/crates.js).
 // A crate is an entity in the enemy pool with `prop === 1` (data/enemies.js PROPS), so every weapon
 // hits it like an enemy, but damage.js hands its death to `breakCrate` instead of the kill path:
-// no kill count, no xp, no on-kill triggers, no lifesteal. Weapons never aim at one (the spatial
-// hash's aiming query skips props).
+// no kill count, no xp, no on-kill triggers, no lifesteal. Weapons aim at one like an enemy (the nearest
+// target wins), so it breaks without chasing a target behind it.
+
 
 import { CRATES } from '../data/crates.js';
 import { ORES } from '../data/ores.js';

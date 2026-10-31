@@ -4,7 +4,7 @@
 //   hash.rebuild(list, n)               list: array of {x, y, ...}; rebuilt once per tick
 //   hash.queryRadius(x, y, r, out) -> n fills out[0..n) with objects whose centre is within r
 //   hash.queryNearest(x, y, r, pred) -> closest object within r (optionally filtered), or null.
-//                                       Objects with `prop === 1` (supply crates) are skipped: it is the aiming query.
+//                                       Supply crates (`prop === 1`) are aimable like enemies, so the nearest one gets shot.
 //
 // Items are stored by reference, so an object released from its pool after the rebuild is
 // still safe to touch; callers should skip entries with `alive === false`.
@@ -102,7 +102,6 @@ export function createSpatialHash({ cellSize = 64, tableSize = 4096, capacity = 
     if ((x1 - x0 + 1) * (y1 - y0 + 1) > tableSize >> 1) {
       for (let i = 0; i < count; i++) {
         const o = items[i];
-        if (o.prop === 1) continue;
         if (pred && !pred(o)) continue;
         const dx = o.x - x;
         const dy = o.y - y;
@@ -119,7 +118,6 @@ export function createSpatialHash({ cellSize = 64, tableSize = 4096, capacity = 
           if (mark[i] === s) continue;
           mark[i] = s;
           const o = items[i];
-          if (o.prop === 1) continue;                    // breakable props are hit by everything but never aimed at
           if (pred && !pred(o)) continue;
           const dx = o.x - x;
           const dy = o.y - y;

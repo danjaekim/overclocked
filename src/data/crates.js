@@ -1,11 +1,11 @@
 // Supply crates (systems/crates.js): sparse breakable props that drop a little help. Data only.
-// They arrive from `crate` events in data/waves.js (about one every 75 s), just past the left or
+// They arrive from `crate` events in data/waves.js (about one every 40 s), just past the left or
 // right edge of the view with an arrow pointing at them, and fade after `ttl` seconds.
 // What falls out is a weighted roll. Heals are weighted up while you are hurt and never rolled at full
 // health, so a heal is an occasional assist rather than something to build a run around.
 
 export const CRATES = {
-  maxActive: 2,
+  maxActive: 3,
   ttl: 70,
   placement: { candidates: 6, edgeMin: 10, edgeMax: 90, maxDy: 260 },
   // hp fraction at or below which the heal weight is multiplied (first match wins)
