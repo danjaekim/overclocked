@@ -2,6 +2,7 @@
 // by a random offset each volley. Shots are ordinary projectiles, so pierce, ricochet, split and
 // on-hit statuses all work on them.
 
+import { canAim } from '../game/aim.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -13,7 +14,7 @@ const isAlive = (o) => o.alive;
 
 // One ring of `count` shots from (ctx.x, ctx.y). False when no enemy is within range of that point.
 function fire(inst, run, ctx) {
-  if (!run.world.hash.queryNearest(ctx.x, ctx.y, param(run, inst, 'range'), isAlive)) return false;
+  if (!run.world.hash.queryNearest(ctx.x, ctx.y, param(run, inst, 'range'), (o) => o.alive && canAim(run, o))) return false;
   const count = Math.max(1, Math.round(param(run, inst, 'count')));
   const dmg = param(run, inst, 'damage') * ctx.mult;
   const speed = param(run, inst, 'speed');

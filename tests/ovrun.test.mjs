@@ -59,7 +59,7 @@ test('the workbench: stock, prices, buying a piece, a level, capacity and a chas
   assert.deepEqual([1, 2, 3].map(chassisPrice), [60, 90, 120]);
   assert.ok(stock.every((i) => i.price > 0));
   assert.deepEqual([2, 3, 4, 5].map(levelPrice), [30, 40, 50, 60]);
-  assert.deepEqual([0, 1, 2].map(rerollPrice), [10, 20, 30]);
+  assert.deepEqual([0, 1, 2].map(rerollPrice), [25, 50, 100]);
   assert.deepEqual([0, 1, 2].map(slotPrice), [50, 75, 100]);
   assert.equal(buyItem(r, { kind: 'slot', price: 50 }, 0).rig.chains[0].slots.length, 4);
   assert.equal(buyItem(r, { kind: 'charge', price: 35 }, 0).rig.chains[0].charge, 1);

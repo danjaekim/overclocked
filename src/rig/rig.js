@@ -262,8 +262,11 @@ export function updateRig(run, dt) {
     }
     if (rule.on) {                                             // Reaper, Spite: an event starts it, at most once per `gap`
       if (chain.t > 0) chain.t -= dt;
-      if (rig.flags[rule.on] && chain.t <= 0) {
+      if (rule.idle) chain.idleT = (chain.idleT || 0) + dt;
+      const idle = rule.idle && chain.idleT >= rule.idle;           // Reaper: nothing has died for `idle` s, so it fires anyway and cannot stall for good
+      if ((rig.flags[rule.on] || idle) && chain.t <= 0) {
         chain.t = rule.gap;
+        chain.idleT = 0;
         const missing = rule.scales ? 1 - Math.max(0, p.hp) / p.maxHp : 0;     // Spite: the lower your hp, the more it gives
         if (rule.heal) healPlayer(run, rule.heal * (1 + missing));
         activate(run, rig, chain, 1 + missing);

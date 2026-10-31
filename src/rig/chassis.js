@@ -26,7 +26,7 @@ export const CHASSIS = {
   relay: { name: 'Relay', rule: 'pulse', slots: 5, max: 6, battery: 14, recharge: 6, quirk: { payloadFree: true }, desc: 'Payload pieces cost 0' },
   strider: { name: 'Strider', rule: 'stride', slots: 4, max: 6, battery: 10, recharge: 7, chargeWhile: 'moving', quirk: {}, desc: 'Fires and recharges only while you move' },
   anchor: { name: 'Anchor', rule: 'anchor', slots: 4, max: 6, battery: 16, recharge: 8, chargeWhile: 'still', quirk: {}, desc: 'Fires and recharges only while you stand still' },
-  reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.5 }, desc: 'Fires on kills; every kill adds 0.5 energy' },
+  reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.5 }, desc: 'Fires on kills, or every 3 s if nothing dies; every kill adds 0.5 energy' },
   spite: { name: 'Spite', rule: 'spite', slots: 4, max: 5, battery: 20, recharge: 5, quirk: { hurtCharge: 2 }, desc: 'Fires when you are hit and heals you; every hit adds 2 energy' },
 };
 

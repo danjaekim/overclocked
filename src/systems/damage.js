@@ -9,6 +9,7 @@ import { fireTriggers } from '../game/triggers.js';
 import { onMilestone } from '../game/titles.js';
 import { spawnShrine } from './shrines.js';
 import { SHRINE } from '../data/forge.js';
+import { GOLD } from '../data/gold.js';
 import { KIND_HIT, KIND_DOT, CAUSE } from './damage-queue.js';
 import { recordDamage, recordKill } from '../game/run-stats.js';
 import { onClassKill } from '../game/class-traits.js';
@@ -25,7 +26,7 @@ const WARD_MULT = 0.5;     // damage taken inside a Shaman's ward
 const MARK_MULT = 1.2;     // damage taken by an enemy marked by Hunter's Mark
 const BLESS_MULT = 1.1;    // damage taken by a blessed enemy
 // Gold in a rig run (ore, spent at the workbench, rig/workbench.js): what an ore drop is worth, and what elites and the boss pay.
-export const GOLD = { perOre: 15, elite: 25, boss: 100 };
+export { GOLD };
 const ARMOR_FLOOR = 0.4;   // armor never takes more than 60% off a hit
 
 export function killEnemy(run, e) {

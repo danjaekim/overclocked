@@ -2,6 +2,8 @@
 // by an edge arrow, and open the forge once the player has stood in them long enough.
 
 import { SHRINE } from '../data/forge.js';
+import { GOLD } from '../data/gold.js';
+import { addLabel } from '../render/fx.js';
 
 // Candidate spots just past the left or right view edge (the view is tall and narrow).
 // The least crowded of several random candidates wins.
@@ -52,6 +54,7 @@ export function updateShrines(run, dt) {
     if (s.progress >= SHRINE.channel) {
       list.splice(i, 1);
       run.forgeReady = true;
+      if (run.rigRun) { run.ore += GOLD.shrine; addLabel(run, s.x, s.y - 20, `+${GOLD.shrine} Gold`, '#ffd36b'); }
     }
   }
 }

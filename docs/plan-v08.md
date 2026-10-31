@@ -67,9 +67,9 @@ kills there is nothing to start it. In one bot run it sat at 500 enemies for 5 m
 - Tests: a rig run with one goblin at 300 px to the side (off screen) does not fire Blaster. With the goblin at 150 px it does. An Overforged archer run still shoots the 300 px goblin.
 
 **2. Gold.**
-- `GOLD.perOre` goes from 15 to 5, so a kill's ore drop is worth 5 gold.
+- `GOLD.perOre` goes from 15 to 3 (5 was tried first), so a kill's ore drop is worth 3 gold. Gold now lives in `src/data/gold.js`.
 - `GOLD.elite` goes from 25 to 40, and `GOLD.boss` stays at 100.
-- New `GOLD.shrine = 80`: reaching a shrine gives 80 gold in a rig run, before the workbench opens (`systems/shrines.js`,
+- New `GOLD.shrine = 120` (80 was tried first): reaching a shrine gives 120 gold in a rig run, before the workbench opens (`systems/shrines.js`,
   where `run.forgeReady = true` is set). Show it with the existing toast or label, for example "+80 Gold".
 - Rerolls: `rerollPrice(n)` becomes 25, then 50, then 100 within one visit (`25 * 2 ** n`, with `PRICE.reroll = 25`).
 - Leave piece, level, slot, charge, cell, chassis and overclock prices as they are. If the targets below aren't met, adjust `perOre` first.

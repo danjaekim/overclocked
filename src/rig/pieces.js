@@ -164,7 +164,7 @@ export const RULES = {
   anchor: { name: 'Anchor', every: 0.6, first: 0.3, while: 'still', desc: 'Every 0.6 s while standing still', short: 'still' },
   rapid: { name: 'Rapid', every: 0.6, first: 0.3, desc: 'Every 0.6 s', short: '0.6s' },
   charge: { name: 'Charge', on: 'full', gap: 1, desc: 'When its battery is full, at most once a second', short: 'full' },
-  reaper: { name: 'Reaper', on: 'kill', gap: 0.25, desc: 'On any kill, at most 4 times a second', short: 'kills' },
+  reaper: { name: 'Reaper', on: 'kill', gap: 0.25, idle: 3, desc: 'On any kill, at most 4 times a second', short: 'kills' },
   spite: { name: 'Spite', on: 'hurt', gap: 0.4, heal: SPITE_HEAL, scales: true, desc: 'When you take damage; the lower your hp, the harder it hits and the more it heals', short: 'hurt' },
 };
 

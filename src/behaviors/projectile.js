@@ -5,6 +5,7 @@
 // Starforge (Starfall): every Nth volley is marked; each enemy those arrows hit calls a star down on that
 // spot a moment later (inst.falls), a small blast drawn as a cyan streak from above.
 
+import { canAim } from '../game/aim.js';
 import { param } from '../game/weapon-params.js';
 import { spawnProjectile } from '../game/projectiles.js';
 import { attackTriggers } from '../game/triggers.js';
@@ -62,7 +63,7 @@ function updateFalls(inst, dt, run) {
 // One volley from (ctx.x, ctx.y) at the nearest enemy in range (ctx.da turns the aim). False when there is none.
 function fire(inst, run, ctx) {
   const range = param(run, inst, 'range');
-  const target = run.world.hash.queryNearest(ctx.x, ctx.y, range, isAlive);
+  const target = run.world.hash.queryNearest(ctx.x, ctx.y, range, (o) => o.alive && canAim(run, o));
   if (!target) return false;
 
   const count = Math.max(1, Math.round(param(run, inst, 'count')));

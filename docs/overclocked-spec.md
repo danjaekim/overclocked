@@ -52,7 +52,7 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 | Pulse | Every 1 s | Steady. The default |
 | Stride | Every 0.5 s while moving | Kiting |
 | Anchor | Every 0.6 s while standing still | Turret. Risky in a crowd |
-| Reaper | On any kill, at most 4 times per second | Snowballs in big waves |
+| Reaper | On any kill, at most 4 times per second, and every 3 s if nothing dies | Snowballs in big waves |
 | Spite | When you take damage; each firing heals 6% of max hp | Defensive bursts |
 
 Classes come after the proof of concept. Each class will start with a different rule card, for example a kiting class that starts with Stride.
@@ -280,7 +280,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Duplicates and capacity (v0.5.6): level-ups, chests and the shop offer copies of pieces you own (all copies share one level). Capacity cards offer +1 slot for the two shortest chains and energy; a new chain is offered only once every chain has 4 slots, and +1 slot also gives that chain +2 energy. The workbench stocks two pieces (new or copies), an upgrade (a level, or an Overclock to level 6 or 7, x1.25 power each, shop only), +1 slot (50, +25 per slot bought) or +3 energy for a chain you pick, and a rule card on about one visit in three.
 - Elements (v0.5.5): Flame burns for 80% of each hit over 3 s; Storm arcs to 2 nearby enemies for 35% each and marks them, and a shocked enemy takes 15% more from everything; Frost chills (10% slow a stack, freeze at 4). The Warlord hits for 18 (25 in Overforged).
 - Chassis chains and a recharging battery (v0.6.0) replace the per-activation energy pool, rule cards as items, 4 chains, "+3 energy" and the 4-slot gate on new chains. See "Chassis". The 12-seed bot matched v0.5.6 (4/12 wins, level 16, about 1600 kills) after one tuning step (+1/s recharge on every chassis).
-- Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 15, an elite pays 25 and the boss 100. Prices: piece 40, level 30-60, rule card 60, reroll 10 and rising.
+- Shrines and ore are the workbench (v0.5.2): ore is gold, an ore drop is worth 3, an elite pays 40, the boss 100 and reaching a shrine 120 (v0.8.0, was 15/25/100/none: gold scaled with kills, so strong rigs outbought weak ones). Prices: piece 40, level 30-60, rule card 60, reroll 25, 50, 100 within a visit. Weapons aim only at enemies on screen (plus 20 px); shots fly on.
 
 - Resume (v0.6.4): the run in progress is frozen to JSON (`game/run-snapshot.js`, key `overclocked.run.v1`, `save/run-save.js`) whenever the game stops at a menu (pause, level-up, chest, workbench), and dropped when the run ends or a new one starts. Booting with a save lands on the pause menu of that run. The chain rig is rebuilt from `run.rigState` instead of copied, so queued payloads and Echo shots in flight start over; each chain's battery is kept. A save that cannot be read (older format, changed rig) is dropped and a new run starts. Debug (god) runs and the sandbox never save. Test: `tests/resume.test.mjs`, `tests/resume-smoke.mjs`.
 

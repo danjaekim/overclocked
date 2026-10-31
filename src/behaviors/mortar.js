@@ -2,6 +2,7 @@
 // (shown as a ring closing on the target) and bursts in a circle: every enemy inside takes a
 // normal weapon hit, so burn and shock land on all of them. Area scales both reach and blast.
 
+import { canAim } from '../game/aim.js';
 import { param } from '../game/weapon-params.js';
 import { drawShell, drawShellMark } from '../render/auras.js';
 import { elementOf, accentOf } from '../render/elements.js';
@@ -23,7 +24,7 @@ function fire(inst, run, ctx) {
   const range = param(run, inst, 'range');
   const n = w.hash.queryRadius(ctx.x, ctx.y, range, w.scratch);
   let live = 0;
-  for (let i = 0; i < n; i++) if (w.scratch[i].alive && w.scratch[i].prop !== 1) w.scratch[live++] = w.scratch[i];
+  for (let i = 0; i < n; i++) if (w.scratch[i].alive && w.scratch[i].prop !== 1 && canAim(run, w.scratch[i])) w.scratch[live++] = w.scratch[i];
   if (live === 0) return false;
   const fuse = inst.def.base.fuse;
   const count = Math.max(1, Math.round(param(run, inst, 'count')));

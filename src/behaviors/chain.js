@@ -6,6 +6,7 @@
 // strikes sends two new bolts to the nearest unstruck enemies, for `gens` generations (+1 per extra
 // projectile, at most 4: up to 31 strikes), each generation `falloff` weaker.
 
+import { canAim } from '../game/aim.js';
 import { param } from '../game/weapon-params.js';
 import { arcColor } from '../render/elements.js';
 import { strike } from '../game/hit.js';
@@ -23,7 +24,7 @@ const MAX_STRUCK = 32;
 // One bolt from (ctx.x, ctx.y) at the nearest enemy in range. False when there is none.
 function fire(inst, run, ctx) {
   const range = param(run, inst, 'range');
-  const first = run.world.hash.queryNearest(ctx.x, ctx.y, range, (o) => o.alive && o.hp > 0);
+  const first = run.world.hash.queryNearest(ctx.x, ctx.y, range, (o) => o.alive && o.hp > 0 && canAim(run, o));
   if (!first) return false;
 
   const b = inst.def.base;

@@ -3,6 +3,7 @@
 // staggered (stunT: no moving, shooting or contact damage; bosses take half). With count > 1 the extra
 // slams land on the opposite side of you. docs/design-m30-m33.md §5.1.
 
+import { canAim } from '../game/aim.js';
 import { param } from '../game/weapon-params.js';
 import { elementOf } from '../render/elements.js';
 import { strike } from '../game/hit.js';
@@ -105,7 +106,7 @@ function densestSpot(run, p, range) {
   let a = null, b = null, c = null, da = Infinity, db = Infinity, dc = Infinity;
   for (let i = 0; i < n; i++) {
     const e = w.scratch[i];
-    if (!e.alive || e.prop === 1) continue;
+    if (!e.alive || e.prop === 1 || !canAim(run, e)) continue;
     const d = (e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y);
     if (d > (range + e.r) * (range + e.r)) continue;
     if (d < da) { c = b; dc = db; b = a; db = da; a = e; da = d; }
