@@ -8,6 +8,7 @@ import { createOverclockedRun } from '../src/game/ovrun.js';
 import { installRig } from '../src/rig/rig.js';
 import { analyzeChain } from '../src/rig/chain.js';
 import { newRig, chainDefOf } from '../src/rig/editor.js';
+import { applyRig } from '../src/game/sandbox.js';
 import { CHASSIS } from '../src/rig/chassis.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { statsSnapshot } from '../src/game/run-stats.js';
@@ -79,8 +80,59 @@ const section = (t) => console.log(`\n== ${t} ==`);
 const W = ['mortar', 'nova', 'blaster', 'chain_bolt', 'slam'];
 const M = ['scatter', 'flame', 'frost', 'storm', 'heavy', 'echo', 'sunder'];
 
-if (ONLY !== 'chassis') pieces();
-if (ONLY !== 'pieces') chassis();
+if (ONLY === null || ONLY === 'pieces') pieces();
+if (ONLY === null || ONLY === 'chassis') chassis();
+if (ONLY === 'passives') passives();
+
+// Each passive on a chain it fits, at stack 0, 1 and 3, on the chassis's own battery (so the energy passives have something to do).
+function passives() {
+  const builds = {
+    last_word: ['standard', ['blaster', 'nova']],
+    hair_trigger: ['standard', ['blaster', 'on_hit', 'nova']],
+    ricochet: ['standard', ['blaster']],
+    pyromaniac: ['standard', ['flame', 'heavy', 'mortar']],
+    conductor: ['standard', ['storm', 'heavy', 'mortar']],
+    permafrost: ['standard', ['frost', 'heavy', 'mortar']],
+    siphon: ['standard', ['heavy', 'blaster', 'on_kill', 'nova']],
+    overflow: ['standard', ['blaster', 'nova']],
+    redline: ['standard', ['heavy', 'scatter', 'echo', 'nova']],
+    momentum: ['strider', ['heavy', 'scatter', 'echo', 'nova']],
+    turret: ['anchor', ['blaster', 'nova']],
+    glass_cannon: ['standard', ['blaster']],
+  };
+  const dps = (id, chassisId, slots, n, crowd) => {
+    HP = id === 'siphon' ? 60 : id === 'pyromaniac' || id === 'permafrost' ? 220 : 150;
+    const run = createOverclockedRun({ seed: 5, view: VIEW, debug: { god: true }, sfx: () => {} });
+    run.director.update = () => {};
+    run.rigState = newRig([{ chassis: chassisId, mk: 1, slots, size: 6 }]);
+    run.rigState.passives = n ? { [id]: n } : {};
+    applyRig(run);
+    const spots = [];
+    if (crowd) for (let i = 0; i < 30; i++) { const a = (i / 30) * Math.PI * 2 * 2.3; const d = 70 + (i % 5) * 22; spots.push([Math.cos(a) * d, Math.sin(a) * d]); }
+    else spots.push([110, 0]);
+    const live = spots.map(() => null);
+    const move = { x: 0, y: 0 };
+    for (let t = 0; t < SECS / STEP; t++) {
+      spots.forEach(([x, y], i) => {
+        if (live[i] && live[i].alive) { live[i].x = x; live[i].y = y; live[i].kx = live[i].ky = 0; return; }   // held in place: knockback would empty a Nova's ring
+        const e = spawnEnemy(run, 'goblin', x, y);
+        e.speed = 0; e.hp = e.maxHp = HP;
+        live[i] = e;
+      });
+      if (chassisId === 'strider') move.x = Math.floor(t * STEP * 4) % 2 ? 1 : -1;
+      run.update(STEP, move);
+      run.player.hp = run.player.maxHp;
+    }
+    return Math.round(statsSnapshot(run).total / SECS);
+  };
+  section('passives on a chain they fit (crowd / single dps at stack 0, 1, 3 and the gain over stack 0)');
+  for (const [id, [chassisId, slots]] of Object.entries(builds)) {
+    const c = [0, 1, 3].map((n) => dps(id, chassisId, slots, n, true));
+    const o = [0, 1, 3].map((n) => dps(id, chassisId, slots, n, false));
+    const g = (a, b) => (a > 0 ? `${b >= a ? '+' : ''}${Math.round((b / a - 1) * 100)}%` : 'n/a');
+    console.log(`${id.padEnd(13)} ${chassisId.padEnd(9)} ${slots.join(' ').padEnd(34)} crowd ${c.map((x) => String(x).padStart(4)).join(' ')}  (${g(c[0], c[1])} ${g(c[0], c[2])})   one ${o.map((x) => String(x).padStart(4)).join(' ')}  (${g(o[0], o[1])} ${g(o[0], o[2])})`);
+  }
+}
 
 function chassis() {
   HP = 150;

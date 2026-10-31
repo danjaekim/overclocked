@@ -2,19 +2,22 @@
 //   piece   a piece you do not own yet. Leans toward what the rig is missing, so a rig with a weapon and no
 //           trigger is more likely to be offered a trigger
 //   level   a piece you already own, one level up (to a maximum of 5)
-//   stat    a passive: move speed, max HP, pickup range or armor. About 1 card in 6
+//   stat    a passive card: about 1 card in 6. 70% of them a rig passive (rig/passives.js), the rest move speed, max HP, pickup range or armor
+//   passive a rig passive: a rule change that points at how the rig is built, stacking to 3
 //   cap     capacity, offered at levels 5, 10, 15 and 20 instead of the above: two chassis to pick from while you have
 //           fewer than MAX_CHAINS chains, then +1 slot, +1/s recharge or a bigger battery
 //   chassis a chain to build on (rig/chassis.js): a new chain while there is room, else it replaces one (the editor asks which)
 // Pure: every function takes a rig and an rng (anything with next() in [0, 1)).
 
 import { PIECES, RIG_STATS, MAX_LEVEL, OVERCLOCK_MAX, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
-import { owned, pieceLevel, levelUp, overclock, takeStat, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
+import { owned, pieceLevel, levelUp, overclock, takeStat, takePassive, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
 import { CHASSIS, START_CHASSIS, CHARGE_STEP, CELL_STEP, MK_NAMES, chassisStats } from './chassis.js';
 import { compileChain, chainCost } from './chain.js';
+import { PASSIVES, PASSIVE_IDS } from './passives.js';
 
 export const OFFER_COUNT = 3;
 export const STAT_CHANCE = 1 / 6;
+export const PASSIVE_SHARE = 0.7;                       // of the passive cards, this share is a rig passive (rig/passives.js) and the rest a stat card
 export const CAPACITY_LEVELS = [5, 10, 15, 20];
 
 function counts(rig) {
@@ -132,10 +135,12 @@ export function makeOffers(rng, rig, { count = OFFER_COUNT, banished = [], capac
   const pool = pieceCandidates(rig, banished);
   const full = rigFull(rig);
   const stats = Object.keys(RIG_STATS);
+  const pas = PASSIVE_IDS.filter((id) => ((rig.passives && rig.passives[id]) || 0) < PASSIVES[id].max);
   const out = [];
-  while (out.length < count && (pool.length || stats.length)) {
-    if (stats.length && (rng.next() < STAT_CHANCE || !pool.length)) {
-      out.push({ kind: 'stat', id: stats.splice(Math.floor(rng.next() * stats.length), 1)[0] });
+  while (out.length < count && (pool.length || stats.length || pas.length)) {
+    if ((stats.length || pas.length) && (rng.next() < STAT_CHANCE || !pool.length)) {
+      if (pas.length && (rng.next() < PASSIVE_SHARE || !stats.length)) out.push({ kind: 'passive', id: pas.splice(Math.floor(rng.next() * pas.length), 1)[0] });
+      else out.push({ kind: 'stat', id: stats.splice(Math.floor(rng.next() * stats.length), 1)[0] });
     } else {
       const c = pick(rng, pool, (x) => (x.kind === 'level' || x.kind === 'fuse' ? LEVEL_WEIGHT * (full ? FULL_UPGRADE_WEIGHT : 1) : w[x.id] * (x.copy ? COPY_WEIGHT : 1) * (full ? FULL_PIECE_WEIGHT : 1)));
       out.push(c);
@@ -150,6 +155,7 @@ export function applyOffer(rig, o) {
   if (o.kind === 'level') return levelUp(rig, o.id);
   if (o.kind === 'fuse') return overclock(rig, o.id);
   if (o.kind === 'stat') return takeStat(rig, o.id);
+  if (o.kind === 'passive') return takePassive(rig, o.id);
   if (o.kind === 'cap') {
     if (o.cap === 'slot') return addSlot(rig, o.c);
     return addPower(rig, o.c, o.cap);
@@ -178,6 +184,10 @@ export function describeOffer(rig, o) {
   if (o.kind === 'stat') {
     const s = RIG_STATS[o.id];
     return { title: s.name, tag: 'passive', desc: s.desc, piece: null, type: 'stat' };
+  }
+  if (o.kind === 'passive') {
+    const n = ((rig.passives && rig.passives[o.id]) || 0) + 1;
+    return { title: PASSIVES[o.id].name, tag: `passive \u00b7 ${n}/${PASSIVES[o.id].max}`, desc: PASSIVES[o.id].desc(n), piece: null, type: 'passive' };
   }
   if (o.kind === 'chassis') return { ...describeChassis(o.chassis, o.mk), tag: `chassis · ${rig.chains.length < MAX_CHAINS ? 'new chain' : 'replaces one'}` };
   if (o.cap === 'slot') return { title: 'More room', tag: 'capacity', desc: `+1 slot in chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };

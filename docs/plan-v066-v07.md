@@ -180,15 +180,15 @@ Stop here. Tell Dan v0.6.9 is up and what changed, and wait for his playtest bef
 | id | Name | Stack 1 / 2 / 3 | Hook |
 | --- | --- | --- | --- |
 | last_word | Last Word | The last top-level weapon in each chain x1.3 / 1.5 / 1.7 | `compileChain`: after `parse`, multiply the last top-level weapon node's `power` |
-| hair_trigger | Hair Trigger | Payloads x1.25 / 1.4 / 1.55; every modifier costs +1 | `parse`: multiply payload `outer`; `makeNode`: +1 per held modifier |
-| ricochet | Ricochet | Shots bounce to 1 / 2 / 3 more enemies | stat `ricochet` flat, tags `['projectile']` (Blaster, Nova) |
-| pyromaniac | Pyromaniac | A burning enemy that dies passes its burn to the nearest enemies | `run.rules.wildfire`, using the three values from `PERKS.wildfire.rule` in `src/data/perks.js` |
+| hair_trigger | Hair Trigger | Payloads x1.5 / 1.8 / 2.1; every modifier costs +1 (as built; x1.25 did nothing on the bench) | `parse`: multiply payload `outer`; `makeNode`: +1 per held modifier |
+| ricochet | Ricochet | Shots bounce 1 / 1 / 2 more times and hit 20% softer (as built; 1/2/3 bounces was +158% in a packed crowd) | stat `ricochet` flat, tags `['projectile']` (Blaster, Nova) |
+| pyromaniac | Pyromaniac | A burning enemy that dies passes 80 / 90 / 100% of its burn to 2 / 3 / 4 enemies (as built; above 100% each death lights more than it had and the pack runs away: x2 gave +520%) | `run.rules.wildfire`, using the three values from `PERKS.wildfire.rule` in `src/data/perks.js` |
 | conductor | Conductor | A shocked enemy that dies fires 2 / 3 / 4 bolts at enemies nearby | `run.rules.thunderclap`, using `PERKS.thunderclap.rule` values |
-| permafrost | Permafrost | A frozen enemy that dies bursts for 30 / 45 / 60% of its max HP | `run.rules.shatter`, using `PERKS.shatter.rule` values. Don't add the perk's chill-chance mods. Named Permafrost to avoid a clash with the Shatter reaction |
+| permafrost | Permafrost | A chilled or frozen enemy that dies bursts for 30 / 45 / 60% of its max HP (as built; frozen alone almost never happens at death, so the rule takes a chilled enemy too) | `run.rules.shatter`, using `PERKS.shatter.rule` values. Don't add the perk's chill-chance mods. Named Permafrost to avoid a clash with the Shatter reaction |
 | siphon | Siphon | Every kill gives every chain 0.15 / 0.25 / 0.35 energy | `updateRig`: add to each `bat.kill` |
 | overflow | Overflow | Recharge while the battery is full banks power for its next activation, up to +25 / 40 / 55% | `bat.over += rate*dt` while full; `activate` scale x (1 + min(cap, over / size)); reset on activation |
-| redline | Redline | A timed chain under 30% battery runs its timer 25 / 40 / 55% faster | `updateRig`: `chain.t -= dt * mult` for timed rules |
-| momentum | Momentum | +30 / 45 / 60% recharge while moving, -20% while still | `updateRig`: multiply `bat.rate * dt` |
+| redline | Redline | A chain under half battery recharges 20 / 30 / 40% faster (as built; a faster timer on an emptier battery did nothing) | `updateRig`: `chain.t -= dt * mult` for timed rules |
+| momentum | Momentum | +15 / 30 / 45% recharge while moving, -20% while still (as built; +30% was +49% on a Strider) | `updateRig`: multiply `bat.rate * dt` |
 | turret | Turret Mode | After standing still for 1 s, rig damage +30 / 45 / 60%; moving resets it | track `p.stillT`; `activate` scale |
 | glass_cannon | Glass Cannon | Each stack: max HP x0.7, all damage +30% | stat `maxHp` op `more` -0.3 and `damage` op `more` 0.3 per stack, global |
 

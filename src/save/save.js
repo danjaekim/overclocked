@@ -61,7 +61,9 @@ function cleanRig(r) {
   const chains = r.chains.slice(0, 4).map((c) => ({ rule: String(c.rule).slice(0, 20), ...(typeof c.chassis === 'string' ? { chassis: c.chassis.slice(0, 20), mk: Math.max(1, Math.min(3, Math.floor(Number(c.mk)) || 1)) } : {}), slots: (Array.isArray(c.slots) ? c.slots : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => (x === 'pierce' ? 'sunder' : x.slice(0, 20))) }));
   const levels = {};
   if (r.levels && typeof r.levels === 'object') for (const [k, v] of Object.entries(r.levels).slice(0, 20)) if (Number.isFinite(v)) levels[k === 'pierce' ? 'sunder' : String(k).slice(0, 20)] = Math.max(1, Math.min(5, Math.floor(v)));
-  return { chains, levels };
+  const passives = {};
+  if (r.passives && typeof r.passives === 'object') for (const [k, v] of Object.entries(r.passives).slice(0, 20)) if (Number.isFinite(v)) passives[String(k).slice(0, 20)] = Math.max(1, Math.min(3, Math.floor(v)));
+  return { chains, levels, passives };
 }
 
 // Per-weapon forge marks, aligned with `weapons`: [enhance, starforged, tempers, effects, legendary]. Old entries have none.

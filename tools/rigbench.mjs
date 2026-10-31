@@ -11,6 +11,7 @@ import { placeSuggested, owned, slotTarget, addChassis, replaceChassis } from '.
 import { openRigChest } from '../src/rig/chests.js';
 import { stockUp, buyItem, NEW_CHAIN } from '../src/rig/workbench.js';
 import { PIECES, MAX_CHAINS } from '../src/rig/pieces.js';
+import { PASSIVES } from '../src/rig/passives.js';
 import { WAVES, RATE_RAMP } from '../src/data/waves.js';
 import { ENEMIES } from '../src/data/enemies.js';
 
@@ -44,6 +45,7 @@ function score(o, rig) {
   if (o.kind === 'cap') return o.cap === 'slot' ? 65 : o.cap === 'charge' ? (starved(rig, o.c) > 1.5 ? 60 : 40) : 35;
   if (o.kind === 'fuse') return 58;
   if (o.kind === 'stat') return o.id === 'hp' ? 30 : 15;
+  if (o.kind === 'passive') return PASSIVES[o.id].fits(rig) && (o.id !== 'glass_cannon' || n.weapon >= 4) ? 45 : 18;
   if (o.kind === 'level') return PIECES[o.id].type === 'weapon' ? 55 + o.to : 40 + o.to;
   const p = PIECES[o.id];
   if (p.type === 'weapon') return n.weapon < 2 ? 80 : n.weapon < 4 ? 50 : 20;

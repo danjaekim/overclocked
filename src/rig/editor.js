@@ -10,6 +10,7 @@
 // A location is { kind: 'slot', c, i } | { kind: 'bench', i }. A drop target may also be a gap,
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
+import { PASSIVES } from './passives.js';
 import { PIECES, RULES, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
 import { CHASSIS, chassisStats, chassisForRule, keepsUpgrades, MK_MAX } from './chassis.js';
 
@@ -23,6 +24,7 @@ export function newRig(chainDefs, cap = SLOTS) {
     bench: new Array(BENCH).fill(null),
     levels: {},
     stats: {},
+    passives: {},
   };
 }
 
@@ -38,7 +40,7 @@ export function padSlots(slots, cap = SLOTS) {
 }
 
 export function cloneRig(rig) {
-  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats } };
+  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats }, passives: { ...rig.passives } };
 }
 
 export function pieceAt(rig, loc) {
@@ -176,7 +178,7 @@ export function chainDefOf(rig, c) {
   const ch = rig.chains[c];
   const s = chassisStats(ch);
   const d = CHASSIS[ch.chassis];
-  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels };
+  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels, passives: rig.passives || {} };
 }
 
 export function chainDefsOf(rig) {
@@ -205,6 +207,14 @@ export function overclock(rig, id) {
   if (lv < MAX_LEVEL || lv >= OVERCLOCK_MAX) return null;
   const next = cloneRig(rig);
   next.levels[id] = lv + 1;
+  return next;
+}
+
+export function takePassive(rig, id) {
+  const def = PASSIVES[id];
+  if (!def || ((rig.passives && rig.passives[id]) || 0) >= def.max) return null;
+  const next = cloneRig(rig);
+  next.passives[id] = ((rig.passives && rig.passives[id]) || 0) + 1;
   return next;
 }
 
@@ -277,6 +287,7 @@ export function migrateRig(rig) {
   const ren = (id) => (id === 'pierce' ? 'sunder' : id);
   for (const c of rig.chains || []) c.slots = c.slots.map(ren);
   if (rig.bench) rig.bench = rig.bench.map(ren);
+  if (!rig.passives) rig.passives = {};                      // runs and saves from before passives
   if (rig.levels && rig.levels.pierce !== undefined) {
     rig.levels.sunder = Math.max(rig.levels.sunder || 1, rig.levels.pierce);
     delete rig.levels.pierce;

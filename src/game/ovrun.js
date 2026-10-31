@@ -38,6 +38,7 @@ export function createOverclockedRun({ seed, view, debug, sfx }) {
       levels: { ...run.rigState.levels },
       bench: run.rigState.bench.slice(),
       stats: { ...run.rigState.stats },
+      passives: { ...run.rigState.passives },
     },
     classId: 'smith',
   });

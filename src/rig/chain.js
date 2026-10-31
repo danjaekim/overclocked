@@ -8,6 +8,7 @@
 //   4. Energy: see rig.js. The cost fields here are what the rig charges.
 //
 // compileChain(def) -> { rule, energy, recharge, nodes, problems }
+//   def.passives  the rig's passives (rig/passives.js): Last Word and Hair Trigger change the tree
 //   def.quirk  the chassis quirk (rig/chassis.js): power, costAdd, elementFree, elemPower, payloadFree, payloadPower
 //   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, echo, power, cost, trigger }
 //   trigger  { piece, idx, on, every, cost, free, payload: [node] }   free: Every 3rd, whose payload costs no energy
@@ -16,6 +17,7 @@
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
 import { OVERCLOCK_STEP, MAX_LEVEL as MAXL, SUNDER } from './pieces.js';
+import { passiveValues } from './passives.js';
 import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_POWER, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
 const sigPower = (levels, id) => Math.pow(SIG_TRIGGER_STEP, sigCount(levels, id));
@@ -27,8 +29,10 @@ const lvlMult = (levels, id) => {
 export function compileChain(def) {
   const slots = def.slots;
   const problems = [];
-  const q = def.quirk || NO_QUIRK;
+  const pv = passiveValues(def.passives);
+  const q = { ...(def.quirk || NO_QUIRK), payloadPower: ((def.quirk && def.quirk.payloadPower) || 1) * pv.hairTrigger, modCost: pv.hairTrigger > 1 ? 1 : 0 };   // Hair Trigger: payloads hit harder, modifiers cost 1 more
   const nodes = parse(slots, 0, problems, def.levels || null, q.power || 1, q);
+  if (pv.lastWord > 1 && nodes.length) nodes[nodes.length - 1].power *= pv.lastWord;                 // Last Word: the chain's last weapon
   return { rule: def.rule, energy: def.energy === undefined ? DEFAULT_ENERGY : def.energy, recharge: def.recharge || 0, nodes, problems };
 }
 
@@ -81,7 +85,7 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
   addSig(id);
   for (const h of held) {
     const m = PIECES[h.id];
-    cost += m.element && q.elementFree ? 0 : m.cost + (q.costAdd || 0);
+    cost += m.element && q.elementFree ? 0 : m.cost + (q.costAdd || 0) + (q.modCost || 0);
     power *= lvlMult(levels, h.id);
     if (m.scatter) scatter = true;
     if (m.echo) echo = true;

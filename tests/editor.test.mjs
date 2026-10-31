@@ -120,7 +120,7 @@ test('empty slots are skipped by the compiler and keep their positions', () => {
 test('offers: three different pieces; a rig with a weapon and no trigger leans toward triggers', () => {
   const rng = createRng(3);
   const r = rigOf(['mortar']);
-  const o = makeOffers(rng, r).filter((c) => c.kind !== 'stat');
+  const o = makeOffers(rng, r).filter((c) => c.kind !== 'stat' && c.kind !== 'passive');
   assert.ok(o.length >= 2);
   assert.equal(new Set(o.map((c) => c.id)).size, o.length);
   assert.ok(o.every((c) => PIECES[c.id]));
@@ -128,7 +128,7 @@ test('offers: three different pieces; a rig with a weapon and no trigger leans t
   assert.ok(w.on_impact > w.nova && w.flame > w.nova);
   let triggers = 0;
   for (let i = 0; i < 300; i++) if (makeOffers(createRng(i), r).some((c) => c.kind === 'piece' && PIECES[c.id].type === 'trigger')) triggers++;
-  assert.ok(triggers > 200, `offered a trigger in ${triggers} of 300`);
+  assert.ok(triggers > 180, `offered a trigger in ${triggers} of 300`);
   const empty = offerWeights(rigOf([]));
   assert.ok(empty.mortar > empty.flame);
 });

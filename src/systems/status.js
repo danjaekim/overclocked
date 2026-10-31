@@ -210,7 +210,7 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
       addArc(run, e.x, e.y, best.x, best.y, '#ff9a3c');                // an ember thread from the dead enemy to each it lights
     }
   }
-  if ((mask & ST.FROZEN) && rules.shatter) {
+  if (rules.shatter && ((mask & ST.FROZEN) || (rules.shatter.any && (mask & ST.CHILL)))) {      // `any`: Permafrost, which a chilled enemy sets off too
     addBurst(run, e.x, e.y, SHATTER_RADIUS, '#9fdcff', BURST_SHARDS, '#ffffff');
     burst(run, e.x, e.y, SHATTER_RADIUS, maxHp * rules.shatter.frac, src, depth, CAUSE.SHATTER);
   }

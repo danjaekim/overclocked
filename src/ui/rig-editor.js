@@ -103,7 +103,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
     if (!pending) return '';
     return `<div class="rcards">${pending.map((o, k) => {
       const d = describeOffer(st, o);
-      const ic = d.piece || (o.kind === 'stat' ? STAT_ICON : o.kind === 'chassis' ? CHASSIS_ICON : CAP_ICON);
+      const ic = d.piece || (o.kind === 'stat' || o.kind === 'passive' ? STAT_ICON : o.kind === 'chassis' ? CHASSIS_ICON : CAP_ICON);
       const ban = used.banishes > 0 && (o.kind === 'piece' || o.kind === 'level' || o.kind === 'fuse') ? `<button class="rban" data-act="ban:${k}">Ban</button>` : '';
       return `<div class="rcardw"><button class="rcard ${d.type}" data-act="offer:${k}">${icon(ic, 30)}<b>${esc(d.title)}</b><span>${esc(d.tag)}</span><em>${esc(d.desc)}</em></button>${ban}</div>`;
     }).join('')}</div>`;

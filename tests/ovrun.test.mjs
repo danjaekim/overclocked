@@ -224,9 +224,9 @@ test('offers: three cards, no repeats, about one in six a passive', () => {
   for (let i = 0; i < 400; i++) {
     const o = makeOffers(createRng(i), r);
     assert.equal(o.length, 3);
-    const key = (c) => (c.kind === 'stat' ? 'stat:' + c.id : c.id);
+    const key = (c) => (c.kind === 'stat' || c.kind === 'passive' ? c.kind + ':' + c.id : c.id);
     assert.equal(new Set(o.map(key)).size, 3);
-    for (const c of o) { cards++; if (c.kind === 'stat') stats++; }
+    for (const c of o) { cards++; if (c.kind === 'stat' || c.kind === 'passive') stats++; }
   }
   const share = stats / cards;
   assert.ok(share > 0.1 && share < 0.25, `passives were ${(share * 100).toFixed(0)}% of cards`);

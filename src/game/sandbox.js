@@ -8,6 +8,7 @@ import { installRig } from '../rig/rig.js';
 import { newRig, padSlots, chainDefsOf } from '../rig/editor.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 import { RIG_STATS } from '../rig/pieces.js';
+import { PASSIVES } from '../rig/passives.js';
 import { chassisForRule } from '../rig/chassis.js';
 
 export const SANDBOX = {
@@ -64,6 +65,7 @@ export function applyRig(run) {
   }
   installRig(run, chainDefsOf(run.rigState));
   applyRigStats(run);
+  applyPassives(run);
 }
 
 // The passive stats the rig has taken (move speed, max HP, pickup range, armor), as modifiers under their own source.
@@ -73,6 +75,25 @@ export function applyRigStats(run) {
   for (const [id, n] of Object.entries(run.rigState.stats || {})) {
     const def = RIG_STATS[id];
     if (def && n > 0) st.add({ ...def.mod, value: def.mod.value * n, source: `rigstat:${id}` });
+  }
+}
+
+// The passives the rig has taken (rig/passives.js): stat mods under the source 'passive:' and the death rules the engine already has
+// (Pyromaniac = Wildfire, Conductor = Thunderclap, Permafrost = Shatter). The rest are read by rig/chain.js and rig/rig.js.
+export function applyPassives(run) {
+  const st = run.player.stats;
+  st.removeBySource('passive:');
+  const has = run.rigState.passives || {};
+  const n = (id) => Math.min(has[id] || 0, PASSIVES[id].max);
+  if (n('ricochet') > 0) st.add({ stat: 'damage', op: 'more', value: -0.2, tags: ['projectile'], source: 'passive:ricochet' });
+  if (n('ricochet') > 0) st.add({ stat: 'ricochet', op: 'flat', value: PASSIVES.ricochet.values[n('ricochet') - 1], tags: ['projectile'], source: 'passive:ricochet' });
+  for (let k = 0; k < n('glass_cannon'); k++) {
+    st.add({ stat: 'maxHp', op: 'more', value: -0.3, source: 'passive:glass_cannon' });
+    st.add({ stat: 'damage', op: 'more', value: PASSIVES.glass_cannon.values[0], source: 'passive:glass_cannon' });
+  }
+  for (const [id, rule] of [['pyromaniac', 'wildfire'], ['conductor', 'thunderclap'], ['permafrost', 'shatter']]) {
+    if (n(id) > 0) run.rules[rule] = PASSIVES[id].values[n(id) - 1];
+    else delete run.rules[rule];
   }
 }
 

@@ -17,6 +17,7 @@ import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
 import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
+import { passiveValues } from './passives.js';
 import { addLabel } from '../render/fx.js';
 import { healPlayer } from '../systems/pickups.js';
 import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
@@ -57,8 +58,9 @@ function buildChain(run, rig, def, index) {
   const c = compileChain(def);
   const rule = ruleOf(def.rule);
   const q = def.quirk || {};
-  const chain = { index, def, rule, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.on ? 0 : rule.first,
-    bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: q.killCharge || 0, hurt: q.hurtCharge || 0 },
+  const pv = passiveValues(def.passives);
+  const chain = { index, def, rule, pv, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.on ? 0 : rule.first,
+    bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: (q.killCharge || 0) + pv.siphon, hurt: q.hurtCharge || 0, over: 0 },
     act: null,                          // the latest activation
     flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
   const mark = (nodes, trig) => {                        // On Kill cascade: every payload node can set the carrier's trigger off again
@@ -221,6 +223,12 @@ function fireNode(run, rig, chain, node, x, y, act, free = false, gen = 0) {
 // An activation pays from its chain's battery, so a payload that runs later sees what is left then.
 function activate(run, rig, chain, scale = 1) {
   const bat = chain.bat;
+  const pv = chain.pv;
+  if (pv.overflow > 0 && bat.over > 0) {                       // Overflow: the recharge banked past a full battery goes into this activation
+    scale *= 1 + Math.min(pv.overflow, bat.over / bat.size);
+    bat.over = 0;
+  }
+  if (pv.turret > 0 && rig.stillT >= 1) scale *= 1 + pv.turret;   // Turret Mode: standing still for a second
   const act = { id: ++rig.actN, chain: chain.index, bat, spent: 0, scale, get pool() { return bat.pool; }, set pool(v) { bat.pool = v; } };
   chain.act = act;
   note(run, rig, 'activate', { act: act.id, chain: chain.index, pool: act.pool });
@@ -232,13 +240,18 @@ function activate(run, rig, chain, scale = 1) {
 export function updateRig(run, dt) {
   const rig = run.rig;
   const p = run.player;
+  rig.stillT = p.moving ? 0 : (rig.stillT || 0) + dt;
   for (let i = 0; i < rig.chains.length; i++) {
     const chain = rig.chains[i];
     const rule = chain.rule;
     const bat = chain.bat;
-    if (!bat.while || (bat.while === 'moving') === !!p.moving) bat.pool += bat.rate * dt;
+    const pv = chain.pv;
+    if (!bat.while || (bat.while === 'moving') === !!p.moving) bat.pool += bat.rate * dt * (pv.momentum > 0 ? (p.moving ? 1 + pv.momentum : 0.8) : 1) * (pv.redline > 0 && bat.pool < bat.size * 0.5 ? 1 + pv.redline : 1);   // Momentum; Redline: a nearly empty battery refills faster
     bat.pool += bat.kill * rig.kills + bat.hurt * rig.hurts;
-    if (bat.pool > bat.size) bat.pool = bat.size;
+    if (bat.pool > bat.size) {
+      if (pv.overflow > 0) bat.over = Math.min(pv.overflow * bat.size, bat.over + bat.pool - bat.size);
+      bat.pool = bat.size;
+    }
     if (rule.on === 'full') {                                  // Charge: fires each time the battery fills
       if (chain.t > 0) chain.t -= dt;
       if (bat.pool >= bat.size - 1e-6 && chain.t <= 0) {
