@@ -27,10 +27,12 @@ export const MAX_LEVEL = 5;
 export const OVERCLOCK_MAX = 7;
 export const OVERCLOCK_STEP = 1.25;
 
-// A trigger's payload is conditional, so it hits harder: its power is multiplied by this, and each payload piece costs 1 less energy (never below 1).
-export const TRIGGER_BONUS = 1.3;
-// Every 3rd runs its payload a third as often as the others, so the payload hits this much harder again.
-export const EVERY_BONUS = 2;
+// A trigger's payload power depends on the trigger's job (v0.6.8): On Hit runs it for every enemy hit, so each run is weaker and crowds
+// supply the power; On Impact runs it once per attack, so it hits hardest (bosses and elites); On Kill is a payload that can cascade (below);
+// Every 3rd runs a third as often but its payload costs no energy. Each payload piece also costs 1 less energy (never below 1), except Every 3rd's, which cost 0.
+export const TRIGGER_POWER = { hit: 0.9, impact: 2.5, kill: 2.5, every: 3 };
+// On Kill cascade: kills made by a payload can set the same trigger off again, this many generations deep.
+export const CASCADE_MAX = 3;
 
 // Signature effects: at levels 3 and 5 a piece gains something of its own, on top of the +10% a level. `mods` are stat
 // modifiers applied to the weapon the piece is (or is held for); `text` is what the card says. Scatter, Echo and the
@@ -107,10 +109,10 @@ export const PIECES = {
   echo: { glyph: 'Ec', short: 'Echo', icon: 'M12 18h.01 M8.5 14.5a5 5 0 0 1 7 0 M5 11a10 10 0 0 1 14 0 M2 7.5a15 15 0 0 1 20 0', filled: false, type: 'modifier', name: 'Echo', cost: 2, desc: 'The next weapon fires twice, 0.2 s apart, at 75% each', echo: true },
   sunder: { glyph: 'Su', short: 'Sunder', icon: 'M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z M12 3v7l-3 3 4 3-2 5', filled: false, type: 'modifier', name: 'Sunder', cost: 1, desc: 'Each hit sunders: every stack makes the enemy take 8% more from everything (5 stacks, 3 s). Shots also pass through 2 more enemies', sunder: true, mods: [{ stat: 'pierce', op: 'flat', value: 2 }] },
 
-  on_impact: { glyph: 'Im', short: 'Impact', icon: 'M12 2l2 7 7-2-5 5 5 5-7-2-2 7-2-7-7 2 5-5-5-5 7 2z', filled: true, type: 'trigger', name: 'On Impact', cost: 1, on: 'impact', desc: 'Runs the payload once, where the attack first lands' },
-  on_kill: { glyph: 'Ki', short: 'Kill', icon: 'M12 3a8 8 0 0 0-8 8c0 3 2 5 4 6v4h8v-4c2-1 4-3 4-6a8 8 0 0 0-8-8z M9 11h.01 M15 11h.01 M10 17v3 M14 17v3', filled: true, type: 'trigger', name: 'On Kill', cost: 1, on: 'kill', desc: 'Runs the payload from each enemy the attack kills' },
-  on_hit: { glyph: 'Ht', short: 'Hit', icon: 'M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0 M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0', filled: false, type: 'trigger', name: 'On Hit', cost: 2, on: 'hit', desc: 'Runs the payload from every enemy hit' },
-  every_3rd: { glyph: 'E3', short: 'Every 3', icon: 'M4 7h16 M4 17h16 M6 12h.01 M12 12h.01 M18 12h.01', filled: false, type: 'trigger', name: 'Every 3rd', cost: 0, on: 'every', desc: 'Runs the payload every third time it is reached, from the player' },
+  on_impact: { glyph: 'Im', short: 'Impact', icon: 'M12 2l2 7 7-2-5 5 5 5-7-2-2 7-2-7-7 2 5-5-5-5 7 2z', filled: true, type: 'trigger', name: 'On Impact', cost: 1, on: 'impact', desc: 'Runs the payload once, where the attack first lands, at x2.5 power. Best against bosses and elites' },
+  on_kill: { glyph: 'Ki', short: 'Kill', icon: 'M12 3a8 8 0 0 0-8 8c0 3 2 5 4 6v4h8v-4c2-1 4-3 4-6a8 8 0 0 0-8-8z M9 11h.01 M15 11h.01 M10 17v3 M14 17v3', filled: true, type: 'trigger', name: 'On Kill', cost: 1, on: 'kill', desc: 'Runs the payload from each enemy the attack kills, at x2.5 power. Kills made by the payload set it off again, up to 3 deep' },
+  on_hit: { glyph: 'Ht', short: 'Hit', icon: 'M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0 M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0', filled: false, type: 'trigger', name: 'On Hit', cost: 2, on: 'hit', desc: 'Runs the payload from every enemy hit, at reduced power. Best in crowds' },
+  every_3rd: { glyph: 'E3', short: 'Every 3', icon: 'M4 7h16 M4 17h16 M6 12h.01 M12 12h.01 M18 12h.01', filled: false, type: 'trigger', name: 'Every 3rd', cost: 0, on: 'every', desc: 'Every third time it is reached, runs the payload from you at x3 power, for no energy' },
 };
 
 // Stat modifiers an element puts on the weapon it is held for (applied to that piece's instance only).

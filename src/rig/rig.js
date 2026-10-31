@@ -15,7 +15,7 @@
 import { BEHAVIORS } from '../behaviors/index.js';
 import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
-import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER } from './pieces.js';
+import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { healPlayer } from '../systems/pickups.js';
 import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
@@ -60,6 +60,13 @@ function buildChain(run, rig, def, index) {
     bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: q.killCharge || 0, hurt: q.hurtCharge || 0 },
     act: null,                          // the latest activation
     flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
+  const mark = (nodes, trig) => {                        // On Kill cascade: every payload node can set the carrier's trigger off again
+    for (const n of nodes) {
+      if (trig !== null && n.cascadeOf === undefined) n.cascadeOf = trig;
+      if (n.trigger) mark(n.trigger.payload, trig !== null ? trig : n.trigger.on === 'kill' ? n.trigger : null);
+    }
+  };
+  for (const n of c.nodes) if (n.trigger) mark(n.trigger.payload, n.trigger.on === 'kill' ? n.trigger : null);
   const stack = [...c.nodes];
   while (stack.length) {
     const node = stack.pop();
@@ -105,6 +112,11 @@ function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
       if (run.discover) run.discover(node.reaction);                  // the compendium notes the first time a reaction happens
     }
   }
+  if (ev === 'kill' && node.cascadeOf && (node.trigger === null || node.trigger.on !== 'kill')) {     // a payload's kill asks for the carrier's payload again, a generation deeper
+    const gen = (inst.rigGen || 0) + 1;
+    const cact = inst.rigAct;
+    if (gen <= CASCADE_MAX && cact && cact.pool >= 1 && rig.queue.length - rig.head < MAX_QUEUE) rig.queue.push({ trig: node.cascadeOf, act: cact, x, y, chain, gen });
+  }
   const trig = node.trigger;
   if (trig === null || trig.on !== ev) return;
   if (ev === 'hit' && (depth !== 0 || target === null)) return;       // On Hit listens to direct hits only, so a blast does not feed it
@@ -118,7 +130,7 @@ function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
     act = inst.rigAct;
   }
   if (act === null || act.pool < 1 || rig.queue.length - rig.head >= MAX_QUEUE) return;
-  rig.queue.push({ trig, act, x, y, chain });
+  rig.queue.push({ trig, act, x, y, chain, gen: inst.rigGen || 0 });
 }
 
 function note(run, rig, ev, o) {
@@ -126,18 +138,18 @@ function note(run, rig, ev, o) {
 }
 
 // Runs one segment of nodes from (x, y), paying from act's pool. Stops at the first piece the pool cannot pay for.
-function runNodes(run, rig, nodes, x, y, act) {
+function runNodes(run, rig, nodes, x, y, act, free = false, gen = 0) {
   const chains = rig.chains;
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     // A piece that costs more than the whole battery fires when the battery is full and puts it in debt: the pool goes
     // negative and recharges back up, so an expensive stack is slow rather than dead.
     const bat = chains[act.chain].bat;
-    if (act.pool < node.cost && !(bat.size > 0 && node.cost > bat.size && act.pool >= bat.size - 1e-6)) {
+    if (!free && act.pool < node.cost && !(bat.size > 0 && node.cost > bat.size && act.pool >= bat.size - 1e-6)) {
       note(run, rig, 'dry', { act: act.id, piece: node.piece, need: node.cost, pool: act.pool });
       return;
     }
-    fireNode(run, rig, chains[act.chain], node, x, y, act);
+    fireNode(run, rig, chains[act.chain], node, x, y, act, free, gen);
   }
 }
 
@@ -145,7 +157,8 @@ const TAU = Math.PI * 2;
 
 // One launch of a node's weapon at (x, y): Scatter makes its copies. Leaves the attacks that carry an On Impact
 // token in rig.atks. Returns how many copies fired.
-function launch(run, rig, node, x, y, act, mult, armed) {
+function launch(run, rig, node, x, y, act, mult, armed, gen = 0) {
+  node.inst.rigGen = gen;                  // the payload generation these shots belong to (On Kill cascades)
   const inst = node.inst;
   const behavior = BEHAVIORS[inst.def.behavior];
   const ctx = rig.ctx;
@@ -175,26 +188,27 @@ function launch(run, rig, node, x, y, act, mult, armed) {
   return fired;
 }
 
-function fireNode(run, rig, chain, node, x, y, act) {
+function fireNode(run, rig, chain, node, x, y, act, free = false, gen = 0) {
   const inst = node.inst;
   const mult = node.power * act.scale * (node.echo ? node.echoMult : 1);
-  const armed = node.trigger !== null && act.pool - node.cost >= node.trigger.cost && act.pool >= node.cost;     // the trigger is paid for if the attack fires (an impact can come in the same tick)
-  const fired = launch(run, rig, node, x, y, act, mult, armed);
+  const cost = free ? 0 : node.cost;                                   // Every 3rd's payload runs for nothing
+  const armed = node.trigger !== null && act.pool - cost >= node.trigger.cost && act.pool >= cost;     // the trigger is paid for if the attack fires (an impact can come in the same tick)
+  const fired = launch(run, rig, node, x, y, act, mult, armed, gen);
   if (fired === 0) {                    // nothing in range: no attack, no energy spent
     note(run, rig, 'skip', { act: act.id, piece: node.piece, pool: act.pool });
     return;
   }
-  act.pool -= node.cost;
-  act.spent += node.cost;
+  act.pool -= cost;
+  act.spent += cost;
   inst.rigAct = act;
   if (armed) {
     act.pool -= node.trigger.cost;
     act.spent += node.trigger.cost;
   }
   inst.rigArmed = armed;
-  if (node.echo) for (let k = 1; k <= node.echoShots; k++) rig.delayed.push({ t: ECHO.delay * k, node, x, y, act, mult, armed });
+  if (node.echo) for (let k = 1; k <= node.echoShots; k++) rig.delayed.push({ t: ECHO.delay * k, node, x, y, act, mult, armed, gen });
   if (armed && node.trigger.on === 'every' && ++node.count % node.trigger.every === 0 && rig.queue.length - rig.head < MAX_QUEUE) {
-    rig.queue.push({ trig: node.trigger, act, x: run.player.x, y: run.player.y, chain });   // Every 3rd: the payload runs from the player
+    rig.queue.push({ trig: node.trigger, act, x: run.player.x, y: run.player.y, chain, gen });   // Every 3rd: the payload runs from the player
   }
   chain.flash[node.idx] = run.time;
   if (rig.pings.length < 32) rig.pings.push({ x, y, t0: run.time, color: CHAIN_COLORS[chain.index % CHAIN_COLORS.length] });   // a ring where this chain's piece ran
@@ -259,16 +273,16 @@ export function updateRig(run, dt) {
     d.t -= dt;
     if (d.t > 0) continue;
     dl.splice(i, 1);
-    const fired = launch(run, rig, d.node, d.x, d.y, d.act, d.mult, d.armed);
+    const fired = launch(run, rig, d.node, d.x, d.y, d.act, d.mult, d.armed, d.gen);
     if (fired > 0) note(run, rig, 'echo', { act: d.act.id, piece: d.node.piece, copies: fired });
   }
 
   const q = rig.queue;
   for (let n = 0; rig.head < q.length && n < MAX_PAYLOADS_PER_TICK; n++) {
     const job = q[rig.head++];
-    note(run, rig, 'payload', { act: job.act.id, trigger: job.trig.piece, x: job.x, y: job.y, pool: job.act.pool });
+    note(run, rig, 'payload', { act: job.act.id, trigger: job.trig.piece, x: job.x, y: job.y, pool: job.act.pool, gen: job.gen || 0 });
     job.chain.flash[job.trig.idx] = run.time;
-    runNodes(run, rig, job.trig.payload, job.x, job.y, job.act);
+    runNodes(run, rig, job.trig.payload, job.x, job.y, job.act, job.trig.free === true, job.gen || 0);
   }
   if (rig.head >= q.length) {
     q.length = 0;

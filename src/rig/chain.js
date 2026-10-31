@@ -10,13 +10,13 @@
 // compileChain(def) -> { rule, energy, recharge, nodes, problems }
 //   def.quirk  the chassis quirk (rig/chassis.js): power, costAdd, elementFree, elemPower, payloadFree, payloadPower
 //   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, echo, power, cost, trigger }
-//   trigger  { piece, idx, on, every, cost, payload: [node] }
+//   trigger  { piece, idx, on, every, cost, free, payload: [node] }   free: Every 3rd, whose payload costs no energy
 //   power    damage multiplier from piece levels (def.levels: { piece id: 1..5 }): +20% a level for the weapon,
 //            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
 import { OVERCLOCK_STEP, MAX_LEVEL as MAXL, SUNDER } from './pieces.js';
-import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_BONUS, EVERY_BONUS, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
+import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_POWER, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
 const sigPower = (levels, id) => Math.pow(SIG_TRIGGER_STEP, sigCount(levels, id));
 const lvlMult = (levels, id) => {
@@ -59,7 +59,7 @@ function parse(slots, start, problems, levels, outer, q, inPayload = false) {
         for (let k = i + 1; k < slots.length; k++) if (slots[k] !== null && slots[k] !== undefined) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
         return nodes;
       }
-      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost + (q.costAdd || 0), payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_BONUS * (piece.on === 'every' ? EVERY_BONUS : 1) * sigPower(levels, id) * (inPayload ? 1 : q.payloadPower || 1), q, true) };
+      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost + (q.costAdd || 0), free: piece.on === 'every', payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_POWER[piece.on] * sigPower(levels, id) * (inPayload ? 1 : q.payloadPower || 1), q, true) };
       return nodes;                           // the rest of the slots belong to the payload
     }
   }
@@ -108,7 +108,7 @@ export function chainCost(nodes) {
   let c = 0;
   for (const n of nodes) {
     c += n.cost;
-    if (n.trigger) c += n.trigger.cost + chainCost(n.trigger.payload);
+    if (n.trigger) c += n.trigger.cost + (n.trigger.free ? 0 : chainCost(n.trigger.payload));     // Every 3rd's payload is free
   }
   return c;
 }
@@ -154,7 +154,7 @@ export function analyzeChain(def) {
         continue;
       }
       left -= n.trigger.cost;
-      walk(n.trigger.payload);
+      if (!n.trigger.free) walk(n.trigger.payload);
     }
   };
   walk(c.nodes);
@@ -172,7 +172,7 @@ function describe(nodes) {
     const mods = n.mods.filter((m) => m !== 'scatter').map((m) => PIECES[m].name);
     let t = `${n.scatter ? `${n.copies}\u00d7 ` : ''}${[...mods, PIECES[n.piece].name].join(' ')}`;
     if (n.reaction) t += ` [${REACTION_INFO[n.reaction].name}]`;
-    if (n.trigger) t += `, ${TRIGGER_WORDS[n.trigger.on]}: ${n.trigger.payload.length ? describe(n.trigger.payload) : 'nothing'}`;
+    if (n.trigger) t += `, ${TRIGGER_WORDS[n.trigger.on]}${n.trigger.free ? ' (free)' : ''}: ${n.trigger.payload.length ? describe(n.trigger.payload) : 'nothing'}`;
     return t;
   }).join(', then ');
 }

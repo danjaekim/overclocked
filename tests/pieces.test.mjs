@@ -6,7 +6,7 @@ import { spawnEnemy } from '../src/game/director.js';
 import { param } from '../src/game/weapon-params.js';
 import { compileChain, analyzeChain } from '../src/rig/chain.js';
 import { installRig, rigEvent } from '../src/rig/rig.js';
-import { PIECES, RULES } from '../src/rig/pieces.js';
+import { PIECES, RULES, TRIGGER_POWER, CASCADE_MAX } from '../src/rig/pieces.js';
 import { damagePlayer } from '../src/systems/damage.js';
 
 const STEP = 1 / 60;
@@ -147,7 +147,7 @@ test('piece levels add 10% a level to the attack, to each held modifier, and to 
   assert.equal(base.nodes[0].power, 1);
   const lv = compileChain({ rule: 'pulse', slots, levels: { mortar: 3, flame: 2, on_impact: 5 } });
   approx(lv.nodes[0].power, 1.2 * 1.1, 1e-9);
-  approx(lv.nodes[0].trigger.payload[0].power, 1.4 * 1.3 * 1.25 * 1.25, 1e-9);   // level 5 trigger, the payload bonus, two signature steps
+  approx(lv.nodes[0].trigger.payload[0].power, 1.4 * TRIGGER_POWER.impact * 1.25 * 1.25, 1e-9);   // level 5 trigger, On Impact's x2.5, two signature steps
   const { run, rig } = rigOf(['blaster'], { levels: { blaster: 5 } });
   dummy(run, 120, 0);
   tick(run, 0.4);
@@ -158,7 +158,8 @@ test('analyze words the new triggers and costs Every 3rd at nothing', () => {
   const a = analyzeChain({ rule: 'reaper', slots: ['blaster', 'every_3rd', 'echo', 'nova'], energy: 12 });
   assert.ok(a.text.startsWith('On any kill, at most 4 times a second:'));
   assert.ok(a.text.includes('every 3rd time'));
-  assert.equal(a.cost, 1 + 0 + (2 + 3 - 1));
+  assert.equal(a.cost, 1 + 0, 'Every 3rd\'s whole payload is free');
+  assert.ok(a.text.includes('(free)'));
 });
 
 test('signature levels: Scatter gains copies at 3 and 5, Heavy and Blaster gain stat mods, triggers boost the payload and Every 3rd speeds up', () => {
@@ -169,8 +170,8 @@ test('signature levels: Scatter gains copies at 3 and 5, Heavy and Blaster gain 
   assert.equal(hv.sunder, 6, 'Sunder at level 3 holds one more stack');
   const ev = (lv) => compileChain({ rule: 'pulse', slots: ['blaster', 'every_3rd', 'nova'], levels: { every_3rd: lv } }).nodes[0].trigger;
   assert.deepEqual([1, 3, 5].map((l) => ev(l).every), [3, 3, 2]);
-  approx(ev(1).payload[0].power, 1.3 * 2, 1e-9);                                   // the payload bonus and Every 3rd's own x2
-  approx(ev(3).payload[0].power, 1.2 * 1.3 * 2 * 1.25, 1e-9);
+  approx(ev(1).payload[0].power, TRIGGER_POWER.every, 1e-9);                       // Every 3rd's x3
+  approx(ev(3).payload[0].power, 1.2 * TRIGGER_POWER.every * 1.25, 1e-9);
   const ec = (lv) => compileChain({ rule: 'pulse', slots: ['echo', 'nova'], levels: { echo: lv } }).nodes[0];
   assert.deepEqual([1, 3, 5].map((l) => [ec(l).echoMult, ec(l).echoShots]), [[0.75, 1], [0.9, 1], [0.9, 2]]);
 });
@@ -285,4 +286,26 @@ test('a saved run history entry that names Pierce loads as Sunder, and a resumed
   assert.equal(back.rigState.levels.sunder, 2);
   assert.equal(back.rigState.levels.pierce, undefined);
   void normalize;
+});
+
+test('On Kill cascades: kills made by the payload ask for it again, a generation deeper, never past CASCADE_MAX', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'pulse', slots: ['blaster', 'on_kill', 'nova'], energy: 400 }], { log: true });
+  for (let i = 0; i < 40; i++) { const a = (i / 40) * Math.PI * 2; dummy(run, 100 + Math.cos(a) * 60, 130 + Math.sin(a) * 60, 1); }
+  tick(run, 2.5);
+  const gens = events(rig, 'payload').map((p) => p.gen);
+  assert.ok(gens.includes(0) && gens.includes(1), 'the first payload and a cascade of it');
+  assert.ok(Math.max(...gens) <= CASCADE_MAX);
+});
+
+test('Every 3rd\'s payload spends no energy, while the same payload under On Hit does', () => {
+  const free = rigOf(['blaster', 'every_3rd', 'nova'], { energy: 40, recharge: 0 });
+  dummy(free.run, 100, 0);
+  tick(free.run, 3.4);                                               // four pulses of 1 energy; one payload run
+  assert.equal(events(free.rig, 'payload').length, 1);
+  assert.equal(free.rig.chains[0].bat.pool, 40 - 4);
+  const paid = rigOf(['blaster', 'on_hit', 'nova'], { energy: 40, recharge: 0 });
+  dummy(paid.run, 100, 0);
+  tick(paid.run, 0.7);
+  assert.ok(paid.rig.chains[0].bat.pool < 40 - 1 - 1);
 });

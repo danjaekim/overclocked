@@ -86,10 +86,10 @@ These are the 16 pieces for the first test build. The proof of concept uses the 
 | Heavy | Modifier | 2 | Double damage and area, slower shots | The damage and area params |  |
 | Echo | Modifier | 2 | The next weapon fires twice, 0.2 s apart, at 60% each | Echoing perk logic |  |
 | Sunder | Modifier | 1 | Each hit of the weapon adds a stack to the enemy: every stack makes it take 8% more from everything (5 stacks, 3 s from the last hit); shots also pass through 2 more enemies (v0.6.7; was Pierce) | `SUNDER` in `rig/pieces.js`; stacks on the enemy (`sunderN`, `sunderS`), applied in `systems/damage.js` |  |
-| On Impact | Trigger | 1 | Runs the payload once, where the attack first lands | Hit triggers | PoC |
-| On Kill | Trigger | 1 | Runs the payload from each enemy the attack kills | Kill triggers | PoC |
+| On Impact | Trigger | 1 | Runs the payload once, where the attack first lands, at x2.5 power (v0.6.8). Best against bosses and elites | Hit triggers | PoC |
+| On Kill | Trigger | 1 | Runs the payload from each enemy the attack kills, at x2.5 power. Kills made by the payload set it off again, up to 3 generations deep (v0.6.8) | Kill triggers | PoC |
 | On Hit | Trigger | 2 | Runs the payload from every enemy hit | Hit triggers |  |
-| Every 3rd | Trigger | 0 | Runs the payload every third time it's reached | The `every` counter on attack triggers |  |
+| Every 3rd | Trigger | 0 | Runs the payload every third time it's reached, from the player, at x3 power, for no energy (v0.6.8) | The `every` counter on attack triggers |  |
 
 ## Element reactions
 
@@ -272,7 +272,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Unlocks wait until after the first test build.
 - No query parameter. The game's default path boots into the build for the current milestone: the sandbox for M2, then the full run from M4.
 - The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. From M4 it opens from the pause menu ("Chain sandbox (debug)"); `?sandbox=1` boots it directly, for tests.
-- Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload also gets x1.3 power (Every 3rd: x2 more) and each payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own. Spite's power and heal scale with missing hp (x2 at death's door).
+- Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload power depends on its job (v0.6.8, `TRIGGER_POWER`): On Hit x0.9 (it runs for every enemy hit, so crowds supply the power), On Impact x2.5 (once per attack), On Kill x2.5 (and a payload's kills cascade), Every 3rd x3 (and its payload costs no energy). Each other payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own. Spite's power and heal scale with missing hp (x2 at death's door).
 - A run starts with 130 HP and 0.5 HP/s regeneration (the stat default plus the Archer's numbers from Overforged). This is a first guess, tuned in M5.
 - Capacity: levels 5, 10, 15 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
 - Duplicates and capacity (v0.5.6): level-ups, chests and the shop offer copies of pieces you own (all copies share one level). Capacity cards offer +1 slot for the two shortest chains and energy; a new chain is offered only once every chain has 4 slots, and +1 slot also gives that chain +2 energy. The workbench stocks two pieces (new or copies), an upgrade (a level, or an Overclock to level 6 or 7, x1.25 power each, shop only), +1 slot (50, +25 per slot bought) or +3 energy for a chain you pick, and a rule card on about one visit in three.
