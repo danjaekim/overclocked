@@ -3,7 +3,7 @@
 
 import { ELITE, affixDefs } from '../data/elites.js';
 import { ENEMIES, PROPS } from '../data/enemies.js';
-import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP, RATE_RAMP } from '../data/waves.js';
+import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP, RATE_RAMP, MIN_ALIVE, TOPUP_PER_SEC, TOUGH_SHARE, TOUGH_FROM } from '../data/waves.js';
 import { RUN_EVENTS } from './run-events.js';
 import { perimeterPoint, lerp } from '../core/math.js';
 
@@ -48,6 +48,7 @@ export function spawnEnemy(run, defId, x, y, hpScale = 1, speedScale) {
   e.sunderT = e.blessT = e.markT = 0;
   e.sunderN = e.sunderS = 0;
   e.stunT = 0;
+  e.fodder = 0;
   e.prop = def.prop ? 1 : 0;
   if (e.prop) e.aiCd = def.ttl;                    // a prop's aiCd counts down its life
   return e;
@@ -89,6 +90,7 @@ export function createDirector(run) {
   let speedScale = 1;
   let damageScale = 1;
   let nextEvent = 0;                                // EVENTS is sorted by `at`
+  let topAcc = 0;                                   // top-up spawns owed (MIN_ALIVE)
 
   return {
     get hpScale() { return hpScale * (1 + capBuff); },
@@ -97,10 +99,10 @@ export function createDirector(run) {
     get capBuff() { return capBuff; },
 
     // The closure state, for run snapshots (game/run-snapshot.js).
-    getState() { return { acc: acc.map((a) => a.slice()), capBuff, hpScale, speedScale, damageScale, nextEvent }; },
+    getState() { return { acc: acc.map((a) => a.slice()), capBuff, hpScale, speedScale, damageScale, nextEvent, topAcc }; },
     setState(st) {
       st.acc.forEach((a, i) => a.forEach((v, j) => { acc[i][j] = v; }));
-      capBuff = st.capBuff; hpScale = st.hpScale; speedScale = st.speedScale; damageScale = st.damageScale; nextEvent = st.nextEvent;
+      capBuff = st.capBuff; hpScale = st.hpScale; speedScale = st.speedScale; damageScale = st.damageScale; nextEvent = st.nextEvent; topAcc = st.topAcc || 0;
     },
 
     update(dt) {
@@ -140,6 +142,43 @@ export function createDirector(run) {
           }
         }
       }
+
+      // Keep a minimum crowd: owed spawns build at TOPUP_PER_SEC while the field is below the current minimum.
+      let min = 0;
+      for (const m of MIN_ALIVE) if (t >= m.from && t < m.to) { min = m.min; break; }
+      let alive = 0;
+      const list = run.world.enemies.active;
+      for (let i = 0; i < list.length; i++) if (list[i].prop !== 1) alive++;
+      if (alive < min && !atCap) {
+        topAcc = Math.min(topAcc + TOPUP_PER_SEC * dt, min - alive);
+        while (topAcc >= 1 && alive < min && alive < ENEMY_SOFT_CAP) {
+          topAcc -= 1;
+          const id = pickTopUp(run, t);
+          if (!id) break;
+          randomPerimeterPoint(run, tmp);
+          const f = spawnEnemy(run, id, tmp.x, tmp.y, hpScale * (1 + capBuff));
+          if (!f) { topAcc = 0; break; }
+          f.fodder = 1;
+          alive++;
+        }
+      } else topAcc = 0;
     },
   };
+}
+
+// An enemy for a top-up: the current segment's mix, weighted by each entry's spawn rate. From TOUGH_FROM on, TOUGH_SHARE of
+// them come from the non-goblin entries only.
+export function pickTopUp(run, t) {
+  for (const seg of WAVES) {
+    if (t < seg.from || t >= seg.to) continue;
+    const u = (t - seg.from) / (seg.to - seg.from);
+    const tough = t >= TOUGH_FROM && run.rng.next() < TOUGH_SHARE;
+    let total = 0;
+    const w = seg.spawns.map((s) => { const x = tough && s.enemy === 'goblin' ? 0 : lerp(s.perSec, s.perSecEnd === undefined ? s.perSec : s.perSecEnd, u); total += x; return x; });
+    if (total <= 0) return seg.spawns[0] ? seg.spawns[0].enemy : null;
+    let r = run.rng.next() * total;
+    for (let i = 0; i < w.length; i++) { r -= w[i]; if (r < 0) return seg.spawns[i].enemy; }
+    return seg.spawns[seg.spawns.length - 1].enemy;
+  }
+  return null;
 }

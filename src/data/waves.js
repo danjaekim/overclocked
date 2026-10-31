@@ -28,6 +28,7 @@ export const EVENTS = [
   { at: 120, event: 'shrine' },
   { at: 155, event: 'crate' },
   { at: 165, event: 'elite', enemy: 'brute' },
+  { at: 180, event: 'horde', count: 60 },                       // hordes (v0.8.1): a ring of enemies closing in from every side
   { at: 195, event: 'crate' },
   { at: 235, event: 'crate' },
   { at: 240, event: 'shrine' },
@@ -37,6 +38,7 @@ export const EVENTS = [
   { at: 315, event: 'crate' },
   { at: 345, event: 'elite', enemy: 'brute' },
   { at: 355, event: 'crate' },
+  { at: 360, event: 'horde', count: 100, elites: 2 },
   { at: 390, event: 'shrine' },
   { at: 395, event: 'crate' },
   { at: 405, event: 'warparty' },                  // two Shieldbearer elites and a pack of Slingers
@@ -46,6 +48,7 @@ export const EVENTS = [
   { at: 480, event: 'boss', enemy: 'seer' },      // the late boss: Meteor Fall
   { at: 495, event: 'elite', enemy: 'brute' },
   { at: 510, event: 'shrine' },
+  { at: 510, event: 'horde', count: 150, elites: 3 },
   { at: 515, event: 'crate' },
   { at: 540, event: 'elite', enemy: 'brute' },
   { at: 555, event: 'crate' },
@@ -55,5 +58,21 @@ export const EVENTS = [
 // linearly to `end` at `to` (authored seconds, rescaled like the segments). Power grows through a run
 // (levels, evolutions, enhances), so a flat curve lets late waves be cleared as fast as they arrive.
 export const RATE_RAMP = { from: 180, to: 600, end: 1.8 };
+
+// Minimum enemies alive (v0.8.1): when you clear faster than the waves arrive, the director tops the field up to `min`
+// from the current segment's mix, at most TOPUP_PER_SEC a second, so a strong rig still faces a crowd. A weak rig is
+// already above these numbers and sees the normal waves. `from` and `to` are authored seconds like the segments.
+export const MIN_ALIVE = [
+  { from: 0,   to: 60,  min: 10 },
+  { from: 60,  to: 120, min: 25 },
+  { from: 120, to: 180, min: 50 },
+  { from: 180, to: 240, min: 90 },
+  { from: 240, to: 300, min: 140 },
+  { from: 300, to: 420, min: 200 },
+  { from: 420, to: 600, min: 300 },
+];
+export const TOPUP_PER_SEC = 25;
+export const TOUGH_SHARE = 0.25;     // from minute 5 on, this share of top-ups is picked from the non-goblin entries
+export const TOUGH_FROM = 300;
 
 export const ENEMY_SOFT_CAP = 500;   // director stops spawning here and buffs hp instead

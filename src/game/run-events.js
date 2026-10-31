@@ -2,7 +2,7 @@
 
 import { spawnShrine } from '../systems/shrines.js';
 import { spawnCrate } from '../systems/crates.js';
-import { spawnEnemy, spawnElite, randomPerimeterPoint } from './director.js';
+import { spawnEnemy, spawnElite, randomPerimeterPoint, pickTopUp } from './director.js';
 import { ELITE } from '../data/elites.js';
 import { RUN } from '../data/waves.js';
 
@@ -48,6 +48,32 @@ export const RUN_EVENTS = {
     }
     run.sfx('boss');
     run.toast = { text: 'A war party approaches!', ttl: 3.5 };
+  },
+
+  // A ring of enemies just off screen on every side, closing in together (data/waves.js EVENTS `horde`): `count` from the
+  // current wave mix, plus `elites` brute or shieldbearer elites. Ignores MIN_ALIVE; ends quietly when the pool is full.
+  horde(run, ev) {
+    const t = run.time / (RUN.length / RUN.designLength);
+    const r = Math.hypot(run.view.w, run.view.h) / 2 + 30;
+    const total = ev.count + (ev.elites || 0);
+    let made = 0;
+    for (let k = 0; k < ev.count; k++) {
+      const id = pickTopUp(run, t);
+      if (!id) break;
+      const a = (k / total) * Math.PI * 2;
+      const f = spawnEnemy(run, id, run.player.x + Math.cos(a) * r, run.player.y + Math.sin(a) * r, run.director.hpScale);
+      if (!f) break;
+      f.fodder = 1;
+      made++;
+    }
+    const ids = Object.keys(ELITE.affixes);
+    for (let k = 0; k < (ev.elites || 0); k++) {
+      const a = ((ev.count + k) / total) * Math.PI * 2;
+      const kind = run.rng.next() < 0.5 ? 'brute' : 'shieldbearer';
+      const affix = ids[Math.floor(run.rng.next() * ids.length)];
+      if (spawnElite(run, kind, run.player.x + Math.cos(a) * r, run.player.y + Math.sin(a) * r, run.director.hpScale, affix)) made++;
+    }
+    if (made) { run.sfx('boss'); run.toast = { text: 'A horde closes in!', ttl: 3 }; }
   },
 
   // A boss enters from the view edge. Its hp is not scaled by the wave hpScale.

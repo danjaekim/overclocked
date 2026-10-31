@@ -18,6 +18,7 @@ function makeEnemy() {
     ai: 0, aiT: 0,         // boss state machine: 0 chase, 1 windup, 2 dash; seconds left in it
     ax: 0, ay: 0,          // boss dash direction
     aiCd: 0,               // seconds until the next charge
+    fodder: 0,             // 1 = spawned by a MIN_ALIVE top-up or a horde: it drops no ore, so crowd size does not pay out gold (v0.8.1)
     prop: 0,               // 1 = a breakable prop (a supply crate), not an enemy: weapons do not aim at it (data/enemies.js PROPS)
     elite: 0, affix: '', affix2: '',   // elites (data/elites.js): flag and affix ids (the second only late in the run)
     steamT: 0,             // seconds left blind in steam (rig Steam reaction): it wanders at 60% speed

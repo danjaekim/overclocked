@@ -161,6 +161,8 @@ Power comes from five layers during a run and one between runs, which comes afte
 
 **Chest contents** (Overforged's chests roll 1, 3 or 5 items): a mix of rare pieces, capacity and piece levels. Boss chests always include one capacity item. Rerolls and banishes carry over from Overforged's level-up (2 rerolls and 1 banish per run).
 
+**Enemy pressure (v0.8.1).** Waves run at a fixed rate, so the director also keeps a minimum crowd: when fewer than `MIN_ALIVE` enemies are alive (10 in the first minute, rising to 300 from 7:00) it tops the field up at 25 a second from the current wave's mix, and from 5:00 a quarter of the top-ups are the tougher non-goblin entries. Top-ups and horde enemies drop no ore. Three hordes (3:00 60, 6:00 100 plus 2 elites, 8:30 150 plus 3 elites) arrive as a ring just off screen on every side. All of it is data in `src/data/waves.js`.
+
 ## Editing and readability
 
 **The rig editor** opens over the lower 40% of the screen while the game is paused:

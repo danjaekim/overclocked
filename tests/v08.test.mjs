@@ -59,3 +59,62 @@ test('v08 a Reaper chain with nothing to kill still fires every 3 s', () => {
   e.hp = e.maxHp = 1e9;
   assert.ok(projectilesAfter(run, 3.2) > 0);
 });
+
+import { MIN_ALIVE, EVENTS } from '../src/data/waves.js';
+import { RUN_EVENTS } from '../src/game/run-events.js';
+import { createDirector } from '../src/game/director.js';
+
+const aliveCount = (run) => run.world.enemies.active.filter((e) => e.prop !== 1).length;
+const directed = (time) => {
+  const run = createOverclockedRun({ seed: 7, view: VIEW, debug: { god: true }, sfx: () => {} });
+  run.time = time;
+  run.director = createDirector(run);
+  const st = run.director.getState();
+  st.nextEvent = EVENTS.filter((e) => e.at <= time).length;                      // skip the events that already happened
+  run.director.setState(st);
+  return run;
+};
+
+test('v08 an empty field at minute 6 is topped up at 25 a second until it reaches the minimum', () => {
+  const run = directed(360);
+  const min = MIN_ALIVE.find((m) => 360 >= m.from && 360 < m.to).min;
+  const step = (n) => { for (let i = 0; i < n; i++) run.director.update(STEP); };
+  step(60);
+  const after1 = aliveCount(run);
+  assert.ok(after1 >= 22 && after1 <= 40, `after 1 s: ${after1}`);                  // 25 top-ups plus the normal wave rate
+  step(60 * 12);
+  assert.ok(aliveCount(run) >= min, `after 13 s: ${aliveCount(run)} < ${min}`);
+});
+
+test('v08 a field already above the minimum gets only the normal wave rate', () => {
+  const run = directed(30);                                                      // minimum 10
+  for (let i = 0; i < 12; i++) spawnEnemy(run, 'goblin', 400 + i * 10, 400);
+  const before = aliveCount(run);
+  for (let i = 0; i < 60; i++) run.director.update(STEP);
+  assert.ok(aliveCount(run) - before <= 3, `${aliveCount(run) - before} spawned`);
+});
+
+test('v08 director state survives a snapshot round trip with the top-up accumulator', () => {
+  const run = directed(360);
+  for (let i = 0; i < 10; i++) run.director.update(STEP);
+  const st = run.director.getState();
+  const d2 = createDirector(run);
+  d2.setState(JSON.parse(JSON.stringify(st)));
+  assert.equal(d2.getState().topAcc, st.topAcc);
+  const old = { ...st }; delete old.topAcc;
+  d2.setState(JSON.parse(JSON.stringify(old)));
+  assert.equal(d2.getState().topAcc, 0);                                         // an old save has no accumulator
+});
+
+test('v08 hordes: the timeline has three, in time order, and one puts count enemies on a ring around the player', () => {
+  const hordes = EVENTS.filter((e) => e.event === 'horde');
+  assert.deepEqual(hordes.map((e) => e.at), [180, 360, 510]);
+  for (let i = 1; i < EVENTS.length; i++) assert.ok(EVENTS[i].at >= EVENTS[i - 1].at);
+  const run = directed(180);
+  run.player.x = 50; run.player.y = -20;
+  const before = aliveCount(run);
+  RUN_EVENTS.horde(run, hordes[0]);
+  assert.equal(aliveCount(run) - before, 60);
+  const r = Math.hypot(VIEW.w, VIEW.h) / 2 + 30;
+  for (const e of run.world.enemies.active) assert.ok(Math.abs(Math.hypot(e.x - 50, e.y + 20) - r) < 1);
+});

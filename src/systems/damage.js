@@ -53,7 +53,7 @@ export function killEnemy(run, e) {
   const ore = e.def.ore;                                     // in a rig run ore is gold, spent at the workbench
   if (ore && ORES[ore.type].bank === 'starsteel') {
     run.starsteel += ore.count || 1;               // starsteel is banked at once, so the boss chest can use it
-  } else if (ore && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
+  } else if (ore && !e.fodder && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
     spawnOre(run, e.x + 6, e.y - 4, ore.type, (ore.count || 1) * (run.rigRun ? GOLD.perOre : 1));
   }
   if (e.elite) {
