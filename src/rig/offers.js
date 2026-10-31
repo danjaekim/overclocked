@@ -128,6 +128,10 @@ export function capacityOffers(rng, rig) {
   return out;
 }
 
+// Passives you can still be offered: below max stacks, and the element ones only once you own their element.
+export const passivePool = (rig) => PASSIVE_IDS.filter((id) => ((rig.passives && rig.passives[id]) || 0) < PASSIVES[id].max && !(PASSIVES[id].needs && !PASSIVES[id].fits(rig)));
+export const passiveWeight = (rig, id) => (PASSIVES[id].fits(rig) ? 3 : 0.5);
+
 // opts: { count, banished: [piece ids], capacity: true for a capacity level }
 export function makeOffers(rng, rig, { count = OFFER_COUNT, banished = [], capacity = false } = {}) {
   if (capacity) return capacityOffers(rng, rig).slice(0, count);
@@ -135,11 +139,11 @@ export function makeOffers(rng, rig, { count = OFFER_COUNT, banished = [], capac
   const pool = pieceCandidates(rig, banished);
   const full = rigFull(rig);
   const stats = Object.keys(RIG_STATS);
-  const pas = PASSIVE_IDS.filter((id) => ((rig.passives && rig.passives[id]) || 0) < PASSIVES[id].max);
+  const pas = passivePool(rig);
   const out = [];
   while (out.length < count && (pool.length || stats.length || pas.length)) {
     if ((stats.length || pas.length) && (rng.next() < STAT_CHANCE || !pool.length)) {
-      if (pas.length && (rng.next() < PASSIVE_SHARE || !stats.length)) out.push({ kind: 'passive', id: pas.splice(Math.floor(rng.next() * pas.length), 1)[0] });
+      if (pas.length && (rng.next() < PASSIVE_SHARE || !stats.length)) out.push({ kind: 'passive', id: pick(rng, pas, (id) => passiveWeight(rig, id)) });
       else out.push({ kind: 'stat', id: stats.splice(Math.floor(rng.next() * stats.length), 1)[0] });
     } else {
       const c = pick(rng, pool, (x) => (x.kind === 'level' || x.kind === 'fuse' ? LEVEL_WEIGHT * (full ? FULL_UPGRADE_WEIGHT : 1) : w[x.id] * (x.copy ? COPY_WEIGHT : 1) * (full ? FULL_PIECE_WEIGHT : 1)));

@@ -2,17 +2,18 @@
 // reactions (filled in as you see them happen in a run) and the rigs of your past runs. Opened from the pause menu.
 
 import { PIECES, RULES, REACTION_INFO, SIGNATURE, SIG_LEVELS, EVERY, MAX_CHAINS } from '../rig/pieces.js';
+import { PASSIVES, PASSIVE_IDS } from '../rig/passives.js';
 import { CHASSIS, chassisName } from '../rig/chassis.js';
 import { fmtTime } from './overlay.js';
 import { icon } from './rig-editor.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const TABS = [['how', 'How it works'], ['pieces', 'Pieces'], ['rules', 'Chassis'], ['reactions', 'Reactions'], ['runs', 'Past runs']];
+const TABS = [['how', 'How it works'], ['pieces', 'Pieces'], ['rules', 'Chassis'], ['reactions', 'Reactions'], ['passives', 'Passives'], ['runs', 'Past runs']];
 
 const HOW = [
   ['Read left to right', 'A chain is a rule card and a row of slots. When the rule card fires, the chain runs its pieces from the left, one after another.'],
   ['Modifiers wait for a weapon', 'A modifier is held and applies to the next weapon only, then it is spent. Several in a row all apply, and the order of elements decides the reaction.'],
-  ['Triggers own what follows', `A trigger attaches to the weapon just before it. Everything to its right is its payload, which runs later, from where the event happens. A payload hits harder (x1.3) and costs a little less. Every ${EVERY}rd runs it every ${EVERY}rd time.`],
+  ['Triggers own what follows', `A trigger attaches to the weapon just before it. Everything to its right is its payload, which runs later, from where the event happens. A payload hits harder than the same weapon would alone. Every ${EVERY}rd runs it every ${EVERY}rd time.`],
   ['A chain is a chassis', `Each chain sits on a chassis: it sets when the chain fires, how many slots it can grow to, its battery and recharge, and a quirk. You can run ${MAX_CHAINS} chains; a new chassis after that replaces one (its pieces move over) or you pass on it for an upgrade card.`],
   ['The battery ends chain reactions', 'Every piece costs energy each time it runs, paid from the chain\'s battery, and a payload pays from it too. The battery refills over time at the chain\'s recharge rate. When it runs low, the chain fires its first pieces and stops at the one it cannot pay for, so a long chain runs in full only as often as its recharge allows.'],
   ['Levels', 'Each level adds 10% damage. Levels 3 and 5 add an effect of the piece\'s own.'],
@@ -40,11 +41,18 @@ function reactionsHtml(found) {
   }).join('');
 }
 
+function passivesHtml() {
+  return `<p class="sub">Rule changes offered on level-up, stacking to 3. They lean toward what your rig owns.</p>` + PASSIVE_IDS.map((id) => {
+    const p = PASSIVES[id];
+    return `<div class="cmp"><span><b>${esc(p.name)}</b><br>${[1, 2, 3].map((n) => `${n}. ${esc(p.desc(n))}`).join('<br>')}</span></div>`;
+  }).join('');
+}
+
 function runsHtml(history) {
   const rows = history.filter((e) => e.rig).slice(-12).reverse();
   if (!rows.length) return '<p class="sub">Finish a run and its rig shows up here.</p>';
   return rows.map((e) => {
-    const chains = e.rig.chains.map((c, i) => `<div class="cmprow"><b>${'ABCD'[i]}</b> <small>${esc(CHASSIS[c.chassis] ? chassisName(c) : (RULES[c.rule] || { name: c.rule }).name)}</small> ${c.slots.map((id) => (PIECES[id] ? `<i class="${PIECES[id].type}">${esc(PIECES[id].short)}${e.rig.levels[id] > 1 ? ' ' + e.rig.levels[id] : ''}</i>` : '')).join('')}</div>`).join('');
+    const chains = e.rig.chains.map((c, i) => `<div class="cmprow"><span><b>${'ABCD'[i]}</b> <small>${esc(CHASSIS[c.chassis] ? chassisName(c) : (RULES[c.rule] || { name: c.rule }).name)}</small></span>${c.slots.map((id) => (PIECES[id] ? `<i class="${PIECES[id].type}">${esc(PIECES[id].short)}${e.rig.levels[id] > 1 ? ' ' + e.rig.levels[id] : ''}</i>` : '')).join('')}</div>`).join('');
     return `<div class="cmp col"><span><b>${e.won ? 'Survived' : 'Fell'}</b> <small>${fmtTime(e.time)} · level ${e.level} · ${e.kills} kills</small></span>${chains}</div>`;
   }).join('');
 }
@@ -56,6 +64,7 @@ export function showCompendium(overlays, { save, onBack }) {
     if (tab === 'pieces') return piecesHtml();
     if (tab === 'rules') return rulesHtml();
     if (tab === 'reactions') return reactionsHtml(save.data.discovered.reactions);
+    if (tab === 'passives') return passivesHtml();
     return runsHtml(save.data.history);
   };
   const render = () => overlays.show(`

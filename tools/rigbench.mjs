@@ -6,7 +6,7 @@
 
 import { createOverclockedRun } from '../src/game/ovrun.js';
 import { applyRig } from '../src/game/sandbox.js';
-import { makeOffers, applyOffer, CAPACITY_LEVELS, starved } from '../src/rig/offers.js';
+import { makeOffers, applyOffer, rigFull, CAPACITY_LEVELS, starved } from '../src/rig/offers.js';
 import { placeSuggested, owned, slotTarget, addChassis, replaceChassis } from '../src/rig/editor.js';
 import { openRigChest } from '../src/rig/chests.js';
 import { stockUp, buyItem, NEW_CHAIN } from '../src/rig/workbench.js';
@@ -38,14 +38,17 @@ const types = (rig) => {
 };
 
 // Higher is better. A structural score: a rig needs weapons, then triggers that multiply them, then modifiers.
-function score(o, rig) {
+function score(o, rig, hpFrac = 1) {
   if (POLICY === 'first') return 0;
   const n = types(rig);
   if (o.kind === 'chassis') return chassisTarget(rig, o) === null ? -1 : 72;
   if (o.kind === 'cap') return o.cap === 'slot' ? 65 : o.cap === 'charge' ? (starved(rig, o.c) > 1.5 ? 60 : 40) : 35;
   if (o.kind === 'fuse') return 58;
   if (o.kind === 'stat') return o.id === 'hp' ? 30 : 15;
-  if (o.kind === 'passive') return PASSIVES[o.id].fits(rig) && (o.id !== 'glass_cannon' || n.weapon >= 4) ? 45 : 18;
+  if (o.kind === 'passive') {                        // a fitting passive beats a stat card, and a level card once the rig is full
+    if (o.id === 'glass_cannon' && hpFrac <= 0.7) return 18;
+    return PASSIVES[o.id].fits(rig) ? (rigFull(rig) ? 62 : 45) : 18;
+  }
   if (o.kind === 'level') return PIECES[o.id].type === 'weapon' ? 55 + o.to : 40 + o.to;
   const p = PIECES[o.id];
   if (p.type === 'weapon') return n.weapon < 2 ? 80 : n.weapon < 4 ? 50 : 20;
@@ -139,14 +142,15 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
       applyRig(run);
       chests++;
     }
+    const hpFrac = () => run.player.hp / run.player.maxHp;
     while (run.pendingLevelUps > 0) {
       const level = p.level - (run.pendingLevelUps - 1);
       const offers = makeOffers(run.rng, run.rigState, { capacity: CAPACITY_LEVELS.includes(level) });
-      offers.sort((a, b) => score(b, run.rigState) - score(a, run.rigState));
+      offers.sort((a, b) => score(b, run.rigState, hpFrac()) - score(a, run.rigState, hpFrac()));
       let done = false;
       for (const o of offers) {
         let next = null;
-        if (score(o, run.rigState) < 0) continue;
+        if (score(o, run.rigState, hpFrac()) < 0) continue;
         if (o.kind === 'piece') { const pl = placeSuggested(run.rigState, o.id); next = pl && pl.rig; } else if (o.kind === 'chassis') next = takeChassis(run.rigState, o); else next = applyOffer(run.rigState, o);
         if (next) { run.rigState = next; done = true; break; }
       }

@@ -2,7 +2,7 @@
 
 import { test, assert } from './harness.mjs';
 import { newRig, moveTo, placeSuggested, pieceAt, cloneRig, BENCH, SLOTS } from '../src/rig/editor.js';
-import { makeOffers, offerWeights } from '../src/rig/offers.js';
+import { makeOffers, offerWeights, passivePool, passiveWeight } from '../src/rig/offers.js';
 import { analyzeChain, compileChain } from '../src/rig/chain.js';
 import { TEST_CHAINS } from '../src/rig/presets.js';
 import { PIECES } from '../src/rig/pieces.js';
@@ -153,4 +153,22 @@ test('the default energy pool is 12: the spec example uses 9 of it and a full si
   const full = analyzeChain({ rule: 'pulse', slots: ['scatter', 'flame', 'mortar', 'on_impact', 'scatter', 'nova'] });
   assert.equal(full.reasons.size, 0);
   assert.equal(full.cost, 11);
+});
+
+test('passive offers lean toward the build: element passives need their element, fitting ones weigh x3', () => {
+  const noFlame = rigOf(['mortar', 'on_impact']);
+  const pool = passivePool(noFlame);
+  assert.ok(!pool.includes('pyromaniac') && !pool.includes('conductor') && !pool.includes('permafrost'));
+  assert.ok(passivePool(rigOf(['flame'])).includes('pyromaniac'));
+  assert.ok(passivePool(rigOf(['chain_bolt'])).includes('conductor'));
+  const blaster = rigOf(['blaster']);
+  assert.equal(passiveWeight(blaster, 'ricochet'), 3);
+  assert.equal(passiveWeight(noFlame, 'ricochet'), 0.5);
+  let withFlame = 0, without = 0;
+  for (let i = 0; i < 400; i++) {
+    if (makeOffers(createRng(i), noFlame).some((c) => c.id === 'pyromaniac')) without++;
+    if (makeOffers(createRng(i), rigOf(['flame'])).some((c) => c.id === 'pyromaniac')) withFlame++;
+  }
+  assert.equal(without, 0);
+  assert.ok(withFlame > 0);
 });

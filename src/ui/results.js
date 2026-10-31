@@ -2,6 +2,7 @@ import { resultsSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
 import { resultsDamageHtml } from './damage.js';
 import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
+import { PASSIVES } from '../rig/passives.js';
 import { CHASSIS, chassisName } from '../rig/chassis.js';
 
 const BEST_LABEL = { time: 'time', kills: 'kills', level: 'level' };
@@ -16,8 +17,9 @@ export function rigHtml(rig) {
     return `<span class="rrcell ${p.type}"><svg class="ico${p.filled ? ' filled' : ''}" viewBox="0 0 24 24" width="20" height="20"><path d="${p.icon}"/></svg><b>${esc(p.short)}</b>${lv > 1 ? `<i>L${lv}</i>` : ''}</span>`;
   };
   const rows = rig.chains.map((c, i) => `<div class="rrhead"><span class="rbadge" style="background:${CHAIN_COLORS[i]}">${CHAIN_NAMES[i]}</span><span class="rrrule">${esc(CHASSIS[c.chassis] ? chassisName(c) : RULES[c.rule].name)}</span></div><div class="rrrow">${c.slots.filter(Boolean).map(cell).join('') || '<em>empty</em>'}</div>`).join('');
+  const pas = Object.entries(rig.passives || {}).filter(([id, n]) => PASSIVES[id] && n > 0).map(([id, n]) => `<span class="rrcell passive">${esc(PASSIVES[id].name)}${n > 1 ? ' x' + n : ''}</span>`).join('');
   const bench = rig.bench.filter(Boolean);
-  return `<div class="rrig"><p class="sub">Your rig</p>${rows}${bench.length ? `<div class="rrhead"><span class="rrrule">Bench</span></div><div class="rrrow">${bench.map(cell).join('')}</div>` : ''}</div>`;
+  return `<div class="rrig"><p class="sub">Your rig</p>${rows}${bench.length ? `<div class="rrhead"><span class="rrrule">Bench</span></div><div class="rrrow">${bench.map(cell).join('')}</div>` : ''}${pas ? `<div class="rrhead"><span class="rrrule">Passives</span></div><div class="rrrow">${pas}</div>` : ''}</div>`;
 }
 
 export function showResults(overlays, summary, { onAgain, newBests = [] }) {
