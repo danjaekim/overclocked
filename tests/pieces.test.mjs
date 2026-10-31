@@ -65,7 +65,7 @@ test('Storm shocks, Heavy doubles damage and area and slows shots, Pierce adds 2
   approx(param(run, inst, 'radius') / param(r2, plain, 'radius'), 2, 1e-9);
   assert.ok(param(run, inst, 'speed') < param(r2, plain, 'speed'));
   assert.equal(param(run, inst, 'pierce') - param(r2, plain, 'pierce'), 2);
-  assert.equal(chain.nodes[0].cost, 2 + 1 + 2 + 1 + 1 - 1 + 0);  // blaster 2 + storm 1 + heavy 2 + pierce 1
+  assert.equal(chain.nodes[0].cost, 1 + 1 + 2 + 1);  // blaster 1 + storm 1 + heavy 2 + pierce 1
 });
 
 test('Echo fires the weapon twice, 0.2 s apart, at 75% each, for one payment', () => {
@@ -75,7 +75,7 @@ test('Echo fires the weapon twice, 0.2 s apart, at 75% each, for one payment', (
   assert.equal(events(rig, 'fire').length, 1);
   const first = run.world.projectiles.active[0];
   approx(first.dmg, param(run, rig.chains[0].nodes[0].inst, 'damage') * 0.75, 1e-9);
-  assert.equal(events(rig, 'fire')[0].pool, 40 - 4);
+  assert.equal(events(rig, 'fire')[0].pool, 40 - 3);
   tick(run, 0.25);
   assert.equal(events(rig, 'echo').length, 1);
   assert.equal(events(rig, 'fire').length, 1, 'the echo is not a second payment');
@@ -87,6 +87,14 @@ test('On Hit runs its payload from every enemy hit', () => {
   tick(run, 0.7);
   assert.ok(events(rig, 'payload').length >= 1);
   assert.ok(events(rig, 'fire', 'nova').length >= 1);
+});
+
+test('a Blaster volley is three separate hits: On Hit runs its payload once for each', () => {
+  const { run, rig } = rigOf(['blaster', 'on_hit', 'nova']);
+  dummy(run, 100, 0, 5000);
+  tick(run, 0.7);                                                    // one pulse at 0.3 s; the shots land well before 0.7
+  assert.equal(events(rig, 'fire', 'blaster').length, 1);
+  assert.equal(events(rig, 'payload').length, 3);
 });
 
 test('Every 3rd runs its payload from the player on every third attack, for 0 energy', () => {
@@ -150,7 +158,7 @@ test('analyze words the new triggers and costs Every 3rd at nothing', () => {
   const a = analyzeChain({ rule: 'reaper', slots: ['blaster', 'every_3rd', 'echo', 'nova'], energy: 12 });
   assert.ok(a.text.startsWith('On any kill, at most 4 times a second:'));
   assert.ok(a.text.includes('every 3rd time'));
-  assert.equal(a.cost, 2 + 0 + (2 + 3 - 1));
+  assert.equal(a.cost, 1 + 0 + (2 + 3 - 1));
 });
 
 test('signature levels: Scatter gains copies at 3 and 5, Heavy and Pierce gain stat mods, triggers boost the payload and Every 3rd speeds up', () => {

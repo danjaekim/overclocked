@@ -81,32 +81,32 @@ test('compile: pieces that can never run are reported with a reason', () => {
 
 // ---- the six test chains, headless ----
 
-test('1 Blaster: one volley per pulse, 2 energy, full power, from the player', () => {
+test('1 Blaster: one 3-shot volley per pulse, 1 energy, full power, from the player', () => {
   const { run, rig, chain } = rigWith('blaster');
   dummy(run, 120, 0);
   tick(run, 0.4);
   const fires = events(rig, 'fire');
   assert.equal(fires.length, 1);
-  assert.deepEqual([fires[0].piece, fires[0].copies, fires[0].pool], ['blaster', 1, 8]);
+  assert.deepEqual([fires[0].piece, fires[0].copies, fires[0].pool], ['blaster', 1, 9]);
   const prs = run.world.projectiles.active;
-  assert.equal(prs.length, 1);
+  assert.equal(prs.length, 3);
   approx(prs[0].dmg, param(run, chain.nodes[0].inst, 'damage'), 1e-9);
   tick(run, 1);                                                       // no recharge here: the next pulse spends from what is left
   assert.equal(events(rig, 'fire').length, 2);
-  assert.equal(events(rig, 'fire')[1].pool, 6);
+  assert.equal(events(rig, 'fire')[1].pool, 8);
 });
 
-test('2 Scatter shot: five shots at 40% power, aimed apart, for 4 energy', () => {
+test('2 Scatter shot: five volleys at 40% power, aimed apart, for 3 energy', () => {
   const { run, rig, chain } = rigWith('scatter_shot');
   dummy(run, 150, 0);
   tick(run, 0.4);
   const f = events(rig, 'fire')[0];
-  assert.deepEqual([f.copies, f.pool], [5, 6]);
+  assert.deepEqual([f.copies, f.pool], [5, 7]);
   const prs = run.world.projectiles.active;
-  assert.equal(prs.length, 5);
+  assert.equal(prs.length, 15);
   const full = param(run, chain.nodes[0].inst, 'damage');
   for (const pr of prs) approx(pr.dmg, full * 0.4, 1e-9);
-  assert.equal(new Set(prs.map((pr) => pr.dy.toFixed(3))).size, 5);
+  assert.ok(new Set(prs.map((pr) => pr.dy.toFixed(3))).size >= 5);
 });
 
 test('3 Cluster mortar: a burning shell, then five novas at the crater, exactly the 10 energy', () => {
@@ -167,10 +167,10 @@ test('6 Kill chain: kills set off novas, whose kills set off more, until the ene
   }
   tick(run, 1);                                                       // the first activation only
   const mine = (ev, piece) => events(rig, ev, piece).filter((l) => l.act === 1);
-  assert.equal(mine('fire', 'blaster')[0].pool, 7);                   // 2 for the Blaster + 1 for On Kill
+  assert.equal(mine('fire', 'blaster')[0].pool, 8);                   // 1 for the Blaster + 1 for On Kill
   const novas = mine('fire', 'nova');
-  assert.equal(novas.length, 3);                                      // 7 pays for a nova + its On Kill (3, payload pieces cost 1 less), then two more novas (2 each)
-  assert.deepEqual(novas.map((n) => n.armed), [true, false, false]);  // the later ones have nothing left to arm a trigger with
+  assert.equal(novas.length, 3);                                      // 8 pays for a nova + its On Kill (3, payload pieces cost 1 less), then two more novas (2 each)
+  assert.deepEqual(novas.map((n) => n.armed), [true, true, false]);   // the Blaster costs 1 now, so a second nova can still arm its trigger
   assert.equal(novas[2].pool, 0);
   assert.ok(mine('payload').length >= 3, 'kills kept asking for payloads');
   assert.ok(rig.log.every((l) => l.pool === undefined || l.pool >= 0));
@@ -225,17 +225,17 @@ test('a second chain runs on its own timer and pool', () => {
   tick(run, 0.4);
   const acts = events(rig, 'activate');
   assert.deepEqual(acts.map((a) => a.chain), [0, 1]);
-  assert.deepEqual(events(rig, 'fire').map((f) => f.pool), [8, 7]);
+  assert.deepEqual(events(rig, 'fire').map((f) => f.pool), [9, 7]);
 });
 
 test('battery: it recharges at the chain\'s rate up to its size, and a starved chain fires its front pieces only', () => {
   const run = newRun();
-  const rig = installRig(run, [{ rule: 'pulse', slots: ['blaster', 'nova'], energy: 6, recharge: 2 }], { log: true });
+  const rig = installRig(run, [{ rule: 'pulse', slots: ['blaster', 'nova'], energy: 6, recharge: 1 }], { log: true });
   dummy(run, 90, 0);
-  tick(run, 0.4);                                                     // full at the start: 2 + 3 of 6 at 0.3 s
+  tick(run, 0.4);                                                     // full at the start: 1 + 3 of 6 at 0.3 s
   assert.deepEqual(events(rig, 'fire').map((f) => f.piece), ['blaster', 'nova']);
-  approx(rig.chains[0].bat.pool, 1 + 2 * 0.1, 0.05);
-  tick(run, 1);                                                       // 1 + 2 = 3 at the next pulse: the Blaster, not the Nova
+  approx(rig.chains[0].bat.pool, 2 + 1 * 0.1, 0.05);
+  tick(run, 1);                                                       // 2 + 1 = 3 at the next pulse: the Blaster, not the Nova
   assert.deepEqual(events(rig, 'fire').map((f) => f.piece), ['blaster', 'nova', 'blaster']);
   assert.equal(events(rig, 'dry', 'nova').length, 1);
   tick(run, 5);
@@ -263,7 +263,7 @@ test('battery: Strider and Anchor charge only while moving or standing still; Re
 
 test('battery: a Charge chain fires each time its battery fills, at most once a second', () => {
   const run = newRun();
-  const rig = installRig(run, [{ rule: 'charge', slots: ['blaster', 'blaster'], energy: 8, recharge: 2 }], { log: true });
+  const rig = installRig(run, [{ rule: 'charge', slots: ['nova', 'blaster'], energy: 8, recharge: 2 }], { log: true });
   dummy(run, 90, 0);
   tick(run, 1.1);                                                     // the first check finds nothing in range; a second later it fires
   assert.equal(events(rig, 'activate').length >= 1 && events(rig, 'fire').length, 2);

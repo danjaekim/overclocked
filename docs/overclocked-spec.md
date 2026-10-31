@@ -76,7 +76,7 @@ These are the 16 pieces for the first test build. The proof of concept uses the 
 | --- | --- | --- | --- | --- | --- |
 | Mortar | Weapon | 3 | Lobs a shell that bursts on landing | `mortar` behavior | PoC |
 | Nova | Weapon | 3 | A ring of damage around its origin | `nova` behavior | PoC |
-| Blaster | Weapon | 2 | A volley at the nearest enemy | `projectile` behavior | PoC |
+| Blaster | Weapon | 1 | A 3-shot volley at the nearest enemy; each shot is its own hit (v0.6.6) | `projectile` behavior | PoC |
 | Chain Bolt | Weapon | 3 | Lightning that jumps between enemies | `chain` behavior |  |
 | Slam | Weapon | 4 | A heavy ground strike that knocks enemies back | `slam` behavior |  |
 | Scatter | Modifier | 2 | The next weapon fires 5 copies at 25% power each, spread out | The projectile count param | PoC |

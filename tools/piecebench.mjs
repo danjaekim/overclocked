@@ -90,6 +90,12 @@ for (const [a, b] of [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm']
 }
 for (const e of ['flame', 'frost', 'storm']) row(`${e} nova (no reaction)`, [e, 'nova']);
 
+section('reactions on Blaster (three separate hits a volley), against the first element alone');
+for (const [a, b] of [['flame', 'frost'], ['frost', 'flame'], ['flame', 'storm'], ['storm', 'flame'], ['frost', 'storm'], ['storm', 'frost']]) {
+  row(`${a}>${b} blaster`, [a, b, 'blaster']);
+}
+for (const e of ['flame', 'frost', 'storm']) row(`${e} blaster (no reaction)`, [e, 'blaster']);
+
 section('triggers: Blaster with a Nova payload, against the two pieces run separately');
 row('blaster', ['blaster']);
 row('nova', ['nova']);
