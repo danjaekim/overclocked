@@ -163,3 +163,21 @@ test('v08 the Warlord winds up faster below half hp', () => {
   run.update(STEP, { x: 0, y: 0 });
   assert.ok(b.aiT <= c.windupRage + 1e-6, `windup ${b.aiT}`);
 });
+
+import { entryFromSummary } from '../src/save/save.js';
+import { runData } from '../src/ui/compendium.js';
+import { TIMELINE_STEP } from '../src/game/ovrun.js';
+
+test('v08 a run records its rig once a minute, and the history keeps it for the replay bench', () => {
+  const run = createOverclockedRun({ seed: 7, view: VIEW, debug: { god: true }, sfx: () => {} });
+  run.director.update = () => {};
+  for (let i = 0; i < Math.ceil((2 * TIMELINE_STEP + 1) / STEP); i++) run.update(STEP, { x: 0, y: 0 });
+  assert.deepEqual(run.timeline.map((p) => p.t), [60, 120]);
+  const e = entryFromSummary(run.summary());
+  assert.equal(e.timeline.length, 3);                                           // two minutes plus the end of the run
+  assert.deepEqual(e.timeline[0].rig.chains[0].slots, ['blaster']);
+  assert.ok(Number.isFinite(e.timeline[0].raw));
+  const json = JSON.parse(runData([e]));
+  assert.equal(json.game, 'overclocked');
+  assert.equal(json.runs[0].timeline.length, 3);
+});

@@ -186,3 +186,14 @@ Stop after M3 and post to Dan:
 Wait for Dan's playtest before anything else. These were held back on purpose: new enemy types (only if a full screen
 still feels samey, and then one type built to punish screen-clearing), boss attack changes beyond the Warlord's rage, and
 passive trims (only if one combination stands far above the rest).
+
+---
+
+## After the plan: testing against real builds (v0.8.4)
+
+The bot builds far worse than a human, so it is the floor, not the target. Since v0.8.4 each run records its rig once a
+minute (`run.timeline`, game/ovrun.js), the newest 30 history entries keep it, and Past runs has a "Copy run data" button.
+`node tools/replaybench.mjs --file runs.json [--calibrate]` replays those builds minute by minute on the current version
+(bot movement, your rig) and prints crowd, gold, boss lifetimes and survival next to your real result. `--calibrate` prints
+the `--dmg` for pressurebench that matches your raw dps. Report three numbers per balance change: floor (rigbench), you
+(replaybench) and pressure (pressurebench at the calibrated `--dmg`).

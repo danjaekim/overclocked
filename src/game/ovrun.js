@@ -7,6 +7,7 @@ import { newRig } from '../rig/editor.js';
 import { applyRig } from './sandbox.js';
 import { PIECES } from '../rig/pieces.js';
 import { initClassTrait } from './class-traits.js';
+import { recentRawDps } from './run-stats.js';
 
 // What every run starts with: a little more health than the stat default, and a trickle of regeneration (the Archer's
 // numbers from Overforged: bot runs lasted a third longer with them, docs/balance-playbook.md). Tune with the bench.
@@ -30,6 +31,13 @@ export function createOverclockedRun({ seed, view, debug, sfx }) {
   run.rigState = newRig([START_CHAIN]);
   applyRig(run);
 
+  run.timeline = [];                                             // the rig every TIMELINE_STEP s, for the replay bench (tools/replaybench.mjs)
+  const step = run.update;
+  run.update = (dt, move) => {
+    step(dt, move);
+    if (run.time >= (run.timeline.length + 1) * TIMELINE_STEP) run.timeline.push(timelinePoint(run));
+  };
+
   const base = run.summary;
   run.summary = () => ({
     ...base(),
@@ -41,8 +49,23 @@ export function createOverclockedRun({ seed, view, debug, sfx }) {
       passives: { ...run.rigState.passives },
     },
     classId: 'smith',
+    timeline: [...run.timeline, timelinePoint(run)],
   });
   return run;
+}
+
+export const TIMELINE_STEP = 60;
+
+// One point of a run's timeline: when, how far along, how hard the rig hits (raw dps, overkill included) and the whole rig.
+export function timelinePoint(run) {
+  const r = run.rigState;
+  return {
+    t: Math.floor(run.time), lv: run.player.level, k: run.kills, hp: Math.round(run.player.hp), raw: Math.round(recentRawDps(run, 20)),
+    rig: {
+      chains: r.chains.map((c) => ({ chassis: c.chassis, mk: c.mk, rule: c.rule, slots: c.slots.slice(), charge: c.charge || 0, cell: c.cell || 0 })),
+      levels: { ...r.levels }, passives: { ...r.passives }, stats: { ...r.stats },
+    },
+  };
 }
 
 export const pieceName = (id) => (PIECES[id] ? PIECES[id].name : id);

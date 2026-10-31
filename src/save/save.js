@@ -52,6 +52,7 @@ export function entryFromSummary(summary, now = Date.now()) {
     fusions: cleanFusions(b.fusions),
     titles: Array.isArray(summary.titleIds) ? summary.titleIds.map(String) : [],
     rig: cleanRig(summary.rig),
+    timeline: cleanTimeline(summary.timeline),
   };
 }
 
@@ -64,6 +65,24 @@ function cleanRig(r) {
   const passives = {};
   if (r.passives && typeof r.passives === 'object') for (const [k, v] of Object.entries(r.passives).slice(0, 20)) if (Number.isFinite(v)) passives[String(k).slice(0, 20)] = Math.max(1, Math.min(3, Math.floor(v)));
   return { chains, levels, passives };
+}
+
+// A run's timeline (game/ovrun.js timelinePoint): the rig once a minute, for the replay bench. Only the newest
+// TIMELINE_KEEP entries keep theirs (recordRun), so the save stays small.
+export const TIMELINE_KEEP = 30;
+const num = (v, hi) => Math.max(0, Math.min(hi, Math.floor(Number(v)) || 0));
+function cleanTimeline(tl) {
+  if (!Array.isArray(tl)) return [];
+  return tl.slice(0, 12).filter((p) => p && typeof p === 'object').map((p) => {
+    const r = cleanRig(p.rig) || { chains: [], levels: {}, passives: {} };
+    const src = p.rig && Array.isArray(p.rig.chains) ? p.rig.chains : [];
+    r.chains.forEach((c, i) => { c.charge = num(src[i] && src[i].charge, 20); c.cell = num(src[i] && src[i].cell, 20); });
+    if (p.rig && p.rig.levels) for (const [k, v] of Object.entries(p.rig.levels)) if (r.levels[k] !== undefined) r.levels[k] = Math.max(1, Math.min(7, Math.floor(v) || 1));   // overclock goes to 7
+    const stats = {};
+    if (p.rig && p.rig.stats && typeof p.rig.stats === 'object') for (const [k, v] of Object.entries(p.rig.stats).slice(0, 12)) stats[String(k).slice(0, 20)] = num(v, 20);
+    r.stats = stats;
+    return { t: num(p.t, 9999), lv: num(p.lv, 999), k: num(p.k, 1e7), hp: num(p.hp, 1e5), raw: num(p.raw, 1e8), rig: r };
+  });
 }
 
 // Per-weapon forge marks, aligned with `weapons`: [enhance, starforged, tempers, effects, legendary]. Old entries have none.
@@ -85,6 +104,7 @@ function cleanEntry(e) {
     weapons: pairs(e.weapons), passives: pairs(e.passives), perks: pairs(e.perks), fusions: cleanFusions(e.fusions || e.grafts),
     titles: Array.isArray(e.titles) ? e.titles.filter((x) => typeof x === 'string').slice(0, 12) : [],
     rig: cleanRig(e.rig),
+    timeline: cleanTimeline(e.timeline),
   };
 }
 
@@ -223,6 +243,7 @@ export function createSave(storage) {
       }
       data.history.push(entry);
       if (data.history.length > HISTORY_CAP) data.history.splice(0, data.history.length - HISTORY_CAP);
+      for (let i = 0; i < data.history.length - TIMELINE_KEEP; i++) data.history[i].timeline = [];
       persist();
       return { newBests };
     },

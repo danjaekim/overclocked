@@ -10,9 +10,10 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? proce
 const seed = Number(arg('--seed', 1));
 const dmg = Number(arg('--dmg', 0));
 if (dmg) process.env.MODS = JSON.stringify([{ stat: 'damage', op: 'inc', value: dmg }]);
-const VIEW = { w: 390, h: 844 };                     // rigbench's VIEW
+const VIEW = { w: 390, h: 844 };
+const STEP_S = 1 / 30;                              // rigbench's STEP                     // rigbench's VIEW
 
-export function probe(seed) {
+export function probe(seed, { replay = null, god = true } = {}) {
   const live = new Map();
   const mins = {};
   const boss = [];
@@ -20,7 +21,7 @@ export function probe(seed) {
   let lastOre = 0;
   let gold = 0;
   const minute = (t) => Math.floor(t / 60);
-  playRig(seed, { god: true, onTick(run) {
+  const res = playRig(seed, { god, replay, onTick(run) {
     const t = run.time;
     const s = mins[minute(t)] ||= { ticks: 0, alive: 0, onscr: 0, deaths: 0, offDeaths: 0, life: 0, gold: 0, kills: 0 };
     s.ticks++;
@@ -28,6 +29,8 @@ export function probe(seed) {
     lastOre = run.ore;
     s.gold = gold;
     s.kills = run.kills;
+    s.raw = run.stats.rawSec[Math.floor(t) - 1] || 0;
+    s.rawSum = (s.rawSum || 0) + s.raw * STEP_S;
     const now = new Set();
     for (const e of run.world.enemies.active) {
       if (e.prop) continue;
@@ -51,7 +54,7 @@ export function probe(seed) {
     lastT = t;
   } });
   for (const r of live.values()) if (r.boss) boss.push(`${r.def} at ${Math.round(r.t0)} s: still alive at the end (hp ${Math.round(r.hp)})`);
-  return { mins, boss, gold };
+  return { mins, boss, gold, res };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('pressurebench.mjs')) {

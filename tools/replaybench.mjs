@@ -1,0 +1,82 @@
+// Replay your own builds (docs/plan-v08.md follow-up): the rig from each of your past runs, grown in minute by minute
+// as you actually built it, put into a fresh run played by the rigbench bot's movement. Shows what a real build meets
+// on this version: crowd on screen, boss lifetimes, and whether the bot-driven run survives with it.
+//   node tools/replaybench.mjs --file runs.json [--runs 5] [--seed 1] [--calibrate]
+// runs.json is what Past runs > "Copy run data" copies. Runs from before the timeline existed (v0.8.4) only have the
+// final rig; those switch to it at 2:00 and are marked "approx".
+// --calibrate also runs the plain bot and prints the damage multiplier that matches your raw dps, for pressurebench --dmg.
+
+import fs from 'node:fs';
+import { probe } from './pressurebench.mjs';
+import { newRig } from '../src/rig/editor.js';
+import { CHASSIS } from '../src/rig/chassis.js';
+import { PIECES } from '../src/rig/pieces.js';
+import { START_CHAIN } from '../src/game/ovrun.js';
+import { applyRig } from '../src/game/sandbox.js';
+
+const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
+const file = arg('--file', null);
+if (!file) { console.error('usage: node tools/replaybench.mjs --file runs.json [--runs 5] [--seed 1] [--calibrate]'); process.exit(1); }
+const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+const runs = (data.runs || data.history || []).filter((e) => e && e.rig && e.rig.chains && e.rig.chains.length);
+const N = Number(arg('--runs', 5));
+const seed = Number(arg('--seed', 1));
+
+// A stored rig (save.js cleanRig / cleanTimeline) back into a full rig state.
+export function rigFrom(r) {
+  const chains = r.chains.filter((c) => CHASSIS[c.chassis] || c.rule).map((c) => ({
+    chassis: CHASSIS[c.chassis] ? c.chassis : undefined, rule: c.rule, mk: c.mk || 1, charge: c.charge || 0, cell: c.cell || 0,
+    slots: c.slots.filter((id) => PIECES[id]), size: 6,
+  }));
+  const rig = newRig(chains);
+  rig.levels = { ...(r.levels || {}) };
+  rig.passives = { ...(r.passives || {}) };
+  rig.stats = { ...(r.stats || {}) };
+  return rig;
+}
+
+// The schedule of one past run: [{ t, rig }], oldest first.
+export function scheduleOf(e) {
+  if (Array.isArray(e.timeline) && e.timeline.length) return { approx: false, points: [{ t: 0, rig: newRig([START_CHAIN]) }, ...e.timeline.map((p) => ({ t: p.t, rig: rigFrom(p.rig), raw: p.raw }))] };
+  const start = newRig([START_CHAIN]);
+  return { approx: true, points: [{ t: 0, rig: start }, { t: 120, rig: start }, { t: 1e9, rig: rigFrom(e.rig) }] };
+}
+
+function replayOf(points) {
+  let next = 1;
+  return (run) => {
+    // apply the rig of the minute you are in: the point recorded at the end of it
+    while (next < points.length && run.time >= points[next - 1].t) {
+      run.rigState = points[next].rig;
+      applyRig(run);
+      next++;
+    }
+  };
+}
+
+const fmt = (x) => (x === undefined ? '-' : Math.round(x));
+const pick = runs.slice(-N).reverse();
+console.log(`${pick.length} of your runs (newest first), seed ${seed}. Your result vs. the replay on this build.`);
+const rawMine = [];
+for (const e of pick) {
+  const sch = scheduleOf(e);
+  const god = probe(seed, { replay: replayOf(sch.points) });
+  const real = probe(seed, { replay: replayOf(sch.points), god: false });
+  const on = (a, b) => { const xs = Object.entries(god.mins).filter(([m]) => m >= a && m <= b).map(([, s]) => s.onscr / s.ticks); return xs.length ? xs.reduce((x, y) => x + y, 0) / xs.length : 0; };
+  console.log(`\n${new Date(e.t).toISOString().slice(0, 16)} ${sch.approx ? '(approx: final rig from 2:00)' : ''}`);
+  console.log(`  you:    ${e.won ? 'won' : `died at ${e.time} s`}, level ${e.level}, ${e.kills} kills`);
+  console.log(`  replay: ${real.res.won ? 'won' : `died at ${real.res.time} s`}, ${real.res.kills} kills (bot movement, your rig)`);
+  console.log(`  on screen: min 3 ${fmt(on(3, 3))}, min 6-9 ${fmt(on(6, 9))}; gold ${fmt(god.gold)}`);
+  for (const b of god.boss) console.log(`  boss ${b}`);
+  for (const p of sch.points) if (p.raw) rawMine.push([p.t, p.raw]);
+}
+
+if (process.argv.includes('--calibrate')) {
+  if (!rawMine.length) console.log('\nNo timeline in these runs yet: play a run on v0.8.4 or later, then copy again.');
+  else {
+    const base = probe(seed);
+    const ratios = rawMine.map(([t, raw]) => { const s = base.mins[Math.max(0, Math.floor(t / 60) - 1)]; return s && s.raw > 0 ? raw / s.raw : null; }).filter(Boolean).sort((a, b) => a - b);
+    const med = ratios[Math.floor(ratios.length / 2)];
+    console.log(`\nYour raw dps is about ${med.toFixed(1)}x the plain bot's (median of ${ratios.length} minutes). Damage scales raw dps about linearly, so: node tools/pressurebench.mjs --dmg ${Math.max(0, med - 1).toFixed(1)}`);
+  }
+}

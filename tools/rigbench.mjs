@@ -70,7 +70,8 @@ function takeChassis(rig, o) {
   return at === NEW_CHAIN ? addChassis(rig, o.chassis, o.mk) : replaceChassis(rig, at, o.chassis, o.mk).rig;
 }
 
-export function playRig(seed, { god = GOD, onTick = null } = {}) {
+// replay(run): when given, the bot builds nothing (no offers, chests or shop); replay sets run.rigState itself (tools/replaybench.mjs).
+export function playRig(seed, { god = GOD, onTick = null, replay = null } = {}) {
   const run = createOverclockedRun({ seed, view: VIEW, debug: { god }, sfx: () => {} });
   if (process.env.MODS) for (const m of JSON.parse(process.env.MODS)) run.player.stats.add({ ...m, source: 'bench:' });   // experiments: MODS='[{"stat":"damage","op":"inc","value":0.5}]'
   run.player.maxHp = run.player.hp = run.player.stats.get('maxHp');
@@ -114,6 +115,11 @@ export function playRig(seed, { god = GOD, onTick = null } = {}) {
     if (onTick) onTick(run);
     if (run.bossAlive) bossSeen = true;
     for (const t of [60, 120, 180, 300, 450]) if (!at[t] && run.time >= t) at[t] = { lv: p.level, k: run.kills, hp: Math.round(p.hp) };
+    if (replay) {
+      replay(run);
+      run.forgeReady = false; run.pendingChests.length = 0; run.pendingLevelUps = 0;
+      continue;
+    }
 
     if (run.forgeReady) {                                          // the workbench: buy what scores best while the gold lasts
       run.forgeReady = false;

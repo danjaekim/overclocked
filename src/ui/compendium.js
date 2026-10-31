@@ -6,6 +6,8 @@ import { PASSIVES, PASSIVE_IDS } from '../rig/passives.js';
 import { CHASSIS, chassisName } from '../rig/chassis.js';
 import { fmtTime } from './overlay.js';
 import { icon } from './rig-editor.js';
+import { VERSION } from '../version.js';
+import { TIMELINE_KEEP } from '../save/save.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const TABS = [['how', 'How it works'], ['pieces', 'Pieces'], ['rules', 'Chassis'], ['reactions', 'Reactions'], ['passives', 'Passives'], ['runs', 'Past runs']];
@@ -48,10 +50,16 @@ function passivesHtml() {
   }).join('');
 }
 
+// The newest runs as JSON, for the replay bench (tools/replaybench.mjs): paste it to Claude to test changes against your builds.
+export function runData(history) {
+  return JSON.stringify({ game: 'overclocked', version: VERSION, runs: history.slice(-TIMELINE_KEEP) });
+}
+
+let copied = '';
 function runsHtml(history) {
   const rows = history.filter((e) => e.rig).slice(-12).reverse();
   if (!rows.length) return '<p class="sub">Finish a run and its rig shows up here.</p>';
-  return rows.map((e) => {
+  return `<button class="rbtn" data-act="copyruns">Copy run data</button>${copied ? `<p class="sub">${esc(copied)}</p>` : ''}` + rows.map((e) => {
     const chains = e.rig.chains.map((c, i) => `<div class="cmprow"><span><b>${'ABCD'[i]}</b> <small>${esc(CHASSIS[c.chassis] ? chassisName(c) : (RULES[c.rule] || { name: c.rule }).name)}</small></span>${c.slots.map((id) => (PIECES[id] ? `<i class="${PIECES[id].type}">${esc(PIECES[id].short)}${e.rig.levels[id] > 1 ? ' ' + e.rig.levels[id] : ''}</i>` : '')).join('')}</div>`).join('');
     return `<div class="cmp col"><span><b>${e.won ? 'Survived' : 'Fell'}</b> <small>${fmtTime(e.time)} · level ${e.level} · ${e.kills} kills</small></span>${chains}</div>`;
   }).join('');
@@ -74,7 +82,20 @@ export function showCompendium(overlays, { save, onBack }) {
     <button class="btn" data-act="back">Back</button>`,
   (act) => {
     if (act === 'back') onBack();
-    else if (act.startsWith('tab:')) { tab = act.slice(4); render(); }
+    else if (act.startsWith('tab:')) { tab = act.slice(4); copied = ''; render(); }
+    else if (act === 'copyruns') {
+      const text = runData(save.data.history);
+      const done = (msg) => { copied = msg; render(); };
+      const fallback = () => {                                  // no clipboard access: show the text to copy by hand
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.readOnly = true; ta.className = 'cmpcopy';
+        document.querySelector('.cmpbody').prepend(ta);
+        ta.focus(); ta.select();
+        copied = '';
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(`Copied ${Math.round(text.length / 1024)} KB. Paste it to Claude.`), fallback);
+      else fallback();
+    }
   }, 'compendium');
   render();
 }
