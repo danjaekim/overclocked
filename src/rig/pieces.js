@@ -151,13 +151,15 @@ export const CHAIN_COLORS = ['#ff7ac6', '#9be564', '#6cc8ff', '#ffc857'];
 export const CHAIN_NAMES = 'ABCD';
 export const MAX_CHAINS = 3;            // each chain is a chassis (rig/chassis.js); a new one past this replaces one
 
-// When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. A card with `on` is not
+// When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. `dist` replaces `every`: the card fires each time you have moved that many px. A card with `on` is not
 // timed: it runs when that event happens ('kill': any enemy dies; 'full': the chain's battery
 // is full), at most once per `gap` seconds. Each chassis (rig/chassis.js) carries one.
 // `short` is the second line of the HUD badge.
+export const STRIDE_DIST = 80;          // px you move for one Stride activation (move speed 150 px/s: about 1.9 a second)
+
 export const RULES = {
   pulse: { name: 'Pulse', every: 1, first: 0.3, desc: 'Every 1 s', short: '1s' },
-  stride: { name: 'Stride', every: 0.5, first: 0.3, while: 'moving', desc: 'Every 0.5 s while moving', short: '0.5s' },
+  stride: { name: 'Stride', dist: STRIDE_DIST, first: 0.3, while: 'moving', desc: 'Every 80 px you move', short: 'move' },
   anchor: { name: 'Anchor', every: 0.6, first: 0.3, while: 'still', desc: 'Every 0.6 s while standing still', short: 'still' },
   rapid: { name: 'Rapid', every: 0.6, first: 0.3, desc: 'Every 0.6 s', short: '0.6s' },
   charge: { name: 'Charge', on: 'full', gap: 1, desc: 'When its battery is full, at most once a second', short: 'full' },

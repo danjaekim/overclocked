@@ -150,13 +150,14 @@ test('5 Shatter shell: Stride waits for movement, then casts a frost-then-fire s
   dummy(run, 130, 0);
   tick(run, 1.5);
   assert.equal(events(rig, 'activate').length, 0);                    // standing still: no activation
-  tick(run, 0.5, { x: 0.01, y: 0 });
+  for (let i = 0; i < 2; i++) { tick(run, 0.5, { x: 1, y: 0 }); tick(run, 0.5, { x: -1, y: 0 }); }   // 300 px walked, back and forth
   const a = events(rig, 'activate');
-  assert.equal(a.length, 1);
+  assert.ok(a.length >= 1 && a.length <= 4);
   const f = events(rig, 'fire', 'mortar')[0];
   assert.deepEqual([f.mods, f.pool, f.armed], [['frost', 'flame'], 5, false]);
-  tick(run, 1.5, { x: 0.01, y: 0 });                                  // every 0.5 s while moving
-  assert.ok(events(rig, 'activate').length >= 3);
+  const n = a.length;
+  for (let i = 0; i < 2; i++) { tick(run, 0.5, { x: 1, y: 0 }); tick(run, 0.5, { x: -1, y: 0 }); }
+  assert.ok(events(rig, 'activate').length >= n + 3);                  // every 80 px walked
 });
 
 test('6 Kill chain: kills set off novas, whose kills set off more, until the energy runs out', () => {

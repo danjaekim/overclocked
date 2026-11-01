@@ -7,6 +7,7 @@
 //                power        every attack's power x this
 //                costAdd      every piece costs this much more
 //                elemBoost    a weapon with an element gets the same-element-twice boost for each (reactions.js INTENSIFY), and Steam/Plasma/Static cool down KILN_REACT as long
+//                area         every weapon's area (radius, range, arc, jump) x 1 + this (Anchor)
 //                payloadEcho  each payload run is repeated { delay, mult } later, for free (rig.js)
 //                payloadPower payloads hit x this harder
 //                killCharge   energy each enemy kill (anyone's) adds
@@ -24,8 +25,8 @@ export const CHASSIS = {
   overdrive: { name: 'Overdrive', rule: 'rapid', slots: 3, max: 4, battery: 8, recharge: 8, quirk: { costAdd: 1 }, desc: 'Fires every 0.6 s; pieces cost 1 more' },
   kiln: { name: 'Kiln', rule: 'pulse', slots: 4, max: 6, battery: 12, recharge: 6, quirk: { elemBoost: true }, desc: 'Elements here hit as if held twice (stronger burn, chill, shock); Steam, Plasma and Static fire twice as often' },
   relay: { name: 'Relay', rule: 'pulse', slots: 5, max: 6, battery: 14, recharge: 6, quirk: { payloadEcho: RELAY_ECHO }, desc: 'Every payload goes off twice: again 0.15 s later at 60%, for free' },
-  strider: { name: 'Strider', rule: 'stride', slots: 4, max: 6, battery: 10, recharge: 7, chargeWhile: 'moving', quirk: {}, desc: 'Fires and recharges only while you move' },
-  anchor: { name: 'Anchor', rule: 'anchor', slots: 4, max: 6, battery: 16, recharge: 8, chargeWhile: 'still', quirk: {}, desc: 'Fires and recharges only while you stand still' },
+  strider: { name: 'Strider', rule: 'stride', slots: 4, max: 6, battery: 10, recharge: 7, chargeWhile: 'moving', quirk: {}, desc: 'Fires every 80 px you move, so move speed is its fire rate; recharges only while moving' },
+  anchor: { name: 'Anchor', rule: 'anchor', slots: 4, max: 6, battery: 16, recharge: 8, chargeWhile: 'still', quirk: { power: 1.6, area: 0.5 }, desc: 'Turret: fires and recharges only while you stand still, at x1.6 power and +50% area' },
   reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.3 }, desc: 'Fires on kills (twice a second at most), or every 3 s if nothing dies; every kill adds 0.3 energy' },
 };
 

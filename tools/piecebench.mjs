@@ -134,7 +134,7 @@ function passives() {
   }
 }
 
-function chassis() {
+function chassis() {   // Strider walks side to side, Anchor stands still (it only fires while still); the rest stand still
   HP = 150;
   const chains = [['blaster'], ['flame', 'mortar', 'on_impact', 'scatter', 'nova'], ['heavy', 'blaster', 'on_kill', 'echo', 'nova', 'slam'], ['flame', 'storm', 'nova'], ['blaster', 'on_hit', 'nova']];   // the On Kill chain rarely fires its payload here (heavy hits, few kills): the last two are for Kiln (elements) and Relay (payloads)
   section('chassis (Mk I): the same chains on each chassis, sustained dps over the run (cost = one full run of the chain)');

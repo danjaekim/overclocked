@@ -8,6 +8,7 @@ import { createRng } from '../src/core/rng.js';
 import { createRun } from '../src/game/run.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { installRig } from '../src/rig/rig.js';
+import { param } from '../src/game/weapon-params.js';
 import { reactOnHit } from '../src/rig/reactions.js';
 import { RELAY_ECHO, KILN_REACT } from '../src/rig/chassis.js';
 
@@ -113,4 +114,49 @@ test('v0.9.1 Relay: an echo does not drain the battery or echo again', () => {
     return 40 - g.chains[0].bat.pool;
   })();
   assert.ok(Math.abs(spent - noEcho) < 1e-6, `${spent} vs ${noEcho}`);
+});
+
+test('v0.9.2 Strider fires every 80 px you move: twice as often at twice the speed, never standing still', () => {
+  const fires = (secs, speed) => {
+    const run = newRun();
+    const rig = installRig(run, [{ rule: 'stride', slots: ['nova'], energy: 1000, recharge: 0 }], { log: true });
+    dummy(run, 0, 40);
+    const mods = run.player.stats;
+    void mods;
+    run.player.stats.add({ stat: 'moveSpeed', op: 'inc', value: speed - 1, source: 'test' });
+    for (let i = 0; i < Math.round(secs / STEP); i++) run.update(STEP, { x: Math.floor(i / 30) % 2 ? -1 : 1, y: 0 });
+    return rig.log.filter((l) => l.ev === 'activate').length;
+  };
+  const slow = fires(5, 1);
+  const fast = fires(5, 2);
+  assert.ok(slow >= 8 && slow <= 10, `slow ${slow}`);
+  assert.ok(fast >= 17 && fast <= 19, `fast ${fast}`);
+  const still = (() => {
+    const run = newRun();
+    const rig = installRig(run, [{ rule: 'stride', slots: ['nova'], energy: 1000, recharge: 0 }], { log: true });
+    dummy(run, 0, 40);
+    tick(run, 5);
+    return rig.log.filter((l) => l.ev === 'activate').length;
+  })();
+  assert.equal(still, 0);
+});
+
+test('v0.9.2 Anchor is a turret: x1.6 power and +50% area, only fired while you stand still', () => {
+  assert.deepEqual([CHASSIS.anchor.quirk.power, CHASSIS.anchor.quirk.area], [1.6, 0.5]);
+  const radius = (quirk) => {
+    const run = newRun();
+    const rig = installRig(run, [{ rule: 'anchor', slots: ['nova'], energy: 1000, recharge: 0, quirk }], { log: true });
+    return { r: param(run, rig.chains[0].nodes[0].inst, 'radius'), p: rig.chains[0].nodes[0].power };
+  };
+  const plain = radius({});
+  const turret = radius(CHASSIS.anchor.quirk);
+  assert.ok(Math.abs(turret.r / plain.r - 1.5) < 1e-6, `radius ${plain.r} -> ${turret.r}`);
+  assert.ok(Math.abs(turret.p / plain.p - 1.6) < 1e-6);
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'anchor', slots: ['nova'], energy: 1000, recharge: 0 }], { log: true });
+  dummy(run, 0, 40);
+  tick(run, 2);
+  const still = rig.log.filter((l) => l.ev === 'activate').length;
+  for (let i = 0; i < 120; i++) run.update(STEP, { x: 1, y: 0 });
+  assert.ok(still >= 2 && rig.log.filter((l) => l.ev === 'activate').length === still, 'no activations while walking');
 });

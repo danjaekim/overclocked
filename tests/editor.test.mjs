@@ -85,7 +85,7 @@ test('analyze: a line that says what the chain does, with its cost, and a reason
   const bad = analyzeChain({ rule: 'pulse', slots: ['on_impact', 'nova', null] });
   assert.equal(bad.reasons.get(0), 'no weapon before this trigger');
   assert.ok(bad.text.includes('nothing to run yet'));
-  assert.equal(analyzeChain({ rule: 'stride', slots: [] }).text, 'Every 0.5 s while moving: nothing to run yet (cost 0 of 12)');
+  assert.equal(analyzeChain({ rule: 'stride', slots: [] }).text, 'Every 80 px you move: nothing to run yet (cost 0 of 12)');
 });
 
 test('analyze: pieces beyond the energy pool are greyed as out of energy', () => {

@@ -94,6 +94,7 @@ function makeInstance(run, rig, node, chain) {
     if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
   }
   if (node.boost) for (const el of node.elements) for (const m of INTENSIFY[el]) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });   // Kiln: each element as if held twice
+  if (chain.def.quirk && chain.def.quirk.area) run.player.stats.add({ stat: 'area', op: 'inc', value: chain.def.quirk.area, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });   // Anchor: bigger blasts
   const mods = node.reaction === 'superconduct' ? [{ stat: 'critChance', op: 'flat', value: SUPERCONDUCT_CRIT }]
     : node.reaction && node.reaction.startsWith('intensify_') ? INTENSIFY[node.reaction.slice(10)] : null;
   if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
@@ -242,6 +243,10 @@ export function updateRig(run, dt) {
   const rig = run.rig;
   const p = run.player;
   rig.stillT = p.moving ? 0 : (rig.stillT || 0) + dt;
+  const hop = rig.px === undefined ? 0 : Math.hypot(p.x - rig.px, p.y - rig.py);       // Stride: how far you moved this tick (a jump of 50 px or more is a respawn, not a step)
+  rig.px = p.x;
+  rig.py = p.y;
+  const moved = hop < 50 ? hop : 0;
   for (let i = 0; i < rig.chains.length; i++) {
     const chain = rig.chains[i];
     const rule = chain.rule;
@@ -270,6 +275,14 @@ export function updateRig(run, dt) {
         chain.idleT = 0;
         activate(run, rig, chain);
       }
+      continue;
+    }
+    if (rule.dist) {                                           // Stride: every `dist` px moved, after the first delay
+      if (chain.t > 0) { chain.t -= dt; continue; }
+      chain.dist = Math.min(rule.dist, (chain.dist || 0) + moved);
+      if (chain.dist < rule.dist) continue;
+      chain.dist -= rule.dist;
+      activate(run, rig, chain);
       continue;
     }
     if (rule.while === 'moving' && !p.moving) continue;
