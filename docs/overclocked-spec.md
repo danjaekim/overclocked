@@ -120,6 +120,7 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 | Anchor | Anchor 0.6 s, only while still | 4-6 | 16 | 8/s, only while still | Turret (v0.9.2): x1.6 power and +50% area (radius, range, arc, jump). It stacks with the Turret Mode passive |
 | Reaper | On kill, at most twice a second, or every 3 s if nothing dies | 4-5 | 12 | 5/s | Each kill adds 0.3 energy (v0.9.0; was 4 a second and 0.5) |
 
+- v0.9.3 note: Overdrive holds at most 4 slots, so a 5-piece chain swapped onto it loses its last piece (the swap test reads about half). That is its trade; nothing was changed. On Dan's replays the old rigs lost about a third of their late dps to the nerfs (free payloads, Reaper rate), and still won.
 - v0.9.0 cut Long frame and Spite: neither was ever picked and their quirks (more slots, a heal on hit) did not matter late. Saved chains on either become Standard, keeping mark, pieces and upgrades. Standard now grows to 6 slots. Plan: `docs/plan-v09.md`.
 - Mk II and Mk III add a starting slot (up to the max), 25% battery and +1/s each.
 - Upgrades bought for a chain (+1/s recharge, +50% battery) belong to its chassis and go when it is replaced.

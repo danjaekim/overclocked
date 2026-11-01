@@ -23,11 +23,11 @@ export const CHASSIS = {
   standard: { name: 'Standard', rule: 'pulse', slots: 3, max: 6, battery: 10, recharge: 6, quirk: {}, desc: 'Fires every 1 s, no quirk; room for 6 slots' },
   capacitor: { name: 'Capacitor', rule: 'charge', slots: 4, max: 6, battery: 24, recharge: 5, quirk: { power: 1.5 }, desc: 'Fires when its battery is full (at most once a second), at x1.5 power' },
   overdrive: { name: 'Overdrive', rule: 'rapid', slots: 3, max: 4, battery: 8, recharge: 8, quirk: { costAdd: 1 }, desc: 'Fires every 0.6 s; pieces cost 1 more' },
-  kiln: { name: 'Kiln', rule: 'pulse', slots: 4, max: 6, battery: 12, recharge: 6, quirk: { elemBoost: true }, desc: 'Elements here hit as if held twice (stronger burn, chill, shock); Steam, Plasma and Static fire twice as often' },
+  kiln: { name: 'Kiln', rule: 'pulse', slots: 4, max: 6, battery: 12, recharge: 6, quirk: { elemBoost: true }, desc: 'Elements here hit as if held twice; Steam, Plasma and Static come twice as often' },
   relay: { name: 'Relay', rule: 'pulse', slots: 5, max: 6, battery: 14, recharge: 6, quirk: { payloadEcho: RELAY_ECHO }, desc: 'Every payload goes off twice: again 0.15 s later at 60%, for free' },
   strider: { name: 'Strider', rule: 'stride', slots: 4, max: 6, battery: 10, recharge: 7, chargeWhile: 'moving', quirk: {}, desc: 'Fires every 80 px you move, so move speed is its fire rate; recharges only while moving' },
   anchor: { name: 'Anchor', rule: 'anchor', slots: 4, max: 6, battery: 16, recharge: 8, chargeWhile: 'still', quirk: { power: 1.6, area: 0.5 }, desc: 'Turret: fires and recharges only while you stand still, at x1.6 power and +50% area' },
-  reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.3 }, desc: 'Fires on kills (twice a second at most), or every 3 s if nothing dies; every kill adds 0.3 energy' },
+  reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.3 }, desc: 'Fires on kills (2 a second at most) or every 3 s idle; each kill adds 0.3 energy' },
 };
 
 export const START_CHASSIS = 'standard';
