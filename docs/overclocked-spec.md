@@ -114,8 +114,8 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 | Standard (start) | Pulse 1 s | 3-6 | 10 | 6/s | None |
 | Capacitor | Charge: when full, at most once a second | 4-6 | 24 | 5/s | x1.5 power |
 | Overdrive | Rapid 0.6 s | 3-4 | 8 | 8/s | Every piece costs 1 more (v0.9.0: the x1.3 power is gone) |
-| Kiln | Pulse 1 s | 4-6 | 12 | 6/s | Element modifiers cost 0; elemental attacks x1.25 |
-| Relay | Pulse 1 s | 5-6 | 14 | 6/s | Payload pieces cost 0 |
+| Kiln | Pulse 1 s | 4-6 | 12 | 6/s | Element amplifier (v0.9.1): elements held by this chain hit as if held twice (burn x2, +1 chill stack, +2 shock jumps), and Steam, Plasma and Static come twice as often. No cost discount |
+| Relay | Pulse 1 s | 5-6 | 14 | 6/s | Payload doubler (v0.9.1): each payload run repeats 0.15 s later at 60% power, for free (from its own pool of 8, so nested triggers work), and a repeat never repeats again |
 | Strider | Stride 0.5 s | 4-6 | 10 | 7/s, only while moving | None |
 | Anchor | Anchor 0.6 s | 4-6 | 16 | 8/s, only while still | None |
 | Reaper | On kill, at most twice a second, or every 3 s if nothing dies | 4-5 | 12 | 5/s | Each kill adds 0.3 energy (v0.9.0; was 4 a second and 0.5) |

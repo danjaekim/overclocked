@@ -9,7 +9,7 @@
 //
 // compileChain(def) -> { rule, energy, recharge, nodes, problems }
 //   def.passives  the rig's passives (rig/passives.js): Last Word and Hair Trigger change the tree
-//   def.quirk  the chassis quirk (rig/chassis.js): power, costAdd, elementFree, elemPower, payloadFree, payloadPower
+//   def.quirk  the chassis quirk (rig/chassis.js): power, costAdd, elemBoost, payloadEcho, payloadPower
 //   node     { kind: 'weapon', piece, idx, mods: [piece ids], elements: [ids], reaction, scatter, echo, power, cost, trigger }
 //   trigger  { piece, idx, on, every, cost, free, payload: [node] }   free: Every 3rd, whose payload costs no energy
 //   power    damage multiplier from piece levels (def.levels: { piece id: 1..5 }): +20% a level for the weapon,
@@ -85,7 +85,7 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
   addSig(id);
   for (const h of held) {
     const m = PIECES[h.id];
-    cost += m.element && q.elementFree ? 0 : m.cost + (q.costAdd || 0) + (q.modCost || 0);
+    cost += m.cost + (q.costAdd || 0) + (q.modCost || 0);
     power *= lvlMult(levels, h.id);
     if (m.scatter) scatter = true;
     if (m.echo) echo = true;
@@ -96,14 +96,13 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
       if (!elements.includes(m.element)) elements.push(m.element);
     }
   }
-  if (inPayload) cost = q.payloadFree ? 0 : Math.max(1, cost - 1);
-  if (elements.length && q.elemPower) power *= q.elemPower;
+  if (inPayload) cost = Math.max(1, cost - 1);
   const sc = sigCount(levels, 'echo');
   const echoMult = sc >= 1 ? ECHO.boosted : ECHO.mult;
   const echoShots = sc >= 2 ? 2 : 1;                           // extra shots after the first
   let reaction = null;                                         // the first neighbouring pair that makes one
   for (let k = 0; k + 1 < seq.length && !reaction; k++) reaction = REACTIONS[`${seq[k]}>${seq[k + 1]}`] || null;
-  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, copies, echo, echoMult, echoShots, sunder, sigMods, power, cost, trigger: null };
+  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, copies, echo, echoMult, echoShots, sunder, sigMods, power, cost, boost: !!q.elemBoost && elements.length > 0, trigger: null };
 }
 
 // Energy the whole chain uses if every attack lands and every trigger fires once: the number the

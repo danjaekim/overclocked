@@ -17,6 +17,7 @@ import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
 import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
+import { RELAY_ECHO } from './chassis.js';
 import { passiveValues } from './passives.js';
 import { addLabel } from '../render/fx.js';
 import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
@@ -41,7 +42,7 @@ function weaponDef(id) {
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], flags: { kill: false }, kills: 0 };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], echoes: [], flags: { kill: false }, kills: 0 };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
@@ -92,6 +93,7 @@ function makeInstance(run, rig, node, chain) {
     const mods = PIECES[id].mods;
     if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
   }
+  if (node.boost) for (const el of node.elements) for (const m of INTENSIFY[el]) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });   // Kiln: each element as if held twice
   const mods = node.reaction === 'superconduct' ? [{ stat: 'critChance', op: 'flat', value: SUPERCONDUCT_CRIT }]
     : node.reaction && node.reaction.startsWith('intensify_') ? INTENSIFY[node.reaction.slice(10)] : null;
   if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
@@ -291,6 +293,18 @@ export function updateRig(run, dt) {
     if (fired > 0) note(run, rig, 'echo', { act: d.act.id, piece: d.node.piece, copies: fired });
   }
 
+  const ec = rig.echoes;                                       // Relay: a payload's second run
+  for (let i = ec.length - 1; i >= 0; i--) {
+    const e = ec[i];
+    e.t -= dt;
+    if (e.t > 0) continue;
+    ec.splice(i, 1);
+    const job = e.job;
+    const act = { id: job.act.id, chain: job.act.chain, bat: job.act.bat, spent: 0, scale: job.act.scale * RELAY_ECHO.mult, pool: RELAY_ECHO.pool, echo: true };   // its own pool: the echo costs the chain nothing
+    note(run, rig, 'payload', { act: act.id, trigger: job.trig.piece, x: job.x, y: job.y, pool: act.pool, gen: job.gen || 0, echo: true });
+    runNodes(run, rig, job.trig.payload, job.x, job.y, act, true, job.gen || 0);
+  }
+
   const q = rig.queue;
   for (let n = 0; rig.head < q.length && n < MAX_PAYLOADS_PER_TICK; n++) {
     const job = q[rig.head++];
@@ -300,6 +314,8 @@ export function updateRig(run, dt) {
     run.sfx('proc');
     if (job.gen > 0) addLabel(run, job.x, job.y - 14, `x${job.gen + 1}`, '#ffe08a');          // a cascade, counting up
     runNodes(run, rig, job.trig.payload, job.x, job.y, job.act, job.trig.free === true, job.gen || 0);
+    const pe = job.chain.def.quirk && job.chain.def.quirk.payloadEcho;
+    if (pe && !job.act.echo && ec.length < MAX_QUEUE) ec.push({ t: pe.delay, job });          // Relay: again a moment later
   }
   if (rig.head >= q.length) {
     q.length = 0;

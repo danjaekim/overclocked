@@ -281,12 +281,11 @@ test('chassis quirks: extra cost, free elements, free payloads, and power', () =
   assert.equal(over.nodes[0].cost, plain.nodes[0].cost + 2, 'Flame and Mortar cost 1 more each');
   assert.equal(over.nodes[0].trigger.cost, plain.nodes[0].trigger.cost + 1);
   approx(over.nodes[0].power, plain.nodes[0].power * 1.3, 1e-9);
-  const kiln = compileChain({ rule: 'pulse', slots, quirk: { elementFree: true, elemPower: 1.25 } });
-  assert.equal(kiln.nodes[0].cost, PIECES.mortar.cost);
-  approx(kiln.nodes[0].power, plain.nodes[0].power * 1.25, 1e-9);
-  approx(kiln.nodes[0].trigger.payload[0].power, plain.nodes[0].trigger.payload[0].power, 1e-9, 'the Nova has no element');
-  const relay = compileChain({ rule: 'pulse', slots, quirk: { payloadFree: true, payloadPower: 1.25 } });
-  assert.equal(relay.nodes[0].trigger.payload[0].cost, 0);
+  const kiln = compileChain({ rule: 'pulse', slots, quirk: { elemBoost: true } });
+  assert.equal(kiln.nodes[0].boost, true, 'Kiln marks the node that holds an element');
+  assert.equal(kiln.nodes[0].cost, plain.nodes[0].cost, 'no cost discount any more');
+  assert.equal(compileChain({ rule: 'pulse', slots: ['mortar'], quirk: { elemBoost: true } }).nodes[0].boost, false, 'no element, no boost');
+  const relay = compileChain({ rule: 'pulse', slots, quirk: { payloadPower: 1.25 } });
   approx(relay.nodes[0].trigger.payload[0].power, plain.nodes[0].trigger.payload[0].power * 1.25, 1e-9);
 });
 

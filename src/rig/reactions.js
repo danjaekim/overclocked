@@ -13,6 +13,7 @@
 import { ST } from '../data/statuses.js';
 import { param } from '../game/weapon-params.js';
 import { addSteam, addShatter, addBlast, addPatch, addVortex } from '../systems/hazards.js';
+import { KILN_REACT } from '../rig/chassis.js';
 import { CAUSE } from '../systems/damage-queue.js';
 
 export const STEAM = { radius: 55, ttl: 2.2, every: 0.5 };           // a node makes at most one cloud per `every` seconds
@@ -29,8 +30,9 @@ export const INTENSIFY = {
 };
 
 export function reactOnHit(run, node, inst, target) {
+  const k = node.boost ? KILN_REACT : 1;                              // Kiln: Steam, Plasma and Static come twice as often
   if (node.reaction === 'steam') {
-    if (run.time - inst.reactAt < STEAM.every) return;
+    if (run.time - inst.reactAt < STEAM.every * k) return;
     inst.reactAt = run.time;
     addSteam(run, inst, target.x, target.y, STEAM.radius, STEAM.ttl);
   } else if (node.reaction === 'shatter') {
@@ -42,11 +44,11 @@ export function reactOnHit(run, node, inst, target) {
     target.status &= ~ST.BURN;
     addBlast(run, inst, target.x, target.y, OVERLOAD.radius, OVERLOAD.tele, param(run, inst, 'damage') * OVERLOAD.frac, 1, {}, CAUSE.OVERLOAD);
   } else if (node.reaction === 'plasma') {
-    if (run.time - inst.reactAt < PLASMA.every) return;
+    if (run.time - inst.reactAt < PLASMA.every * k) return;
     inst.reactAt = run.time;
     addPatch(run, inst, target.x, target.y, PLASMA.radius, PLASMA.ttl, PLASMA.tick, param(run, inst, 'damage') * PLASMA.frac, 1, false, 'burn', CAUSE.REACTION);
   } else if (node.reaction === 'static') {
-    if (run.time - inst.reactAt < STATIC.every) return;
+    if (run.time - inst.reactAt < STATIC.every * k) return;
     inst.reactAt = run.time;
     addVortex(run, inst, target.x, target.y, STATIC.radius, STATIC.ttl, STATIC.pull, 0, 1);
   }

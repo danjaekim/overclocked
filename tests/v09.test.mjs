@@ -5,6 +5,21 @@ import { CHASSIS, migrateChassis, chassisForRule } from '../src/rig/chassis.js';
 import { migrateRig, newRig } from '../src/rig/editor.js';
 import { chassisCards } from '../src/rig/offers.js';
 import { createRng } from '../src/core/rng.js';
+import { createRun } from '../src/game/run.js';
+import { spawnEnemy } from '../src/game/director.js';
+import { installRig } from '../src/rig/rig.js';
+import { reactOnHit } from '../src/rig/reactions.js';
+import { RELAY_ECHO, KILN_REACT } from '../src/rig/chassis.js';
+
+const STEP = 1 / 60;
+const newRun = () => {
+  const run = createRun({ seed: 11, view: { w: 480, h: 1040 }, debug: { god: true }, classId: 'smith' });
+  run.director.update = () => {};
+  run.player.weapons.length = 0;
+  return run;
+};
+const dummy = (run, x, y, hp = 1e9) => { const e = spawnEnemy(run, 'goblin', x, y); e.speed = 0; e.hp = e.maxHp = hp; return e; };
+const tick = (run, s) => { for (let i = 0; i < Math.round(s / STEP); i++) run.update(STEP, { x: 0, y: 0 }); };
 
 test('v0.9.0: Long and Spite are gone and old chains become Standard, keeping their pieces and upgrades', () => {
   assert.equal(CHASSIS.long, undefined);
@@ -33,4 +48,69 @@ test('v0.9.0: Overdrive no longer has a power bonus, and Reaper is slower', () =
   assert.equal(CHASSIS.overdrive.quirk.power, undefined);
   assert.equal(CHASSIS.overdrive.quirk.costAdd, 1);
   assert.equal(CHASSIS.reaper.quirk.killCharge, 0.3);
+});
+
+test('v0.9.1 Kiln: the same chain burns about twice as hard as on Standard, with no discount', () => {
+  const firstBurn = (quirk) => {
+    const run = newRun();
+    installRig(run, [{ rule: 'pulse', slots: ['flame', 'blaster'], energy: 40, quirk }]);
+    const e = dummy(run, 100, 0);
+    for (let i = 0; i < 120 && !(e.burnT > 0); i++) run.update(STEP, { x: 0, y: 0 });
+    return e.burnDps;
+  };
+  const plain = firstBurn({});
+  const kiln = firstBurn(CHASSIS.kiln.quirk);
+  assert.ok(plain > 0 && kiln > plain * 1.6, `burn ${plain} vs ${kiln}`);
+});
+
+test('v0.9.1 Kiln: Steam clouds can come twice as often', () => {
+  const clouds = (quirk) => {
+    const run = newRun();
+    const rig = installRig(run, [{ rule: 'pulse', slots: ['flame', 'frost', 'blaster'], energy: 40, quirk }]);
+    const node = rig.chains[0].nodes[0];
+    const e = dummy(run, 100, 0);
+    run.time = 10;
+    reactOnHit(run, node, node.inst, e);
+    run.time += 0.35;                                  // past Kiln's cooldown, inside Standard's
+    reactOnHit(run, node, node.inst, e);
+    return run.hazards.length;
+  };
+  assert.equal(clouds({}), 1);
+  assert.equal(clouds(CHASSIS.kiln.quirk), 2);
+  assert.equal(KILN_REACT, 0.5);
+});
+
+test('v0.9.1 Relay: every payload runs a second time later at 60%, for free; Standard runs it once', () => {
+  const count = (quirk) => {
+    const run = newRun();
+    const rig = installRig(run, [{ rule: 'pulse', slots: ['blaster', 'on_hit', 'nova'], energy: 40, quirk }], { log: true });
+    dummy(run, 100, 0);
+    tick(run, 2);
+    const pay = rig.log.filter((l) => l.ev === 'payload');
+    return { first: pay.filter((l) => !l.echo).length, echo: pay.filter((l) => l.echo) };
+  };
+  const std = count({});
+  const rel = count(CHASSIS.relay.quirk);
+  assert.ok(std.first >= 1 && std.echo.length === 0);
+  assert.ok(rel.first >= 1 && rel.echo.length >= 1 && rel.echo.length <= rel.first, JSON.stringify([rel.first, rel.echo.length]));
+  assert.equal(rel.echo[0].pool, RELAY_ECHO.pool, 'it runs from its own pool, not the chain battery');
+});
+
+test('v0.9.1 Relay: an echo does not drain the battery or echo again', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'pulse', slots: ['blaster', 'on_hit', 'nova'], energy: 40, recharge: 0, quirk: CHASSIS.relay.quirk }], { log: true });
+  dummy(run, 100, 0);
+  tick(run, 0.5);
+  const spent = 40 - rig.chains[0].bat.pool;
+  const echoes = rig.log.filter((l) => l.ev === 'payload' && l.echo).length;
+  const firsts = rig.log.filter((l) => l.ev === 'payload' && !l.echo).length;
+  assert.ok(echoes <= firsts);
+  const noEcho = (() => {
+    const r2 = newRun();
+    const g = installRig(r2, [{ rule: 'pulse', slots: ['blaster', 'on_hit', 'nova'], energy: 40, recharge: 0 }], { log: true });
+    dummy(r2, 100, 0);
+    tick(r2, 0.5);
+    return 40 - g.chains[0].bat.pool;
+  })();
+  assert.ok(Math.abs(spent - noEcho) < 1e-6, `${spent} vs ${noEcho}`);
 });

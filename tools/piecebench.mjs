@@ -136,9 +136,9 @@ function passives() {
 
 function chassis() {
   HP = 150;
-  const chains = [['blaster'], ['flame', 'mortar', 'on_impact', 'scatter', 'nova'], ['heavy', 'blaster', 'on_kill', 'echo', 'nova', 'slam']];
+  const chains = [['blaster'], ['flame', 'mortar', 'on_impact', 'scatter', 'nova'], ['heavy', 'blaster', 'on_kill', 'echo', 'nova', 'slam'], ['flame', 'storm', 'nova'], ['blaster', 'on_hit', 'nova']];   // the On Kill chain rarely fires its payload here (heavy hits, few kills): the last two are for Kiln (elements) and Relay (payloads)
   section('chassis (Mk I): the same chains on each chassis, sustained dps over the run (cost = one full run of the chain)');
-  console.log(`${'chassis'.padEnd(12)} ${chains.map((c) => c.join(' ').padEnd(44)).join('')}`);
+  console.log(`${'chassis'.padEnd(12)} ${chains.map((c) => c.join(' ').padEnd(40)).join('')}`);
   for (const id of Object.keys(CHASSIS)) {
     const cells = chains.map((slots) => {
       const rig = newRig([{ chassis: id, mk: 1, slots, size: 6 }]);
@@ -146,7 +146,7 @@ function chassis() {
       const c = analyzeChain({ ...def, energy: 1000 }).cost;
       const crowd = measure(slots, { crowd: true, def });
       const one = measure(slots, { crowd: false, def });
-      return `c${String(c).padStart(2)} crowd ${String(crowd).padStart(5)} one ${String(one).padStart(4)}`.padEnd(44);
+      return `c${String(c).padStart(2)} crowd ${String(crowd).padStart(5)} one ${String(one).padStart(4)}`.padEnd(40);
     });
     console.log(`${id.padEnd(12)} ${cells.join('')}`);
   }
