@@ -75,4 +75,10 @@ export const TOPUP_PER_SEC = 25;
 export const TOUGH_SHARE = 0.25;     // from minute 5 on, this share of top-ups is picked from the non-goblin entries
 export const TOUGH_FROM = 300;
 
+// Wave hp follows the rig (v0.8.5): enemy hp x sqrt(your raw dps over the last 20 s / HP_FOLLOW_REF), between 1 and
+// HP_FOLLOW_MAX. HP_FOLLOW_REF is a solid build's raw dps at each minute (between the bench bot and Dan's replays), so an
+// average or weaker rig sees 1x and only a runaway build meets tougher enemies. Bosses scale on their own (enemies.js).
+export const HP_FOLLOW_REF = [60, 120, 250, 400, 650, 1000, 1600, 2500, 4000, 6000];
+export const HP_FOLLOW_MAX = 3;
+
 export const ENEMY_SOFT_CAP = 500;   // director stops spawning here and buffs hp instead

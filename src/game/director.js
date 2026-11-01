@@ -3,7 +3,8 @@
 
 import { ELITE, affixDefs } from '../data/elites.js';
 import { ENEMIES, PROPS } from '../data/enemies.js';
-import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP, RATE_RAMP, MIN_ALIVE, TOPUP_PER_SEC, TOUGH_SHARE, TOUGH_FROM } from '../data/waves.js';
+import { RUN, WAVES, EVENTS, ENEMY_SOFT_CAP, RATE_RAMP, MIN_ALIVE, TOPUP_PER_SEC, TOUGH_SHARE, TOUGH_FROM, HP_FOLLOW_REF, HP_FOLLOW_MAX } from '../data/waves.js';
+import { recentRawDps } from './run-stats.js';
 import { RUN_EVENTS } from './run-events.js';
 import { perimeterPoint, lerp } from '../core/math.js';
 
@@ -91,23 +92,31 @@ export function createDirector(run) {
   let damageScale = 1;
   let nextEvent = 0;                                // EVENTS is sorted by `at`
   let topAcc = 0;                                   // top-up spawns owed (MIN_ALIVE)
+  let follow = 1;                                   // wave hp x this in a rig run (HP_FOLLOW_REF)
+  let followT = 0;
 
   return {
-    get hpScale() { return hpScale * (1 + capBuff); },
+    get hpScale() { return hpScale * (1 + capBuff) * follow; },
+    get follow() { return follow; },
     get speedScale() { return speedScale; },
     get damageScale() { return damageScale; },
     get capBuff() { return capBuff; },
 
     // The closure state, for run snapshots (game/run-snapshot.js).
-    getState() { return { acc: acc.map((a) => a.slice()), capBuff, hpScale, speedScale, damageScale, nextEvent, topAcc }; },
+    getState() { return { acc: acc.map((a) => a.slice()), capBuff, hpScale, speedScale, damageScale, nextEvent, topAcc, follow }; },
     setState(st) {
       st.acc.forEach((a, i) => a.forEach((v, j) => { acc[i][j] = v; }));
-      capBuff = st.capBuff; hpScale = st.hpScale; speedScale = st.speedScale; damageScale = st.damageScale; nextEvent = st.nextEvent; topAcc = st.topAcc || 0;
+      capBuff = st.capBuff; hpScale = st.hpScale; speedScale = st.speedScale; damageScale = st.damageScale; nextEvent = st.nextEvent; topAcc = st.topAcc || 0; follow = st.follow || 1;
     },
 
     update(dt) {
       const t = run.time / timeScale;                 // time on the authored timeline
       const atCap = run.world.enemies.count >= ENEMY_SOFT_CAP;
+      if (run.rigRun && (followT -= dt) <= 0) {             // once a second: how far the rig is ahead of a solid build
+        followT = 1;
+        const ref = HP_FOLLOW_REF[Math.min(HP_FOLLOW_REF.length - 1, Math.floor(t / 60))];
+        follow = Math.min(HP_FOLLOW_MAX, Math.max(1, recentRawDps(run, 20) / ref));
+      }
       if (atCap) capBuff += CAP_BUFF_PER_SEC * dt;
 
       const ramp = t <= RATE_RAMP.from ? 1 : lerp(1, RATE_RAMP.end, Math.min(1, (t - RATE_RAMP.from) / (RATE_RAMP.to - RATE_RAMP.from)));
@@ -135,7 +144,7 @@ export function createDirector(run) {
           while (acc[i][j] >= 1) {
             acc[i][j] -= 1;
             randomPerimeterPoint(run, tmp);
-            if (!spawnEnemy(run, s.enemy, tmp.x, tmp.y, hpScale * (1 + capBuff))) {
+            if (!spawnEnemy(run, s.enemy, tmp.x, tmp.y, hpScale * (1 + capBuff) * follow)) {
               acc[i][j] = 0;                          // pool exhausted
               break;
             }
@@ -156,7 +165,7 @@ export function createDirector(run) {
           const id = pickTopUp(run, t);
           if (!id) break;
           randomPerimeterPoint(run, tmp);
-          const f = spawnEnemy(run, id, tmp.x, tmp.y, hpScale * (1 + capBuff));
+          const f = spawnEnemy(run, id, tmp.x, tmp.y, hpScale * (1 + capBuff) * follow);
           if (!f) { topAcc = 0; break; }
           f.fodder = 1;
           alive++;

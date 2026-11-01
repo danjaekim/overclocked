@@ -130,12 +130,12 @@ const bossRun = (dps, enemy = 'warlord') => {
 };
 
 test('v08 boss hp follows your recent dps: 1x for a weak rig, dps x 25 s for a strong one, capped at 6x', () => {
-  assert.equal(bossRun(100).boss.maxHp, ENEMIES.warlord.hp);                     // raw 100/s x 0.2 x 35 s = 700, under the base
-  assert.equal(bossRun(1000).boss.maxHp, 7000);                                  // 1000 x 0.2 x 35
-  assert.equal(bossRun(20000).boss.maxHp, ENEMIES.warlord.hp * 8);
-  assert.equal(bossRun(5000, 'seer').boss.maxHp, 13500);                         // 5000 x 0.06 x 45
+  assert.equal(bossRun(100).boss.maxHp, ENEMIES.warlord.hp);                     // raw 100/s x 0.3 x 35 s = 1050, under the base
+  assert.equal(bossRun(1000).boss.maxHp, 10500);                                 // 1000 x 0.3 x 35
+  assert.equal(bossRun(20000).boss.maxHp, ENEMIES.warlord.hp * 10);
+  assert.equal(bossRun(5000, 'seer').boss.maxHp, 45000);                         // 5000 x 0.2 x 45
   assert.equal(bossRun(10).boss.hp, bossRun(10).boss.maxHp);
-  assert.equal(bossRun(1000).boss.hpMult, 7000 / ENEMIES.warlord.hp);
+  assert.equal(bossRun(1000).boss.hpMult, 10500 / ENEMIES.warlord.hp);
 });
 
 test('v08 a boss calls an escort at 66% and 33% hp, once each', () => {
@@ -180,4 +180,28 @@ test('v08 a run records its rig once a minute, and the history keeps it for the 
   const json = JSON.parse(runData([e]));
   assert.equal(json.game, 'overclocked');
   assert.equal(json.runs[0].timeline.length, 3);
+});
+
+import { chargePrice, cellPrice, PRICE } from '../src/rig/workbench.js';
+import { HP_FOLLOW_REF, HP_FOLLOW_MAX } from '../src/data/waves.js';
+
+test('v08.5 charge and cell cost more for every one the rig already has', () => {
+  const rig = newRig([{ rule: 'pulse', slots: ['blaster'] }, { rule: 'pulse', slots: ['nova'] }]);
+  assert.equal(chargePrice(rig), PRICE.charge);
+  rig.chains[0].charge = 2; rig.chains[1].charge = 1; rig.chains[1].cell = 4;
+  assert.equal(chargePrice(rig), PRICE.charge + 3 * PRICE.upgradeStep);
+  assert.equal(cellPrice(rig), PRICE.cell + 4 * PRICE.upgradeStep);
+});
+
+test('v08.5 wave hp follows a rig that is far ahead of a solid build, up to HP_FOLLOW_MAX', () => {
+  const at = (raw) => {
+    const run = directed(360);
+    run.stats.rawSec = new Array(360).fill(raw);
+    run.director.update(STEP);
+    return run.director.follow;
+  };
+  const ref = HP_FOLLOW_REF[6];
+  assert.equal(at(ref / 2), 1);
+  assert.ok(Math.abs(at(ref * 2) - 2) < 1e-9);
+  assert.equal(at(ref * 50), HP_FOLLOW_MAX);
 });

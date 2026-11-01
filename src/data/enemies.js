@@ -63,7 +63,7 @@ export const ENEMIES = {
   warlord: {
     name: 'Warlord',
     hp: 1800, speed: 52, damage: 18, radius: 34,
-    fight: 35, hpMaxMult: 8, rawShare: 0.2,              // boss hp = your recent raw dps (overkill included, so it follows the rig, not the crowd) x rawShare x `fight` seconds, between 1x and `hpMaxMult` x hp (run-events.js boss)          // 25 in Overforged; bots in a rig run died to it within 20-40 s at full hp (v0.5.5)
+    fight: 35, hpMaxMult: 10, rawShare: 0.3,              // boss hp = your recent raw dps (overkill included, so it follows the rig, not the crowd) x rawShare x `fight` seconds, between 1x and `hpMaxMult` x hp (run-events.js boss)          // 25 in Overforged; bots in a rig run died to it within 20-40 s at full hp (v0.5.5)
     xp: 100,
     ore: { chance: 1, type: 'starsteel', count: 2 },
     ai: 'boss_charge',
@@ -87,7 +87,7 @@ export const ENEMIES = {
   seer: {
     name: 'Ashen Seer',
     hp: 3500, speed: 70, damage: 30, radius: 36,
-    fight: 45, hpMaxMult: 12, rawShare: 0.06,
+    fight: 45, hpMaxMult: 40, rawShare: 0.2,
     xp: 200,
     ore: { chance: 1, type: 'starsteel', count: 3 },
     ai: 'boss_caster',

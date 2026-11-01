@@ -20,6 +20,8 @@ if (!file) { console.error('usage: node tools/replaybench.mjs --file runs.json [
 const data = JSON.parse(fs.readFileSync(file, 'utf8'));
 const runs = (data.runs || data.history || []).filter((e) => e && e.rig && e.rig.chains && e.rig.chains.length);
 const N = Number(arg('--runs', 5));
+// STRIP=lv5,up2,mk1,nopass (comma list) takes those out of every replayed rig: what each source of late power is worth.
+const STRIP = (process.env.STRIP || '').split(',');
 const seed = Number(arg('--seed', 1));
 
 // A stored rig (save.js cleanRig / cleanTimeline) back into a full rig state.
@@ -30,7 +32,10 @@ export function rigFrom(r) {
   }));
   const rig = newRig(chains);
   rig.levels = { ...(r.levels || {}) };
-  rig.passives = { ...(r.passives || {}) };
+  if (STRIP.includes('lv5')) for (const k of Object.keys(rig.levels)) rig.levels[k] = Math.min(5, rig.levels[k]);
+  if (STRIP.includes('up2')) for (const c of rig.chains) { c.charge = Math.min(2, c.charge); c.cell = Math.min(2, c.cell); }
+  if (STRIP.includes('mk1')) for (const c of rig.chains) c.mk = 1;
+  rig.passives = STRIP.includes('nopass') ? {} : { ...(r.passives || {}) };
   rig.stats = { ...(r.stats || {}) };
   return rig;
 }
@@ -66,7 +71,7 @@ for (const e of pick) {
   console.log(`\n${new Date(e.t).toISOString().slice(0, 16)} ${sch.approx ? '(approx: final rig from 2:00)' : ''}`);
   console.log(`  you:    ${e.won ? 'won' : `died at ${e.time} s`}, level ${e.level}, ${e.kills} kills`);
   console.log(`  replay: ${real.res.won ? 'won' : `died at ${real.res.time} s`}, ${real.res.kills} kills (bot movement, your rig)`);
-  console.log(`  on screen: min 3 ${fmt(on(3, 3))}, min 6-9 ${fmt(on(6, 9))}; gold ${fmt(god.gold)}`);
+  console.log(`  on screen: min 3 ${fmt(on(3, 3))}, min 6-9 ${fmt(on(6, 9))}; gold ${fmt(god.gold)}; raw dps at 5/8/10 min ${[4, 7, 9].map((m) => fmt(god.mins[m] && god.mins[m].raw)).join(' / ')}`);
   for (const b of god.boss) console.log(`  boss ${b}`);
   for (const p of sch.points) if (p.raw) rawMine.push([p.t, p.raw]);
 }

@@ -228,11 +228,11 @@ test('reactions: Superconduct adds crit chance and Intensify adds status power t
   assert.ok(it.run.player.stats.getFor('burnPower', b2.tags) > it.run.player.stats.getFor('burnPower', n2.tags));
 });
 
-test('overclocked levels 6 and 7 add x1.25 power each on top of level 5', () => {
+test('overclocked levels 6 and 7 add x1.1 power each on top of level 5', () => {
   const p = (lv) => compileChain({ rule: 'pulse', slots: ['blaster'], levels: { blaster: lv } }).nodes[0].power;
   approx(p(5), 1.4, 1e-9);
-  approx(p(6), 1.4 * 1.25, 1e-9);
-  approx(p(7), 1.4 * 1.25 * 1.25, 1e-9);
+  approx(p(6), 1.4 * 1.1, 1e-9);
+  approx(p(7), 1.4 * 1.1 * 1.1, 1e-9);
 });
 
 test('Sunder: each direct hit adds a stack, up to the cap, and the stacks wear off 3 s after the last hit', async () => {

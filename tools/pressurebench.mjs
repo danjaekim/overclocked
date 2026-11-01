@@ -5,6 +5,7 @@
 // The baseline bot rig is about 1x. Compare 1x and 8x on the same seed.
 
 import { playRig } from './rigbench.mjs';
+import { recentRawDps } from '../src/game/run-stats.js';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
 const seed = Number(arg('--seed', 1));
@@ -29,7 +30,7 @@ export function probe(seed, { replay = null, god = true } = {}) {
     lastOre = run.ore;
     s.gold = gold;
     s.kills = run.kills;
-    s.raw = run.stats.rawSec[Math.floor(t) - 1] || 0;
+    s.raw = recentRawDps(run, 20);                    // raw dps over the last 20 s, read at the end of the minute
     s.rawSum = (s.rawSum || 0) + s.raw * STEP_S;
     const now = new Set();
     for (const e of run.world.enemies.active) {

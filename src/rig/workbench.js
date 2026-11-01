@@ -8,7 +8,7 @@ import { pieceCandidates, offerWeights, COPY_WEIGHT, chassisCards, describeChass
 import { placeSuggested, levelUp, pieceLevel, owned, overclock, addSlot, addPower, addChassis, replaceChassis, hasSlotRoom } from './editor.js';
 import { CHARGE_STEP, CELL_STEP } from './chassis.js';
 
-export const PRICE = { piece: 40, copy: 35, level: 30, reroll: 25, slot: 50, slotStep: 25, charge: 35, cell: 30, chassis: 60, chassisStep: 30, overclock: 100, overclockStep: 50 };
+export const PRICE = { piece: 40, copy: 35, level: 30, reroll: 25, slot: 50, slotStep: 25, charge: 35, cell: 30, chassis: 60, chassisStep: 30, overclock: 100, overclockStep: 100, upgradeStep: 15 };
 export const CHASSIS_CHANCE = 0.5;    // a chassis is on offer about one visit in two
 export const CHASSIS_MK2 = 0.35;      // and a Mk II about one time in three
 export const GOLD_NAME = 'Gold';
@@ -18,6 +18,10 @@ export const levelPrice = (to) => PRICE.level + 10 * (to - 2);          // 30 fo
 export const slotPrice = (bought) => PRICE.slot + PRICE.slotStep * bought;          // each slot bought this run costs more
 export const chassisPrice = (mk) => PRICE.chassis + PRICE.chassisStep * (mk - 1);         // 60 for Mk I, 90 for Mk II, 120 for Mk III
 export const overclockPrice = (to) => PRICE.overclock + PRICE.overclockStep * (to - MAX_LEVEL - 1);   // 100 for level 6, 150 for 7
+// Charge and cell cost upgradeStep more for every one the rig already has (v0.8.5): stacking 12 on one chain was a late-game spike.
+const upgradesOf = (rig, k) => rig.chains.reduce((n, c) => n + (c[k] || 0), 0);
+export const chargePrice = (rig) => PRICE.charge + PRICE.upgradeStep * upgradesOf(rig, 'charge');
+export const cellPrice = (rig) => PRICE.cell + PRICE.upgradeStep * upgradesOf(rig, 'cell');
 export const rerollPrice = (visitRerolls) => PRICE.reroll * 2 ** visitRerolls;          // 25, 50, 100 within one visit
 
 function take(rng, list, weight = () => 1) {
@@ -56,8 +60,8 @@ export function stockUp(rng, rig, banished = [], { slotBuys = 0 } = {}) {
   const room = rig.chains.some((_, i) => hasSlotRoom(rig, i));
   const r = rng.next();
   if (room && r < 0.5) out.push({ kind: 'slot', price: slotPrice(slotBuys) });
-  else if (r < 0.75) out.push({ kind: 'charge', price: PRICE.charge });
-  else out.push({ kind: 'cell', price: PRICE.cell });
+  else if (r < 0.75) out.push({ kind: 'charge', price: chargePrice(rig) });
+  else out.push({ kind: 'cell', price: cellPrice(rig) });
   if (rng.next() < CHASSIS_CHANCE) {
     const mk = rng.next() < CHASSIS_MK2 ? 2 : 1;
     out.push({ ...chassisCards(rng, 1, mk)[0], price: chassisPrice(mk) });
