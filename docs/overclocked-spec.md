@@ -53,7 +53,6 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 | Stride | Every 0.5 s while moving | Kiting |
 | Anchor | Every 0.6 s while standing still | Turret. Risky in a crowd |
 | Reaper | On any kill, at most 4 times per second, and every 3 s if nothing dies | Snowballs in big waves |
-| Spite | When you take damage; each firing heals 6% of max hp | Defensive bursts |
 
 Classes come after the proof of concept. Each class will start with a different rule card, for example a kiting class that starts with Stride.
 
@@ -112,17 +111,16 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 
 | Chassis | Rule | Slots | Battery | Recharge | Quirk |
 | --- | --- | --- | --- | --- | --- |
-| Standard (start) | Pulse 1 s | 3-5 | 10 | 6/s | None |
-| Long frame | Pulse 1 s | 5-6 | 12 | 6/s | None |
+| Standard (start) | Pulse 1 s | 3-6 | 10 | 6/s | None |
 | Capacitor | Charge: when full, at most once a second | 4-6 | 24 | 5/s | x1.5 power |
-| Overdrive | Rapid 0.6 s | 3-4 | 8 | 8/s | x1.3 power, every piece costs 1 more |
+| Overdrive | Rapid 0.6 s | 3-4 | 8 | 8/s | Every piece costs 1 more (v0.9.0: the x1.3 power is gone) |
 | Kiln | Pulse 1 s | 4-6 | 12 | 6/s | Element modifiers cost 0; elemental attacks x1.25 |
 | Relay | Pulse 1 s | 5-6 | 14 | 6/s | Payload pieces cost 0 |
 | Strider | Stride 0.5 s | 4-6 | 10 | 7/s, only while moving | None |
 | Anchor | Anchor 0.6 s | 4-6 | 16 | 8/s, only while still | None |
-| Reaper | On kill | 4-5 | 12 | 5/s | Each kill adds 0.5 energy |
-| Spite | When hurt | 4-5 | 20 | 5/s | Heals as before; each hit adds 2 energy |
+| Reaper | On kill, at most twice a second, or every 3 s if nothing dies | 4-5 | 12 | 5/s | Each kill adds 0.3 energy (v0.9.0; was 4 a second and 0.5) |
 
+- v0.9.0 cut Long frame and Spite: neither was ever picked and their quirks (more slots, a heal on hit) did not matter late. Saved chains on either become Standard, keeping mark, pieces and upgrades. Standard now grows to 6 slots. Plan: `docs/plan-v09.md`.
 - Mk II and Mk III add a starting slot (up to the max), 25% battery and +1/s each.
 - Upgrades bought for a chain (+1/s recharge, +50% battery) belong to its chassis and go when it is replaced.
 - Overdraft (v0.6.5): an attack that costs more than the whole battery (a Heavy Scatter Echo Nova stack on a small battery) is no longer dead. It fires when the battery is full, which puts the pool into debt, and the chain waits while it recharges back. So such a chain runs at about recharge / cost activations a second, and a bigger battery only helps up to the cost of its dearest attack.
@@ -280,7 +278,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - Unlocks wait until after the first test build.
 - No query parameter. The game's default path boots into the build for the current milestone: the sandbox for M2, then the full run from M4.
 - The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. From M4 it opens from the pause menu ("Chain sandbox (debug)"); `?sandbox=1` boots it directly, for tests.
-- Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload power depends on its job (v0.6.8, `TRIGGER_POWER`): On Hit x0.9 (it runs for every enemy hit, so crowds supply the power), On Impact x2.5 (once per attack), On Kill x2.5 (and a payload's kills cascade), Every 3rd x3 (and its payload costs no energy). Each other payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own. Spite's power and heal scale with missing hp (x2 at death's door).
+- Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload power depends on its job (v0.6.8, `TRIGGER_POWER`): On Hit x0.9 (it runs for every enemy hit, so crowds supply the power), On Impact x2.5 (once per attack), On Kill x2.5 (and a payload's kills cascade), Every 3rd x3 (and its payload costs no energy). Each other payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own.
 - A run starts with 130 HP and 0.5 HP/s regeneration (the stat default plus the Archer's numbers from Overforged). This is a first guess, tuned in M5.
 - Capacity: levels 5, 10, 15 and 20 offer three capacity cards (+1 slot in the shortest chain, a new chain with a random rule card, +3 energy for a chain) instead of pieces. Chests roll 1, 3 or 5 items (the first elite chest at least 3, a boss chest always 5 with capacity first), and a piece with no room becomes another kind of roll.
 - Duplicates and capacity (v0.5.6): level-ups, chests and the shop offer copies of pieces you own (all copies share one level). Capacity cards offer +1 slot for the two shortest chains and energy; a new chain is offered only once every chain has 4 slots, and +1 slot also gives that chain +2 energy. The workbench stocks two pieces (new or copies), an upgrade (a level, or an Overclock to level 6 or 7, x1.1 power each since v0.8.5 (was x1.25, which compounded across every overclocked piece in a chain), 100 and 200 gold, shop only), +1 slot (50, +25 per slot bought) or +3 energy for a chain you pick, and a rule card on about one visit in three.

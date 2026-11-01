@@ -11,23 +11,20 @@
 //                payloadFree  pieces in a payload cost 0 (the trigger itself still costs)
 //                payloadPower payloads hit x this harder
 //                killCharge   energy each enemy kill (anyone's) adds
-//                hurtCharge   energy each hit you take adds
 //
 // A chassis comes in marks 1 to MK_MAX: each mark past the first adds a starting slot (up to its max), MK_BATTERY of its
 // battery and MK_RECHARGE recharge. A chain also keeps what was bought for it: `charge` (+CHARGE_STEP recharge each)
 // and `cell` (+CELL_STEP of the base battery each). Both are lost when the chassis is replaced.
 
 export const CHASSIS = {
-  standard: { name: 'Standard', rule: 'pulse', slots: 3, max: 5, battery: 10, recharge: 6, quirk: {}, desc: 'Fires every 1 s, no quirk' },
-  long: { name: 'Long frame', rule: 'pulse', slots: 5, max: 6, battery: 12, recharge: 6, quirk: {}, desc: 'Fires every 1 s; more room, no quirk' },
+  standard: { name: 'Standard', rule: 'pulse', slots: 3, max: 6, battery: 10, recharge: 6, quirk: {}, desc: 'Fires every 1 s, no quirk; room for 6 slots' },
   capacitor: { name: 'Capacitor', rule: 'charge', slots: 4, max: 6, battery: 24, recharge: 5, quirk: { power: 1.5 }, desc: 'Fires when its battery is full (at most once a second), at x1.5 power' },
-  overdrive: { name: 'Overdrive', rule: 'rapid', slots: 3, max: 4, battery: 8, recharge: 8, quirk: { costAdd: 1, power: 1.3 }, desc: 'Fires every 0.6 s at x1.3 power; pieces cost 1 more' },
+  overdrive: { name: 'Overdrive', rule: 'rapid', slots: 3, max: 4, battery: 8, recharge: 8, quirk: { costAdd: 1 }, desc: 'Fires every 0.6 s; pieces cost 1 more' },
   kiln: { name: 'Kiln', rule: 'pulse', slots: 4, max: 6, battery: 12, recharge: 6, quirk: { elementFree: true, elemPower: 1.25 }, desc: 'Flame, Frost and Storm cost 0; elemental attacks x1.25' },
   relay: { name: 'Relay', rule: 'pulse', slots: 5, max: 6, battery: 14, recharge: 6, quirk: { payloadFree: true }, desc: 'Payload pieces cost 0' },
   strider: { name: 'Strider', rule: 'stride', slots: 4, max: 6, battery: 10, recharge: 7, chargeWhile: 'moving', quirk: {}, desc: 'Fires and recharges only while you move' },
   anchor: { name: 'Anchor', rule: 'anchor', slots: 4, max: 6, battery: 16, recharge: 8, chargeWhile: 'still', quirk: {}, desc: 'Fires and recharges only while you stand still' },
-  reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.5 }, desc: 'Fires on kills, or every 3 s if nothing dies; every kill adds 0.5 energy' },
-  spite: { name: 'Spite', rule: 'spite', slots: 4, max: 5, battery: 20, recharge: 5, quirk: { hurtCharge: 2 }, desc: 'Fires when you are hit and heals you; every hit adds 2 energy' },
+  reaper: { name: 'Reaper', rule: 'reaper', slots: 4, max: 5, battery: 12, recharge: 5, quirk: { killCharge: 0.3 }, desc: 'Fires on kills (twice a second at most), or every 3 s if nothing dies; every kill adds 0.3 energy' },
 };
 
 export const START_CHASSIS = 'standard';
@@ -38,7 +35,13 @@ export const CHARGE_STEP = 1;
 export const CELL_STEP = 0.5;
 
 // The chassis a bare rule card stands for (sandbox presets and old saves name a rule, not a chassis).
-const BY_RULE = { pulse: 'standard', stride: 'strider', anchor: 'anchor', reaper: 'reaper', spite: 'spite', charge: 'capacitor', rapid: 'overdrive' };
+const BY_RULE = { pulse: 'standard', stride: 'strider', anchor: 'anchor', reaper: 'reaper', charge: 'capacitor', rapid: 'overdrive' };
+// Chassis cut in v0.9.0 (Long frame, Spite) become Standard on old saves, keeping mark, pieces, charge and cell.
+export function migrateChassis(c) {
+  if (c && (c.chassis === 'long' || c.chassis === 'spite' || c.rule === 'spite')) { c.chassis = START_CHASSIS; c.rule = 'pulse'; }
+  return c;
+}
+
 export const chassisForRule = (rule) => BY_RULE[rule] || START_CHASSIS;
 
 export const MK_NAMES = ['', 'Mk I', 'Mk II', 'Mk III'];

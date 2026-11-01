@@ -12,7 +12,7 @@
 
 import { PASSIVES } from './passives.js';
 import { PIECES, RULES, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
-import { CHASSIS, chassisStats, chassisForRule, keepsUpgrades, MK_MAX } from './chassis.js';
+import { CHASSIS, chassisStats, chassisForRule, keepsUpgrades, migrateChassis, MK_MAX } from './chassis.js';
 
 export const BENCH = 3;
 export const SLOTS = 6;
@@ -285,7 +285,7 @@ export function replaceChassis(rig, c, chassis, mk = 1) {
 export function migrateRig(rig) {
   if (!rig) return rig;
   const ren = (id) => (id === 'pierce' ? 'sunder' : id);
-  for (const c of rig.chains || []) c.slots = c.slots.map(ren);
+  for (const c of rig.chains || []) { c.slots = c.slots.map(ren); migrateChassis(c); }
   if (rig.bench) rig.bench = rig.bench.map(ren);
   if (!rig.passives) rig.passives = {};                      // runs and saves from before passives
   if (rig.levels && rig.levels.pierce !== undefined) {

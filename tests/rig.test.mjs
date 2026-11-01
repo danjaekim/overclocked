@@ -242,13 +242,13 @@ test('battery: it recharges at the chain\'s rate up to its size, and a starved c
   assert.ok(rig.chains[0].bat.pool <= 6, 'never past the battery size');
 });
 
-test('battery: Strider and Anchor charge only while moving or standing still; Reaper and Spite chassis charge on kills and hits', async () => {
+test('battery: Strider and Anchor charge only while moving or standing still; the Reaper chassis charges on kills', async () => {
   const { rigEvent } = await import('../src/rig/rig.js');
   const run = newRun();
   const rig = installRig(run, [
     { rule: 'pulse', slots: [], energy: 20, recharge: 10, chargeWhile: 'moving' },
     { rule: 'pulse', slots: [], energy: 20, recharge: 10, chargeWhile: 'still' },
-    { rule: 'pulse', slots: [], energy: 20, recharge: 0, quirk: { killCharge: 0.5, hurtCharge: 2 } },
+    { rule: 'pulse', slots: [], energy: 20, recharge: 0, quirk: { killCharge: 0.3 } },
   ]);
   for (const c of rig.chains) c.bat.pool = 0;
   tick(run, 0.5);
@@ -256,9 +256,8 @@ test('battery: Strider and Anchor charge only while moving or standing still; Re
   tick(run, 0.5, { x: 1, y: 0 });
   assert.deepEqual(rig.chains.slice(0, 2).map((c) => Math.round(c.bat.pool)), [5, 5], 'moving');
   for (let i = 0; i < 4; i++) rigEvent(run, 'kill');
-  rigEvent(run, 'hurt');
   tick(run, STEP);
-  approx(rig.chains[2].bat.pool, 4 * 0.5 + 2, 1e-9);
+  approx(rig.chains[2].bat.pool, 4 * 0.3, 1e-9);
 });
 
 test('battery: a Charge chain fires each time its battery fills, at most once a second', () => {

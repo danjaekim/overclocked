@@ -25,11 +25,11 @@ const rigOf = (slots, extra = {}) => {
 };
 const events = (rig, ev, piece) => rig.log.filter((l) => l.ev === ev && (piece === undefined || l.piece === piece));
 
-test('the full piece set: 5 weapons, 7 modifiers, 4 triggers and 7 rule cards', () => {
+test('the full piece set: 5 weapons, 7 modifiers, 4 triggers and 6 rule cards', () => {
   const n = { weapon: 0, modifier: 0, trigger: 0 };
   for (const p of Object.values(PIECES)) n[p.type]++;
   assert.deepEqual(n, { weapon: 5, modifier: 7, trigger: 4 });
-  assert.equal(Object.keys(RULES).length, 7);
+  assert.equal(Object.keys(RULES).length, 6);
 });
 
 test('Chain Bolt hits the nearest enemy and jumps, and carries its On Impact', () => {
@@ -130,17 +130,6 @@ test('Reaper runs when something dies, at most four times a second', () => {
   assert.equal(events(rig, 'activate').length, n, 'no kills, no activations');
 });
 
-test('Spite runs when the player is hit', () => {
-  const run = newRun();
-  const rig = installRig(run, [{ rule: 'spite', slots: ['nova'], energy: 10 }], { log: true });
-  dummy(run, 100, 0);
-  tick(run, 1);
-  assert.equal(events(rig, 'activate').length, 0);
-  damagePlayer(run, 5);
-  tick(run, 0.1);
-  assert.equal(events(rig, 'activate').length, 1);
-});
-
 test('piece levels add 10% a level to the attack, to each held modifier, and to a trigger\'s payload', () => {
   const slots = ['flame', 'mortar', 'on_impact', 'nova'];
   const base = compileChain({ rule: 'pulse', slots });
@@ -156,7 +145,7 @@ test('piece levels add 10% a level to the attack, to each held modifier, and to 
 
 test('analyze words the new triggers and costs Every 3rd at nothing', () => {
   const a = analyzeChain({ rule: 'reaper', slots: ['blaster', 'every_3rd', 'echo', 'nova'], energy: 12 });
-  assert.ok(a.text.startsWith('On any kill, at most 4 times a second:'));
+  assert.ok(a.text.startsWith('On any kill, at most twice a second:'));
   assert.ok(a.text.includes('every 3rd time'));
   assert.equal(a.cost, 1 + 0, 'Every 3rd\'s whole payload is free');
   assert.ok(a.text.includes('(free)'));
@@ -174,22 +163,6 @@ test('signature levels: Scatter gains copies at 3 and 5, Heavy and Blaster gain 
   approx(ev(3).payload[0].power, 1.2 * TRIGGER_POWER.every * 1.25, 1e-9);
   const ec = (lv) => compileChain({ rule: 'pulse', slots: ['echo', 'nova'], levels: { echo: lv } }).nodes[0];
   assert.deepEqual([1, 3, 5].map((l) => [ec(l).echoMult, ec(l).echoShots]), [[0.75, 1], [0.9, 1], [0.9, 2]]);
-});
-
-test('Spite hits harder and heals more the lower your hp is', () => {
-  const heal = (hp) => {
-    const run = newRun();
-    installRig(run, [{ rule: 'spite', slots: ['nova'], energy: 10 }], { log: true });
-    run.player.hp = hp;
-    const rig = run.rig;
-    rigEvent(run, 'hurt');
-    tick(run, 0.05);
-    return { healed: run.player.hp - hp, scale: rig.log.find((l) => l.ev === 'activate') && rig.chains[0].act.scale };
-  };
-  const hi = heal(run0max());
-  function run0max() { const r = newRun(); return r.player.maxHp - 1; }
-  const lo = heal(10);
-  assert.ok(lo.scale > hi.scale && lo.healed > hi.healed, JSON.stringify([lo, hi]));
 });
 
 test('reactions: every ordered pair of elements has one, the same element twice intensifies', () => {

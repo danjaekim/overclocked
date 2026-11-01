@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import { probe } from './pressurebench.mjs';
 import { newRig } from '../src/rig/editor.js';
-import { CHASSIS } from '../src/rig/chassis.js';
+import { CHASSIS, migrateChassis } from '../src/rig/chassis.js';
 import { PIECES } from '../src/rig/pieces.js';
 import { START_CHAIN } from '../src/game/ovrun.js';
 import { applyRig } from '../src/game/sandbox.js';
@@ -29,7 +29,7 @@ const seed = Number(arg('--seed', 1));
 
 // A stored rig (save.js cleanRig / cleanTimeline) back into a full rig state.
 export function rigFrom(r) {
-  const chains = r.chains.filter((c) => CHASSIS[c.chassis] || c.rule).map((c) => ({
+  const chains = r.chains.map((c) => migrateChassis({ ...c })).filter((c) => CHASSIS[c.chassis] || c.rule).map((c) => ({
     chassis: CHASSIS[c.chassis] ? c.chassis : undefined, rule: c.rule, mk: c.mk || 1, charge: c.charge || 0, cell: c.cell || 0,
     slots: c.slots.filter((id) => PIECES[id]), size: 6,
   }));

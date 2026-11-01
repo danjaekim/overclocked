@@ -123,7 +123,7 @@ test('capacity: a slot goes to the shortest chain up to its chassis max; chassis
   let r = rigOf(['blaster']);
   assert.equal(r.chains[0].chassis, 'standard');
   assert.equal(slotTarget(r), 0);
-  for (let i = 0; i < 2; i++) r = addSlot(r, 0);
+  for (let i = 0; i < 3; i++) r = addSlot(r, 0);
   assert.equal(r.chains[0].slots.length, CHASSIS.standard.max);
   assert.equal(addSlot(r, 0), null);
   assert.equal(slotTarget(r), -1);
@@ -131,7 +131,7 @@ test('capacity: a slot goes to the shortest chain up to its chassis max; chassis
   assert.equal(r.chains[1].slots.length, CHASSIS.reaper.slots);
   assert.equal(r.chains[1].rule, 'reaper');
   assert.equal(slotTarget(r), 1);
-  r = addChassis(r, 'long', 2);
+  r = addChassis(r, 'relay', 2);
   assert.equal(r.chains.length, MAX_CHAINS);
   assert.equal(r.chains[2].slots.length, 6, 'a Mk II starts with a slot more');
   assert.equal(addChassis(r, 'kiln'), null);
@@ -163,7 +163,7 @@ test('replacing a chassis: pieces move over in order, extras go to the bench and
   for (let i = 0; i < 2; i++) r = addSlot(r, 0);
   r.chains[0].slots = ['blaster', 'flame', 'nova', 'echo', 'mortar'];
   r = addPower(r, 0, 'charge');
-  const a = replaceChassis(r, 0, 'long');
+  const a = replaceChassis(r, 0, 'kiln');
   assert.deepEqual(a.rig.chains[0].slots, ['blaster', 'flame', 'nova', 'echo', 'mortar']);
   assert.equal(a.rig.chains[0].charge, 0, 'the recharge bought for the Standard is gone');
   const b = replaceChassis(r, 0, 'overdrive');                     // 3 slots, max 4
@@ -172,7 +172,7 @@ test('replacing a chassis: pieces move over in order, extras go to the bench and
   r.bench = ['slam', 'sunder', 'heavy'];
   const c = replaceChassis(r, 0, 'overdrive');
   assert.deepEqual(c.sold, ['mortar'], 'bench full: sold');
-  assert.equal(replaceChassis(r, 4, 'long'), null);
+  assert.equal(replaceChassis(r, 4, 'kiln'), null);
 });
 
 test('offers: a piece you own is offered as a level or a copy, a piece you lack as new, a maxed piece only as a copy', () => {
@@ -239,7 +239,7 @@ test('offers: levels 5, 10, 15 and 20 give capacity cards: two chassis and a slo
   assert.notEqual(o[0].chassis, o[1].chassis);
   assert.ok(o.every((c) => c.chassis !== 'standard'));
   assert.equal(o[2].cap, 'slot');
-  const full = addChassis(addChassis(rigOf(['blaster']), 'long'), 'kiln');
+  const full = addChassis(addChassis(rigOf(['blaster']), 'relay'), 'kiln');
   const up = capacityOffers(createRng(2), full);
   assert.deepEqual(up.map((c) => c.cap), ['slot', 'charge', 'cell']);
   assert.equal(up[0].c, 0, 'the shortest chain gets the slot');
@@ -252,8 +252,8 @@ test('applying a card: levels, passives and capacity change the rig; a piece car
   assert.equal(pieceLevel(applyOffer(r, { kind: 'level', id: 'blaster', to: 2 }), 'blaster'), 2);
   assert.equal(applyOffer(r, { kind: 'stat', id: 'hp' }).stats.hp, 1);
   assert.equal(applyOffer(r, { kind: 'cap', cap: 'slot', c: 0 }).chains[0].slots.length, 4);
-  assert.equal(applyOffer(r, { kind: 'chassis', chassis: 'spite', mk: 1 }).chains.length, 2);
-  assert.equal(applyOffer(addChassis(addChassis(r, 'long'), 'kiln'), { kind: 'chassis', chassis: 'spite', mk: 1 }), null, 'every chain taken: the editor asks');
+  assert.equal(applyOffer(r, { kind: 'chassis', chassis: 'reaper', mk: 1 }).chains.length, 2);
+  assert.equal(applyOffer(addChassis(addChassis(r, 'relay'), 'kiln'), { kind: 'chassis', chassis: 'reaper', mk: 1 }), null, 'every chain taken: the editor asks');
   assert.equal(applyOffer(r, { kind: 'cap', cap: 'charge', c: 0 }).chains[0].charge, 1);
   assert.equal(applyOffer(r, { kind: 'piece', id: 'nova' }), null);
   for (const o of [{ kind: 'piece', id: 'nova' }, { kind: 'level', id: 'blaster', to: 2 }, { kind: 'stat', id: 'speed' }, { kind: 'chassis', chassis: 'anchor', mk: 2 }, { kind: 'cap', cap: 'cell', c: 0 }]) {
@@ -329,20 +329,12 @@ test('every rule card has a name, a description and a HUD label', () => {
   for (const id of Object.keys(PIECES)) assert.ok(PIECES[id].icon && PIECES[id].short, id);
 });
 
-test('Spite heals you a little each time it fires, and a piece in several slots is one row in the damage breakdown', async () => {
-  const { createRun } = await import('../src/game/run.js');
+test('a piece in several slots is one row in the damage breakdown', async () => {
   const run = newRun();
-  run.rigState = { ...run.rigState, chains: [...run.rigState.chains, { chassis: 'spite', mk: 1, rule: 'spite', key: null, charge: 0, cell: 0, slots: ['blaster', 'blaster', null] }] };
+  run.rigState = { ...run.rigState, chains: [...run.rigState.chains, { chassis: 'capacitor', mk: 1, rule: 'charge', key: null, charge: 0, cell: 0, slots: ['blaster', 'blaster', null] }] };
   applyRig(run);
-  run.player.hp = 50;
   run.director.update = () => {};
-  run.update(1 / 60, { x: 0, y: 0 });
-  run.player.iframes = 0;
-  const { damagePlayer } = await import('../src/systems/damage.js');
-  damagePlayer(run, 5);
-  const hp = run.player.hp;
   for (let i = 0; i < 6; i++) run.update(1 / 60, { x: 0, y: 0 });
-  assert.ok(run.player.hp > hp, 'spite healed');
   const names = run.statsSnapshot().weapons.map((w) => w.name);
   assert.equal(new Set(names).size, names.length, 'one row per piece');
 });

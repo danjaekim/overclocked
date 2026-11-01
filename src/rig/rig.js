@@ -19,7 +19,6 @@ import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } fr
 import { compileChain, ruleOf } from './chain.js';
 import { passiveValues } from './passives.js';
 import { addLabel } from '../render/fx.js';
-import { healPlayer } from '../systems/pickups.js';
 import { reactOnHit, INTENSIFY, SUPERCONDUCT_CRIT } from './reactions.js';
 
 const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the rest wait in the queue
@@ -42,7 +41,7 @@ function weaponDef(id) {
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], flags: { kill: false, hurt: false }, kills: 0, hurts: 0 };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], flags: { kill: false }, kills: 0 };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
@@ -60,7 +59,7 @@ function buildChain(run, rig, def, index) {
   const q = def.quirk || {};
   const pv = passiveValues(def.passives);
   const chain = { index, def, rule, pv, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.on ? 0 : rule.first,
-    bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: (q.killCharge || 0) + pv.siphon, hurt: q.hurtCharge || 0, over: 0 },
+    bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: (q.killCharge || 0) + pv.siphon, over: 0 },
     act: null,                          // the latest activation
     flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
   const mark = (nodes, trig) => {                        // On Kill cascade: every payload node can set the carrier's trigger off again
@@ -247,7 +246,7 @@ export function updateRig(run, dt) {
     const bat = chain.bat;
     const pv = chain.pv;
     if (!bat.while || (bat.while === 'moving') === !!p.moving) bat.pool += bat.rate * dt * (pv.momentum > 0 ? (p.moving ? 1 + pv.momentum : 0.8) : 1) * (pv.redline > 0 && bat.pool < bat.size * 0.5 ? 1 + pv.redline : 1);   // Momentum; Redline: a nearly empty battery refills faster
-    bat.pool += bat.kill * rig.kills + bat.hurt * rig.hurts;
+    bat.pool += bat.kill * rig.kills;
     if (bat.pool > bat.size) {
       if (pv.overflow > 0) bat.over = Math.min(pv.overflow * bat.size, bat.over + bat.pool - bat.size);
       bat.pool = bat.size;
@@ -260,16 +259,14 @@ export function updateRig(run, dt) {
       }
       continue;
     }
-    if (rule.on) {                                             // Reaper, Spite: an event starts it, at most once per `gap`
+    if (rule.on) {                                             // Reaper: an event starts it, at most once per `gap`
       if (chain.t > 0) chain.t -= dt;
       if (rule.idle) chain.idleT = (chain.idleT || 0) + dt;
       const idle = rule.idle && chain.idleT >= rule.idle;           // Reaper: nothing has died for `idle` s, so it fires anyway and cannot stall for good
       if ((rig.flags[rule.on] || idle) && chain.t <= 0) {
         chain.t = rule.gap;
         chain.idleT = 0;
-        const missing = rule.scales ? 1 - Math.max(0, p.hp) / p.maxHp : 0;     // Spite: the lower your hp, the more it gives
-        if (rule.heal) healPlayer(run, rule.heal * (1 + missing));
-        activate(run, rig, chain, 1 + missing);
+        activate(run, rig, chain);
       }
       continue;
     }
@@ -281,8 +278,8 @@ export function updateRig(run, dt) {
     if (chain.t <= 0) chain.t = rule.every;
     activate(run, rig, chain);
   }
-  rig.flags.kill = rig.flags.hurt = false;
-  rig.kills = rig.hurts = 0;
+  rig.flags.kill = false;
+  rig.kills = 0;
 
   const dl = rig.delayed;                                      // Echo: the second shot
   for (let i = dl.length - 1; i >= 0; i--) {
@@ -316,12 +313,11 @@ export function updateRig(run, dt) {
   }
 }
 
-// Rule-card events from the rest of the game: an enemy died ('kill'), the player was hit ('hurt').
+// Rule-card events from the rest of the game: an enemy died ('kill').
 export function rigEvent(run, name) {
   if (run.rig === null) return;
   run.rig.flags[name] = true;
   if (name === 'kill') run.rig.kills++;
-  else if (name === 'hurt') run.rig.hurts++;
 }
 
 export function drawRig(ctx, run) {

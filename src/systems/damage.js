@@ -203,7 +203,6 @@ export function damagePlayer(run, amount) {
   p.iframes = IFRAMES;
   p.hurtFlash = HURT_FLASH;
   run.cam.shake = 7;
-  rigEvent(run, 'hurt');                                     // Spite
   if (run.debug.god) return;
   let dmg = Math.max(1, amount - p.stats.get('armor'));
   if (p.shield > 0) {                    // the shield soaks damage first

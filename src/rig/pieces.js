@@ -152,20 +152,16 @@ export const CHAIN_NAMES = 'ABCD';
 export const MAX_CHAINS = 3;            // each chain is a chassis (rig/chassis.js); a new one past this replaces one
 
 // When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. A card with `on` is not
-// timed: it runs when that event happens ('kill': any enemy dies; 'hurt': you take damage; 'full': the chain's battery
+// timed: it runs when that event happens ('kill': any enemy dies; 'full': the chain's battery
 // is full), at most once per `gap` seconds. Each chassis (rig/chassis.js) carries one.
 // `short` is the second line of the HUD badge.
-// Spite: each firing heals this share of max hp, and the more hp you are missing the harder it hits and the more it heals (x2 at death's door).
-export const SPITE_HEAL = 0.06;
-
 export const RULES = {
   pulse: { name: 'Pulse', every: 1, first: 0.3, desc: 'Every 1 s', short: '1s' },
   stride: { name: 'Stride', every: 0.5, first: 0.3, while: 'moving', desc: 'Every 0.5 s while moving', short: '0.5s' },
   anchor: { name: 'Anchor', every: 0.6, first: 0.3, while: 'still', desc: 'Every 0.6 s while standing still', short: 'still' },
   rapid: { name: 'Rapid', every: 0.6, first: 0.3, desc: 'Every 0.6 s', short: '0.6s' },
   charge: { name: 'Charge', on: 'full', gap: 1, desc: 'When its battery is full, at most once a second', short: 'full' },
-  reaper: { name: 'Reaper', on: 'kill', gap: 0.25, idle: 3, desc: 'On any kill, at most 4 times a second', short: 'kills' },
-  spite: { name: 'Spite', on: 'hurt', gap: 0.4, heal: SPITE_HEAL, scales: true, desc: 'When you take damage; the lower your hp, the harder it hits and the more it heals', short: 'hurt' },
+  reaper: { name: 'Reaper', on: 'kill', gap: 0.5, idle: 3, desc: 'On any kill, at most twice a second', short: 'kills' },
 };
 
 // Passive stats an offer can give (about 1 offer in 6). Each pick adds one step; the rig keeps the counts
