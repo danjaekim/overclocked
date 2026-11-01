@@ -13,12 +13,15 @@ import { CHASSIS } from '../src/rig/chassis.js';
 import { PIECES } from '../src/rig/pieces.js';
 import { START_CHAIN } from '../src/game/ovrun.js';
 import { applyRig } from '../src/game/sandbox.js';
+import { pathToFileURL } from 'node:url';
+
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;   // imported by tools/chassisswap.mjs: no replays
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
 const file = arg('--file', null);
-if (!file) { console.error('usage: node tools/replaybench.mjs --file runs.json [--runs 5] [--seed 1] [--calibrate]'); process.exit(1); }
-const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-const runs = (data.runs || data.history || []).filter((e) => e && e.rig && e.rig.chains && e.rig.chains.length);
+if (isMain && !file) { console.error('usage: node tools/replaybench.mjs --file runs.json [--runs 5] [--seed 1] [--calibrate]'); process.exit(1); }
+export const loadRuns = (f) => { const data = JSON.parse(fs.readFileSync(f, 'utf8')); return (data.runs || data.history || []).filter((e) => e && e.rig && e.rig.chains && e.rig.chains.length); };
+const runs = isMain ? loadRuns(file) : [];
 const N = Number(arg('--runs', 5));
 // STRIP=lv5,up2,mk1,nopass (comma list) takes those out of every replayed rig: what each source of late power is worth.
 const STRIP = (process.env.STRIP || '').split(',');
@@ -47,7 +50,7 @@ export function scheduleOf(e) {
   return { approx: true, points: [{ t: 0, rig: start }, { t: 120, rig: start }, { t: 1e9, rig: rigFrom(e.rig) }] };
 }
 
-function replayOf(points) {
+export function replayOf(points) {
   let next = 1;
   return (run) => {
     // apply the rig of the minute you are in: the point recorded at the end of it
@@ -60,6 +63,9 @@ function replayOf(points) {
 }
 
 const fmt = (x) => (x === undefined ? '-' : Math.round(x));
+if (isMain) main();
+
+function main() {
 const pick = runs.slice(-N).reverse();
 console.log(`${pick.length} of your runs (newest first), seed ${seed}. Your result vs. the replay on this build.`);
 const rawMine = [];
@@ -84,4 +90,5 @@ if (process.argv.includes('--calibrate')) {
     const med = ratios[Math.floor(ratios.length / 2)];
     console.log(`\nYour raw dps is about ${med.toFixed(1)}x the plain bot's (median of ${ratios.length} minutes). Damage scales raw dps about linearly, so: node tools/pressurebench.mjs --dmg ${Math.max(0, med - 1).toFixed(1)}`);
   }
+}
 }
