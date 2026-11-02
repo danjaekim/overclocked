@@ -8,6 +8,7 @@ import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { gemTier, KIND_GEM, KIND_ORE, KIND_CHEST, KIND_HEAL, KIND_MAGNET } from '../systems/pickups.js';
 import { drawEliteBack, drawEliteFront } from './elites.js';
 import { getSprite } from './sprites.js';
+import { PALETTE } from '../data/palette.js';
 import { ELITE_ART } from './elite-art.js';
 
 // An elite wears the body of its first affix when there is one, its own enemy's sprite otherwise.
@@ -344,11 +345,11 @@ function drawStatusRings(ctx, list, x0, x1, y0, y1) {
 }
 
 
-// Slinger shots: a small ember bolt with a bright core.
+// Slinger shots: a lime-edged bolt with a dark core, so it never reads as one of yours (cyan).
 export function drawEnemyShots(ctx, run) {
   const list = run.enemyShots;
   if (list.length === 0) return;
-  ctx.fillStyle = '#e8531e';
+  ctx.fillStyle = PALETTE.danger;
   ctx.beginPath();
   for (let i = 0; i < list.length; i++) {
     const s = list[i];
@@ -356,7 +357,7 @@ export function drawEnemyShots(ctx, run) {
     ctx.arc(s.x, s.y, s.r + 1.5, 0, TAU);
   }
   ctx.fill();
-  ctx.fillStyle = '#ffe3a3';
+  ctx.fillStyle = '#1a0a14';
   ctx.beginPath();
   for (let i = 0; i < list.length; i++) {
     const s = list[i];

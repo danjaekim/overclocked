@@ -99,6 +99,7 @@ function makeInstance(run, rig, node, chain) {
     : node.reaction && node.reaction.startsWith('intensify_') ? INTENSIFY[node.reaction.slice(10)] : null;
   if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
   inst.reactAt = -1e9;
+  inst.chainIdx = chain.index;                       // render: this chain's colour tints the piece's rings and shots
   node.count = 0;                                    // Every 3rd: how many times the cursor has reached it
   inst.onRig = (r, ev, atk, x, y, target, depth) => onEvent(r, rig, chain, node, inst, ev, atk, x, y, target, depth);
   return inst;

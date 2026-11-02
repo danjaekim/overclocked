@@ -15,6 +15,8 @@
 // One batched path per layer and skin, so a crowd of shots stays cheap. Nothing here knows about the run except the
 // shot list; behaviors and traits can import it to draw their own shots (falling arrows, thrown discs).
 
+import { PALETTE as P, CHAIN_COLORS } from '../data/palette.js';
+
 const TAU = Math.PI * 2;
 
 export const F_FROST = 1;
@@ -36,15 +38,15 @@ const SHOT_BY_BEHAVIOR = { projectile: S_ARROW, rod: S_JAVELIN, nova: S_SHARD, b
 const SHOT_BY_LOOK = [-1, S_DISC, S_SHARD, S_SOUL, S_ARROW, S_BLADE];
 
 const SKIN = {
-  [F_FROST]: { head: '#8fd8ff', body: '#7fcfff', edge: '#ecf8ff', trail: '#cfeaff' },
-  [F_FIRE]: { head: '#ff7a2e', body: '#ff8a2e', edge: '#ffd9a0', trail: '#ff9a3c' },
-  [F_STORM]: { head: '#ffe066', body: '#ffd23a', edge: '#fffbe0', trail: '#ffd23a' },
-  [F_STAR]: { head: '#7fe9ff', body: '#7fe9ff', edge: '#e6fbff', trail: '#bff4ff' },
-  [NONE]: { head: '#d9dee8', body: '#e8ecf4', edge: '#ffffff', trail: null },
+  [F_FROST]: { head: P.frost, body: '#a9b9ff', edge: '#eef1ff', trail: '#cdd6ff' },
+  [F_FIRE]: { head: P.fire, body: '#ff8a2e', edge: '#ffd9a0', trail: '#ff9a3c' },
+  [F_STORM]: { head: P.storm, body: '#ffe84a', edge: '#fffde0', trail: '#fff04a' },
+  [F_STAR]: { head: P.rig, body: P.rig, edge: P.rigHot, trail: '#bff4ff' },
+  [NONE]: { head: P.rigHot, body: P.rig, edge: '#ffffff', trail: null },
 };
-const SHAFT = '#c9b38a';
-const FLETCH = '#ece6d4';
-const STEEL = '#d9dee8';
+const SHAFT = P.rig;                                   // the rig's own shots are cyan; a chain's outer glow takes its colour (drawShafts)
+const FLETCH = P.rigHot;
+const STEEL = P.rigHot;
 
 // Geometry, in multiples of the shot's hit radius r. A shot is drawn centred on its position and pointing along (dx, dy).
 const TIP = { [S_ARROW]: 2.6, [S_JAVELIN]: 3.4, [S_SHARD]: 2.2, [S_BLADE]: 2.4 };            // tip, ahead of the centre
@@ -100,6 +102,20 @@ const seen = (p) => box === null || (p.x >= box.x0 && p.x <= box.x1 && p.y >= bo
 function drawShafts(ctx, list, shape) {
   const jav = shape === S_JAVELIN;
   ctx.lineCap = 'round';
+  ctx.lineWidth = jav ? 8 : 6;                          // the neon glow: a wide, faint stroke in the chain's colour under the shaft (one path per chain, no shadowBlur)
+  ctx.globalAlpha = 0.3;
+  for (let k = 0; k < CHAIN_COLORS.length; k++) {
+    ctx.strokeStyle = CHAIN_COLORS[k];
+    ctx.beginPath();
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (!seen(p) || shapeOf(p) !== shape || ((p.inst && p.inst.chainIdx) || 0) !== k) continue;
+      ctx.moveTo(p.x - p.dx * TAIL[shape] * p.r, p.y - p.dy * TAIL[shape] * p.r);
+      ctx.lineTo(p.x + p.dx * TIP[shape] * p.r * 0.55, p.y + p.dy * TIP[shape] * p.r * 0.55);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
   ctx.strokeStyle = SHAFT;
   ctx.lineWidth = jav ? 3 : 1.8;
   ctx.beginPath();
@@ -345,13 +361,13 @@ function drawSouls(ctx, list) {                        // souls (the Summoner's)
     const p = list[i];
     if (!seen(p) || shapeOf(p) !== S_SOUL) continue;
     ctx.globalAlpha = 0.35;
-    ctx.fillStyle = '#b48cff';
+    ctx.fillStyle = P.violet;
     ctx.beginPath();
     ctx.arc(p.x - p.dx * 9, p.y - p.dy * 9, 4, 0, TAU);
     ctx.arc(p.x - p.dx * 16, p.y - p.dy * 16, 2.5, 0, TAU);
     ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#e4d6ff';
+    ctx.fillStyle = '#efe0ff';
     ctx.beginPath();
     ctx.arc(p.x, p.y, 5, 0, TAU);
     ctx.fill();

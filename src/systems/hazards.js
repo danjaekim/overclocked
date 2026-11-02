@@ -289,7 +289,7 @@ export function updateHazards(run, dt) {
       }
       if (h.ttl <= 0) {                                      // the collapse
         hitCircle(run, h, h.x, h.y, h.r, h.dmg, 120, !!star);
-        addPuff(run, h.x, h.y, h.r / 2.2, star ? '#ff9a3c' : '#c58bff');
+        addPuff(run, h.x, h.y, h.r / 2.2, star ? '#ff7a1a' : '#c86bff');
         if (star) addPatch(run, h.src, h.x, h.y, h.r * 0.7, star.patchTtl, 0.5, h.dmg * 0.1, h.depth);
       }
     } else if (h.kind === BLAST) {
@@ -309,7 +309,7 @@ export function updateHazards(run, dt) {
           if (h.flags.shock) applyShock(run, e, h.src);
           if (h.flags.chill) applyChill(run, e, h.src, h.depth + 1);
         }
-        addPuff(run, h.x, h.y, h.r / 1.8, h.flags.shock ? '#ffe066' : '#ff9a3c');
+        addPuff(run, h.x, h.y, h.r / 1.8, h.flags.shock ? '#fff04a' : '#ff7a1a');
       }
     } else if (h.kind === PILLAR) {
       if (!h.done && h.life - h.ttl >= h.tele) {
@@ -457,7 +457,7 @@ function netStep(run, dt) {
   }
 }
 
-const PATCH_COLORS = { burn: ['#ff6a2e', '#ffb45e'], chill: ['#6ec8ff', '#d6f1ff'], steam: ['#c3cfdc', '#ffd9b0'], shock: ['#ffd23a', '#fff3a8'], bless: ['#ffc83a', '#fff3b0'], none: ['#b9a7ff', '#e4dcff'] };
+const PATCH_COLORS = { burn: ['#ff7a1a', '#ffb45e'], chill: ['#b9c8ff', '#d6f1ff'], steam: ['#c3cfdc', '#ffd9b0'], shock: ['#fff04a', '#fff3a8'], bless: ['#ffd23f', '#fff3b0'], none: ['#c86bff', '#e4dcff'] };
 
 // Drawn under the enemies. Everything here is cheap strokes and fills.
 export function drawHazards(ctx, run) {
@@ -527,7 +527,7 @@ export function drawHazards(ctx, run) {
     } else if (h.kind === PATCH) {
       const col = PATCH_COLORS[h.look || h.status || 'burn'] || PATCH_COLORS.burn;
       ctx.globalAlpha = Math.min(1, k * 2) * 0.28;
-      ctx.fillStyle = h.shock && !h.status ? '#ff6a2e' : col[0];
+      ctx.fillStyle = h.shock && !h.status ? '#ff7a1a' : col[0];
       ctx.beginPath();
       ctx.arc(h.x, h.y, h.r * (0.9 + 0.1 * Math.sin(t * 9 + h.x)), 0, TAU);
       ctx.fill();
@@ -539,7 +539,7 @@ export function drawHazards(ctx, run) {
     } else if (h.kind === ROD) {
       const grow = Math.min(1, (h.life - h.ttl) * 8);            // the rod drops in
       ctx.globalAlpha = Math.min(1, k * 3) * 0.22;
-      ctx.strokeStyle = h.chill ? '#9fdcff' : '#ffe066';
+      ctx.strokeStyle = h.chill ? '#b9c8ff' : '#fff04a';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(h.x, h.y, h.r * (0.96 + 0.04 * Math.sin(t * 7 + h.x)), 0, TAU);
@@ -561,7 +561,7 @@ export function drawHazards(ctx, run) {
       ctx.fill();
     } else if (h.kind === VORTEX) {
       const spin = t * 5;
-      ctx.strokeStyle = h.src && h.src.fusion && h.src.fusion.hooks.burnVortex ? '#ff8a3c' : '#c58bff';
+      ctx.strokeStyle = h.src && h.src.fusion && h.src.fusion.hooks.burnVortex ? '#ff7a1a' : '#c86bff';
       ctx.lineWidth = 2.5;
       for (let r = 0; r < 3; r++) {
         const rad = h.r * (0.35 + r * 0.3) * (1.05 - 0.25 * (1 - k));
@@ -579,7 +579,7 @@ export function drawHazards(ctx, run) {
       const age = h.life - h.ttl;
       if (age < h.tele) {                                    // a ring closing on the shell
         ctx.globalAlpha = 0.3 + 0.5 * (age / h.tele);
-        ctx.strokeStyle = h.flags.shock ? '#ffe066' : '#ff9a3c';
+        ctx.strokeStyle = h.flags.shock ? '#fff04a' : '#ff7a1a';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(h.x, h.y, h.r * (1.2 - 0.2 * (age / h.tele)), 0, TAU);
@@ -597,7 +597,7 @@ export function drawHazards(ctx, run) {
   }
   const links = run.netLinks;
   if (links && links.length > 1) {                           // Wrath's lightning between pillars
-    ctx.strokeStyle = '#ffe066';
+    ctx.strokeStyle = '#fff04a';
     ctx.lineWidth = 3;
     ctx.globalAlpha = 0.8;
     ctx.beginPath();
@@ -625,7 +625,7 @@ function drawShatter(ctx, h, age) {
     ctx.arc(h.x, h.y, 10 + 6 * u, 0, TAU);
     ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = '#8fd8ff';
+    ctx.strokeStyle = '#b9c8ff';
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (let c = 0; c < 6; c++) {
@@ -648,7 +648,7 @@ function drawShatter(ctx, h, age) {
   ctx.stroke();
   ctx.globalAlpha = fade;
   ctx.fillStyle = '#e6f6ff';
-  ctx.strokeStyle = '#6fc8f5';
+  ctx.strokeStyle = '#b9c8ff';
   ctx.lineWidth = 1.5;
   for (let c = 0; c < 8; c++) {                              // a shard: a thin diamond pointing out
     const a = h.spin + (c * TAU) / 8;

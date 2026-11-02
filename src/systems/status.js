@@ -6,6 +6,7 @@
 // Application happens in damage.js#flushDamage; timers tick in updateStatuses, which runs just
 // before the flush so burn damage resolves in the same tick.
 
+import { PALETTE as P } from '../data/palette.js';
 import { BURN, CHILL, SHOCK, ST } from '../data/statuses.js';
 import { queueDamage, KIND_PROC, KIND_DOT, CAUSE } from './damage-queue.js';
 import { MAX_TRIGGER_DEPTH } from '../effects/index.js';
@@ -104,7 +105,7 @@ function quench(run, e, src, depth) {
   e.freezeT = 0;
   e.slowMul = 1;
   refreshMask(e);
-  addBurst(run, e.x, e.y, QUENCH_RADIUS, '#eaf6ff', BURST_STEAM, '#9fdcff');
+  addBurst(run, e.x, e.y, QUENCH_RADIUS, '#e6ecff', BURST_STEAM, P.frost);
   if (pool > 0) burst(run, e.x, e.y, QUENCH_RADIUS, pool * run.rules.quench.mult, src, depth, CAUSE.QUENCH);
 }
 
@@ -160,7 +161,7 @@ function overload(run, e, src, hopDmg, depth) {
   const dmg = hopDmg * run.rules.overload.frac;
   const w = run.world;
   const n = w.hash.queryRadius(e.x, e.y, OVERLOAD_RADIUS + MAX_ENEMY_RADIUS, w.scratch);
-  addBurst(run, e.x, e.y, OVERLOAD_RADIUS, '#ff9a3c', BURST_CRACKS, '#fff3a8');
+  addBurst(run, e.x, e.y, OVERLOAD_RADIUS, P.fire, BURST_CRACKS, '#fff3a8');
   for (let i = 0; i < n; i++) {
     const o = w.scratch[i];
     if (!o.alive) continue;
@@ -188,7 +189,7 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
     const w = run.world;
     const n = w.hash.queryRadius(e.x, e.y, WILDFIRE_RADIUS + MAX_ENEMY_RADIUS, w.scratch);
     const share = (burnLeft * r.mult) / r.n;
-    addBurst(run, e.x, e.y, 18, '#ff9a3c', BURST_PLAIN, '#fff3a8');
+    addBurst(run, e.x, e.y, 18, P.fire, BURST_PLAIN, '#fff3a8');
     // the r.n nearest living enemies in range, found by repeated selection over the candidate list
     for (let pick = 0; pick < r.n; pick++) {
       let best = null;
@@ -207,15 +208,15 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
       if (!best) break;
       visited[pick] = best.uid;
       addBurnPool(run, best, src, share);
-      addArc(run, e.x, e.y, best.x, best.y, '#ff9a3c');                // an ember thread from the dead enemy to each it lights
+      addArc(run, e.x, e.y, best.x, best.y, P.fire);                // an ember thread from the dead enemy to each it lights
     }
   }
   if (rules.shatter && ((mask & ST.FROZEN) || (rules.shatter.any && (mask & ST.CHILL)))) {      // `any`: Permafrost, which a chilled enemy sets off too
-    addBurst(run, e.x, e.y, SHATTER_RADIUS, '#9fdcff', BURST_SHARDS, '#ffffff');
+    addBurst(run, e.x, e.y, SHATTER_RADIUS, P.frost, BURST_SHARDS, '#ffffff');
     burst(run, e.x, e.y, SHATTER_RADIUS, maxHp * rules.shatter.frac, src, depth, CAUSE.SHATTER);
   }
   if ((mask & ST.SHOCK) && rules.thunderclap) {
-    addBurst(run, e.x, e.y, 38, '#ffe066', BURST_CRACKS, '#ffffff');
+    addBurst(run, e.x, e.y, 38, P.storm, BURST_CRACKS, '#ffffff');
     chainArc(run, e, src, amount, depth, rules.thunderclap.hops, THUNDERCLAP_FRAC, CAUSE.THUNDERCLAP);
   }
 }
@@ -224,7 +225,7 @@ export function onStatusDeath(run, e, src, depth, mask, maxHp, burnLeft, amount)
 // enemy's max HP (capped), so an enemy carrying all three bursts three times. The burst re-applies nothing,
 // but its hits are ordinary proc hits (they roll the Mage's element chances), and kills under an element
 // burst in turn, down to the trigger depth.
-const SPELLBURST_COLORS = [[ST.BURN, '#ff8a3d'], [ST.CHILL | ST.FROZEN, '#9fe0ff'], [ST.SHOCK, '#d9c9ff']];
+const SPELLBURST_COLORS = [[ST.BURN, P.fire], [ST.CHILL | ST.FROZEN, P.frost], [ST.SHOCK, P.storm]];
 function spellburst(run, e, src, depth, mask, maxHp, sb) {
   if (e.def.boss) return;
   let k = 0;
@@ -276,7 +277,7 @@ const REACTION_CAP = 400;
 export function chainReaction(run, e, src, depth, maxHp) {
   if (e.def.boss) return;
   const r = run.rules.chainReaction;
-  addBurst(run, e.x, e.y, r.radius, '#ff7ab8', BURST_SPARKS, '#ffe0f0');     // pink sparks: nothing else in the game is pink
+  addBurst(run, e.x, e.y, r.radius, P.pink, BURST_SPARKS, '#ffe0f0');     // pink sparks: nothing else in the game is pink
   burst(run, e.x, e.y, r.radius, Math.min(maxHp * r.frac, REACTION_CAP), src, depth, CAUSE.REACTION);
 }
 

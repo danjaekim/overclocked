@@ -53,10 +53,10 @@ export function preloadSprites() { for (const id of SPRITE_IDS) load(id); }
 // chilled) and each of the others is an outline around it in its own colour, the next one out further. A frozen enemy
 // is shown frozen, not also chilled.
 const LOOKS = [                                          // in priority order
-  { bit: ST.FROZEN, tint: '#cfefff', alpha: 0.5, edge: '#cfefff' },
-  { bit: ST.BURN, tint: '#ff2a10', alpha: 0.42, edge: '#ff5a2a' },
-  { bit: ST.SHOCK, tint: '#ffe14d', alpha: 0.42, edge: '#ffe14d' },
-  { bit: ST.CHILL, tint: '#3f9bff', alpha: 0.36, edge: '#4aa8ff' },
+  { bit: ST.FROZEN, tint: '#d9e0ff', alpha: 0.5, edge: '#d9e0ff' },
+  { bit: ST.BURN, tint: '#ff4a10', alpha: 0.42, edge: '#ff7a1a' },
+  { bit: ST.SHOCK, tint: '#fff04a', alpha: 0.42, edge: '#fff04a' },
+  { bit: ST.CHILL, tint: '#6f8bff', alpha: 0.36, edge: '#b9c8ff' },
 ];
 const LOOK_MASK = ST.BURN | ST.CHILL | ST.FROZEN | ST.SHOCK;
 const PAD = 0.84;                                        // the body is drawn this much smaller so outlines fit; the sprite is drawn 1 / PAD larger

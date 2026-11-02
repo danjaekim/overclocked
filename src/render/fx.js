@@ -2,6 +2,9 @@
 // droppable: if the pool is full or too many numbers are on screen, new ones are skipped.
 
 import { elemBits, F_FROST, F_FIRE, F_STORM } from './shots.js';
+import { PALETTE as P, CHAIN_COLORS } from '../data/palette.js';
+
+const DISPLAY = '"Chakra Petch", system-ui, sans-serif';      // self-hosted (fonts/)
 
 const TAU = Math.PI * 2;
 const MAX_NUMBERS = 60;      // text is the expensive part, so cap how many are live
@@ -116,9 +119,9 @@ export function addBurst(run, x, y, radius, color, style = BURST_PLAIN, color2 =
 }
 
 // A short jagged bolt between two points (chain lightning; coloured by the weapon's element).
-const ARC_YELLOW = '#ffe066';
+const ARC_YELLOW = P.storm;
 export const ARC_FORK = '#7dffa0';            // Forked Strikes: green, so a fork never reads as a shock chain
-const ARC_COLORS = [ARC_YELLOW, '#9fdcff', '#ff9a3c', '#d9b0ff', ARC_FORK];   // = ELEMENTS[*].arc in render/elements.js
+const ARC_COLORS = [ARC_YELLOW, P.frost, P.fire, '#d9b0ff', ARC_FORK, P.rig];   // = ELEMENTS[*].arc in render/elements.js
 export function addArc(run, x1, y1, x2, y2, color = ARC_YELLOW) {
   const w = run.world;
   if (w.fx.count >= MAX_PUFFS_POOL) return;
@@ -153,8 +156,13 @@ function drawBurst(ctx, f) {
   ctx.beginPath();
   ctx.arc(f.x, f.y, R * 0.45, 0, TAU);
   ctx.fill();
-  ctx.strokeStyle = f.text;                             // the ring, thick to start with
-  ctx.lineWidth = 1.5 + 3.5 * a;
+  ctx.strokeStyle = f.text;                             // the ring: a wide faint stroke under it is the neon glow (no shadowBlur)
+  ctx.lineWidth = 7 + 8 * a;
+  ctx.globalAlpha = 0.16 * a;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R, 0, TAU);
+  ctx.stroke();
+  ctx.lineWidth = 1.5 + 3.5 * a;                        // the ring itself, thick to start with
   ctx.globalAlpha = 0.95 * a;
   ctx.beginPath();
   ctx.arc(f.x, f.y, R, 0, TAU);
@@ -247,7 +255,7 @@ function drawSlamBurst(ctx, f, u) {
   const e = 1 - (1 - out) * (1 - out) * (1 - out);
   const fade = u < 0.45 ? 1 : 1 - (u - 0.45) / 0.55;
   const R = f.r;
-  ctx.fillStyle = '#120d08';                            // the pit
+  ctx.fillStyle = P.bg;                                 // the pit
   ctx.globalAlpha = 0.38 * fade;
   ctx.beginPath();
   ctx.arc(f.x, f.y, R * 0.92 * (0.5 + 0.5 * e), 0, TAU);
@@ -263,7 +271,7 @@ function drawSlamBurst(ctx, f, u) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   for (let pass = 0; pass < 2; pass++) {                // ground cracks: dark, then a lit core on top
-    ctx.strokeStyle = pass ? f.text : '#0a0704';
+    ctx.strokeStyle = pass ? f.text : P.bg;
     ctx.lineWidth = pass ? 1.6 : 4;
     ctx.globalAlpha = (pass ? 0.9 : 0.8) * fade;
     ctx.beginPath();
@@ -279,13 +287,18 @@ function drawSlamBurst(ctx, f, u) {
     }
     ctx.stroke();
   }
-  ctx.strokeStyle = f.text;                             // the shockwave
+  ctx.strokeStyle = f.text;                             // the shockwave: a faint wide stroke, then the bright ring
+  ctx.lineWidth = 9 + 8 * (1 - out);
+  ctx.globalAlpha = 0.18 * Math.max(0, 1 - u / 0.6);
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, R * (0.2 + 0.8 * e), 0, TAU);
+  ctx.stroke();
   ctx.lineWidth = 1.5 + 5 * (1 - out);
   ctx.globalAlpha = 0.95 * Math.max(0, 1 - u / 0.6);
   ctx.beginPath();
   ctx.arc(f.x, f.y, R * (0.2 + 0.8 * e), 0, TAU);
   ctx.stroke();
-  ctx.fillStyle = f.c2;                                 // rubble thrown up and out, falling back
+  ctx.fillStyle = f.c2;                                 // sparks thrown up and out, falling back
   ctx.globalAlpha = 0.95 * fade;
   for (let k = 0; k < 11; k++) {
     const t = ang + k * GOLDEN;
@@ -299,11 +312,13 @@ function drawSlamBurst(ctx, f, u) {
 }
 
 // The colour an element's effects are drawn in (none: warm white).
-const EL_COLORS = { [F_FROST]: '#9fdcff', [F_FIRE]: '#ff9a3c', [F_STORM]: '#ffe066' };
+const EL_COLORS = { [F_FROST]: P.frost, [F_FIRE]: P.fire, [F_STORM]: P.storm };
 export function elementColor(inst) {
   const m = elemBits(inst);
-  return EL_COLORS[m & F_FROST ? F_FROST : m & F_FIRE ? F_FIRE : m & F_STORM ? F_STORM : 0] || '#f0dcb0';
+  return EL_COLORS[m & F_FROST ? F_FROST : m & F_FIRE ? F_FIRE : m & F_STORM ? F_STORM : 0] || chainColor(inst);
 }
+// With no element, a rig piece's effects take its chain's colour (A is the rig's cyan); anything else is the rig colour.
+export const chainColor = (inst) => (inst && inst.chainIdx !== undefined ? CHAIN_COLORS[inst.chainIdx % CHAIN_COLORS.length] : P.rig);
 
 export function updateFx(run, dt) {
   const w = run.world;
@@ -386,8 +401,8 @@ export function drawFx(ctx, view, run) {
   ctx.lineJoin = 'round';
   for (let pass = 0; pass < 2; pass++) {
     const wantCrit = pass === 1;
-    ctx.font = wantCrit ? (numBig ? '800 28px system-ui, sans-serif' : '700 20px system-ui, sans-serif') : (numBig ? '700 17px system-ui, sans-serif' : '600 14px system-ui, sans-serif');
-    ctx.fillStyle = wantCrit ? '#ffd34d' : '#ffffff';
+    ctx.font = wantCrit ? (numBig ? `700 28px ${DISPLAY}` : `700 20px ${DISPLAY}`) : (numBig ? `700 17px ${DISPLAY}` : `700 14px ${DISPLAY}`);
+    ctx.fillStyle = wantCrit ? P.gold : '#ffffff';
     ctx.strokeStyle = 'rgba(0,0,0,0.75)';
     ctx.lineWidth = wantCrit ? 4 : 3;
     for (let i = 0; i < list.length; i++) {
@@ -399,7 +414,7 @@ export function drawFx(ctx, view, run) {
       if (f.c2 !== '') {
         ctx.fillStyle = f.c2;
         ctx.fillText(f.text, f.x, f.y);
-        ctx.fillStyle = wantCrit ? '#ffd34d' : '#ffffff';
+        ctx.fillStyle = wantCrit ? P.gold : '#ffffff';
       } else ctx.fillText(f.text, f.x, f.y);
     }
   }
