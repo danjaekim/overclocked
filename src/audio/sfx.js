@@ -1,6 +1,8 @@
-// Sound effects: small layered WebAudio voices (no audio files). audio.js creates one of these
-// once the context exists; the sim only ever calls run.sfx(name). Frequent sounds (kill, gem,
-// hurt) are rate limited and kept to a few nodes so a screen full of enemies stays cheap.
+// Sound effects: small layered WebAudio voices (no audio files), in the same dark industrial voice
+// as the music: distorted kicks and growls, metallic pings, noise. audio.js creates one of these once
+// the context exists; the sim only ever calls run.sfx(name). Frequent sounds (kill, gem, hurt) are
+// rate limited and kept to a few nodes so a screen full of enemies stays cheap.
+import { hz, graph, voices } from './synth.js';
 
 export const SFX_NAMES = [
   'hit', 'kill', 'gem', 'ore', 'hurt', 'levelup', 'forge', 'fail', 'shrine',
@@ -13,152 +15,84 @@ const GAP = {
   shrine: 0.3, boss: 0.5, chest: 0.2, evolve: 0.5, win: 0.5, lose: 0.5, tap: 0.02, heal: 0.25, crate: 0.1, magnet: 0.3, quench: 0.2, proc: 0.08,
 };
 
-const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
-const MAJOR = [0, 2, 4, 5, 7, 9, 11, 12];
+// Per-sound level trims, measured offline against the previous effects so the mix keeps its balance
+// (tools/audiolevel.mjs prints them).
+export const SFX_TRIM = {"hit":1.11,"kill":0.48,"gem":1.93,"ore":0.84,"hurt":0.39,"levelup":0.72,"forge":0.65,"fail":0.38,"shrine":0.73,"boss":0.76,"chest":1.26,"evolve":0.55,"win":0.57,"lose":0.78,"tap":1.46,"heal":1.15,"crate":0.93,"magnet":0.45,"quench":1.09,"proc":1.25};
+
+// consecutive gem pickups climb an E minor pentatonic run, so a vacuumed pile rings upward
+const PENT = [0, 3, 5, 7, 10, 12, 15, 17];
 
 export function createSfx(ctx, dest) {
-  let noiseBuf = null;
-  function noiseBuffer() {
-    if (noiseBuf) return noiseBuf;
-    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const d = noiseBuf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    return noiseBuf;
-  }
-
-  // One enveloped oscillator: a frequency (optionally gliding to `to`), a decay or sustained note.
-  function osc({ t, f, to, dur, vol, type = 'sine', a = 0.004, sustain = false, lp, detune }) {
-    const o = ctx.createOscillator();
-    o.type = type;
-    o.frequency.setValueAtTime(f, t);
-    if (to) o.frequency.exponentialRampToValueAtTime(Math.max(1, to), t + dur);
-    if (detune) o.detune.value = detune;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(vol, t + a);
-    if (sustain) {
-      g.gain.setValueAtTime(vol, Math.max(t + a, t + dur - 0.04));
-      g.gain.linearRampToValueAtTime(0.0001, t + dur);
-    } else {
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    }
-    let src = o;
-    if (lp) {
-      const f2 = ctx.createBiquadFilter();
-      f2.type = 'lowpass'; f2.Q.value = lp.q || 1;
-      f2.frequency.setValueAtTime(lp.from, t);
-      f2.frequency.exponentialRampToValueAtTime(lp.to, t + dur);
-      o.connect(f2); src = f2;
-    }
-    src.connect(g); g.connect(dest);
-    o.start(t); o.stop(t + dur + 0.03);
-  }
-
-  function noise(t, dur, vol, type, freq, q, sweepTo) {
-    const s = ctx.createBufferSource();
-    s.buffer = noiseBuffer();
-    const f = ctx.createBiquadFilter();
-    f.type = type; f.frequency.setValueAtTime(freq, t); if (q) f.Q.value = q;
-    if (sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(dest);
-    s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
-  }
-
-  // a struck anvil or bell: a click plus inharmonic partials
-  function clink(t, v) {
-    noise(t, 0.04, v * 1.6, 'bandpass', 3800, 1.5);
-    [1250, 1871, 2514, 3320].forEach((f, i) => osc({ t, f, dur: 0.9 - i * 0.15, vol: v * (1 - i * 0.2) }));
-  }
-
-  const kick = (t) => { osc({ t, f: 170, to: 44, dur: 0.26, vol: 0.5 }); noise(t, 0.015, 0.1, 'lowpass', 1500); };
-
-  let lastGem = -10;
-  let gemChain = 0;
+  const g = graph(ctx, dest, { echoTime: 0.17, echoFb: 0.3, rumble: false, revGain: 0.5, revSecs: 1 });
+  g.duck.gain.value = 1;
+  const v = voices(g);
+  const O = (o) => v.osc(Object.assign({ out: 'out' }, o));
+  const N = (o) => v.noise(Object.assign({ out: 'out' }, o));
+  let lastGem = -10, chain = 0;
+  function gemStep(t) { chain = t - lastGem < 0.45 ? Math.min(chain + 1, PENT.length - 1) : 0; lastGem = t; return PENT[chain]; }
 
   // p: a small random pitch factor so repeats do not sound identical
   const FX = {
-    hit: (t, p) => { noise(t, 0.04, 0.09, 'highpass', 2500); osc({ t, type: 'square', f: 330 * p, to: 120, dur: 0.07, vol: 0.08 }); },
-    kill: (t, p) => { osc({ t, type: 'triangle', f: 300 * p, to: 70, dur: 0.16, vol: 0.16 }); noise(t, 0.09, 0.1, 'bandpass', 1200, 0.8); },
-    // consecutive pickups climb a major scale, so a vacuumed pile of gems rings upward
-    gem: (t, p) => {
-      gemChain = t - lastGem < 0.45 ? Math.min(gemChain + 1, MAJOR.length - 1) : 0;
-      lastGem = t;
-      const f = 880 * Math.pow(2, MAJOR[gemChain] / 12) * (gemChain ? 1 : p);
-      osc({ t, f, dur: 0.1, vol: 0.1 });
-      osc({ t: t + 0.05, f: f * 1.5, dur: 0.14, vol: 0.09 });
-    },
-    ore: (t, p) => FX.gem(t, p),                    // same chime as an orb; the hammer clink was grating
-    hurt: (t, p) => { osc({ t, type: 'sawtooth', f: 220 * p, to: 55, dur: 0.22, vol: 0.2, lp: { from: 1800, to: 200 } }); noise(t, 0.14, 0.2, 'lowpass', 800); },
+    hit: (t, p) => { N({ t, dur: 0.04, vol: 0.1, bp: { from: 1800 * p, q: 1.2 } }); O({ t, type: 'square', f: 300 * p, to: 110, dur: 0.06, vol: 0.07, dist: 3, lp: { from: 1500 } }); },
+    kill: (t, p) => { v.metal(t, { f: 1600 * p, q: 5, dur: 0.07, vol: 0.14, dist: 4 }); O({ t, f: 120 * p, to: 50, dur: 0.1, vol: 0.28, dist: 3 }); },
+    gem: (t) => { v.ping(t, hz(74 + gemStep(t)), { dur: 0.12, vol: 0.06, click: 0, n: 2 }); },
+    ore: (t) => { v.ping(t, 1050, { dur: 0.1, vol: 0.08, n: 3 }); v.ping(t + 0.06, 1400, { dur: 0.3, vol: 0.07, rev: 0.2, n: 3 }); },
+    hurt: (t, p) => { N({ t, dur: 0.18, vol: 0.3, lp: { from: 2400, to: 300 }, dist: 6 }); O({ t, type: 'square', f: 70 * p, to: 40, dur: 0.2, vol: 0.2, dist: 6, lp: { from: 900 } }); },
+    proc: (t, p) => { v.ping(t, 900 * p, { dur: 0.08, vol: 0.06, echo: 0.3, n: 2 }); },
     levelup: (t) => {
-      [60, 64, 67, 72, 76, 79].forEach((n, i) => osc({ t: t + i * 0.075, type: 'square', f: hz(n), dur: 0.22, vol: 0.09 }));
-      osc({ t: t + 0.45, f: hz(84), dur: 0.7, vol: 0.12 });
-      osc({ t: t + 0.45, type: 'triangle', f: hz(72), dur: 0.7, vol: 0.1 });
+      N({ t, dur: 0.3, vol: 0.14, a: 0.28, bp: { from: 500, to: 4000, q: 4 }, dist: 3 });
+      v.chord(t + 0.3, [50, 57, 62, 69], { type: 'sawtooth', dur: 0.8, vol: 0.06, dist: 4, lp: { from: 3200, to: 500, q: 2 }, rev: 0.5, out: 'out' });
+      v.metal(t + 0.3, { f: 1200, q: 3, dur: 0.6, vol: 0.12, rev: 0.6 });
+      O({ t: t + 0.3, f: 120, to: 40, dur: 0.3, vol: 0.4, dist: 3 });
     },
-    forge: (t) => { clink(t, 0.2); osc({ t, f: 110, to: 45, dur: 0.3, vol: 0.5 }); clink(t + 0.28, 0.12); },
+    forge: (t) => {                                            // a heavy hammer blow, then a smaller echo of it
+      v.kick(t, { vol: 0.55, dist: 4, duck: false, click: 0.3 });
+      v.metal(t, { f: 1100, q: 4, dur: 0.5, vol: 0.18, dist: 3, rev: 0.4 });
+      v.ping(t + 0.02, 1500, { dur: 0.6, vol: 0.08, rev: 0.4 });
+      v.metal(t + 0.28, { f: 1300, q: 4, dur: 0.3, vol: 0.1, dist: 3, rev: 0.3 });
+    },
     fail: (t) => {
-      osc({ t, type: 'sawtooth', f: 240, to: 80, dur: 0.35, vol: 0.14, lp: { from: 1600, to: 150 } });
-      osc({ t: t + 0.12, type: 'triangle', f: 180, to: 60, dur: 0.3, vol: 0.14 });
-      noise(t, 0.1, 0.1, 'lowpass', 600);
+      O({ t, type: 'sawtooth', f: hz(52), to: hz(40), dur: 0.4, vol: 0.16, dist: 5, lp: { from: 1400, to: 150 } });
+      N({ t, dur: 0.12, vol: 0.12, lp: { from: 600 } });
+      O({ t: t + 0.12, f: 80, to: 40, dur: 0.35, vol: 0.3, dist: 2 });
     },
     shrine: (t) => {
-      [520, 780, 1040].forEach((f, i) => osc({ t: t + i * 0.06, f, dur: 0.9, vol: 0.09 - i * 0.02, a: 0.12 }));
-      osc({ t, type: 'triangle', f: 130, dur: 0.9, vol: 0.12, a: 0.15 });
+      v.chord(t, [52, 59, 64], { type: 'sawtooth', dur: 1.1, vol: 0.04, a: 0.15, lp: { from: 600, to: 1800, q: 2 }, rev: 0.5, dist: 1.5, out: 'out' });
+      v.ping(t + 0.1, hz(88), { dur: 0.8, vol: 0.05, rev: 0.6 });
+      O({ t, f: 80, dur: 1, vol: 0.2, a: 0.1 });
     },
-    boss: (t) => {                                              // two low horn blasts and a rumble
-      for (let i = 0; i < 2; i++) {
-        osc({ t: t + i * 0.42, type: 'sawtooth', f: 92, to: 62, dur: 0.38, vol: 0.2, lp: { from: 900, to: 220 } });
-        osc({ t: t + i * 0.42, type: 'sine', f: 46, dur: 0.38, vol: 0.32 });
-      }
-      noise(t, 0.9, 0.12, 'lowpass', 300, 1, 120);
+    boss: (t) => {
+      for (let i = 0; i < 3; i++) { O({ t: t + i * 0.28, f: 140, to: 40, dur: 0.25, vol: 0.4, dist: 6 }); v.metal(t + i * 0.28, { f: 700, q: 4, dur: 0.4, vol: 0.14, dist: 4, rev: 0.5 }); }
+      O({ t: t + 0.84, type: 'sawtooth', f: hz(38), dur: 1.3, vol: 0.12, dist: 5, lp: { from: 1500, to: 120, q: 4 }, rev: 0.4, vib: { rate: 7, depth: 30 } });
     },
     chest: (t) => {
-      osc({ t, type: 'triangle', f: 260, to: 1040, dur: 0.35, vol: 0.18 });
-      [2093, 2637, 3136, 3520, 4186].forEach((f, i) => osc({ t: t + 0.3 + i * 0.06, f, dur: 0.3, vol: 0.07 }));
+      N({ t, dur: 0.25, vol: 0.12, a: 0.22, bp: { from: 600, to: 5000, q: 6 } });
+      [0, 5, 7, 12, 17].forEach((d, i) => v.ping(t + 0.25 + i * 0.05, hz(74 + d), { dur: 0.3, vol: 0.06, echo: 0.25, click: 0, n: 3 }));
     },
-    heal: (t) => {                                  // a soft rising chime
-      [523, 659, 784].forEach((f, i) => osc({ t: t + i * 0.07, type: 'sine', f, dur: 0.28, vol: 0.12 }));
+    evolve: (t) => {                                           // a rising sweep into a hoover stab and a kick
+      v.sweep(t, 0.75, 0.1, 300, 5000, { q: 4, out: 'out' });
+      [-25, 0, 25].forEach((dt) => [50, 57, 62].forEach((n) => O({ t: t + 0.75, type: 'sawtooth', f: hz(n + 7), to: hz(n), glide: 0.1, detune: dt, dur: 1, vol: 0.02, lp: { from: 2400, to: 500, q: 2 }, dist: 4, rev: 0.4 })));
+      v.kick(t + 0.75, { vol: 0.7, dist: 4, duck: false });
     },
-    magnet: (t) => {                                // a rising whoosh as everything is pulled in
-      osc({ t, type: 'sawtooth', f: 180, to: 900, dur: 0.45, vol: 0.09, lp: { from: 400, to: 3000 } });
-      noise(t, 0.4, 0.07, 'bandpass', 1800);
-    },
-    proc: (t, p) => {                               // a trigger's payload going off: a bright two-note blip
-      osc({ t, type: 'triangle', f: 760 * p, to: 1140 * p, dur: 0.09, vol: 0.09 });
-      osc({ t: t + 0.04, type: 'sine', f: 1520 * p, dur: 0.08, vol: 0.05 });
-    },
-    quench: (t) => {                                // hot metal dipped in cold water: a hiss, then a bright ring
-      noise(t, 0.3, 0.1, 'highpass', 4000);
-      osc({ t, type: 'triangle', f: 330, to: 660, dur: 0.18, vol: 0.1 });
-      [1319, 1760, 2637].forEach((f, i) => osc({ t: t + 0.12 + i * 0.07, f, dur: 0.35, vol: 0.07 }));
-    },
-    crate: (t) => {                                 // wood splintering
-      noise(t, 0.12, 0.14, 'bandpass', 900);
-      osc({ t, type: 'square', f: 180, to: 70, dur: 0.1, vol: 0.08 });
-    },
-    evolve: (t) => {
-      osc({ t, type: 'sawtooth', f: 160, to: 1800, dur: 0.75, vol: 0.1, lp: { from: 600, to: 5000 } });
-      noise(t, 0.75, 0.1, 'highpass', 3000);
-      [60, 64, 67, 72].forEach((n) => {
-        osc({ t: t + 0.75, type: 'square', f: hz(n), dur: 1.1, vol: 0.08 });
-        osc({ t: t + 0.75, type: 'triangle', f: hz(n - 12), dur: 1.1, vol: 0.12 });
+    win: (t) => {
+      [[50, 57, 62], [46, 53, 58], [48, 55, 60], [50, 57, 62, 66]].forEach((c, i) => {
+        v.chord(t + i * 0.3, c, { type: 'sawtooth', dur: i === 3 ? 1.8 : 0.28, vol: 0.05, dist: 3, sustain: i === 3, rel: 0.6, lp: { from: 2600, to: 900 }, rev: 0.5, out: 'out' });
+        O({ t: t + i * 0.3, f: 140, to: 45, dur: 0.25, vol: 0.35, dist: 4 });
       });
-      kick(t + 0.75);
     },
-    win: (t) => {                                               // a short fanfare ending on a held major chord
-      [60, 64, 67, 72, 67, 72, 76].forEach((n, i) => osc({ t: t + i * 0.11, type: 'square', f: hz(n), dur: 0.16, vol: 0.09 }));
-      [60, 64, 67, 72].forEach((n) => {
-        osc({ t: t + 0.8, type: 'triangle', f: hz(n), dur: 1.4, vol: 0.11, a: 0.02 });
-        osc({ t: t + 0.8, type: 'square', f: hz(n + 12), dur: 1.4, vol: 0.04 });
-      });
-      kick(t + 0.8);
+    lose: (t) => {
+      [0, 0.2, 0.4].forEach((d, i) => v.metal(t + d, { f: 900 - i * 200, q: 5, dur: 0.4, vol: 0.12, dist: 3, rev: 0.5 }));
+      O({ t: t + 0.6, type: 'sawtooth', f: hz(38), to: hz(26), glide: 1.6, dur: 1.7, vol: 0.14, dist: 6, lp: { from: 1200, to: 80, q: 3 }, rev: 0.3 });
     },
-    lose: (t) => {                                              // falling minor line, then a low sag
-      [69, 65, 62, 57].forEach((n, i) => osc({ t: t + i * 0.2, type: 'triangle', f: hz(n), dur: 0.3, vol: 0.14 }));
-      osc({ t: t + 0.8, type: 'sawtooth', f: hz(45), to: hz(40), dur: 1, vol: 0.12, lp: { from: 700, to: 120 } });
+    tap: (t) => { v.ping(t, 1500, { dur: 0.03, vol: 0.04, n: 2 }); },
+    heal: (t) => { v.chord(t, [62, 69, 74], { type: 'triangle', dur: 0.55, vol: 0.07, a: 0.1, rev: 0.4, out: 'out' }); N({ t, dur: 0.5, vol: 0.04, a: 0.2, hp: { from: 5000 } }); },
+    crate: (t) => { v.metal(t, { f: 900, q: 2, dur: 0.12, vol: 0.12, dist: 4 }); N({ t, dur: 0.08, vol: 0.08, bp: { from: 500, q: 1 }, dist: 4 }); },
+    magnet: (t) => { O({ t, type: 'sawtooth', f: 60, to: 360, dur: 0.5, vol: 0.12, dist: 4, lp: { from: 300, to: 2000, q: 5 } }); },
+    quench: (t) => {                                           // hot metal dipped in cold water: a hiss, then two pings
+      N({ t, dur: 0.3, vol: 0.1, hp: { from: 4000 } });
+      v.ping(t + 0.12, 1100, { dur: 0.5, vol: 0.07, rev: 0.3 });
+      v.ping(t + 0.2, 1650, { dur: 0.4, vol: 0.05, rev: 0.3 });
     },
-    tap: (t) => { osc({ t, f: 700, to: 520, dur: 0.04, vol: 0.06 }); noise(t, 0.015, 0.04, 'highpass', 5000); },
   };
 
   const last = {};
@@ -170,7 +104,9 @@ export function createSfx(ctx, dest) {
       const t = ctx.currentTime;
       if (t - (last[name] ?? -1) < (GAP[name] ?? 0.05)) return false;
       last[name] = t;
+      g.vmul = SFX_TRIM[name] || 1;
       fx(t + 0.005, 0.96 + Math.random() * 0.08);
+      g.vmul = 1;
       return true;
     },
   };

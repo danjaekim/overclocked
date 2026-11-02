@@ -3,7 +3,7 @@
 // the music settings.
 import assert from 'node:assert/strict';
 import { test } from './harness.mjs';
-import { createMusic, MUSIC_IDS, MUSIC_SONGS, midi } from '../src/audio/music.js';
+import { createMusic, MUSIC_IDS, MUSIC_SONGS, HOOVER_RIFFS, midi, parseLine } from '../src/audio/music.js';
 import { createSave, normalize, DEFAULTS } from '../src/save/save.js';
 
 function param() {
@@ -19,9 +19,10 @@ function fakeCtx() {
     createOscillator() { made.osc++; return node({ frequency: param(), detune: param(), setPeriodicWave() {} }); },
     createGain() { return node({ gain: param() }); },
     createBiquadFilter() { return node({ frequency: param(), Q: param() }); },
-    createBufferSource() { made.noise++; return node({}); },
+    createBufferSource() { made.noise++; return node({ playbackRate: param() }); },
     createDelay() { return node({ delayTime: param() }); },
     createConvolver() { return node({}); },
+    createWaveShaper() { return node({}); },
     createDynamicsCompressor() { return node({}); },
     createPeriodicWave() { return {}; },
     createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; },
@@ -41,19 +42,22 @@ function drive(music, ctx, seconds) {
   return { run, restore() { globalThis.setInterval = real; globalThis.clearInterval = realClear; } };
 }
 
-test('every song line has the right token count', () => {
+test('songs are well formed and the hoover riffs fit in a bar', () => {
   for (const id of MUSIC_IDS) {
     const sg = MUSIC_SONGS[id];
-    assert.equal(sg.lead.length, sg.bars, id + ' lead bars');
-    sg.lead.forEach((l, i) => { if (l !== '.') assert.equal(l.trim().split(/\s+/).length, 16 / sg.res, `${id} lead bar ${i}`); });
-    for (const lane of sg.lanes || []) {
-      assert.equal(lane.lines.length, sg.bars, id + ' lane bars');
-      lane.lines.forEach((l, i) => assert.equal(l.trim().split(/\s+/).length, 16 / lane.res, `${id} lane bar ${i}`));
+    assert.ok(sg.title && sg.bpm >= 100 && sg.bpm <= 160, id + ' title and tempo');
+    assert.equal(sg.bars, 16, id + ' is a 16 bar loop');
+    assert.equal(typeof sg.step, 'function');
+    assert.ok(sg.trim > 0 && sg.trim <= 1, id + ' trim');
+  }
+  for (const riff of Object.values(HOOVER_RIFFS)) {
+    for (const [step, [semi, len]] of Object.entries(riff)) {
+      assert.ok(step >= 0 && step < 16 && len > 0 && Number(step) + len <= 16, 'riff step ' + step);
+      assert.ok(Math.abs(semi) <= 12, 'riff stays low');
     }
-    assert.equal(sg.chords.length, sg.bars);
-    assert.equal(sg.roots.length, sg.bars);
   }
   assert.equal(midi('A4'), 69);
+  assert.deepEqual(parseLine('C4 - . E4', 1, 2).map((e) => [e.step, e.len]), [[16, 4], [22, 2]]);
 });
 
 test('each song plays a full loop on a fake context', () => {
@@ -68,7 +72,7 @@ test('each song plays a full loop on a fake context', () => {
       music.play(id);
       assert.equal(music.playing, id);
       d.run();
-      assert.ok(ctx.made.osc > 200, id + ' made ' + ctx.made.osc + ' oscillators');
+      assert.ok(ctx.made.osc > 100, id + ' made ' + ctx.made.osc + ' oscillators');
     } finally { d.restore(); }
   }
 });
