@@ -67,6 +67,7 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
   const audio = {
     get enabled() { return on; },
     get lite() { return lite; },
+    get clock() { return ctx ? ctx.currentTime : 0; },     // the audio clock, for the debug overlay and soak tests
     setLite,
     setEnabled(v) { on = !!v; music.setEnabled(on && mOn); },
 
@@ -98,10 +99,10 @@ export function createAudio({ enabled = true, music: musicOn = true, musicVolume
     play(name) {
       if (!on || !ctx) return;
       if (ctx.state !== 'running') {            // e.g. iOS suspends it again after a call or backgrounding
-        ctx.resume().catch(() => {});
+        try { ctx.resume().catch(() => {}); } catch (e) {}
         return;
       }
-      sfx.play(name);
+      try { sfx.play(name); } catch (e) { /* audio must never break a tap */ }
     },
   };
 

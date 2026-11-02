@@ -110,6 +110,14 @@ export function renderSong(ctx, dest, id, bars = SONGS[id].bars, lite = 0) {
 }
 
 // --- The player --------------------------------------------------------------------------------
+//
+// A song is synthesized ONCE, offline, into a looping AudioBuffer (24 kHz stereo, the reverb and echo
+// tails folded back onto the start so the loop is seamless); playing it is then a single buffer source,
+// which costs a phone nothing. The live synthesis below is the fallback: it plays (at its lightest) while
+// the first bake runs, and wherever there is no OfflineAudioContext, such as the tests.
+
+const BAKE_RATE = 24000, BAKE_TAIL = 2.5;
+const loopSecs = (sg) => (60 / sg.bpm / 4) * sg.bars * 16;
 
 export function createMusic() {
   let ctx = null;
@@ -120,39 +128,123 @@ export function createMusic() {
   let enabled = true;
   let volume = 0.6;
   let ducked = false;
-  let cur = null;         // { id, step, next, timer, graph, v }
-  let lite = 0;           // 0 full, 1 and 2 drop optional layers (see audio.js, which raises it when playback lags)
+  let cur = null;         // { id, step, next, timer, graph, v } live, or { id, buffer: true, src, gain } baked
+  let lite = 0;           // live synthesis only: 0 full, 1 and 2 drop optional layers (audio.js raises it when playback lags)
+
+  // ---- baked songs ----
+  const baked = {};       // id -> AudioBuffer
+  const queue = [];       // ids waiting to be rendered
+  const failed = {};
+  let baking = false;
+  const OAC = () => typeof globalThis !== 'undefined' && (globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext);
+
+  function renderBuffer(id) {
+    const sg = SONGS[id], loop = loopSecs(sg), N = Math.ceil((loop + BAKE_TAIL + 0.2) * BAKE_RATE);
+    const oc = new (OAC())(2, N, BAKE_RATE);
+    renderSong(oc, oc.destination, id, sg.bars, 0);                       // steps start at t = 0.05
+    const finish = (r) => {
+      const off = Math.round(0.05 * BAKE_RATE), len = Math.round(loop * BAKE_RATE);
+      const buf = ctx.createBuffer(2, len, BAKE_RATE);
+      for (let c = 0; c < 2; c++) {
+        const src = r.getChannelData(c), dst = buf.getChannelData(c);
+        for (let i = 0; i < len; i++) dst[i] = src[off + i];
+        for (let i = off + len, j = 0; i < src.length; i++, j++) dst[j % len] += src[i];   // the tail wraps onto the start
+      }
+      return buf;
+    };
+    return new Promise((resolve, reject) => {
+      const r = oc.startRendering();
+      if (r && r.then) r.then((b) => resolve(finish(b)), reject);
+      else oc.oncomplete = (e) => resolve(finish(e.renderedBuffer));
+    });
+  }
+
+  function pump() {
+    if (baking || !queue.length || !ctx || !OAC()) return;
+    const id = queue.shift();
+    if (baked[id] || failed[id]) { pump(); return; }
+    baking = true;
+    let p;
+    try { p = renderBuffer(id); } catch (e) { p = Promise.reject(e); }
+    p.then((buf) => {
+      baked[id] = buf; baking = false;
+      if (cur && cur.id === id && !cur.buffer && effective()) swapToBuffer();
+      setTimeout(pump, 1500);                                              // the next one after a breather
+    }, () => { failed[id] = true; baking = false; setTimeout(pump, 1500); });
+  }
+
+  function want(id) {
+    if (!OAC() || baked[id] || failed[id] || queue.includes(id)) return;
+    queue.push(id);
+    pump();
+  }
+
+  function startBuffer(id, offset = 0) {
+    const src = ctx.createBufferSource();
+    src.buffer = baked[id]; src.loop = true;
+    const gain = ctx.createGain();
+    src.connect(gain); gain.connect(comp);
+    src.start(ctx.currentTime + 0.02, offset % baked[id].duration);
+    cur = { id, buffer: true, src, gain };
+  }
+
+  // The first bake of the song that is playing live has finished: carry on from the same spot.
+  function swapToBuffer() {
+    const sg = SONGS[cur.id], sd = 60 / sg.bpm / 4;
+    const pos = (cur.step - (cur.next - ctx.currentTime) / sd) * sd;       // seconds into the loop now
+    const id = cur.id;
+    stopSong(0.12);
+    startBuffer(id, Math.max(0, pos) + 0.02);
+  }
 
   function stopSong(fade = 0.25) {
     if (!cur) return;
-    clearInterval(cur.timer);
-    const gr = cur.graph, t = ctx.currentTime;
+    const t = ctx.currentTime, c = cur;
+    cur = null;
+    if (c.buffer) {
+      c.gain.gain.cancelScheduledValues(t);
+      c.gain.gain.setValueAtTime(c.gain.gain.value, t);
+      c.gain.gain.linearRampToValueAtTime(0, t + fade);
+      setTimeout(() => { try { c.src.stop(); c.src.disconnect(); c.gain.disconnect(); } catch (e) { /* gone */ } }, (fade + 0.2) * 1000);
+      return;
+    }
+    clearInterval(c.timer);
+    const gr = c.graph;
     gr.out.gain.cancelScheduledValues(t);
     gr.out.gain.setValueAtTime(gr.out.gain.value, t);
     gr.out.gain.linearRampToValueAtTime(0, t + fade);
     setTimeout(() => gr.dispose(), (fade + 3) * 1000);
-    cur = null;
   }
 
-  function startSong(id) {
+  function startLive(id) {
     const sg = SONGS[id];
     const gr = songGraph(ctx, comp, sg);
     const v = voices(gr);
-    v.lite = lite;
+    v.lite = OAC() ? 2 : lite;                       // while a bake is coming, the lightest live version
     const sd = 60 / sg.bpm / 4;
     const total = sg.bars * 16;
-    cur = { id, step: 0, next: ctx.currentTime + 0.08, graph: gr, timer: 0, v };
+    const c = { id, step: 0, next: ctx.currentTime + 0.08, graph: gr, timer: 0, v };
+    cur = c;
     const tick = () => {
-      if (!cur || cur.graph !== gr) return;
-      if (cur.next < ctx.currentTime - 0.4) cur.next = ctx.currentTime + 0.05;   // woke from a stall: do not burst
-      while (cur.next < ctx.currentTime + 0.2) {
-        sg.step(v, Math.floor(cur.step / 16), cur.step % 16, cur.next, sd);
-        cur.next += sd;
-        cur.step = (cur.step + 1) % total;
+      if (cur !== c) return;
+      try {
+        if (c.next < ctx.currentTime - 0.4) c.next = ctx.currentTime + 0.05;   // woke from a stall: do not burst
+        while (c.next < ctx.currentTime + 0.2) {
+          sg.step(v, Math.floor(c.step / 16), c.step % 16, c.next, sd);
+          c.next += sd;
+          c.step = (c.step + 1) % total;
+        }
+      } catch (e) {                                  // a sound error must never loop forever or reach the game: skip ahead
+        c.next += sd; c.step = (c.step + 1) % total;
       }
     };
-    cur.timer = setInterval(tick, 25);
+    c.timer = setInterval(tick, 25);
     tick();
+  }
+
+  function startSong(id) {
+    if (baked[id]) startBuffer(id);
+    else { startLive(id); want(id); }
   }
 
   function effective() { return enabled && volume > 0.001; }
@@ -182,15 +274,18 @@ export function createMusic() {
       comp.connect(out); out.connect(dest);
       out.gain.value = Math.pow(volume, 1.6) * 0.5 * (ducked ? 0.35 : 1);
       sync();
+      MUSIC_IDS.forEach(want);                                              // then the other songs, one at a time
     },
     play(id) { wanted = id; sync(); },                    // same scene again does nothing
     stop() { wanted = null; sync(); },
     setEnabled(v) { enabled = !!v; sync(); },
     setVolume(v) { volume = Math.min(1, Math.max(0, Number(v) || 0)); applyVolume(); sync(); },
     duck(on) { ducked = !!on; applyVolume(); },
-    setLite(n) { lite = Math.max(0, Math.min(2, n | 0)); if (cur) cur.v.lite = lite; },
+    setLite(n) { lite = Math.max(0, Math.min(2, n | 0)); if (cur && cur.v && !OAC()) cur.v.lite = lite; },
     get lite() { return lite; },
     get playing() { return cur ? cur.id : null; },
     get scene() { return wanted; },
+    get bakedIds() { return Object.keys(baked); },                          // songs rendered so far (debug, soak tests)
+    get mode() { return cur ? (cur.buffer ? 'baked' : 'live') : null; },
   };
 }

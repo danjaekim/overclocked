@@ -53,7 +53,7 @@ const res = await page.evaluate(async (b) => {
   }
   for (const n of SFX_NAMES) {
     const ctx = new OfflineAudioContext(2, SR * 3, SR);
-    const sfx = createSfx(ctx, ctx.destination); sfx.play(n);
+    const sfx = createSfx(ctx, ctx.destination, { bake: false }); sfx.play(n);
     out.sfx[n] = rms(await ctx.startRendering());
   }
   return out;

@@ -1,7 +1,11 @@
 // Sound effects: small layered WebAudio voices (no audio files), in the same dark industrial voice
 // as the music: distorted kicks and growls, metallic pings, noise. audio.js creates one of these once
-// the context exists; the sim only ever calls run.sfx(name). Frequent sounds (kill, gem, hurt) are
-// rate limited and kept to a few nodes so a screen full of enemies stays cheap.
+// the context exists; the sim only ever calls run.sfx(name).
+//
+// Each effect is synthesized ONCE, offline, into an AudioBuffer a moment after start-up, and playing it
+// is then a single buffer source (pitch-jittered with playbackRate), so a screen full of kills costs
+// almost nothing. Until an effect's buffer is ready, and wherever there is no OfflineAudioContext (the
+// tests), it is synthesized live from the same voice functions, rate limited and budgeted.
 import { hz, graph, voices } from './synth.js';
 
 export const SFX_NAMES = [
@@ -22,14 +26,19 @@ export const SFX_TRIM = {"hit":3.78,"kill":0.57,"gem":2.18,"ore":0.85,"hurt":0.4
 // consecutive gem pickups climb an E minor pentatonic run, so a vacuumed pile rings upward
 const PENT = [0, 3, 5, 7, 10, 12, 15, 17];
 
-export function createSfx(ctx, dest) {
+const BAKE_RATE = 32000;
+const BAKE_SECS = {                      // how long each effect rings, tail included
+  hit: 0.5, kill: 0.7, gem: 0.7, ore: 0.9, hurt: 0.8, levelup: 2.2, forge: 1.6, fail: 0.9, shrine: 2, boss: 3, chest: 1.5,
+  evolve: 2.4, win: 3.2, lose: 3.4, tap: 0.5, heal: 1.2, crate: 0.7, magnet: 0.9, quench: 1, proc: 0.6,
+};
+
+// The effect voices on a context. `gemStep(t)` gives the semitone for a gem pickup (the climbing run).
+function makeVoices(ctx, dest, gemStep) {
   const g = graph(ctx, dest, { echoTime: 0.17, echoFb: 0.3, rumble: false, revGain: 0.5, revSecs: 1 });
   g.duck.gain.value = 1;
   const v = voices(g);
   const O = (o) => v.osc(Object.assign({ out: 'out' }, o));
   const N = (o) => v.noise(Object.assign({ out: 'out' }, o));
-  let lastGem = -10, chain = 0;
-  function gemStep(t) { chain = t - lastGem < 0.45 ? Math.min(chain + 1, PENT.length - 1) : 0; lastGem = t; return PENT[chain]; }
 
   // p: a small random pitch factor so repeats do not sound identical
   const FX = {
@@ -101,26 +110,76 @@ export function createSfx(ctx, dest) {
   const CHEAP = new Set(['hit', 'kill', 'gem', 'ore', 'proc', 'crate', 'tap', 'magnet']);
   const BUDGET = [6, 4, 2];
   let lite = 0, recent = [], skip = 0;
+  // Runs one effect now (no rate limit): the live path and the baker both come through here.
+  return {
+    has: (name) => !!FX[name],
+    fire(name, t, p) {
+      g.vmul = SFX_TRIM[name] || 1;
+      FX[name](t, p);
+      g.vmul = 1;
+    },
+  };
+}
+
+export function createSfx(ctx, dest, { bake = true } = {}) {
+  let lastGem = -10, chain = 0;
+  function gemStep(t) { chain = t - lastGem < 0.45 ? Math.min(chain + 1, PENT.length - 1) : 0; lastGem = t; return PENT[chain]; }
+  const live = makeVoices(ctx, dest, gemStep);
+
+  // --- baked effects: one AudioBuffer each, rendered offline in the background, one name at a time ---
+  const bank = {};
+  const OAC = typeof globalThis !== 'undefined' && (globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext);
+  if (bake && OAC) {
+    const queue = SFX_NAMES.slice();
+    const next = () => {
+      const name = queue.shift();
+      if (!name) return;
+      try {
+        const len = Math.ceil((BAKE_SECS[name] || 1.2) * BAKE_RATE);
+        const oc = new OAC(2, len, BAKE_RATE);
+        makeVoices(oc, oc.destination, () => 0).fire(name, 0.005, 1);
+        const done = (buf) => { bank[name] = buf; setTimeout(next, 60); };
+        const r = oc.startRendering();
+        if (r && r.then) r.then(done, () => setTimeout(next, 60)); else oc.oncomplete = (e) => done(e.renderedBuffer);
+      } catch (e) { setTimeout(next, 60); }
+    };
+    setTimeout(next, 300);
+  }
+  const playBaked = (name, t, rate) => {
+    const src = ctx.createBufferSource();
+    src.buffer = bank[name];
+    src.playbackRate.value = rate;
+    src.connect(dest);
+    src.start(t);
+  };
+
+  // A screen full of enemies fires kills, gems and hits many times a second. Frequent sounds share a budget
+  // per 100 ms (smaller when playback is struggling, see setLite) and are thinned out in lite mode; the
+  // rare, important sounds always play.
+  const CHEAP = new Set(['hit', 'kill', 'gem', 'ore', 'proc', 'crate', 'tap', 'magnet']);
+  const BUDGET = [6, 4, 2], BUDGET_BAKED = [12, 8, 4];
+  let lite = 0, recent = [], skip = 0;
   const last = {};
   return {
     setLite(n) { lite = Math.max(0, Math.min(2, n | 0)); },
+    get baked() { return Object.keys(bank).length; },
     // Returns true if the sound started. Rate limited per sound.
     play(name) {
-      const fx = FX[name];
-      if (!fx) return false;
+      if (!live.has(name)) return false;
       const t = ctx.currentTime;
       if (t - (last[name] ?? -1) < (GAP[name] ?? 0.05)) return false;
+      const buf = !!bank[name];
       if (CHEAP.has(name)) {
         if (lite >= 1 && (name === 'hit' || name === 'proc')) return false;
         if (lite >= 1 && (name === 'kill' || name === 'gem') && (skip++ % (lite + 1)) !== 0) return false;
         recent = recent.filter((x) => t - x < 0.1);
-        if (recent.length >= BUDGET[lite]) return false;
+        if (recent.length >= (buf ? BUDGET_BAKED : BUDGET)[lite]) return false;
         recent.push(t);
       }
       last[name] = t;
-      g.vmul = SFX_TRIM[name] || 1;
-      fx(t + 0.005, 0.96 + Math.random() * 0.08);
-      g.vmul = 1;
+      const p = 0.96 + Math.random() * 0.08;
+      if (buf) playBaked(name, t + 0.005, name === 'gem' ? p * Math.pow(2, gemStep(t) / 12) : p);
+      else live.fire(name, t + 0.005, p);
       return true;
     },
   };
