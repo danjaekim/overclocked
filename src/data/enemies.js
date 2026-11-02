@@ -9,7 +9,7 @@ export const ENEMIES = {
     xp: 1,
     ore: { chance: 0.04, type: 'iron' },
     ai: 'chase',
-    color: '#6aa84f',
+    color: '#ff2e97',
   },
   brute: {
     name: 'Brute',
@@ -17,7 +17,7 @@ export const ENEMIES = {
     xp: 5,
     ore: { chance: 0.3, type: 'iron' },
     ai: 'chase',
-    color: '#a64d79',
+    color: '#ff8a1f',
   },
   // Armoured goblin: every hit loses `armor` damage (never more than 60% of it), so many small hits
   // barely scratch it and heavy hits, burns and shocks do. Damage over time ignores armor.
@@ -28,7 +28,7 @@ export const ENEMIES = {
     ore: { chance: 0.12, type: 'iron' },
     ai: 'chase',
     armor: 5,
-    color: '#8fa3b8',
+    color: '#4f7bff',
   },
   // Ranged goblin: walks into `range`, stops, flashes, then throws a slow shot at where you stand.
   slinger: {
@@ -38,7 +38,7 @@ export const ENEMIES = {
     ore: { chance: 0.08, type: 'iron' },
     ai: 'ranged',
     ranged: { range: 230, cooldown: 2.4, windup: 0.4, shotSpeed: 150, shotDamage: 7, shotTtl: 2.6, shotR: 5 },
-    color: '#b06ad0',
+    color: '#b6ff3b',
   },
   // Bursts into three goblins when it dies, so a build that only kills one big thing at a time floods.
   splitter: {
@@ -48,7 +48,7 @@ export const ENEMIES = {
     ore: { chance: 0.1, type: 'iron' },
     ai: 'chase',
     splits: 3,
-    color: '#d98cae',
+    color: '#ff3b5c',
   },
   // Wards everything near it (half damage) while it lives, so it has to be found and killed first.
   shaman: {
@@ -58,7 +58,7 @@ export const ENEMIES = {
     ore: { chance: 0.1, type: 'iron' },
     ai: 'chase',
     ward: { radius: 130 },
-    color: '#5aa8b0',
+    color: '#c86bff',
   },
   warlord: {
     name: 'Warlord',
@@ -69,7 +69,7 @@ export const ENEMIES = {
     ai: 'boss_charge',
     boss: true,
     charge: { every: 5, windup: 0.9, speed: 340, time: 0.7, rageAt: 0.5, windupRage: 0.6 },
-    color: '#c0392b',
+    color: '#ff2e97',
   },
   // Late heavy: slow, thick-skinned, and when it reaches you it stops and slams a marked circle around itself.
   crusher: {
@@ -80,7 +80,7 @@ export const ENEMIES = {
     ai: 'slammer',
     armor: 6,
     slam: { every: 6, windup: 0.9, radius: 95, damage: 12 },
-    color: '#8a8f98',
+    color: '#ff8a1f',
   },
   // The late boss: stands off and calls down Meteor Fall (systems/boss-zones.js). Below `rageAt` of its hp it
   // casts faster and drops more circles.
@@ -93,7 +93,7 @@ export const ENEMIES = {
     ai: 'boss_caster',
     boss: true,
     caster: { range: 300, every: 4.2, windup: 0.8, count: 4, countRage: 7, rageAt: 0.5, rageSpeed: 1.5, radius: 58, spread: 170, fuse: 1.15, stagger: 0.12, lead: 0.35, damage: 18 },
-    color: '#7a4fa0',
+    color: '#c86bff',
   },
 };
 
@@ -104,7 +104,7 @@ export const ESCORT = { at: [0.66, 0.33], count: 20, brutes: 2 };
 // no special cases, but that are not enemies: they never move or hurt you, weapons do not aim at them,
 // and breaking one is not a kill (systems/crates.js decides what falls out). `ttl`: seconds before it fades.
 export const PROPS = {
-  crate: { name: 'Supply Crate', hp: 15, speed: 0, damage: 0, radius: 14, xp: 0, ttl: 70, prop: true, color: '#b08850' },
+  crate: { name: 'Supply Crate', hp: 15, speed: 0, damage: 0, radius: 14, xp: 0, ttl: 70, prop: true, color: '#ffd23f' },
 };
 
 // Largest enemy radius; collision queries use this so no candidate is missed.

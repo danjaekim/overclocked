@@ -21,6 +21,8 @@ export const PALETTE = {
   amber: '#ffb02e',
   violet: '#c86bff',
   orange: '#ff8a1f',
+  blue: '#4f7bff',
+  red: '#ff3b5c',
 };
 
 export const CHAIN_COLORS = [PALETTE.rig, PALETTE.pink, PALETTE.lime, PALETTE.amber];   // chains A to D
