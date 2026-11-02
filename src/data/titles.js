@@ -19,15 +19,15 @@ export const TITLES = {
     mods: [{ stat: 'damage', op: 'more', value: 0.15 }],
   },
   forgemaster: {
-    name: 'Forgemaster',
-    desc: '+20% area, +50% ore (an item enhanced to +5)',
+    name: 'Tinkerer',
+    desc: '+20% area, +50% credits (an item enhanced to +5)',
     rarity: 'epic',
     grant: { type: 'milestone', event: 'enhance', count: 5 },
     mods: [{ stat: 'area', op: 'inc', value: 0.2 }, { stat: 'oreGain', op: 'inc', value: 0.5 }],
   },
   warbreaker: {
     name: 'Warbreaker',
-    desc: '25% more damage, +25% pickup range (the Warlord slain)',
+    desc: '25% more damage, +25% pickup range (the Enforcer down)',
     rarity: 'epic',
     grant: { type: 'milestone', event: 'boss', count: 1 },
     mods: [{ stat: 'damage', op: 'more', value: 0.25 }, { stat: 'pickupRadius', op: 'inc', value: 0.25 }],

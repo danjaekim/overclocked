@@ -12,7 +12,7 @@ export function showTreasure(overlays, { count, rolls, boss = false, pick = fals
     </div>`).join('');
   const total = 0.45 + rolls.length * STEP + 0.2;
   const el = overlays.show(
-    `<h2>${boss ? 'Warlord\'s hoard' : 'Treasure!'}</h2>
+    `<h2>${boss ? 'Enforcer\'s vault' : 'Treasure!'}</h2>
      <p class="sub chest-count">×${count}</p>
      <div class="cards">${cards}</div>
      <button class="btn primary reveal" style="animation-delay:${total.toFixed(2)}s" data-act="done" disabled>${pick ? 'Collect and pick a chassis' : rolls.some((r) => r.placed) ? 'Collect and edit' : 'Collect'}</button>`,

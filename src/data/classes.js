@@ -51,10 +51,10 @@ export const CLASSES = {
       { stat: 'oreGain', op: 'inc', value: 0.3 },
       { stat: 'area', op: 'inc', value: 0.15, tags: ['close'] },
     ],
-    forge: { costMult: 0.8 },        // Smiths enhance for 20% less ore
+    forge: { costMult: 0.8 },        // Smiths enhance for 20% less credits
     trait: {
-      name: 'Forgemaster',
-      text: ['Tempered Steel: every enhance level gives 6% more damage on top of the usual 8%', 'Heavy Blows: hits may stagger (10%); staggered enemies take 40% more damage from you', 'Finds 30% more ore and enhances for 20% less', 'Close-range weapons reach 15% wider'],
+      name: 'Tinkerer',
+      text: ['Tempered Steel: every enhance level gives 6% more damage on top of the usual 8%', 'Heavy Blows: hits may stagger (10%); staggered enemies take 40% more damage from you', 'Finds 30% more credits and enhances for 20% less', 'Close-range weapons reach 15% wider'],
       heavyBlows: { chance: 0.1, stun: 0.4, vsStunned: 0.4 },
       temperedSteel: { damage: 0.06 },
     },
@@ -77,7 +77,7 @@ export const CLASSES = {
       frenzy: { per: 0.02, max: 15, time: 3 },
     },
     unlocked: false,
-    unlock: { event: 'boss', hint: 'Defeat the Warlord' },
+    unlock: { event: 'boss', hint: 'Defeat the Enforcer' },
   },
   mage: {
     name: 'Mage',

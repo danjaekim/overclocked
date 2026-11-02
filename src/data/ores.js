@@ -4,6 +4,6 @@
 // mithril and void_ember are possible later additions.
 
 export const ORES = {
-  iron:      { name: 'Iron',      bank: 'ore',       color: '#ffb45e', r: 5 },
+  iron:      { name: 'Scrap',    bank: 'ore',       color: '#ffb45e', r: 5 },
   starsteel: { name: 'Starsteel', bank: 'starsteel', color: '#7fe9ff', r: 8 },
 };

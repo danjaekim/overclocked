@@ -11,7 +11,7 @@ export function mutationOf(inst) {
 
 // Why the weapon cannot be starforged right now (null when it can).
 export function starforgeBlocker(run, inst) {
-  if (inst.star) return 'Already starforged.';
+  if (inst.star) return 'Already overcharged.';
   if (!mutationOf(inst)) return 'No mutation for this weapon yet.';
   if (inst.level < inst.def.maxLevel) return `Reach level ${inst.def.maxLevel} first.`;
   if (run.starsteel < STARFORGE.cost) return `Needs ${STARFORGE.cost} starsteel.`;

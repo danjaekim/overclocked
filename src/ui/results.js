@@ -34,7 +34,7 @@ export function showResults(overlays, summary, { onAgain, newBests = [] }) {
        ${stat('kills', 'Kills', summary.kills)}
        ${stat('level', 'Level', summary.level)}
      </div>
-     ${summary.bossKilled ? '<p class="sub">The Warlord is slain.</p>' : ''}
+     ${summary.bossKilled ? '<p class="sub">The Enforcer is down.</p>' : ''}
      ${rigHtml(summary.rig)}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>

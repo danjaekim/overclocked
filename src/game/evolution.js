@@ -157,6 +157,6 @@ export function evolve(run, clicked, recipe) {
   applyBaseMods(run, inst);
   BEHAVIORS[def.behavior].init(inst, run);
   refreshResonance(run);
-  run.toast = { text: partner ? `${def.name} fused!` : `${def.name} forged!`, ttl: 3.5 };
+  run.toast = { text: partner ? `${def.name} fused!` : `${def.name} built!`, ttl: 3.5 };
   return { ok: true, into: def };
 }

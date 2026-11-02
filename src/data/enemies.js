@@ -4,7 +4,7 @@
 
 export const ENEMIES = {
   goblin: {
-    name: 'Goblin',
+    name: 'Street Drone',
     hp: 10, speed: 60, damage: 5, radius: 10,
     xp: 1,
     ore: { chance: 0.04, type: 'iron' },
@@ -12,7 +12,7 @@ export const ENEMIES = {
     color: '#ff2e97',
   },
   brute: {
-    name: 'Brute',
+    name: 'Bruiser',
     hp: 80, speed: 50, damage: 12, radius: 18,
     xp: 5,
     ore: { chance: 0.3, type: 'iron' },
@@ -22,7 +22,7 @@ export const ENEMIES = {
   // Armoured goblin: every hit loses `armor` damage (never more than 60% of it), so many small hits
   // barely scratch it and heavy hits, burns and shocks do. Damage over time ignores armor.
   shieldbearer: {
-    name: 'Shieldbearer',
+    name: 'Riot Unit',
     hp: 30, speed: 50, damage: 7, radius: 12,
     xp: 2,
     ore: { chance: 0.12, type: 'iron' },
@@ -32,7 +32,7 @@ export const ENEMIES = {
   },
   // Ranged goblin: walks into `range`, stops, flashes, then throws a slow shot at where you stand.
   slinger: {
-    name: 'Slinger',
+    name: 'Spitter',
     hp: 14, speed: 46, damage: 4, radius: 10,
     xp: 2,
     ore: { chance: 0.08, type: 'iron' },
@@ -42,7 +42,7 @@ export const ENEMIES = {
   },
   // Bursts into three goblins when it dies, so a build that only kills one big thing at a time floods.
   splitter: {
-    name: 'Splitter',
+    name: 'Swarm Pod',
     hp: 40, speed: 55, damage: 6, radius: 15,
     xp: 4,
     ore: { chance: 0.1, type: 'iron' },
@@ -52,7 +52,7 @@ export const ENEMIES = {
   },
   // Wards everything near it (half damage) while it lives, so it has to be found and killed first.
   shaman: {
-    name: 'Shaman',
+    name: 'Hacker',
     hp: 36, speed: 48, damage: 4, radius: 11,
     xp: 4,
     ore: { chance: 0.1, type: 'iron' },
@@ -61,7 +61,7 @@ export const ENEMIES = {
     color: '#c86bff',
   },
   warlord: {
-    name: 'Warlord',
+    name: 'Enforcer',
     hp: 1800, speed: 52, damage: 18, radius: 34,
     fight: 35, hpMaxMult: 10, rawShare: 0.3,              // boss hp = your recent raw dps (overkill included, so it follows the rig, not the crowd) x rawShare x `fight` seconds, between 1x and `hpMaxMult` x hp (run-events.js boss)          // 25 in Overforged; bots in a rig run died to it within 20-40 s at full hp (v0.5.5)
     xp: 100,
@@ -73,7 +73,7 @@ export const ENEMIES = {
   },
   // Late heavy: slow, thick-skinned, and when it reaches you it stops and slams a marked circle around itself.
   crusher: {
-    name: 'Crusher',
+    name: 'Wrecker',
     hp: 300, speed: 38, damage: 16, radius: 24,
     xp: 12,
     ore: { chance: 0.5, type: 'iron' },
@@ -85,7 +85,7 @@ export const ENEMIES = {
   // The late boss: stands off and calls down Meteor Fall (systems/boss-zones.js). Below `rageAt` of its hp it
   // casts faster and drops more circles.
   seer: {
-    name: 'Ashen Seer',
+    name: 'Oracle',
     hp: 3500, speed: 70, damage: 30, radius: 36,
     fight: 45, hpMaxMult: 40, rawShare: 0.2,
     xp: 200,
@@ -104,7 +104,7 @@ export const ESCORT = { at: [0.66, 0.33], count: 20, brutes: 2 };
 // no special cases, but that are not enemies: they never move or hurt you, weapons do not aim at them,
 // and breaking one is not a kill (systems/crates.js decides what falls out). `ttl`: seconds before it fades.
 export const PROPS = {
-  crate: { name: 'Supply Crate', hp: 15, speed: 0, damage: 0, radius: 14, xp: 0, ttl: 70, prop: true, color: '#ffd23f' },
+  crate: { name: 'Cargo Drop', hp: 15, speed: 0, damage: 0, radius: 14, xp: 0, ttl: 70, prop: true, color: '#ffd23f' },
 };
 
 // Largest enemy radius; collision queries use this so no candidate is missed.

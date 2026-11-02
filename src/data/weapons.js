@@ -51,7 +51,7 @@ export const WEAPONS = {
   },
 
   forge_hammer: {
-    name: 'Forge Hammer',
+    name: 'Wrecking Hammer',
     desc: 'Leaps onto the thickest part of the crowd and craters it, throwing back and staggering everything it hits.',
     class: 'smith',
     glyph: 'H',
