@@ -4,9 +4,10 @@
 import { drawHud, drawStick } from './hud.js';
 import { getSprite } from './sprites.js';
 import { drawGround } from './ground.js';
+import { PALETTE } from '../data/palette.js';
 import { drawShield } from './shield.js';
-// Floor: the forest by default; ?ground=forge|frost|cinder|ruins|crystal|catacomb tries the others, ?ground=grid is the old grid.
-const GROUND = new URLSearchParams(location.search).get('ground') || 'forest';
+// Floor: Neon Noir by default (v0.10); ?ground=forest tries the old forest, ?ground=forge|frost|cinder|ruins|crystal|catacomb tries the others, ?ground=grid is the old grid.
+const GROUND = new URLSearchParams(location.search).get('ground') || 'neon';
 
 const GRID = 64;
 const SPRITE_W = 68;                     // world units; the hitbox stays the player's r
@@ -127,7 +128,7 @@ function drawEvolvedGlow(p, t, front) {
   function draw(run, input, debug) {
     const s = view.scale;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#0e0f14';
+    ctx.fillStyle = PALETTE.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const cam = run ? run.cam : cam0;

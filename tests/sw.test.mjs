@@ -10,7 +10,7 @@ test('sw activate drops this game\'s old caches and leaves other games\' caches 
   const listeners = {};
   const deleted = [];
   const caches = {
-    keys: async () => ['overclocked-v0', 'overclocked-v1', 'overforged-v3', 'someone-elses-v1'],
+    keys: async () => ['overclocked-v0', 'overclocked-v1', 'overclocked-v2', 'overforged-v3', 'someone-elses-v1'],
     delete: async (k) => { deleted.push(k); return true; },
   };
   const self = {
@@ -23,5 +23,5 @@ test('sw activate drops this game\'s old caches and leaves other games\' caches 
   let waited;
   listeners.activate({ waitUntil: (p) => { waited = p; } });
   await waited;
-  assert.deepEqual(deleted, ['overclocked-v0']);
+  assert.deepEqual(deleted, ['overclocked-v0', 'overclocked-v1']);   // v2 is the current cache
 });

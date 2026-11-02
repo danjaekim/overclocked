@@ -147,7 +147,7 @@ export const REACTION_INFO = {
 };
 
 // Chain identity in the HUD and the arena: strip badge, and the ring where each of its pieces runs.
-export const CHAIN_COLORS = ['#ff7ac6', '#9be564', '#6cc8ff', '#ffc857'];
+export { CHAIN_COLORS } from '../data/palette.js';
 export const CHAIN_NAMES = 'ABCD';
 export const MAX_CHAINS = 3;            // each chain is a chassis (rig/chassis.js); a new one past this replaces one
 

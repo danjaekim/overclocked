@@ -14,7 +14,7 @@ try {
 } catch {
   ({ chromium } = createRequire(execSync('npm root -g').toString().trim() + '/')('playwright'));
 }
-const TYPES = { '.js': 'text/javascript', '.html': 'text/html', '.png': 'image/png', '.webmanifest': 'application/json' };
+const TYPES = { '.js': 'text/javascript', '.html': 'text/html', '.png': 'image/png', '.webmanifest': 'application/json', '.woff2': 'font/woff2' };
 const srv = http.createServer((q, r) => {
   let p = path.join(root, decodeURIComponent(q.url.split('?')[0]));
   if (p.endsWith('/')) p += 'index.html';
@@ -30,7 +30,8 @@ await pg.goto(url);
 await pg.waitForFunction(() => window.__overclocked);
 await pg.evaluate(() => navigator.serviceWorker.ready);
 await pg.waitForTimeout(1500);
-const cached = await pg.evaluate(async () => (await (await caches.open('overclocked-v1')).keys()).length);
+const cached = await pg.evaluate(async () => (await (await caches.open('overclocked-v2')).keys()).length);
+const fontsCached = await pg.evaluate(async () => (await (await caches.open('overclocked-v2')).keys()).filter((r) => r.url.endsWith('.woff2')).length);
 await ctx.setOffline(true);
 const pg2 = await ctx.newPage();
 await pg2.goto(url);
@@ -38,5 +39,5 @@ await pg2.waitForTimeout(2500);
 const booted = await pg2.evaluate(() => !!window.__overclocked);
 await b.close();
 srv.close();
-if (cached < 50 || !booted) { console.error(`offline FAILED (cached ${cached}, booted ${booted})`); process.exit(1); }
-console.log(`offline ok (${cached} files cached, booted with no network)`);
+if (cached < 50 || !booted || fontsCached < 2) { console.error(`offline FAILED (cached ${cached}, fonts ${fontsCached}, booted ${booted})`); process.exit(1); }
+console.log(`offline ok (${cached} files cached, ${fontsCached} fonts, booted with no network)`);

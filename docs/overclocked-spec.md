@@ -292,3 +292,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 ## Open questions
 
 None right now. New questions will be added here.
+
+## Look (v0.10, Neon Noir)
+
+Plan: `docs/plan-v10-neon.md`. The game wears a cyberpunk night-street look. Cyan is the player's colour (rig, shots, battery) and no enemy uses it; each enemy type is a dark body with one bright accent colour in its own bold silhouette. Gold is money and loot, green is XP. Every canvas colour comes from `src/data/palette.js`, and the menu CSS variables in `index.html` mirror it. The floor is `neon` in `src/render/ground.js` (near-black asphalt, a faint violet grid, pools of pink, cyan and violet light, a few road markings). Fonts are self-hosted in `fonts/` (Chakra Petch 700 for labels and numbers, IBM Plex Mono 500 for data) and cached by the service worker. Sprites arrive in v0.10.1, effects in v0.10.2 and the new names in v0.10.3. Game rules and ids are unchanged.

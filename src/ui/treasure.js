@@ -2,7 +2,7 @@
 // The rolls are already applied to the rig (rig/chests.js#openRigChest); this is only the reveal.
 
 const STEP = 0.32;   // seconds between reveals
-const COLOR = { piece: '#e8a33d', level: '#6cc8ff', cap: '#ffd34d', chassis: '#b48cff' };
+const COLOR = { piece: '#ff8a1f', level: '#6cc8ff', cap: '#ffd23f', chassis: '#c86bff' };
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 export function showTreasure(overlays, { count, rolls, boss = false, pick = false, sfx = () => {}, onDone }) {

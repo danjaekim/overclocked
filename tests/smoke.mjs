@@ -1,6 +1,6 @@
 // Browser smoke test (optional; needs Playwright installed): boots the game in headless
 // Chromium at phone size, starts a run, plays for a few seconds, and fails on any console
-// error. Usage:  node tests/smoke.mjs [--music] [--boss] [--stress] [--shot out.png] [--query "debug=1&seed=3"]
+// error. Usage:  node tests/smoke.mjs [--music] [--boss] [--stress] [--shot out.png] [--at seconds] [--query "debug=1&seed=3"]
 
 import http from 'node:http';
 import fs from 'node:fs';
@@ -30,7 +30,7 @@ const opt = (n, d) => (args.includes(n) ? args[args.indexOf(n) + 1] : d);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const types = {
   '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json', '.png': 'image/png',
+  '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.woff2': 'font/woff2',
 };
 
 const server = http.createServer((req, res) => {
@@ -80,6 +80,10 @@ if (flag('--music')) {                                           // music scenes
 if (flag('--boss')) await page.evaluate(() => { const o = window.__overclocked; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
 if (flag('--stress')) await page.evaluate(() => window.__overclocked.game.run.stress());
 await page.waitForTimeout(4000);
+if (opt('--at')) {                                               // fast-forward the run to a busy moment for a screenshot (the player stands still, god mode)
+  await page.evaluate((secs) => { const o = window.__overclocked; const r = o.game.run; r.debug.god = true; while (r.time < secs) r.update(1 / 60, { x: Math.sin(r.time * 0.7), y: Math.cos(r.time * 0.5) }); }, Number(opt('--at')));
+  await page.waitForTimeout(600);
+}
 
 const audioState = await page.evaluate(() => window.__overclocked.audio.state);
 console.log('audio state:', audioState);
@@ -87,7 +91,7 @@ const info = await page.evaluate(() => {
   const o = window.__overclocked;
   const r = o.game.run;
   return { state: o.game.state, time: +r.time.toFixed(1), kills: r.kills, enemies: r.world.enemies.count,
-    fps: +o.debug.fps.toFixed(0), simMs: +o.debug.simMs.toFixed(2) };
+    fps: +o.debug.fps.toFixed(0), simMs: +o.debug.simMs.toFixed(2), drawMs: +o.debug.renderMs.toFixed(2) };
 });
 console.log(JSON.stringify(info));
 if (opt('--shot')) await page.screenshot({ path: opt('--shot') });

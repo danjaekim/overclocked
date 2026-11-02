@@ -1,6 +1,8 @@
 // Ground themes (prototype): procedural floors drawn per 64-unit cell from a hash of the cell, so the floor is infinite,
 // stable under scrolling and costs nothing to store. Pick one with ?ground=forge|frost|cinder|ruins|crystal|catacomb.
 
+import { PALETTE, PUDDLE_COLORS, PUDDLE_CHANCE, MARKING_CHANCE } from '../data/palette.js';
+
 const CELL = 64;
 const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return (h ^ (h >>> 16)) >>> 0; };
 const rng = (seed) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -167,6 +169,26 @@ THEMES.forest = { free: true, bg: '#1b2416',
       const px = cx * S + r() * S, py = cy * S + r() * S, ang = (r() - 0.5) * 1.2 + (r() < 0.4 ? 1.57 : 0);
       if (pathDist(px, py) < PATH_W + 40) continue;
       drawLog(ctx, px, py, ang, 76 + r() * 44, 15 + r() * 5);
+    }
+  } };
+
+// Neon Noir (v0.10): near-black asphalt, a faint violet grid, soft pools of pink, cyan and violet light like puddle reflections, and the odd
+// road marking. Painted once per chunk like every theme, so it costs nothing per frame.
+THEMES.neon = { free: true, bg: PALETTE.floor,
+  cell(ctx, x, y, r) {
+    ctx.strokeStyle = PALETTE.grid; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, y + 0.5); ctx.lineTo(x + CELL, y + 0.5); ctx.moveTo(x + 0.5, y); ctx.lineTo(x + 0.5, y + CELL); ctx.stroke();
+    if (r() < PUDDLE_CHANCE) {
+      const px = x + r() * CELL, py = y + r() * CELL, rad = 40 + r() * 50, col = PUDDLE_COLORS[r() * PUDDLE_COLORS.length | 0], a = 0.1 + r() * 0.06;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, rad);
+      g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+      ctx.fillStyle = g; ctx.fillRect(px - rad, py - rad, rad * 2, rad * 2);
+    } else { r(); r(); r(); r(); }
+    if (r() < MARKING_CHANCE) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 3; ctx.setLineDash([12, 10]);
+      const horiz = r() < 0.5, o = 12 + r() * (CELL - 24);
+      ctx.beginPath(); if (horiz) { ctx.moveTo(x, y + o); ctx.lineTo(x + CELL, y + o); } else { ctx.moveTo(x + o, y); ctx.lineTo(x + o, y + CELL); }
+      ctx.stroke(); ctx.setLineDash([]);
     }
   } };
 

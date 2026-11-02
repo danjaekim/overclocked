@@ -9,8 +9,8 @@
 // only ever deletes caches that carry its own prefix.
 
 const PREFIX = 'overclocked-';
-const CACHE = PREFIX + 'v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/icon-maskable-512.png'];
+const CACHE = PREFIX + 'v2';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './fonts/ChakraPetch.woff2', './fonts/IBMPlexMono.woff2', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/icon-maskable-512.png'];
 
 // Every module reachable from main.js through static import/export-from statements.
 async function moduleGraph() {
