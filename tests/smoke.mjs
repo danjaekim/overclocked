@@ -1,6 +1,6 @@
 // Browser smoke test (optional; needs Playwright installed): boots the game in headless
 // Chromium at phone size, starts a run, plays for a few seconds, and fails on any console
-// error. Usage:  node tests/smoke.mjs [--music] [--boss] [--stress] [--shot out.png] [--at seconds] [--query "debug=1&seed=3"]
+// error. Usage:  node tests/smoke.mjs [--music] [--boss] [--stress] [--shot out.png] [--at seconds] [--rig rig.json] [--query "debug=1&seed=3"]
 
 import http from 'node:http';
 import fs from 'node:fs';
@@ -80,8 +80,24 @@ if (flag('--music')) {                                           // music scenes
 if (flag('--boss')) await page.evaluate(() => { const o = window.__overclocked; o.game.run.debug.god = true; import('/src/game/run-events.js').then((m) => m.RUN_EVENTS.boss(o.game.run, { enemy: 'warlord' })); });
 if (flag('--stress')) await page.evaluate(() => window.__overclocked.game.run.stress());
 await page.waitForTimeout(4000);
+if (opt('--rig')) {                                              // play a stored rig (save format, e.g. from Past runs' Copy run data)
+  const stored = JSON.parse(fs.readFileSync(opt('--rig'), 'utf8'));
+  await page.evaluate(async (r) => {
+    const { newRig } = await import('/src/rig/editor.js');
+    const { CHASSIS, migrateChassis } = await import('/src/rig/chassis.js');
+    const { applyRig } = await import('/src/game/sandbox.js');
+    const rig = newRig(r.chains.map((c) => migrateChassis({ ...c })).map((c) => ({ chassis: CHASSIS[c.chassis] ? c.chassis : undefined, rule: c.rule, mk: c.mk || 1, charge: c.charge || 0, cell: c.cell || 0, slots: c.slots, size: 6 })));
+    rig.levels = { ...(r.levels || {}) }; rig.passives = { ...(r.passives || {}) }; rig.stats = { ...(r.stats || {}) };
+    const run = window.__overclocked.game.run;
+    run.rigState = rig; applyRig(run);
+  }, stored);
+}
 if (opt('--at')) {                                               // fast-forward the run to a busy moment for a screenshot (the player stands still, god mode)
-  await page.evaluate((secs) => { const o = window.__overclocked; const r = o.game.run; r.debug.god = true; while (r.time < secs) r.update(1 / 60, { x: Math.sin(r.time * 0.7), y: Math.cos(r.time * 0.5) }); }, Number(opt('--at')));
+  await page.evaluate((secs) => { const o = window.__overclocked; const r = o.game.run; r.debug.god = true; while (r.time < secs) { r.update(1 / 60, { x: Math.sin(r.time * 0.7), y: Math.cos(r.time * 0.5) }); r.pendingLevelUps = 0; } }, Number(opt('--at')));
+  if (flag('--clean')) await page.evaluate(() => {         // a bare scene for screenshots: no menus or debug text
+    const o = window.__overclocked; o.game.state = 'run';
+    document.querySelectorAll('#ui, #debug, .debug, button.dbg').forEach((e) => { e.style.display = 'none'; });
+  });
   await page.waitForTimeout(600);
 }
 

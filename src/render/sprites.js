@@ -30,12 +30,14 @@ function load(id) {
       const c = document.createElement('canvas');
       c.width = c.height = SIZE;
       c.getContext('2d').drawImage(s.img, 0, 0, SIZE, SIZE);
-      // a white silhouette for the hurt flash
+      // the hurt flash: the sprite washed 40% toward white, so a hit enemy keeps its colour and shape (v0.10.6; a full white
+      // silhouette made busy fights read as a screen of white blobs)
       const f = document.createElement('canvas');
       f.width = f.height = SIZE;
       const fx = f.getContext('2d');
       fx.drawImage(c, 0, 0);
       fx.globalCompositeOperation = 'source-atop';
+      fx.globalAlpha = 0.4;
       fx.fillStyle = '#ffffff';
       fx.fillRect(0, 0, SIZE, SIZE);
       s.canvas = c; s.flash = f;
@@ -52,11 +54,12 @@ export function preloadSprites() { for (const id of SPRITE_IDS) load(id); }
 // the body itself. With several statuses the body takes the colour of the most important one (frozen, burning, shocked,
 // chilled) and each of the others is an outline around it in its own colour, the next one out further. A frozen enemy
 // is shown frozen, not also chilled.
+// v0.10.6: the body tint is light, so an enemy keeps its own colour (its identity) and the status reads from the outline.
 const LOOKS = [                                          // in priority order
-  { bit: ST.FROZEN, tint: '#d9e0ff', alpha: 0.5, edge: '#d9e0ff' },
-  { bit: ST.BURN, tint: '#ff4a10', alpha: 0.42, edge: '#ff7a1a' },
-  { bit: ST.SHOCK, tint: '#fff04a', alpha: 0.42, edge: '#fff04a' },
-  { bit: ST.CHILL, tint: '#6f8bff', alpha: 0.36, edge: '#b9c8ff' },
+  { bit: ST.FROZEN, tint: '#d9e0ff', alpha: 0.3, edge: '#d9e0ff' },
+  { bit: ST.BURN, tint: '#ff4a10', alpha: 0.14, edge: '#ff7a1a' },
+  { bit: ST.SHOCK, tint: '#fff04a', alpha: 0.14, edge: '#fff04a' },
+  { bit: ST.CHILL, tint: '#6f8bff', alpha: 0.14, edge: '#b9c8ff' },
 ];
 const LOOK_MASK = ST.BURN | ST.CHILL | ST.FROZEN | ST.SHOCK;
 const PAD = 0.84;                                        // the body is drawn this much smaller so outlines fit; the sprite is drawn 1 / PAD larger

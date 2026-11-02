@@ -7,7 +7,7 @@ import { PALETTE as P, CHAIN_COLORS } from '../data/palette.js';
 const DISPLAY = '"Chakra Petch", system-ui, sans-serif';      // self-hosted (fonts/)
 
 const TAU = Math.PI * 2;
-const MAX_NUMBERS = 60;      // text is the expensive part, so cap how many are live
+const MAX_NUMBERS = 20;     // v0.10.6: fewer and smaller, so numbers don't bury the fight      // text is the expensive part, so cap how many are live
 const MAX_PUFFS_POOL = 300;  // keep room for numbers
 const KIND_NUMBER = 0;
 const KIND_PUFF = 1;
@@ -38,7 +38,7 @@ export function setNumberStyle(scale = 1, big = false) {
 
 export function addDamageNumber(run, x, y, amount, crit, color = '') {
   const w = run.world;
-  if (w.fxNumbers >= maxNumbers) return;
+  if (w.fxNumbers >= (crit || numBig ? maxNumbers : maxNumbers / 2)) return;   // plain numbers get half the room, crits the rest
   const f = w.fx.acquire();
   if (!f) return;
   const r = run.fxRng;
@@ -66,7 +66,7 @@ export function addLabel(run, x, y, text, color) {
   f.vx = 0;
   f.vy = -50;
   f.ttl = f.maxTtl = 0.7;
-  f.crit = true;
+  f.crit = false;                                      // v0.10.6: drawn small, like a plain number, in its colour
   f.c2 = color;
   f.text = text;
   w.fxNumbers++;
@@ -140,6 +140,8 @@ export function addArc(run, x1, y1, x2, y2, color = ARC_YELLOW) {
 
 
 const GOLDEN = 2.399963;
+// v0.10.6: every burst is drawn at 65% so the player's area hits stay readable over the crowd instead of covering it.
+const FX_DIM = 0.65;
 function drawBurst(ctx, f) {
   const u = 1 - f.ttl / f.maxTtl;
   if (f.style === BURST_SLAM) { drawSlamBurst(ctx, f, u); return; }
@@ -147,23 +149,23 @@ function drawBurst(ctx, f) {
   const R = f.r * (0.3 + 0.7 * e);
   const a = 1 - u;
   ctx.fillStyle = f.text;                               // the flash
-  ctx.globalAlpha = (f.style === BURST_STEAM ? 0.12 : 0.3) * a;
+  ctx.globalAlpha = FX_DIM * (f.style === BURST_STEAM ? 0.12 : 0.12) * a;   // v0.10.6: a faint flash, not a disc over the crowd
   ctx.beginPath();
   ctx.arc(f.x, f.y, R, 0, TAU);
   ctx.fill();
-  ctx.globalAlpha = 0.55 * a * a;                       // a bright core in the first moments
+  ctx.globalAlpha = FX_DIM * 0.55 * a * a;                       // a bright core in the first moments
   ctx.fillStyle = f.c2;
   ctx.beginPath();
   ctx.arc(f.x, f.y, R * 0.45, 0, TAU);
   ctx.fill();
   ctx.strokeStyle = f.text;                             // the ring: a wide faint stroke under it is the neon glow (no shadowBlur)
   ctx.lineWidth = 7 + 8 * a;
-  ctx.globalAlpha = 0.16 * a;
+  ctx.globalAlpha = FX_DIM * 0.16 * a;
   ctx.beginPath();
   ctx.arc(f.x, f.y, R, 0, TAU);
   ctx.stroke();
   ctx.lineWidth = 1.5 + 3.5 * a;                        // the ring itself, thick to start with
-  ctx.globalAlpha = 0.95 * a;
+  ctx.globalAlpha = FX_DIM * 0.95 * a;
   ctx.beginPath();
   ctx.arc(f.x, f.y, R, 0, TAU);
   ctx.stroke();
@@ -171,7 +173,7 @@ function drawBurst(ctx, f) {
   if (f.style === BURST_PLAIN) {                        // short rays
     ctx.strokeStyle = f.c2;
     ctx.lineWidth = 2.6;
-    ctx.globalAlpha = 0.95 * a;
+    ctx.globalAlpha = FX_DIM * 0.95 * a;
     ctx.beginPath();
     for (let k = 0; k < 8; k++) {
       const t = ang + (k * TAU) / 8;
@@ -181,7 +183,7 @@ function drawBurst(ctx, f) {
     ctx.stroke();
   } else if (f.style === BURST_SPARKS) {                // sparks flung outward, past the ring
     ctx.fillStyle = f.c2;
-    ctx.globalAlpha = 0.95 * a;
+    ctx.globalAlpha = FX_DIM * 0.95 * a;
     ctx.beginPath();
     for (let k = 0; k < 10; k++) {
       const t = ang + k * GOLDEN;
@@ -197,7 +199,7 @@ function drawBurst(ctx, f) {
     ctx.fillStyle = f.c2;
     ctx.strokeStyle = f.text;
     ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.95 * a;
+    ctx.globalAlpha = FX_DIM * 0.95 * a;
     ctx.beginPath();
     for (let k = 0; k < 9; k++) {
       const t = ang + (k * TAU) / 9;
@@ -218,7 +220,7 @@ function drawBurst(ctx, f) {
   } else if (f.style === BURST_CRACKS) {                // lightning cracks from the centre to the ring
     ctx.strokeStyle = f.c2;
     ctx.lineWidth = 2.2;
-    ctx.globalAlpha = 0.95 * a;
+    ctx.globalAlpha = FX_DIM * 0.95 * a;
     ctx.beginPath();
     for (let k = 0; k < 5; k++) {
       const t = ang + (k * TAU) / 5;
@@ -235,7 +237,7 @@ function drawBurst(ctx, f) {
     ctx.stroke();
   } else if (f.style === BURST_STEAM) {                 // steam puffs rising
     ctx.fillStyle = f.c2;
-    ctx.globalAlpha = 0.55 * a;
+    ctx.globalAlpha = FX_DIM * 0.55 * a;
     ctx.beginPath();
     for (let k = 0; k < 4; k++) {
       const t = ang + k * 1.7;
@@ -255,14 +257,9 @@ function drawSlamBurst(ctx, f, u) {
   const e = 1 - (1 - out) * (1 - out) * (1 - out);
   const fade = u < 0.45 ? 1 : 1 - (u - 0.45) / 0.55;
   const R = f.r;
-  ctx.fillStyle = P.bg;                                 // the pit
-  ctx.globalAlpha = 0.38 * fade;
-  ctx.beginPath();
-  ctx.arc(f.x, f.y, R * 0.92 * (0.5 + 0.5 * e), 0, TAU);
-  ctx.fill();
   if (u < 0.2) {                                        // the flash of the hit
     ctx.fillStyle = f.c2;
-    ctx.globalAlpha = 0.7 * (1 - u / 0.2);
+    ctx.globalAlpha = FX_DIM * 0.7 * (1 - u / 0.2);
     ctx.beginPath();
     ctx.arc(f.x, f.y, R * (0.35 + 0.5 * e), 0, TAU);
     ctx.fill();
@@ -270,12 +267,12 @@ function drawSlamBurst(ctx, f, u) {
   const ang = f.seed * TAU;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  for (let pass = 0; pass < 2; pass++) {                // ground cracks: dark, then a lit core on top
+  for (let pass = 1; pass < 2; pass++) {                // ground cracks: a thin lit line only (v0.10.6: no dark pit or shadow)
     ctx.strokeStyle = pass ? f.text : P.bg;
     ctx.lineWidth = pass ? 1.6 : 4;
-    ctx.globalAlpha = (pass ? 0.9 : 0.8) * fade;
+    ctx.globalAlpha = FX_DIM * 0.55 * fade;
     ctx.beginPath();
-    for (let k = 0; k < 9; k++) {
+    for (let k = 0; k < 6; k++) {
       const t = ang + k * 0.7 + ((k * 5) % 3) * 0.12;
       const len = R * (0.55 + 0.4 * (((k * 7) % 5) / 4)) * e;
       const cx = Math.cos(t), cy = Math.sin(t), nx = -cy, ny = cx;
@@ -289,17 +286,17 @@ function drawSlamBurst(ctx, f, u) {
   }
   ctx.strokeStyle = f.text;                             // the shockwave: a faint wide stroke, then the bright ring
   ctx.lineWidth = 9 + 8 * (1 - out);
-  ctx.globalAlpha = 0.18 * Math.max(0, 1 - u / 0.6);
+  ctx.globalAlpha = FX_DIM * 0.18 * Math.max(0, 1 - u / 0.6);
   ctx.beginPath();
   ctx.arc(f.x, f.y, R * (0.2 + 0.8 * e), 0, TAU);
   ctx.stroke();
   ctx.lineWidth = 1.5 + 5 * (1 - out);
-  ctx.globalAlpha = 0.95 * Math.max(0, 1 - u / 0.6);
+  ctx.globalAlpha = FX_DIM * 0.95 * Math.max(0, 1 - u / 0.6);
   ctx.beginPath();
   ctx.arc(f.x, f.y, R * (0.2 + 0.8 * e), 0, TAU);
   ctx.stroke();
   ctx.fillStyle = f.c2;                                 // sparks thrown up and out, falling back
-  ctx.globalAlpha = 0.95 * fade;
+  ctx.globalAlpha = FX_DIM * 0.95 * fade;
   for (let k = 0; k < 11; k++) {
     const t = ang + k * GOLDEN;
     const sp = R * (0.45 + 0.5 * (((k * 3) % 5) / 4));
@@ -318,7 +315,7 @@ export function elementColor(inst) {
   return EL_COLORS[m & F_FROST ? F_FROST : m & F_FIRE ? F_FIRE : m & F_STORM ? F_STORM : 0] || chainColor(inst);
 }
 // With no element, a rig piece's effects take its chain's colour (A is the rig's cyan); anything else is the rig colour.
-export const chainColor = (inst) => (inst && inst.chainIdx !== undefined ? CHAIN_COLORS[inst.chainIdx % CHAIN_COLORS.length] : P.rig);
+export const chainColor = () => P.rig;                 // world effects are the rig's cyan (or an element colour); chain colours stay on the HUD (v0.10.6)
 
 export function updateFx(run, dt) {
   const w = run.world;
@@ -401,15 +398,15 @@ export function drawFx(ctx, view, run) {
   ctx.lineJoin = 'round';
   for (let pass = 0; pass < 2; pass++) {
     const wantCrit = pass === 1;
-    ctx.font = wantCrit ? (numBig ? `700 28px ${DISPLAY}` : `700 20px ${DISPLAY}`) : (numBig ? `700 17px ${DISPLAY}` : `700 14px ${DISPLAY}`);
+    ctx.font = wantCrit ? (numBig ? `700 28px ${DISPLAY}` : `700 16px ${DISPLAY}`) : (numBig ? `700 17px ${DISPLAY}` : `700 12px ${DISPLAY}`);
     ctx.fillStyle = wantCrit ? P.gold : '#ffffff';
     ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-    ctx.lineWidth = wantCrit ? 4 : 3;
+    ctx.lineWidth = wantCrit ? 3.5 : 2.5;
     for (let i = 0; i < list.length; i++) {
       const f = list[i];
       if (f.kind !== KIND_NUMBER || f.crit !== wantCrit) continue;
       if (f.x < x0 || f.x > x1 || f.y < y0 || f.y > y1) continue;
-      ctx.globalAlpha = Math.min(1, (f.ttl / f.maxTtl) * 2.2);
+      ctx.globalAlpha = Math.min(wantCrit ? 1 : 0.7, (f.ttl / f.maxTtl) * 2.2);   // plain numbers sit back a little
       ctx.strokeText(f.text, f.x, f.y);
       if (f.c2 !== '') {
         ctx.fillStyle = f.c2;

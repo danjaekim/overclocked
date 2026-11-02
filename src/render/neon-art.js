@@ -13,7 +13,10 @@ const shadow = (rx = 16) => `<ellipse cx="32" cy="60" rx="${rx}" ry="3.2" fill="
 const art = (inner, rx) => `${HEAD}${shadow(rx)}${inner}</svg>`;
 const glow = (s) => `<g filter="url(#g)" opacity=".9">${s}</g>${s}`;       // a blurred copy underneath, then the sharp shape
 const line = (c, w = 3) => `fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
-const body = (c, w = 2.6) => `fill="${BODY}" stroke="${c}" stroke-width="${w}" stroke-linejoin="round"`;
+// v0.10.6: bodies are filled with a dark shade of their accent, so enemies read as solid objects and the player's
+// attacks (light: strokes and streaks, never filled shapes) read as something else.
+const mix = (c, k) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(c.slice(i, i + 2), 16) * k + parseInt(BODY.slice(i, i + 2), 16) * (1 - k)).toString(16).padStart(2, '0')).join('');
+const body = (c, w = 2.6) => `fill="${mix(c, 0.32)}" stroke="${c}" stroke-width="${w}" stroke-linejoin="round"`;
 const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
 const hex = (cx, cy, r, rot = -90) => poly(Array.from({ length: 6 }, (_, i) => [cx + Math.cos((rot + i * 60) * Math.PI / 180) * r, cy + Math.sin((rot + i * 60) * Math.PI / 180) * r]));
 
@@ -90,11 +93,13 @@ const crate = art(                                                     // Cargo 
   glow(`<path d="M32 28 V42 M25 35 H39" ${line(P.gold, 3.4)}/>`), 22);
 
 // Loot and props.
-const shard = (c, pts) => art(glow(`<polygon points="${poly(pts)}" fill="${BODY}" stroke="${c}" stroke-width="3" stroke-linejoin="round"/><path d="M32 14 V54" ${line(c, 1.6)} opacity=".7"/>`) + `<circle cx="32" cy="34" r="2.2" fill="#fff"/>`, 8);
-const SHARD_SLIM = [[32, 10], [42, 34], [32, 58], [22, 34]];
-const chip = (c, r, core) => art(
-  glow(`<polygon points="${hex(32, 34, r, -22.5)}" fill="${BODY}" stroke="${c}" stroke-width="3" stroke-linejoin="round"/>`) +
-  `<rect x="${32 - r * 0.38}" y="${34 - r * 0.38}" width="${r * 0.76}" height="${r * 0.76}" rx="2" ${line(core, 2.2)}/>`, r * 0.8);
+// Pickups (v0.10.6): small, solid and flat (no glow), so they sit under the fight instead of competing with it. XP is a
+// diamond; credits are a round coin, a shape no enemy uses.
+const shard = (c, pts) => art(`<polygon points="${poly(pts)}" fill="${c}" stroke="${mix(c, 0.45)}" stroke-width="2" stroke-linejoin="round"/>` +
+  `<path d="M32 22 L36 34 L32 46" fill="none" stroke="#fff" stroke-width="1.6" opacity=".55"/>`, 6);
+const SHARD_SLIM = [[32, 18], [40, 34], [32, 50], [24, 34]];
+const chip = (c, r) => art(`<circle cx="32" cy="34" r="${r}" fill="${c}" stroke="${mix(c, 0.5)}" stroke-width="2.4"/>` +
+  `<circle cx="32" cy="34" r="${r * 0.58}" fill="none" stroke="${mix(c, 0.45)}" stroke-width="2"/>`, r * 0.7);
 const caseArt = (w, h, strap, k) => art(
   `<rect x="${32 - w / 2}" y="${48 - h}" width="${w}" height="${h}" rx="3" ${body(P.gold, 3)}/>` +
   `<path d="M${32 - w / 2} ${48 - h * 0.55} H${32 + w / 2}" ${line(P.gold, 2)} opacity=".7"/>` +
@@ -118,10 +123,10 @@ export const NEON_ART = {
   goblin, brute, shieldbearer, slinger, splitter, shaman, crusher, warlord, seer, crate,
   gem0: shard(P.xp, SHARD_SLIM),
   gem1: shard('#3ff0c0', SHARD_SLIM),
-  gem2: shard(P.violet, SHARD_SLIM),
+  gem2: shard('#b8ffd8', SHARD_SLIM),
   gem3: shard(P.gold, SHARD_SLIM),
-  ore_iron: chip(P.gold, 16, P.gold),
-  ore_starsteel: chip('#fff2b0', 22, P.gold),
+  ore_iron: chip(P.gold, 14),
+  ore_starsteel: chip('#fff2b0', 18),
   chest: caseArt(40, 28, false, false),
   bosschest: caseArt(50, 36, true, true),
   shrine: terminal,

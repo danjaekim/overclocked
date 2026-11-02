@@ -11,7 +11,6 @@ import { MAX_ENEMY_RADIUS } from '../data/enemies.js';
 import { attackTriggers } from '../game/triggers.js';
 import { stagger } from '../systems/status.js';
 import { addPuff, addBurst, BURST_SLAM, chainColor } from '../render/fx.js';
-import { drawHammer } from '../render/melee.js';
 import { activeMutation } from '../game/starforge.js';
 import { playerCtx } from '../game/fire-ctx.js';
 import { STARFORGE } from '../data/starforge.js';
@@ -83,17 +82,21 @@ export default {
         ctx.stroke();
         continue;
       }
+      // v0.10.6 telegraph: a target ring in the rig's colour (or the element's) that closes onto the spot, and a small
+      // crosshair; no fill and no hammer, so it reads as your attack and never hides the enemies under it
       const u = 1 - s.t / TELEGRAPH;
-      ctx.globalAlpha = 0.18 + 0.3 * u;
-      ctx.fillStyle = el ? el.dark : '#1a1208';
+      const c = el ? el.main : chainColor(inst);
+      ctx.globalAlpha = 0.35 + 0.45 * u;
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r * (0.55 + 0.45 * u), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 0.5 * u + 0.2;
-      ctx.strokeStyle = el ? el.main : '#ffd9a0';
-      ctx.lineWidth = el ? 3 : 2;
+      ctx.arc(s.x, s.y, s.r * (1.35 - 0.35 * u), 0, Math.PI * 2);
       ctx.stroke();
-      drawHammer(ctx, s.x, s.y, s.r, u, el);
+      const k = Math.min(10, s.r * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(s.x - k, s.y); ctx.lineTo(s.x + k, s.y);
+      ctx.moveTo(s.x, s.y - k); ctx.lineTo(s.x, s.y + k);
+      ctx.stroke();
     }
     ctx.globalAlpha = 1;
   },

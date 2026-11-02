@@ -149,13 +149,13 @@ export function drawLightRing(ctx, x, y, r, rMax, thick, color, t) {
     const g = ctx.createRadialGradient(x, y, Math.max(0, R - wake), x, y, R);
     g.addColorStop(0, 'rgba(255,255,255,0)');
     g.addColorStop(1, color);
-    ctx.globalAlpha = 0.28 * fade;
+    ctx.globalAlpha = 0.1 * fade;                       // v0.10.6: a faint wake, so a big ring doesn't read as a disc over the crowd
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(x, y, R, 0, TAU);
     ctx.fill();
   }
-  ctx.globalAlpha = 0.9 * fade;                         // the ring
+  ctx.globalAlpha = 0.75 * fade;                        // the ring
   ctx.lineWidth = th;
   ctx.beginPath();
   ctx.arc(x, y, R, 0, TAU);

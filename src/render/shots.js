@@ -106,7 +106,7 @@ function drawShafts(ctx, list, shape) {
   ctx.lineWidth = jav ? 8 : 6;                          // the neon glow: a wide, faint stroke in the chain's colour under the shaft (one path per chain, no shadowBlur)
   ctx.globalAlpha = 0.3;
   for (let k = 0; k < CHAIN_COLORS.length; k++) {
-    ctx.strokeStyle = CHAIN_COLORS[k];
+    ctx.strokeStyle = P.rig;
     ctx.beginPath();
     for (let i = 0; i < list.length; i++) {
       const p = list[i];
@@ -180,44 +180,6 @@ function drawHeads(ctx, list, shape, key) {
       ctx.lineTo(bx - nx, by - ny);
     }
     ctx.closePath();
-  }
-  ctx.fill();
-}
-
-// Shards: a long crystal in the element's colour, a pale edge, a glint along its axis.
-function drawCrystals(ctx, list, key) {
-  const skin = SKIN[key];
-  ctx.beginPath();
-  for (let i = 0; i < list.length; i++) {
-    const p = list[i];
-    if (!seen(p) || shapeOf(p) !== S_SHARD || primaryOf(bitsOf(p)) !== key) continue;
-    const L = p.r * TIP[S_SHARD];
-    const W = p.r * 0.62 * 1.15;
-    const ax = p.dx * L;
-    const ay = p.dy * L;
-    const nx = -p.dy * W;
-    const ny = p.dx * W;
-    ctx.moveTo(p.x + ax, p.y + ay);
-    ctx.lineTo(p.x + ax * 0.25 + nx, p.y + ay * 0.25 + ny);
-    ctx.lineTo(p.x - ax * 0.8 + nx * 0.5, p.y - ay * 0.8 + ny * 0.5);
-    ctx.lineTo(p.x - ax * 0.8 - nx * 0.5, p.y - ay * 0.8 - ny * 0.5);
-    ctx.lineTo(p.x + ax * 0.25 - nx, p.y + ay * 0.25 - ny);
-    ctx.closePath();
-  }
-  ctx.fillStyle = skin.body;
-  ctx.fill();
-  ctx.strokeStyle = skin.edge;
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.stroke();
-  ctx.lineJoin = 'miter';
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  for (let i = 0; i < list.length; i++) {
-    const p = list[i];
-    if (!seen(p) || shapeOf(p) !== S_SHARD || primaryOf(bitsOf(p)) !== key) continue;
-    ctx.moveTo(p.x + p.dx * p.r * 0.9 + p.r * 0.28, p.y + p.dy * p.r * 0.9);
-    ctx.arc(p.x + p.dx * p.r * 0.9, p.y + p.dy * p.r * 0.9, p.r * 0.28, 0, TAU);
   }
   ctx.fill();
 }
@@ -386,10 +348,10 @@ function drawList(ctx, list, time) {
     drawShafts(ctx, list, shape);
     for (const key of KEYS) drawHeads(ctx, list, shape, key);
   }
-  if (present & (1 << S_SHARD)) for (const key of KEYS) drawCrystals(ctx, list, key);
+  if (present & (1 << S_SHARD)) drawLasers(ctx, list, S_SHARD);      // Nova shards read as light too, capped in size (v0.10.6)
   if (present & (1 << S_BLADE)) for (const key of KEYS) drawBlades(ctx, list, key);
 
-  for (const shape of [S_ARROW, S_JAVELIN, S_SHARD, S_BLADE]) {
+  for (const shape of [S_ARROW, S_JAVELIN, S_BLADE]) {
     if (!(present & (1 << shape))) continue;
     for (const bit of BITS) drawBands(ctx, list, shape, bit);
     for (const bit of BITS) drawTrails(ctx, list, shape, bit);
@@ -403,24 +365,29 @@ function drawList(ctx, list, time) {
     }
   }
   if (present & (1 << S_SOUL)) drawSouls(ctx, list);
-  if (present & (1 << S_LASER)) drawLasers(ctx, list);
+  if (present & (1 << S_LASER)) drawLasers(ctx, list, S_LASER);
 }
 
 // Laser bolts, three passes each batched by colour: a wide faint glow, the coloured bolt, then a white core. The colour is
-// the weapon's element when it has one, else its chain's colour. No shadowBlur: the glow is the wide stroke.
+// the weapon's element when it has one, else the rig's cyan: every player attack in the world is cyan or an element colour,
+// so nothing you fire shares a colour with an enemy (chain colours stay on the HUD and the Runner's nodes). No shadowBlur.
+// Nova shards use the same look, shorter, with their drawn size capped so a big Area doesn't fill the screen.
 const LASER_LEN = 3.2;                                 // half the bolt's length, in multiples of r
+const SHARD_LEN = 2.4;
+const SHARD_VIS_R = 4;                                 // a shard's drawn r never exceeds this (its hit radius can)
 const LASER_PASSES = [[2.6, 0.22, 0], [1.25, 1, 0], [0.5, 1, 1]];   // [width in r, alpha, white core?]
 const laserBuckets = new Map();
 function laserColor(p) {
   const m = elemBits(p.inst);
   if (m) return SKIN[primaryOf(m)].head;
-  return CHAIN_COLORS[(p.inst && p.inst.chainIdx) || 0] || P.rig;
+  return P.rig;
 }
-function drawLasers(ctx, list) {
+function drawLasers(ctx, list, shape) {
+  const shard = shape === S_SHARD, len = shard ? SHARD_LEN : LASER_LEN;
   laserBuckets.clear();
   for (let i = 0; i < list.length; i++) {
     const p = list[i];
-    if (!seen(p) || shapeOf(p) !== S_LASER) continue;
+    if (!seen(p) || shapeOf(p) !== shape) continue;
     const c = laserColor(p);
     let b = laserBuckets.get(c);
     if (!b) laserBuckets.set(c, (b = []));
@@ -431,10 +398,12 @@ function drawLasers(ctx, list) {
     ctx.globalAlpha = a;
     for (const [c, b] of laserBuckets) {
       ctx.strokeStyle = core ? '#ffffff' : c;
-      ctx.lineWidth = Math.max(1, b[0].r * w);
+      const r0 = shard ? Math.min(b[0].r, SHARD_VIS_R) : b[0].r;
+      ctx.lineWidth = Math.max(1, r0 * w);
       ctx.beginPath();
       for (const p of b) {
-        const L = p.r * (core ? LASER_LEN * 0.8 : LASER_LEN);
+        const r = shard ? Math.min(p.r, SHARD_VIS_R) : p.r;
+        const L = r * (core ? len * 0.8 : len);
         ctx.moveTo(p.x - p.dx * L, p.y - p.dy * L);
         ctx.lineTo(p.x + p.dx * L, p.y + p.dy * L);
       }
