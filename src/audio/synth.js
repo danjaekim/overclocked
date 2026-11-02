@@ -79,19 +79,22 @@ export function graph(ctx, dest, { echoTime = 0.35, echoFb = 0.4, rumble = true,
   const A = assets(ctx);
   const g = { ctx };
   g.out = ctx.createGain();
-  if (tone) { const tl = ctx.createBiquadFilter(); tl.type = 'lowpass'; tl.frequency.value = tone; tl.Q.value = 0.5; g.out.connect(tl); tl.connect(dest); } else g.out.connect(dest);
-  g.duck = ctx.createGain(); g.duck.connect(g.out);
+  const nodes = [g.out];                       // every node of this mix, so dispose can cut them all loose
+  if (tone) { const tl = ctx.createBiquadFilter(); tl.type = 'lowpass'; tl.frequency.value = tone; tl.Q.value = 0.5; g.out.connect(tl); tl.connect(dest); nodes.push(tl); } else g.out.connect(dest);
+  g.duck = ctx.createGain(); g.duck.connect(g.out); nodes.push(g.duck);
   // echo: dark, band limited
   g.echo = ctx.createGain();
   const dl = ctx.createDelay(2), fb = ctx.createGain(), lp = ctx.createBiquadFilter(), hp = ctx.createBiquadFilter();
   dl.delayTime.value = echoTime; fb.gain.value = echoFb;
   lp.type = 'lowpass'; lp.frequency.value = 2200; hp.type = 'highpass'; hp.frequency.value = 280;
   g.echo.connect(dl); dl.connect(lp); lp.connect(hp); hp.connect(fb); fb.connect(dl); hp.connect(g.duck);
+  nodes.push(g.echo, dl, fb, lp, hp);
   // reverb
   g.rev = ctx.createGain();
   const conv = ctx.createConvolver(); conv.buffer = impulse(ctx, revSecs);
   const rg = ctx.createGain(); rg.gain.value = revGain;
   g.rev.connect(conv); conv.connect(rg); rg.connect(g.out);
+  nodes.push(g.rev, conv, rg);
   // rumble: reverb -> lowpass -> drive -> heavy sidechain
   if (rumble) {
     g.rumble = ctx.createGain();
@@ -102,7 +105,11 @@ export function graph(ctx, dest, { echoTime = 0.35, echoFb = 0.4, rumble = true,
     g.rumbleDuck = ctx.createGain();
     const rgain = ctx.createGain(); rgain.gain.value = 0.9;
     g.rumble.connect(c2); c2.connect(l2); l2.connect(ws); ws.connect(l3); l3.connect(rgain); rgain.connect(g.rumbleDuck); g.rumbleDuck.connect(g.out);
+    nodes.push(g.rumble, c2, l2, ws, l3, rgain, g.rumbleDuck);
   }
+  // Cuts every node of this mix loose (a finished song): without it the echo's feedback loop and the
+  // convolvers keep running on the audio thread for as long as the page is open.
+  g.dispose = () => nodes.forEach((n) => { try { n.disconnect(); } catch (e) { /* already gone */ } });
   return g;
 }
 
@@ -261,6 +268,7 @@ export function voices(g) {
     s.connect(f); f.connect(gn); route(gn, o, t);
     s.start(t); s.stop(t + dur + 0.1);
   }
-  return { osc, stack, noise, kick, hat, clap, snare, metal, ping, reese, growl, chord, supersaw, sweep, duck, hz };
+  const kit = { lite: 0, osc, stack, noise, kick, hat, clap, snare, metal, ping, reese, growl, chord, supersaw, sweep, duck, hz };
+  return kit;                                   // `lite` (0 to 2) is read by songs to drop optional layers
 }
 

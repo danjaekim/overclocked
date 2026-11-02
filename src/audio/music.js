@@ -33,16 +33,17 @@ const GROWL_BOSS = { 2: [0, 1], 13: [7, 1.5] };
 
 function hoover(v, bar, s, t, sd, r, riff, gain) {
   const e = riff[s];
-  if (!e) return;
+  if (!e || (v.lite >= 2 && s % 8)) return;                    // lite 2: only the stabs on the 1 and the 3
   const m = r + 12 + e[0], d = e[1] * sd;
-  v.stack({ t, oscs: [-25, 0, 25].map((dt) => ({ f: hz(m + 7), to: hz(m), detune: dt })), glide: 0.09, dur: d, vol: gain / 2, a: 0.004, lp: { from: 2300, to: 800, time: d, q: 3 }, dist: 4, echo: 0.2 });
+  v.stack({ t, oscs: [-25, 0, 25].map((dt) => ({ f: hz(m + 7), to: hz(m), detune: dt })), glide: 0.09, dur: d, vol: gain / 2, a: 0.004, lp: { from: 2300, to: 800, time: d, q: 3 }, dist: 4, echo: v.lite ? 0 : 0.2 });
 }
 
 // Risers, impacts and fills shared by the songs.
 function fx(v, bar, s, t, sd, boss) {
+  if (v.lite >= 2) return;
   if (bar % 8 === 7 && s === 0) v.sweep(t, sd * 16, boss ? 0.13 : 0.1, 200, 7000, { q: 2, peak: 0.98 });
   if (bar % 8 === 0 && s === 0) v.noise({ t, dur: 1.5, vol: 0.07, hp: { from: 3500 }, out: 'out', rev: 0.5 });
-  if (bar % 4 === 3 && s === 8) v.sweep(t, sd * 8, 0.05, 500, 3000, { q: 3, out: 'out', rev: 0.4 });
+  if (bar % 4 === 3 && s === 8 && !v.lite) v.sweep(t, sd * 8, 0.05, 500, 3000, { q: 3, out: 'out', rev: 0.4 });
   if (bar % 8 === 7 && s >= 12) v.osc({ t, f: 250 - (s - 12) * 28, to: 80, dur: 0.18, vol: 0.28, dist: 1 });
 }
 
@@ -50,17 +51,17 @@ function runStep(boss) {
   return function (v, bar, s, t, sd) {
     const r = ROOTS[bar], th = THIRD[bar];
     if (s === 0 || s === 6 || s === 10 || (boss && (s === 3 || s === 14))) v.kick(t, { f0: 165, f1: 45, pd: 0.05, hold: 0.03, dur: 0.42, vol: 1, dist: 4.5, lp: 3000, depth: 0.08, rel: sd * 2.6, click: 0.5, rumble: 0.4 });
-    if (s === 8) { v.snare(t, { vol: 0.4, f: 180, nf: 2300, dur: 0.2, rev: 0.3, gate: 0.18, dist: 2.5 }); v.clap(t, { vol: 0.2, f: 1500, rev: 0.3 }); }
+    if (s === 8) { v.snare(t, { vol: 0.4, f: 180, nf: 2300, dur: 0.2, rev: v.lite ? 0 : 0.3, gate: 0.18, dist: 2.5 }); if (v.lite < 2) v.clap(t, { vol: 0.2, f: 1500, rev: v.lite ? 0 : 0.3 }); }
     if (bar % 4 === 3 && s >= (boss ? 8 : 12)) v.snare(t, { vol: 0.1 + (s - 8) * 0.025, f: 190, dur: 0.08 });
-    v.hat(t, { dur: s % 4 === 2 ? 0.1 : 0.022, vol: s % 4 === 2 ? 0.06 : s % 2 ? 0.025 : 0.04, hp: 8000 });
-    if (s % 4 === 3) v.osc({ t, type: 'triangle', f: 1700, to: 1100, dur: 0.02, vol: 0.03 });
-    const gp = GROWL[s] || (boss && GROWL_BOSS[s]);
+    if (s % 4 === 2 || !v.lite) v.hat(t, { dur: s % 4 === 2 ? 0.1 : 0.022, vol: s % 4 === 2 ? 0.06 : s % 2 ? 0.025 : 0.04, hp: 8000 });
+    if (s % 4 === 3 && !v.lite) v.osc({ t, type: 'triangle', f: 1700, to: 1100, dur: 0.02, vol: 0.03 });
+    const gp = v.lite >= 2 && (s === 3 || s === 11) ? null : GROWL[s] || (boss && !v.lite && GROWL_BOSS[s]);
     if (gp) {
       v.growl(t, r + gp[0], gp[1] * sd, 0.27, { from: 3000, to: 280, q: 12, dist: 7.5 });
-      if (gp[2]) v.chord(t, [r + 12, r + 12 + th, r + 19], { type: 'sawtooth', dur: sd * 1.6, vol: 0.032, spread: 12, dist: 3, lp: { from: 2200, to: 700, q: 2 } });
+      if (gp[2] && !v.lite) v.chord(t, [r + 12, r + 12 + th, r + 19], { type: 'sawtooth', dur: sd * 1.6, vol: 0.032, spread: 12, dist: 3, lp: { from: 2200, to: 700, q: 2 } });
     }
     if (s === 0) v.osc({ t, f: hz(r), dur: sd * 16, vol: 0.2, a: 0.01, sustain: true, rel: 0.05 });
-    if (s === 0 && bar % 2 === 0) v.chord(t, [r + 12, r + 12 + th, r + 19], { type: 'sawtooth', dur: sd * 32, vol: 0.016, spread: 14, a: 0.6, sustain: true, rel: 0.8, lp: { from: 500, to: 900, time: sd * 24, q: 1 }, rev: 0.5, out: 'out' });
+    if (s === 0 && bar % 2 === 0 && v.lite < 2) v.chord(t, [r + 12, r + 12 + th, r + 19], { type: 'sawtooth', dur: sd * 32, vol: 0.016, spread: 14, a: 0.6, sustain: true, rel: 0.8, lp: { from: 500, to: 900, time: sd * 24, q: 1 }, rev: 0.5, out: 'out' });
     if (bar >= 2 || boss) hoover(v, bar, s, t, sd, r, bar >= 8 || boss ? HV_B : HV_A, boss ? 0.065 : 0.055);
     fx(v, bar, s, t, sd, boss);
   };
@@ -71,17 +72,17 @@ function runStep(boss) {
 function titleStep(v, bar, s, t, sd) {
   const r = ROOTS[bar], th = THIRD[bar];
   if (s % 8 === 0) v.kick(t, { f0: 150, f1: 44, pd: 0.07, hold: 0.04, dur: 0.4, vol: 0.8, dist: 3, lp: 2800, depth: 0.2, rel: sd * 5, click: 0.3, rumble: 0.4 });
-  if (s % 4 === 2) v.hat(t, { dur: 0.1, vol: 0.04, hp: 8000, rev: 0.2 });
-  if (bar >= 4 && s % 2 === 1) v.hat(t, { dur: 0.022, vol: 0.015, hp: 9000 });
+  if (s % 4 === 2) v.hat(t, { dur: 0.1, vol: 0.04, hp: 8000, rev: v.lite ? 0 : 0.2 });
+  if (bar >= 4 && s % 2 === 1 && !v.lite) v.hat(t, { dur: 0.022, vol: 0.015, hp: 9000 });
   if (s === 0) v.osc({ t, f: hz(r), dur: sd * 16, vol: 0.18, a: 0.01, sustain: true, rel: 0.05 });
   if (s === 0 && bar % 2 === 0) v.chord(t, [r + 12, r + 12 + th, r + 19, r + 24], { type: 'sawtooth', dur: sd * 32, vol: 0.026, spread: 14, a: 0.8, sustain: true, rel: 1, lp: { from: 450, to: 1000, time: sd * 28, q: 1 }, rev: 0.6, out: 'out' });
   if (bar >= 4 && bar % 2 === 0 && (s === 0 || s === 8)) hoover(v, bar, s, t, sd, r, { 0: [0, 3], 8: [bar % 4 === 0 ? 1 : 0, 3] }, 0.04);
-  if (bar >= 8 && bar % 2 === 0 && s === 0) v.growl(t, r, sd * 4, 0.2, { from: 2400, to: 260, q: 10, dist: 6, rumble: 0.15 });
-  if (bar % 8 === 7 && s === 0) v.sweep(t, sd * 16, 0.07, 200, 5000, { q: 2, peak: 0.98 });
-  if (bar % 8 === 0 && s === 0) v.noise({ t, dur: 1.6, vol: 0.05, hp: { from: 3500 }, out: 'out', rev: 0.5 });
+  if (bar >= 8 && bar % 2 === 0 && s === 0 && v.lite < 2) v.growl(t, r, sd * 4, 0.2, { from: 2400, to: 260, q: 10, dist: 6, rumble: 0.15 });
+  if (bar % 8 === 7 && s === 0 && !v.lite) v.sweep(t, sd * 16, 0.07, 200, 5000, { q: 2, peak: 0.98 });
+  if (bar % 8 === 0 && s === 0 && !v.lite) v.noise({ t, dur: 1.6, vol: 0.05, hp: { from: 3500 }, out: 'out', rev: 0.5 });
 }
 
-const GRAPH = { run: { echoBeats: 0.5, echoFb: 0.3, rumble: true, revGain: 0.4 }, title: { echoBeats: 0.75, echoFb: 0.4, rumble: true, revGain: 0.5 } };
+const GRAPH = { run: { echoBeats: 0.5, echoFb: 0.3, rumble: false, revGain: 0.4 }, title: { echoBeats: 0.75, echoFb: 0.4, rumble: false, revGain: 0.5 } };
 // `trim` levels each song to the same loudness (measured offline, see tools/audiolevel.mjs).
 const SONGS = {
   title: { title: 'Static Cathedral', bpm: 118, bars: 16, trim: 0.72, graph: GRAPH.title, step: titleStep },
@@ -100,8 +101,9 @@ function songGraph(ctx, dest, sg) {
 
 // Schedules `bars` bars of a song into `dest` all at once from t = 0.05 (for an OfflineAudioContext;
 // the level tool and tests use it). Returns the length in seconds.
-export function renderSong(ctx, dest, id, bars = SONGS[id].bars) {
+export function renderSong(ctx, dest, id, bars = SONGS[id].bars, lite = 0) {
   const sg = SONGS[id], v = voices(songGraph(ctx, dest, sg));
+  v.lite = lite;
   const sd = 60 / sg.bpm / 4;
   for (let i = 0; i < bars * 16; i++) sg.step(v, Math.floor(i / 16) % sg.bars, i % 16, 0.05 + i * sd, sd);
   return 0.05 + bars * 16 * sd;
@@ -118,7 +120,8 @@ export function createMusic() {
   let enabled = true;
   let volume = 0.6;
   let ducked = false;
-  let cur = null;         // { id, step, next, timer, graph }
+  let cur = null;         // { id, step, next, timer, graph, v }
+  let lite = 0;           // 0 full, 1 and 2 drop optional layers (see audio.js, which raises it when playback lags)
 
   function stopSong(fade = 0.25) {
     if (!cur) return;
@@ -127,7 +130,7 @@ export function createMusic() {
     gr.out.gain.cancelScheduledValues(t);
     gr.out.gain.setValueAtTime(gr.out.gain.value, t);
     gr.out.gain.linearRampToValueAtTime(0, t + fade);
-    setTimeout(() => { try { gr.out.disconnect(); } catch (e) { /* already gone */ } }, (fade + 3) * 1000);
+    setTimeout(() => gr.dispose(), (fade + 3) * 1000);
     cur = null;
   }
 
@@ -135,9 +138,10 @@ export function createMusic() {
     const sg = SONGS[id];
     const gr = songGraph(ctx, comp, sg);
     const v = voices(gr);
+    v.lite = lite;
     const sd = 60 / sg.bpm / 4;
     const total = sg.bars * 16;
-    cur = { id, step: 0, next: ctx.currentTime + 0.08, graph: gr, timer: 0 };
+    cur = { id, step: 0, next: ctx.currentTime + 0.08, graph: gr, timer: 0, v };
     const tick = () => {
       if (!cur || cur.graph !== gr) return;
       if (cur.next < ctx.currentTime - 0.4) cur.next = ctx.currentTime + 0.05;   // woke from a stall: do not burst
@@ -184,6 +188,8 @@ export function createMusic() {
     setEnabled(v) { enabled = !!v; sync(); },
     setVolume(v) { volume = Math.min(1, Math.max(0, Number(v) || 0)); applyVolume(); sync(); },
     duck(on) { ducked = !!on; applyVolume(); },
+    setLite(n) { lite = Math.max(0, Math.min(2, n | 0)); if (cur) cur.v.lite = lite; },
+    get lite() { return lite; },
     get playing() { return cur ? cur.id : null; },
     get scene() { return wanted; },
   };

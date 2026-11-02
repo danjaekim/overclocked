@@ -17,7 +17,7 @@ const GAP = {
 
 // Per-sound level trims, measured offline against the previous effects so the mix keeps its balance
 // (tools/audiolevel.mjs prints them).
-export const SFX_TRIM = {"hit":1.11,"kill":0.48,"gem":1.93,"ore":0.84,"hurt":0.39,"levelup":0.72,"forge":0.65,"fail":0.38,"shrine":0.73,"boss":0.76,"chest":1.26,"evolve":0.55,"win":0.57,"lose":0.78,"tap":1.46,"heal":1.15,"crate":0.93,"magnet":0.45,"quench":1.09,"proc":1.25};
+export const SFX_TRIM = {"hit":3.78,"kill":0.57,"gem":2.18,"ore":0.85,"hurt":0.46,"levelup":0.73,"forge":0.65,"fail":0.38,"shrine":0.73,"boss":0.76,"chest":1.26,"evolve":0.55,"win":0.59,"lose":0.81,"tap":1.6,"heal":1.19,"crate":0.72,"magnet":0.45,"quench":1.09,"proc":1.54};
 
 // consecutive gem pickups climb an E minor pentatonic run, so a vacuumed pile rings upward
 const PENT = [0, 3, 5, 7, 10, 12, 15, 17];
@@ -33,12 +33,12 @@ export function createSfx(ctx, dest) {
 
   // p: a small random pitch factor so repeats do not sound identical
   const FX = {
-    hit: (t, p) => { N({ t, dur: 0.04, vol: 0.1, bp: { from: 1800 * p, q: 1.2 } }); O({ t, type: 'square', f: 300 * p, to: 110, dur: 0.06, vol: 0.07, dist: 3, lp: { from: 1500 } }); },
-    kill: (t, p) => { v.metal(t, { f: 1600 * p, q: 5, dur: 0.07, vol: 0.14, dist: 4 }); O({ t, f: 120 * p, to: 50, dur: 0.1, vol: 0.28, dist: 3 }); },
-    gem: (t) => { v.ping(t, hz(74 + gemStep(t)), { dur: 0.12, vol: 0.06, click: 0, n: 2 }); },
+    hit: (t, p) => { N({ t, dur: 0.05, vol: 0.12, bp: { from: 1800 * p, q: 1.2 } }); },
+    kill: (t, p) => { N({ t, dur: 0.06, vol: 0.18, bp: { from: 1500 * p, to: 700, q: 1.5 } }); O({ t, f: 130 * p, to: 50, dur: 0.1, vol: 0.3 }); },
+    gem: (t) => { v.ping(t, hz(74 + gemStep(t)), { dur: 0.12, vol: 0.06, click: 0, n: 1 }); },
     ore: (t) => { v.ping(t, 1050, { dur: 0.1, vol: 0.08, n: 3 }); v.ping(t + 0.06, 1400, { dur: 0.3, vol: 0.07, rev: 0.2, n: 3 }); },
     hurt: (t, p) => { N({ t, dur: 0.18, vol: 0.3, lp: { from: 2400, to: 300 }, dist: 6 }); O({ t, type: 'square', f: 70 * p, to: 40, dur: 0.2, vol: 0.2, dist: 6, lp: { from: 900 } }); },
-    proc: (t, p) => { v.ping(t, 900 * p, { dur: 0.08, vol: 0.06, echo: 0.3, n: 2 }); },
+    proc: (t, p) => { v.ping(t, 900 * p, { dur: 0.08, vol: 0.06, n: 1, click: 0 }); },
     levelup: (t) => {
       N({ t, dur: 0.3, vol: 0.14, a: 0.28, bp: { from: 500, to: 4000, q: 4 }, dist: 3 });
       v.chord(t + 0.3, [50, 57, 62, 69], { type: 'sawtooth', dur: 0.8, vol: 0.06, dist: 4, lp: { from: 3200, to: 500, q: 2 }, rev: 0.5, out: 'out' });
@@ -84,7 +84,7 @@ export function createSfx(ctx, dest) {
       [0, 0.2, 0.4].forEach((d, i) => v.metal(t + d, { f: 900 - i * 200, q: 5, dur: 0.4, vol: 0.12, dist: 3, rev: 0.5 }));
       O({ t: t + 0.6, type: 'sawtooth', f: hz(38), to: hz(26), glide: 1.6, dur: 1.7, vol: 0.14, dist: 6, lp: { from: 1200, to: 80, q: 3 }, rev: 0.3 });
     },
-    tap: (t) => { v.ping(t, 1500, { dur: 0.03, vol: 0.04, n: 2 }); },
+    tap: (t) => { v.ping(t, 1500, { dur: 0.03, vol: 0.04, n: 1 }); },
     heal: (t) => { v.chord(t, [62, 69, 74], { type: 'triangle', dur: 0.55, vol: 0.07, a: 0.1, rev: 0.4, out: 'out' }); N({ t, dur: 0.5, vol: 0.04, a: 0.2, hp: { from: 5000 } }); },
     crate: (t) => { v.metal(t, { f: 900, q: 2, dur: 0.12, vol: 0.12, dist: 4 }); N({ t, dur: 0.08, vol: 0.08, bp: { from: 500, q: 1 }, dist: 4 }); },
     magnet: (t) => { O({ t, type: 'sawtooth', f: 60, to: 360, dur: 0.5, vol: 0.12, dist: 4, lp: { from: 300, to: 2000, q: 5 } }); },
@@ -95,14 +95,28 @@ export function createSfx(ctx, dest) {
     },
   };
 
+  // A screen full of enemies fires kills, gems and hits many times a second, and every sound is a handful
+  // of audio nodes. Frequent sounds share a budget per 100 ms (smaller when playback is struggling, see
+  // setLite), and are thinned out in lite mode; the rare, important sounds always play.
+  const CHEAP = new Set(['hit', 'kill', 'gem', 'ore', 'proc', 'crate', 'tap', 'magnet']);
+  const BUDGET = [6, 4, 2];
+  let lite = 0, recent = [], skip = 0;
   const last = {};
   return {
+    setLite(n) { lite = Math.max(0, Math.min(2, n | 0)); },
     // Returns true if the sound started. Rate limited per sound.
     play(name) {
       const fx = FX[name];
       if (!fx) return false;
       const t = ctx.currentTime;
       if (t - (last[name] ?? -1) < (GAP[name] ?? 0.05)) return false;
+      if (CHEAP.has(name)) {
+        if (lite >= 1 && (name === 'hit' || name === 'proc')) return false;
+        if (lite >= 1 && (name === 'kill' || name === 'gem') && (skip++ % (lite + 1)) !== 0) return false;
+        recent = recent.filter((x) => t - x < 0.1);
+        if (recent.length >= BUDGET[lite]) return false;
+        recent.push(t);
+      }
       last[name] = t;
       g.vmul = SFX_TRIM[name] || 1;
       fx(t + 0.005, 0.96 + Math.random() * 0.08);

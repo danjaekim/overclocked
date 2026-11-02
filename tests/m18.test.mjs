@@ -77,6 +77,39 @@ test('each song plays a full loop on a fake context', () => {
   }
 });
 
+test('lite mode makes a song cheaper, and the effects share a budget', async () => {
+  const count = (lite) => {
+    const ctx = fakeCtx(), music = createMusic(), sg = MUSIC_SONGS.run;
+    music.setLite(lite);
+    const d = drive(music, ctx, (60 / sg.bpm / 4) * 16 * 8 + 1);
+    try { music.attach(ctx, ctx.destination); music.play('run'); d.run(); } finally { d.restore(); }
+    return ctx.made.osc + ctx.made.noise;
+  };
+  const full = count(0), l1 = count(1), l2 = count(2);
+  assert.ok(l1 < full && l2 < l1, `nodes ${full} > ${l1} > ${l2}`);
+  const { createSfx } = await import('../src/audio/sfx.js');
+  const ctx = fakeCtx(), sfx = createSfx(ctx, ctx.destination);
+  ctx.currentTime = 10;
+  const started = ['hit', 'kill', 'gem', 'ore', 'proc', 'crate', 'magnet', 'tap'].filter((n) => sfx.play(n));
+  assert.equal(started.length, 6, 'six frequent sounds in one instant, then the budget is spent');
+  sfx.setLite(2);
+  ctx.currentTime = 20;
+  assert.equal(sfx.play('hit'), false, 'lite drops hits');
+  assert.equal(sfx.play('proc'), false, 'and trigger blips');
+  assert.equal(sfx.play('hurt'), true, 'but never the important sounds');
+  assert.equal(sfx.play('levelup'), true);
+});
+
+test('audio starts one lite step lighter for songs than for effects, and lite can be forced', async () => {
+  const { createAudio } = await import('../src/audio/audio.js');
+  const a = createAudio();
+  assert.equal(a.lite, 0);
+  assert.equal(a.music.lite, 1, 'the default song is a light one');
+  a.setLite(-1); assert.equal(a.music.lite, 0);
+  a.setLite(2); assert.equal(a.music.lite, 2); assert.equal(a.lite, 2);
+  a.setLite(9); assert.equal(a.lite, 2, 'clamped');
+});
+
 test('play before attach starts once the context exists; scenes switch; stop and disable silence it', () => {
   const ctx = fakeCtx();
   const music = createMusic();
