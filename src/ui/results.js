@@ -34,7 +34,7 @@ export function showResults(overlays, summary, { onAgain, newBests = [] }) {
        ${stat('kills', 'Kills', summary.kills)}
        ${stat('level', 'Level', summary.level)}
      </div>
-     ${summary.bossKilled ? '<p class="sub">The Enforcer is down.</p>' : ''}
+     ${summary.bossKilled ? `<p class="sub">${(summary.bossNames && summary.bossNames.length ? summary.bossNames : ['The boss']).map((n) => 'The ' + n.replace(/^The /, '') + ' is down.').join(' ')}</p>` : ''}
      ${rigHtml(summary.rig)}
      ${resultsDamageHtml(summary.stats)}
      <p class="hint">Seed ${summary.seed}</p>

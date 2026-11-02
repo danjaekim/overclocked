@@ -168,7 +168,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
         `enemies ${w.enemies.count}  proj ${w.projectiles.count}  gems ${w.pickups.count}  fx ${w.fx.count}`,
         `hash max bucket ${w.hash.stats.maxBucket}  dmg dropped ${w.dmg.dropped}`,
         `hpScale ${run.director.hpScale.toFixed(2)}  seed ${run.seed}`,
-        `ore ${run.ore}  starsteel ${run.starsteel}  titles ${run.titles.map((t) => t.id).join(',') || '-'}`,
+        `ore ${run.ore}  titles ${run.titles.map((t) => t.id).join(',') || '-'}`,
         `weapons: ${ws}`,
         `passives: ${ps || '-'}`,
         `perks: ${run.player.perks.map((i) => `${i.id} L${i.level}`).join(', ') || '-'}`,
@@ -181,7 +181,7 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
 
     summary() {
       return {
-        time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, classId: run.player.classId,
+        time: run.time, kills: run.kills, seed: run.seed, won: run.won, bossKilled: run.bossKilled, bossNames: run.bossNames || [], classId: run.player.classId,
         level: run.player.level, titles: run.titles.map((t) => t.def.name),
         weapons: run.player.weapons.map((w) => weaponName(w)),
         fusions: run.fusions.map((g) => g.name),

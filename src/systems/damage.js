@@ -52,7 +52,7 @@ export function killEnemy(run, e) {
   spawnGem(run, e.x, e.y, e.def.xp * (e.elite ? ELITE.xpMult : 1));
   const ore = e.def.ore;                                     // in a rig run ore is gold, spent at the workbench
   if (ore && ORES[ore.type].bank === 'starsteel') {
-    run.starsteel += ore.count || 1;               // starsteel is banked at once, so the boss chest can use it
+    if (!run.rigRun) run.starsteel += ore.count || 1;               // rig runs have no evolutions: no starsteel (v0.10.7)
   } else if (ore && !e.fodder && run.rng.next() < ore.chance * run.player.stats.get('oreGain')) {
     spawnOre(run, e.x + 6, e.y - 4, ore.type, (ore.count || 1) * (run.rigRun ? GOLD.perOre : 1));
   }
@@ -60,7 +60,7 @@ export function killEnemy(run, e) {
     spawnChest(run, e.x, e.y, 0);
     if (run.rigRun) run.ore += GOLD.elite;
     // starsteel for evolutions: the first elite always drops one, later ones with a chance
-    if (run.eliteKills++ === 0 || run.rng.next() < ELITE.starsteelChance) {
+    if (!run.rigRun && (run.eliteKills++ === 0 || run.rng.next() < ELITE.starsteelChance)) {
       run.starsteel += 1;
       run.toast = { text: '+1 starsteel', ttl: 2 };
     }
@@ -68,6 +68,7 @@ export function killEnemy(run, e) {
   if (e.def.boss) {
     run.bossAlive = false;
     run.bossKilled = true;
+    run.bossNames = [...(run.bossNames || []), e.def.name];
     run.boss = null;
     spawnShrine(run, SHRINE.bossShrineTtl, { x: e.x, y: e.y }, true);
     spawnChest(run, e.x - 40, e.y, 1);
