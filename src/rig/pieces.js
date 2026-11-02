@@ -80,7 +80,7 @@ export const PIECES = {
   blaster: {
     glyph: 'Bl', short: 'Blaster', icon: 'M2 12h13 M11 6l7 6-7 6 M20 7v10', filled: false, type: 'weapon', name: 'Blaster', cost: 1, desc: 'A 3-shot volley at the nearest enemy; each shot is its own hit',
     def: {
-      name: 'Blaster', tags: ['projectile', 'ranged'], behavior: 'projectile',
+      name: 'Blaster', tags: ['projectile', 'ranged'], behavior: 'projectile', shot: 'laser',
       base: { damage: 8.5, cooldown: 0.9, speed: 520, count: 3, pierce: 1, spread: 0.02, gap: 7, ttl: 1.2, radius: 5, range: 380 },
     },
   },

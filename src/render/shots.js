@@ -33,7 +33,8 @@ const S_JAVELIN = 2;
 const S_SHARD = 3;
 const S_DISC = 4;
 const S_SOUL = 5;
-const SHOT_BY_NAME = { blade: S_BLADE, arrow: S_ARROW, javelin: S_JAVELIN, shard: S_SHARD, disc: S_DISC };
+const S_LASER = 6;                                     // the Blaster's bolts: a capsule of light with a white core (v0.10.4)
+const SHOT_BY_NAME = { blade: S_BLADE, arrow: S_ARROW, javelin: S_JAVELIN, shard: S_SHARD, disc: S_DISC, laser: S_LASER };
 const SHOT_BY_BEHAVIOR = { projectile: S_ARROW, rod: S_JAVELIN, nova: S_SHARD, boomerang: S_DISC };
 const SHOT_BY_LOOK = [-1, S_DISC, S_SHARD, S_SOUL, S_ARROW, S_BLADE];
 
@@ -402,6 +403,45 @@ function drawList(ctx, list, time) {
     }
   }
   if (present & (1 << S_SOUL)) drawSouls(ctx, list);
+  if (present & (1 << S_LASER)) drawLasers(ctx, list);
+}
+
+// Laser bolts, three passes each batched by colour: a wide faint glow, the coloured bolt, then a white core. The colour is
+// the weapon's element when it has one, else its chain's colour. No shadowBlur: the glow is the wide stroke.
+const LASER_LEN = 3.2;                                 // half the bolt's length, in multiples of r
+const LASER_PASSES = [[2.6, 0.22, 0], [1.25, 1, 0], [0.5, 1, 1]];   // [width in r, alpha, white core?]
+const laserBuckets = new Map();
+function laserColor(p) {
+  const m = elemBits(p.inst);
+  if (m) return SKIN[primaryOf(m)].head;
+  return CHAIN_COLORS[(p.inst && p.inst.chainIdx) || 0] || P.rig;
+}
+function drawLasers(ctx, list) {
+  laserBuckets.clear();
+  for (let i = 0; i < list.length; i++) {
+    const p = list[i];
+    if (!seen(p) || shapeOf(p) !== S_LASER) continue;
+    const c = laserColor(p);
+    let b = laserBuckets.get(c);
+    if (!b) laserBuckets.set(c, (b = []));
+    b.push(p);
+  }
+  ctx.lineCap = 'round';
+  for (const [w, a, core] of LASER_PASSES) {
+    ctx.globalAlpha = a;
+    for (const [c, b] of laserBuckets) {
+      ctx.strokeStyle = core ? '#ffffff' : c;
+      ctx.lineWidth = Math.max(1, b[0].r * w);
+      ctx.beginPath();
+      for (const p of b) {
+        const L = p.r * (core ? LASER_LEN * 0.8 : LASER_LEN);
+        ctx.moveTo(p.x - p.dx * L, p.y - p.dy * L);
+        ctx.lineTo(p.x + p.dx * L, p.y + p.dy * L);
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 export function drawProjectiles(ctx, view, run) {

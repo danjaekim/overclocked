@@ -37,11 +37,11 @@ const brute = art(                                                     // Bruise
   glow(`<rect x="16" y="27" width="32" height="8" rx="2" fill="${P.orange}"/>`) + `<rect x="19" y="29" width="26" height="2.5" fill="#fff" opacity=".8"/>` +
   `<path d="M18 46 H46" ${line(P.orange, 2)} opacity=".5"/>`, 22);
 
-const shieldbearer = art(                                              // Riot Unit: a small body behind a wide shield plate
-  `<rect x="21" y="26" width="22" height="30" rx="3" ${body(P.blue, 2.4)}/>` +
-  glow(`<rect x="27" y="31" width="10" height="3.5" rx="1" fill="${P.blue}"/>`) +
-  `<path d="M7 10 H57 L53 28 H11 Z" fill="${BODY}" stroke="${P.blue}" stroke-width="3" stroke-linejoin="round"/>` +
-  glow(`<path d="M13 16 H51 M15 22 H49" ${line(P.blue, 2)}/>`), 20);
+const shieldbearer = art(                                              // Riot Unit: a police-badge shield with a visor slit (v0.10.4)
+  `<path d="M32 6 L54 14 V32 C54 46 44 54 32 60 C20 54 10 46 10 32 V14 Z" ${body(P.blue, 3.2)}/>` +
+  `<path d="M32 13 L47 19 V32 C47 42 40 48 32 52 C24 48 17 42 17 32 V19 Z" fill="${DEEP}"/>` +
+  glow(`<rect x="20" y="28" width="24" height="6" rx="2" fill="${P.blue}"/>`) + `<rect x="23" y="30" width="18" height="2" fill="#fff" opacity=".85"/>` +
+  `<path d="M32 38 V48" ${line(P.blue, 2)} opacity=".6"/>`, 18);
 
 const slinger = art(                                                   // Spitter: an arrowhead
   `<path d="M32 8 L52 54 L32 44 L12 54 Z" ${body(P.lime, 3)}/>` +
@@ -61,11 +61,11 @@ const shaman = art(                                                    // Hacker
   `<path d="M32 14 L52 36 L32 58 L12 36 Z" ${body(P.violet, 3)}/>` +
   glow(`<path d="M32 28 L40 36 L32 44 L24 36 Z" fill="${P.violet}"/>`) + `<circle cx="32" cy="36" r="2.4" fill="#fff"/>`, 16);
 
-const crusher = art(                                                   // Wrecker: a wide hammerhead on a stem
-  `<rect x="26" y="34" width="12" height="24" rx="2" ${body(P.orange, 2.6)}/>` +
-  `<rect x="6" y="8" width="52" height="28" rx="4" ${body(P.orange, 3.2)}/>` +
-  glow(`<rect x="12" y="19" width="40" height="5" fill="${P.orange}"/>`) + `<rect x="12" y="20.5" width="40" height="2" fill="#fff" opacity=".85"/>` +
-  `<path d="M14 12 V32 M50 12 V32" ${line(P.orange, 1.6)} opacity=".55"/>`, 22);
+const crusher = art(                                                   // Wrecker: a spiked wrecking ball with a white stripe (v0.10.4)
+  `<polygon points="52.6,37.8 58.8,45.1 49.3,45.9" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="43.9,51.3 43.1,60.8 35.8,54.6" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="28.2,54.6 20.9,60.8 20.1,51.3" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="14.7,45.9 5.2,45.1 11.4,37.8" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="11.4,30.2 5.2,22.9 14.7,22.1" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="20.1,16.7 20.9,7.2 28.2,13.4" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="35.8,13.4 43.1,7.2 43.9,16.7" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/><polygon points="49.3,22.1 58.8,22.9 52.6,30.2" fill="${BODY}" stroke="${P.orange}" stroke-width="2.4" stroke-linejoin="round"/>` +
+  `<circle cx="32" cy="34" r="22" ${body(P.orange, 3.2)}/>` +
+  `<circle cx="32" cy="34" r="14" fill="${DEEP}"/>` +
+  glow(`<rect x="14" y="31" width="36" height="6" rx="2" fill="${P.orange}"/>`) + `<rect x="16" y="33" width="32" height="2" fill="#fff" opacity=".9"/>`, 22);
 
 const warlord = art(                                                   // Enforcer (boss): a walker with a hull, arms and a red visor
   `<rect x="10" y="48" width="14" height="12" rx="2" ${body(P.pink, 2.4)}/><rect x="40" y="48" width="14" height="12" rx="2" ${body(P.pink, 2.4)}/>` +
