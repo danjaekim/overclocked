@@ -106,12 +106,14 @@ const caseArt = (w, h, strap, k) => art(
   glow(`<rect x="28" y="${48 - h * 0.55 - 4}" width="8" height="9" rx="1.5" fill="${P.gold}"/>`) +
   (strap ? `<path d="M${32 - w * 0.28} ${48 - h} V48 M${32 + w * 0.28} ${48 - h} V48" ${line(P.gold, 2.4)} opacity=".8"/>` : '') +
   (k ? glow(`<path d="M${32 - w / 2} ${48 - h} L${32 - w / 2 + 8} ${48 - h - 6} H${32 + w / 2 - 8} L${32 + w / 2} ${48 - h}" ${line(P.gold, 2.6)}/>`) : ''), w * 0.5);
-const terminal = art(                                                  // Terminal: the black-market workbench console
-  `<path d="M14 58 H50 L46 46 H18 Z" ${body(P.gold, 2.6)}/>` +
-  `<rect x="12" y="8" width="40" height="38" rx="4" ${body(P.gold, 3.2)}/>` +
-  glow(`<rect x="18" y="14" width="28" height="24" rx="2" fill="${P.gold}" opacity=".9"/>`) +
-  `<path d="M20 20 H44 M20 26 H38 M20 32 H42" ${line(DEEP, 2)}/>` +
-  `<circle cx="22" cy="42" r="1.8" fill="${P.gold}"/><circle cx="30" cy="42" r="1.8" fill="${P.gold}"/>`, 22);
+// The workbench terminal (v0.10.8): a gold hexagon console with a screen and a credit coin, drawn centred on the viewBox
+// centre (32, 32) with no ground shadow, so the activation ring around it is concentric with it.
+const terminal = `${HEAD}` +
+  glow(`<polygon points="${hex(32, 32, 26)}" ${body(P.gold, 3.2)}/>`) +
+  `<polygon points="${hex(32, 32, 19)}" fill="${DEEP}" stroke="${P.gold}" stroke-width="1.4" opacity=".9"/>` +
+  glow(`<circle cx="32" cy="32" r="9" fill="none" stroke="${P.gold}" stroke-width="3"/>`) +
+  `<circle cx="32" cy="32" r="3.2" fill="#fff"/>` +
+  `<path d="M32 20 V23 M32 41 V44 M20 32 H23 M41 32 H44" ${line(P.gold, 2)}/></svg>`;
 
 // Elites keep their own enemy's behaviour but wear one body per affix: a white-ringed hexagon with the affix's glyph.
 const elite = (c, glyph) => art(

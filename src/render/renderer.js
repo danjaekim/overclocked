@@ -11,7 +11,7 @@ const GROUND = new URLSearchParams(location.search).get('ground') || 'neon';
 
 const GRID = 64;
 const SPRITE_W = 68;                     // world units; the hitbox stays the player's r
-const SPRITE_LIFT = 8;                   // the feet sit near the hit circle's bottom
+const SPRITE_LIFT = 0;                   // the drone's core sits on the hit circle's centre, so every ring and node round it is concentric (v0.10.8)
 
 export function createRenderer(canvas, view) {
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -101,7 +101,7 @@ function drawEvolvedGlow(p, t, front) {
   function drawChainNodes(p, t, rig) {
     const n = rig.chains.length;
     if (!n) return;
-    const cy = p.y - SPRITE_LIFT - 2;
+    const cy = p.y;
     for (let i = 0; i < n; i++) {
       const ch = rig.chains[i];
       let last = -1e9;
@@ -129,7 +129,7 @@ function drawEvolvedGlow(p, t, front) {
       ctx.save();
       ctx.translate(p.x, p.y - SPRITE_LIFT);
       if (p.flip) ctx.scale(-1, 1);
-      ctx.drawImage(spr, -SPRITE_W / 2, -h / 2 - 2, SPRITE_W, h);
+      ctx.drawImage(spr, -SPRITE_W / 2, -h / 2 - 1.8, SPRITE_W, h);
       ctx.restore();
     } else {
       ctx.fillStyle = p.hurtFlash > 0 ? '#ffffff' : '#e8a33d';

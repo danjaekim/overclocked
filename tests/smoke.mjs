@@ -94,6 +94,7 @@ if (opt('--rig')) {                                              // play a store
 }
 if (opt('--at')) {                                               // fast-forward the run to a busy moment for a screenshot (the player stands still, god mode)
   await page.evaluate((secs) => { const o = window.__overclocked; const r = o.game.run; r.debug.god = true; while (r.time < secs) { r.update(1 / 60, { x: Math.sin(r.time * 0.7), y: Math.cos(r.time * 0.5) }); r.pendingLevelUps = 0; } }, Number(opt('--at')));
+  if (flag('--shrine')) await page.evaluate(async () => { const o = window.__overclocked; const r = o.game.run; const m = await import('/src/systems/shrines.js'); m.spawnShrine(r, 60, { x: r.player.x + 90, y: r.player.y - 40 }, true); r.update(1 / 60, { x: 0, y: 0 }); });
   if (flag('--clean')) await page.evaluate(() => {         // a bare scene for screenshots: no menus or debug text
     const o = window.__overclocked; o.game.state = 'run';
     document.querySelectorAll('#ui, #debug, .debug, button.dbg').forEach((e) => { e.style.display = 'none'; });

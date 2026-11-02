@@ -25,8 +25,8 @@ export function drawShrines(ctx, view, run) {
     ctx.globalAlpha = fade;
     const spr = getSprite('shrine');
     if (spr) {
-      const w = 74;
-      ctx.drawImage(spr, s.x - w / 2, s.y - w * 0.66, w, w);
+      const w = 76;                                       // the terminal art is centred on its box (v0.10.8): centred on the ring
+      ctx.drawImage(spr, s.x - w / 2, s.y - w / 2, w, w);
     } else {
       // anvil: base, waist, face
       ctx.fillStyle = '#3a3d4d';
