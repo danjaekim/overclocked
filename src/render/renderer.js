@@ -4,7 +4,7 @@
 import { drawHud, drawStick } from './hud.js';
 import { getSprite } from './sprites.js';
 import { drawGround } from './ground.js';
-import { PALETTE } from '../data/palette.js';
+import { PALETTE, CHAIN_COLORS } from '../data/palette.js';
 import { drawShield } from './shield.js';
 // Floor: Neon Noir by default (v0.10); ?ground=forest tries the old forest, ?ground=forge|frost|cinder|ruins|crystal|catacomb tries the others, ?ground=grid is the old grid.
 const GROUND = new URLSearchParams(location.search).get('ground') || 'neon';
@@ -95,7 +95,31 @@ function drawEvolvedGlow(p, t, front) {
     ctx.globalAlpha = 1;
   }
 
-  function drawPlayer(p, t) {
+  // One node per chain orbiting the Runner, in the chain's colour; it swells for a moment each time that chain fires.
+  // The glow is a faint larger dot under it (no shadowBlur).
+  const NODE_ORBIT = 25, NODE_R = 3.6, NODE_FLASH = 0.15;
+  function drawChainNodes(p, t, rig) {
+    const n = rig.chains.length;
+    if (!n) return;
+    const cy = p.y - SPRITE_LIFT - 2;
+    for (let i = 0; i < n; i++) {
+      const ch = rig.chains[i];
+      let last = -1e9;
+      for (let k = 0; k < ch.flash.length; k++) if (ch.flash[k] > last) last = ch.flash[k];
+      const hot = t - last < NODE_FLASH;
+      const a = t * 1.6 + (i * Math.PI * 2) / n;
+      const x = p.x + Math.cos(a) * NODE_ORBIT, y = cy + Math.sin(a) * NODE_ORBIT;
+      const r = hot ? NODE_R * 1.6 : NODE_R;
+      ctx.fillStyle = CHAIN_COLORS[i % CHAIN_COLORS.length];
+      ctx.globalAlpha = 0.28;
+      ctx.beginPath(); ctx.arc(x, y, r * 2.1, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      if (hot) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill(); }
+    }
+  }
+
+  function drawPlayer(p, t, rig) {
     drawPickupRing(p);
     drawEvolvedGlow(p, t, false);
     const spr = getSprite(p.classId, p.hurtFlash > 0);
@@ -122,6 +146,7 @@ function drawEvolvedGlow(p, t, front) {
       ctx.lineTo(p.x + p.facingX * p.r, p.y + p.facingY * p.r);
       ctx.stroke();
     }
+    if (rig) drawChainNodes(p, t, rig);
     drawEvolvedGlow(p, t, true);
   }
 
@@ -139,7 +164,7 @@ function drawEvolvedGlow(p, t, front) {
     if (!(GROUND && drawGround(ctx, cam, view, GROUND, run ? run.time : 0))) drawGrid(cam);
     if (run) {
       if (run.drawWorld) run.drawWorld(ctx, view);
-      drawPlayer(run.player, run.time);
+      drawPlayer(run.player, run.time, run.rig);
       if (run.drawWeapons) run.drawWeapons(ctx);
       if (run.drawFx) run.drawFx(ctx, view);
     }

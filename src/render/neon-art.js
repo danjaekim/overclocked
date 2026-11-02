@@ -17,12 +17,14 @@ const body = (c, w = 2.6) => `fill="${BODY}" stroke="${c}" stroke-width="${w}" s
 const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
 const hex = (cx, cy, r, rot = -90) => poly(Array.from({ length: 6 }, (_, i) => [cx + Math.cos((rot + i * 60) * Math.PI / 180) * r, cy + Math.sin((rot + i * 60) * Math.PI / 180) * r]));
 
-// The player: a cyan ring and chevron with a white core. Every class id maps to it (only the rig run is playable).
+// The player (v0.10.5): a round core drone with no front, so it never has to face anything. The renderer draws one small
+// node orbiting it per chain, in that chain's colour (render/renderer.js drawChainNodes). Every class id maps to it.
 const RUNNER = art(
-  glow(`<circle cx="32" cy="34" r="21" ${line(P.rig, 3)}/>`) +
-  `<circle cx="32" cy="34" r="17" fill="${BODY}" opacity=".85"/>` +
-  glow(`<path d="M32 17 L45 46 L32 39 L19 46 Z" fill="${P.rigHot}" stroke="${P.rig}" stroke-width="2" stroke-linejoin="round"/>`) +
-  `<circle cx="32" cy="36" r="3" fill="${P.rig}"/>`, 18);
+  glow(`<circle cx="32" cy="34" r="17" ${line(P.rig, 3)}/>`) +
+  `<circle cx="32" cy="34" r="17" fill="${BODY}" stroke="${P.rig}" stroke-width="3"/>` +
+  `<circle cx="32" cy="34" r="11" fill="none" stroke="${P.rig}" stroke-width="1.2" opacity=".5" stroke-dasharray="3 3"/>` +
+  glow(`<circle cx="32" cy="34" r="6" fill="${P.rig}"/>`) +
+  `<circle cx="32" cy="34" r="4" fill="${P.rigHot}"/>`, 16);
 
 // Enemies. One silhouette and one accent each (the table in docs/plan-v10-neon.md).
 const goblin = art(                                                    // Street Drone: a small hexagon with one eye
