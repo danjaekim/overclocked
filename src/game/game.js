@@ -273,6 +273,8 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   };
 
   // Out of view: pause, so the run waits. In the editor or a chest the run is already frozen.
+  // A phone can freeze or kill the page without a pagehide, so a run in progress is also saved every 15 s.
+  setInterval(() => { if (game.state === 'run') saveRun(); }, 15000);
   const onHidden = () => { if (game.state === 'run') pause(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) onHidden(); });
   window.addEventListener('pagehide', onHidden);
