@@ -15,6 +15,12 @@ export function isTouchDevice() {
   }
 }
 
+// Graphics setting (pause menu): the most device pixels drawn per CSS pixel. A phone's default is 'balanced' (v0.11.3): about 44% fewer
+// pixels than 'sharp' at 2x, which is most of what a long run costs in heat.
+export const GRAPHICS = { sharp: 2, balanced: 1.5, battery: 1 };
+export const GRAPHICS_NAMES = { sharp: 'Sharp', balanced: 'Balanced', battery: 'Battery saver' };
+export const defaultGraphics = () => (isTouchDevice() ? 'balanced' : 'sharp');
+
 export function createView(stage, canvas) {
   const view = {
     w: VIEW_W,
@@ -26,7 +32,10 @@ export function createView(stage, canvas) {
     cssH: 0,
     insetTop: 0,     // safe-area top inset in world units (notch / dynamic island)
     isTouch: isTouchDevice(),
+    dprCap: 2,       // see GRAPHICS
+    onLayout: null,  // called after every layout: the canvas was resized (and so cleared), the frame must be drawn again
     layout,
+    setGraphics(g) { view.dprCap = GRAPHICS[g] || GRAPHICS[defaultGraphics()]; layout(); },
   };
 
   const probe = document.createElement('div');
@@ -84,7 +93,7 @@ export function createView(stage, canvas) {
     stage.style.width = Math.round(cssW) + 'px';
     stage.style.height = Math.round(cssH) + 'px';
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, view.dprCap);
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
 
@@ -98,6 +107,7 @@ export function createView(stage, canvas) {
     const insetPx = parseFloat(getComputedStyle(probe).paddingTop) || 0;
     // Under a notch the status bar blurs what is beneath it, so the HUD starts a little lower.
     view.insetTop = Math.max(0, insetPx - top) / view.cssScale + (insetPx > top ? 10 : 0);
+    if (view.onLayout) view.onLayout();
   }
 
   window.addEventListener('resize', layout);

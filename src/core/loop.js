@@ -4,8 +4,16 @@
 export const STEP = 1 / 60;
 const MAX_FRAME = 0.1; // clamp so a backgrounded tab doesn't trigger a catch-up spiral
 
-// isPaused(): when true, time still passes but update() is not called.
-export function createLoop({ update, render, isPaused = () => false, onFrameStats }) {
+// isPaused(): when true, time still passes but update() is not called, and (v0.11.3) nothing is drawn after the first paused
+// frame, since the picture cannot change behind a menu: a phone that redraws a frozen scene 60 times a second only gets hotter.
+// A new first frame is drawn when invalidate() is called (the canvas was resized) or stamp() returns something new (a different run).
+// halfRate(): when true, draws every other animation frame (the simulation catches up on its own, so play speed is unchanged).
+export function createLoop({ update, render, isPaused = () => false, onFrameStats, stamp = () => 0, halfRate = () => false }) {
+  let lastDrawnPaused = false;
+  let lastStamp = null;
+  let dirty = true;
+  let skip = false;
+  let lastRenderMs = 0;
   let last = 0;
   let acc = 0;
   let running = false;
@@ -31,14 +39,23 @@ export function createLoop({ update, render, isPaused = () => false, onFrameStat
       acc = 0;
     }
 
-    const r0 = performance.now();
-    render(acc / STEP);
-    const renderMs = performance.now() - r0;
+    const paused = isPaused();
+    const st = stamp();
+    skip = halfRate() ? !skip : false;
+    if (!(paused && lastDrawnPaused && !dirty && st === lastStamp) && !(skip && !paused)) {
+      const r0 = performance.now();
+      render(acc / STEP);
+      lastRenderMs = performance.now() - r0;
+      lastDrawnPaused = paused;
+      lastStamp = st;
+      dirty = false;
+    }
 
-    if (onFrameStats) onFrameStats(dtReal, simMs, renderMs, performance.now() - frameStart);
+    if (onFrameStats) onFrameStats(dtReal, simMs, lastRenderMs, performance.now() - frameStart);
     rafId = requestAnimationFrame(frame);
   }
 
+  loop.invalidate = () => { dirty = true; };
   loop.start = () => {
     if (running) return;
     running = true;

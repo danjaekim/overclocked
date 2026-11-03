@@ -1,7 +1,7 @@
 // Overclocked: boot. Wires the view, input, game state machine, renderer and loop.
 
 import { createLoop } from './core/loop.js';
-import { createView } from './render/view.js';
+import { createView, defaultGraphics } from './render/view.js';
 import { createRenderer } from './render/renderer.js';
 import { createInput } from './input/input.js';
 import { createOverlays } from './ui/overlay.js';
@@ -37,6 +37,7 @@ preloadSprites();
 let game;
 const input = createInput(canvas, { onPause: () => game && game.togglePause(), onBuild: () => game && game.openBuild() });
 const save = createSave(browserStorage());
+view.setGraphics(save.data.graphics || defaultGraphics());
 const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume, sfxVolume: save.data.sfxVolume });
 debug.audioState = () => audio.state;
 debug.audioInfo = () => `music ${audio.music.mode || '-'} lite ${audio.lite} bakedSongs ${audio.music.bakedIds.length}`;   // 'live' for more than ~15 s into a run = the offline bake failed here
@@ -52,12 +53,20 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
 }
 
+let stampRun = null, stampId = 0;
 const loop = createLoop({
   update: (dt) => game.update(dt),
   render: () => renderer.draw(game.run, input, debug),
   isPaused: () => !game.isSimulating(),
+  stamp: () => {                                          // while paused, a new run or a moved camera (the level-up sheet lifts it) needs a fresh frame
+    const r = game.run;
+    if (r !== stampRun) { stampRun = r; stampId++; }
+    return r ? `${stampId}|${r.cam.x}|${r.cam.y}` : '';
+  },
+  halfRate: () => save.data.fps30,
   onFrameStats: debug.onFrameStats,
 });
+view.onLayout = () => loop.invalidate();      // a resized canvas is blank: draw the frozen scene again
 loop.start();
 
 // Handy for poking around in a desktop console or automated tests.

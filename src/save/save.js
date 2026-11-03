@@ -20,6 +20,8 @@ export const DEFAULTS = {
   music: true,                        // music on/off (the sound toggle mutes everything)
   musicVolume: 0.6,                   // 0..1
   sfxVolume: 1,                       // sound effects, 0..1 (1 = the original level)
+  graphics: '',                       // 'sharp' | 'balanced' | 'battery'; '' = not chosen yet (balanced on a phone, sharp elsewhere)
+  fps30: false,                       // draw every other frame (the simulation still runs at 60 Hz)
   history: [],                        // finished runs, oldest first (see entryFromSummary), capped
   discovered: { fusions: [], reactions: [] },   // masterwork ids found at the forge (v3); element reactions seen in a run (the compendium)
 };
@@ -153,6 +155,8 @@ export function normalize(raw) {
   if (typeof raw.music === 'boolean') out.music = raw.music;
   if (Number.isFinite(raw.musicVolume)) out.musicVolume = Math.min(1, Math.max(0, raw.musicVolume));
   if (Number.isFinite(raw.sfxVolume)) out.sfxVolume = Math.min(1, Math.max(0, raw.sfxVolume));
+  if (['sharp', 'balanced', 'battery'].includes(raw.graphics)) out.graphics = raw.graphics;
+  if (typeof raw.fps30 === 'boolean') out.fps30 = raw.fps30;
   const found = raw.discovered && (Array.isArray(raw.discovered.fusions) ? raw.discovered.fusions : raw.discovered.grafts);   // saves from before the rename say "grafts"
   if (Array.isArray(found)) {
     out.discovered.fusions = [...new Set(found.filter((x) => typeof x === 'string'))].slice(0, 100);
@@ -205,6 +209,16 @@ export function createSave(storage) {
 
     setMusicVolume(v) {
       data.musicVolume = Math.min(1, Math.max(0, Number(v) || 0));
+      persist();
+    },
+
+    setGraphics(g) {
+      data.graphics = ['sharp', 'balanced', 'battery'].includes(g) ? g : '';
+      persist();
+    },
+
+    setFps30(on) {
+      data.fps30 = !!on;
       persist();
     },
 

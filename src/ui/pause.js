@@ -1,7 +1,7 @@
 import { musicControlsHtml, bindMusicControls } from './music-controls.js';
 import { VERSION } from '../version.js';
 
-export function showPause(overlays, { onResume, onRig, onCompendium, onSandbox, onQuit, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit, onSfxVolume, onSfxCommit, sandbox = false }) {
+export function showPause(overlays, { onResume, onRig, onCompendium, onSandbox, onQuit, onToggleSound, sound, music, onToggleMusic, onMusicVolume, onMusicCommit, onSfxVolume, onSfxCommit, onGraphics, graphics, onFps, fps30, sandbox = false }) {
   const el = overlays.show(
     `<h2>Paused</h2>
      <button class="btn primary" data-act="resume">Resume</button>
@@ -9,6 +9,8 @@ export function showPause(overlays, { onResume, onRig, onCompendium, onSandbox, 
      <button class="btn" data-act="compendium">Compendium</button>
      <button class="btn" data-act="sound">Sound: ${sound ? 'On' : 'Off'}</button>
      ${musicControlsHtml(music)}
+     <button class="btn" data-act="graphics">Graphics: ${graphics}</button>
+     <button class="btn" data-act="fps">Frame rate: ${fps30 ? '30' : '60'}</button>
      ${onSandbox ? '<button class="btn" data-act="sandbox">Chain sandbox (debug)</button>' : ''}
      <button class="btn" data-act="quit">${sandbox ? 'Back to the run' : 'New run'}</button>
      <p class="ver">v${VERSION}</p>`,
@@ -19,8 +21,11 @@ export function showPause(overlays, { onResume, onRig, onCompendium, onSandbox, 
       else if (act === 'sandbox') onSandbox();
       else if (act === 'sound') onToggleSound();
       else if (act === 'music') onToggleMusic();
+      else if (act === 'graphics') onGraphics();
+      else if (act === 'fps') onFps();
       else if (act === 'quit') onQuit();
-    }
+    },
+    'pause'
   );
   bindMusicControls(el, { onVolume: onMusicVolume, onCommit: onMusicCommit, onSfxVolume, onSfxCommit });
 }

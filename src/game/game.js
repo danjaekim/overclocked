@@ -24,6 +24,7 @@ import { showCompendium } from '../ui/compendium.js';
 import { REACTION_INFO } from '../rig/pieces.js';
 import { stockUp } from '../rig/workbench.js';
 import { snapshotRun, restoreRun } from './run-snapshot.js';
+import { GRAPHICS_NAMES, defaultGraphics } from '../render/view.js';
 
 export function createGame({ view, input, overlays, rotate, debug, params, save, runSave = null, audio, sandboxHost }) {
   const game = { state: 'run', run: null };
@@ -180,6 +181,16 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       sandbox: game.run.sandbox,
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
+      graphics: GRAPHICS_NAMES[save.data.graphics || defaultGraphics()],
+      onGraphics: () => {                                      // Sharp -> Balanced -> Battery saver -> Sharp
+        const order = ['sharp', 'balanced', 'battery'];
+        const now = save.data.graphics || defaultGraphics();
+        save.setGraphics(order[(order.indexOf(now) + 1) % order.length]);
+        view.setGraphics(save.data.graphics);
+        show();
+      },
+      fps30: save.data.fps30,
+      onFps: () => { save.setFps30(!save.data.fps30); show(); },
     });
     show();
   }
