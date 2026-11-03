@@ -247,3 +247,27 @@ Decide with him then:
 - If late-game draw on his phone is still over about 10 ms, the next step is a WebGL renderer (PixiJS or a small custom
   sprite batcher) replacing `src/render` only. Write that as its own plan; don't start it from this one.
 - The Capacitor wrapper for the App Store is separate and can happen any time (see the doc above).
+
+---
+
+## Result (v0.11.0 to v0.11.5, shipped 2026-11-03)
+
+`node tools/perfbench.mjs` (headless Chromium, Dan's winning run replayed; the later runs are at the phone default Graphics = Balanced).
+Draw ms per frame, average and 95th percentile:
+
+| Checkpoint | v0.10.12 | v0.11.5 |
+| --- | --- | --- |
+| 2:00 | 11.1 / 7 | 5.9 / 2 |
+| 5:00 | 24.6 / 209 | 13.4 / 98 |
+| 8:00 | 29.1 / 323 | 12.7 / 96 |
+| 10:00 | 25.1 / 284 | 13.2 / 98 |
+
+What mattered, in order: Balanced graphics (fewer pixels), the Nova ring (770 shards cost 14 ms; now 5), cached text and
+the paused-frame skip. Sprite rasters at drawn size (M2) did not move the headless numbers; they should help a phone GPU's memory.
+Deviations from the plan: the HUD panels are not an offscreen layer (only the text is cached); `sw.js` CACHE was not bumped
+(network-first worker, its test pins v2); M6 was the shards only, since the layer breakdown showed projectiles = 16 of 18 ms of
+the world pass at 10:00 and everything else was under 3 ms.
+Look changes to know about: the neon floor paints at 1x (grid lines a touch softer); past 150 Nova shards on screen the faint
+glow goes, past 400 the white core goes and the caps are square.
+`tools/perfbench.mjs --layers` prints the overlay's numbers; headless attributes raster time to whatever flushes it, so for
+real layer costs time each drawer with a `getImageData` flush after it (the approach used for M6).

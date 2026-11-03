@@ -374,6 +374,7 @@ function drawList(ctx, list, time) {
 // Nova shards use the same look, shorter, with their drawn size capped so a big Area doesn't fill the screen.
 const LASER_LEN = 3.2;                                 // half the bolt's length, in multiples of r
 const SHARD_LEN = 2.4;
+const SHARD_CROWD = 150, SHARD_MOB = 400;              // shards on screen above which the lighter looks are used
 const SHARD_VIS_R = 4;                                 // a shard's drawn r never exceeds this (its hit radius can)
 const LASER_PASSES = [[2.6, 0.22, 0], [1.25, 1, 0], [0.5, 1, 1]];   // [width in r, alpha, white core?]
 const laserBuckets = new Map();
@@ -393,8 +394,12 @@ function drawLasers(ctx, list, shape) {
     if (!b) laserBuckets.set(c, (b = []));
     b.push(p);
   }
-  ctx.lineCap = 'round';
+  let n = 0;
+  if (shard) for (const b of laserBuckets.values()) n += b.length;
+  const crowd = n > SHARD_CROWD, mob = n > SHARD_MOB;  // a Nova ring in flight can be 700+ shards (v0.11.5): past 150 the faint glow pass goes, past 400 the white core goes too and the caps are square
+  ctx.lineCap = mob ? 'butt' : 'round';
   for (const [w, a, core] of LASER_PASSES) {
+    if ((crowd && a < 1) || (mob && core)) continue;
     ctx.globalAlpha = a;
     for (const [c, b] of laserBuckets) {
       ctx.strokeStyle = core ? '#ffffff' : c;

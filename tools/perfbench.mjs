@@ -3,8 +3,8 @@
 // sim and draw separately, counts canvas calls per frame and lists the functions that took the most CPU. It also times
 // the one-off jobs that block the main thread (song bake scheduling, a screen of new floor, a status-tinted sprite,
 // the run save). Headless canvas is not iPhone Safari: compare numbers before and after a change, never across machines.
-//   node tools/perfbench.mjs [--at 120,300,480,590] [--frames 240] [--cpu] [--once]
-// About 1-2 minutes for the four default checkpoints. --cpu adds the top functions by self time; --once adds the one-off jobs.
+//   node tools/perfbench.mjs [--at 120,300,480,590] [--frames 240] [--cpu] [--once] [--layers]
+// About 1-2 minutes for the four default checkpoints. --cpu adds the top functions by self time; --once adds the one-off jobs, --layers the smoothed ms per draw layer (the ?debug=1 overlay's numbers).
 
 import http from 'node:http';
 import fs from 'node:fs';
@@ -21,6 +21,7 @@ try { ({ chromium } = await import('playwright')); } catch {
 const args = process.argv.slice(2);
 const opt = (n, d) => (args.includes(n) ? args[args.indexOf(n) + 1] : d);
 const flag = (n) => args.includes(n);
+const WITHOUT = opt('--without', '');                      // e.g. fx,world,weapons: switch those draw layers off, to see what each costs (headless attributes raster time to whatever flushes it, so the overlay's layer numbers are not enough)
 const AT = opt('--at', '120,300,480,590').split(',').map(Number);
 const FRAMES = Number(opt('--frames', 240));
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,7 +41,7 @@ const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => console.log('pageerror:', e.message));
-await page.goto(`http://localhost:${server.address().port}/?god=1&seed=1`);
+await page.goto(`http://localhost:${server.address().port}/?god=1&seed=1${flag('--layers') ? '&debug=1' : ''}`);
 await page.waitForTimeout(2500);
 const cdp = await ctx.newCDPSession(page);
 
@@ -65,7 +66,7 @@ for (const at of AT) {
   }, { at, timeline: dan.timeline });
 
   if (flag('--cpu')) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 200 }); await cdp.send('Profiler.start'); }
-  const res = await page.evaluate(async (N) => {
+  const res = await page.evaluate(async ([N, w0]) => {
     const o = window.__overclocked; const r = o.game.run;
     const { createRenderer } = await import('/src/render/renderer.js');
     const canvas = document.getElementById('game');
@@ -75,6 +76,7 @@ for (const at of AT) {
       orig[k] = c2[k]; c2[k] = function (...a) { counts[k] = (counts[k] || 0) + 1; return orig[k].apply(this, a); };
     }
     if (!o.__bench) o.__bench = createRenderer(canvas, o.view);
+    for (const k of w0.split(',')) { if (k === 'fx') r.drawFx = () => {}; if (k === 'world') r.drawWorld = () => {}; if (k === 'weapons') r.drawWeapons = () => {}; }
     const sim = [], draw = [];
     for (let i = 0; i < N; i++) {
       const t0 = performance.now();
@@ -87,8 +89,9 @@ for (const at of AT) {
     const st = (a) => { const s = [...a].sort((x, y) => x - y); return { avg: +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(2), p95: +s[Math.floor(s.length * 0.95)].toFixed(2), max: +s[s.length - 1].toFixed(1) }; };
     for (const k in counts) counts[k] = Math.round(counts[k] / N);
     const w = r.world;
-    return { t: Math.round(r.time), sim: st(sim), draw: st(draw), live: { enemies: w.enemies.count, shots: w.projectiles.count, pickups: w.pickups.count, fx: w.fx.count }, perFrame: counts };
-  }, FRAMES);
+    const layers = {}; for (const k in o.debug.layers) layers[k] = +o.debug.layers[k].toFixed(1);
+    return { t: Math.round(r.time), layers, sim: st(sim), draw: st(draw), live: { enemies: w.enemies.count, shots: w.projectiles.count, pickups: w.pickups.count, fx: w.fx.count }, perFrame: counts };
+  }, [FRAMES, WITHOUT]);
   console.log(JSON.stringify(res));
 
   if (flag('--cpu')) {
