@@ -42,6 +42,34 @@ export function createDebug(params) {
     worstFrameMs: 0,
     spikes: 0,          // frames whose real interval exceeded 20 ms
     lastSpikeMs: 0,
+    // Per-layer draw timing (renderer.js calls layerMark() at the start of a frame, mark(name) after each layer, layerDone() at the end).
+    // layers: smoothed ms per layer; worst: the slowest frames of the last 30 s with their breakdown.
+    layers: {},
+    worst: [],
+    _cur: null,
+    _t: 0,
+    layerMark() {
+      dbg._cur = {};
+      dbg._t = performance.now();
+      return dbg._mark;
+    },
+    _mark(name) {
+      const n = performance.now();
+      dbg._cur[name] = (dbg._cur[name] || 0) + (n - dbg._t);
+      dbg._t = n;
+    },
+    layerDone() {
+      const c = dbg._cur;
+      let total = 0;
+      for (const k in c) { total += c[k]; dbg.layers[k] = (dbg.layers[k] || 0) + (c[k] - (dbg.layers[k] || 0)) * 0.05; }
+      const now = performance.now();
+      const w = dbg.worst;
+      while (w.length && now - w[0].at > 30000) w.shift();
+      if (total > 6 && (w.length < 10 || total > Math.min(...w.map((x) => x.total)))) {
+        w.push({ at: now, total, c });
+        if (w.length > 10) w.splice(w.indexOf(w.reduce((a, b) => (b.total < a.total ? b : a))), 1);
+      }
+    },
     onFrameStats(dtReal, simMs, renderMs, frameMs) {
       const a = 0.05;
       dbg.fps += ((dtReal > 0 ? 1 / dtReal : 60) - dbg.fps) * a;
@@ -57,6 +85,14 @@ export function createDebug(params) {
         `spikes ${dbg.spikes} (last ${dbg.lastSpikeMs.toFixed(0)}ms)  work ${dbg.worstFrameMs.toFixed(1)}ms  view ${view.w}x${view.h.toFixed(0)}`,
       ];
       if (dbg.audioState) lines.push(`audio ${dbg.audioState()}  (muted by the ringer switch)`);
+      if (dbg.audioInfo) lines.push(dbg.audioInfo());
+      const L = dbg.layers, f = (k) => (L[k] || 0).toFixed(1);
+      lines.push(`ms: ground ${f('ground')} loot ${f('loot')} zones ${f('zones')} ents ${f('ents')}`);
+      lines.push(`    shots ${f('shots')} player ${f('player')} fx ${f('fx')} hud ${f('hud')}`);
+      if (dbg.worst.length) {
+        const w = dbg.worst.reduce((a, b) => (b.total > a.total ? b : a));
+        lines.push(`worst ${w.total.toFixed(0)}ms: ` + Object.keys(w.c).filter((k) => w.c[k] >= 1).map((k) => `${k} ${w.c[k].toFixed(0)}`).join(' '));
+      }
       if (run && run.debugLines) lines.push(...run.debugLines());
       if (extraLines) lines.push(...extraLines);
       ctx.font = '11px monospace';
@@ -64,7 +100,7 @@ export function createDebug(params) {
       ctx.textBaseline = 'top';
       const y0 = view.insetTop + 114;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(6, y0 - 3, 300, lines.length * 13 + 6);
+      ctx.fillRect(6, y0 - 3, 380, lines.length * 13 + 6);
       ctx.fillStyle = '#9fe870';
       for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], 10, y0 + i * 13);
     },

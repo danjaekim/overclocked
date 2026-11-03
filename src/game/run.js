@@ -117,19 +117,24 @@ export function createRun({ seed, view, debug, classId = DEFAULT_CLASS, sfx = ()
       }
     },
 
-    drawWorld(ctx, view) {
+    // `mark` (debug overlay only, null otherwise): mark('name') books the time since the last mark to that layer.
+    drawWorld(ctx, view, mark = null) {
       drawShrines(ctx, view, run);
       drawGems(ctx, view, run);
       drawOre(ctx, view, run);
       drawChests(ctx, view, run);
       drawHearts(ctx, view, run);
       drawMagnets(ctx, view, run);
+      if (mark !== null) mark('loot');
       drawHazards(ctx, run);
       drawBossZones(ctx, run);
       drawClassTrait(ctx, run);                                 // Rain of Arrows
+      if (mark !== null) mark('zones');
       drawEnemies(ctx, view, run);
+      if (mark !== null) mark('ents');
       drawEnemyShots(ctx, run);
       drawProjectiles(ctx, view, run);
+      if (mark !== null) mark('shots');
     },
 
     // Weapon visuals (swings, blades, auras) draw above the player.

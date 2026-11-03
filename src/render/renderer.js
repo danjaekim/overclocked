@@ -161,12 +161,16 @@ function drawEvolvedGlow(p, t, front) {
     const ox = run ? run.cam.ox : 0;     // screen shake offset
     const oy = run ? run.cam.oy : 0;
     ctx.setTransform(s, 0, 0, s, (view.w / 2 - cam.x + ox) * s, (view.h / 2 - cam.y + oy) * s);
+    const mark = debug.enabled ? debug.layerMark() : null;      // per-layer timing for the ?debug=1 overlay; null (free) otherwise
     if (!(GROUND && drawGround(ctx, cam, view, GROUND, run ? run.time : 0))) drawGrid(cam);
+    if (mark !== null) mark('ground');
     if (run) {
-      if (run.drawWorld) run.drawWorld(ctx, view);
+      if (run.drawWorld) run.drawWorld(ctx, view, mark);
       drawPlayer(run.player, run.time, run.rig);
       if (run.drawWeapons) run.drawWeapons(ctx);
+      if (mark !== null) mark('player');
       if (run.drawFx) run.drawFx(ctx, view);
+      if (mark !== null) mark('fx');
     }
 
     // screen pass
@@ -175,6 +179,8 @@ function drawEvolvedGlow(p, t, front) {
       drawHud(ctx, view, run);
       drawStick(ctx, view, input);
     }
+    if (mark !== null) mark('hud');
+    if (mark !== null) debug.layerDone();
     debug.draw(ctx, view, run);
   }
 

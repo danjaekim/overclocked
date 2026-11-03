@@ -39,6 +39,7 @@ const input = createInput(canvas, { onPause: () => game && game.togglePause(), o
 const save = createSave(browserStorage());
 const audio = createAudio({ enabled: save.data.sound, music: save.data.music, musicVolume: save.data.musicVolume, sfxVolume: save.data.sfxVolume });
 debug.audioState = () => audio.state;
+debug.audioInfo = () => `music ${audio.music.mode || '-'} lite ${audio.lite} bakedSongs ${audio.music.bakedIds.length}`;   // 'live' for more than ~15 s into a run = the offline bake failed here
 game = createGame({ view, input, overlays, rotate, debug, params, save, runSave: createRunSave(browserStorage()), audio, sandboxHost: sandboxEl });
 
 // a soft tick on every menu button

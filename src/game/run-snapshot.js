@@ -109,6 +109,7 @@ export function snapshotRun(run) {
     const path = registry.get(v);
     if (path) return { d: path };
     if (instIdx.has(v)) return { i: instIdx.get(v) };
+    if (typeof v.onRig === 'function') return null;           // a rig instance from before a rig edit (applyRig builds new ones): burning enemies and shots in flight can still point at it
     const ctor = v.constructor && v.constructor.name;
     if (TYPED[ctor] && ArrayBuffer.isView(v)) return { t: ctor, v: Array.from(v, val) };
     return { r: node(v) };
@@ -152,7 +153,8 @@ export function snapshotRun(run) {
   const pools = {};
   for (const name of POOLS) {
     trail.length = 0; trail.push(`world.${name}`);
-    pools[name] = w[name].active.map((o) => node(o));
+    const live = name === 'projectiles' ? w[name].active.filter((o) => !(o.inst && typeof o.inst.onRig === 'function' && !instIdx.has(o.inst))) : w[name].active;   // a shot of an old rig is about to expire; it cannot be thawed without its weapon
+    pools[name] = live.map((o) => node(o));
   }
   return {
     format: SNAPSHOT_FORMAT,

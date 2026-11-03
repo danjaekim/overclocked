@@ -274,7 +274,16 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
 
   // Out of view: pause, so the run waits. In the editor or a chest the run is already frozen.
   // A phone can freeze or kill the page without a pagehide, so a run in progress is also saved every 15 s.
-  setInterval(() => { if (game.state === 'run') saveRun(); }, 15000);
+  // In a big fight (over 200 shots in flight, or a boss up) a save costs a visible hitch, so it waits 3 s and tries again; the menu, pause and pagehide saves are unchanged.
+  let retry = false;
+  const autosave = () => {
+    const run = game.run;
+    retry = false;
+    if (game.state !== 'run') return;
+    if (run && (run.world.projectiles.count > 200 || run.bossAlive)) { retry = true; setTimeout(autosave, 3000); return; }
+    saveRun();
+  };
+  setInterval(() => { if (!retry) autosave(); }, 15000);
   const onHidden = () => { if (game.state === 'run') pause(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) onHidden(); });
   window.addEventListener('pagehide', onHidden);

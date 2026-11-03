@@ -74,6 +74,28 @@ test('shots in flight and burning enemies point at the rebuilt weapon instances,
   assert.ok(b.world.enemies.active.filter((e) => e.burnSrc).every((e) => insts.has(e.burnSrc)));
 });
 
+test('a rig edit mid-fight does not stop the run from freezing (old shots and burning enemies are let go)', () => {
+  const a = rigged();
+  let flying = 0;
+  let burning = 0;
+  for (let i = 0; i < 30 * 60 && !(flying > 3 && burning > 0); i++) {
+    walk(a, STEP * 3, i * 3);
+    flying = a.world.projectiles.active.filter((p) => p.inst).length;
+    burning = a.world.enemies.active.filter((e) => e.burnSrc).length;
+  }
+  assert.ok(flying > 3 && burning > 0, `${flying} shots, ${burning} burning`);
+  a.rigState = levelUp(a.rigState, 'nova');
+  applyRig(a);                                                  // new instances; the shots and burns still hold the old ones
+  assert.ok(a.world.enemies.active.some((e) => e.burnSrc) || a.world.projectiles.active.some((p) => p.inst), 'stale references remain');
+  const b = thaw(freeze(a));
+  const insts = new Set(b.rig.insts);
+  assert.ok(b.world.projectiles.active.every((p) => !p.inst || insts.has(p.inst)));
+  assert.ok(b.world.enemies.active.every((e) => !e.burnSrc || insts.has(e.burnSrc)));
+  assert.equal(b.world.enemies.count, a.world.enemies.count);
+  walk(b, 20, 1200);                                            // and it plays on
+  assert.ok(b.time > a.time + 19 && !b.over);
+});
+
 test('a thawed run plays on: it fights, levels, and a second freeze and thaw works too', () => {
   const a = rigged();
   walk(a, 30);
