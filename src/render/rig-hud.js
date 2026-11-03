@@ -8,6 +8,7 @@ import { PALETTE, CHAIN_COLORS, TYPE_COLOR } from '../data/palette.js';
 import { chainCost } from '../rig/chain.js';
 import { TEST_CHAINS } from '../rig/presets.js';
 import { drawChestArrows, drawShrineArrows } from './shrines.js';
+import { drawText, textWidth } from './textcache.js';
 
 const SLOT = 34;
 const GAP = 4;
@@ -48,20 +49,11 @@ export function drawSandboxHud(ctx, view, run) {
   chamfer(ctx, 12.5, y0 + 0.5, bw - 1, bh - 1, 5);
   ctx.stroke();
 
-  ctx.fillStyle = PALETTE.rig;
-  ctx.font = `700 20px ${DISPLAY}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(fmtTime(run.time), view.w / 2 + 28, y0 - 3);
-  ctx.textAlign = 'left';
-  ctx.font = `500 12px ${MONO}`;
-  ctx.fillStyle = PALETTE.dim;
+  const F_STAT = `500 12px ${MONO}`;                             // HUD text comes from cached images (textcache.js)
+  drawText(ctx, fmtTime(run.time), view.w / 2 + 28, y0 - 3, `700 20px ${DISPLAY}`, PALETTE.rig, 'center', 'top');
   const stat = 'LV ' + p.level + '  KILLS ' + run.kills;
-  ctx.fillText(stat, 12, y0 + bh + 6);
-  if (run.rigRun) {
-    ctx.fillStyle = PALETTE.gold;
-    ctx.fillText('GOLD ' + run.ore, 12 + ctx.measureText(stat + '  ').width, y0 + bh + 6);
-  }
+  drawText(ctx, stat, 12, y0 + bh + 6, F_STAT, PALETTE.dim, 'left', 'top');
+  if (run.rigRun) drawText(ctx, 'GOLD ' + run.ore, 12 + textWidth(F_STAT, stat + '  '), y0 + bh + 6, F_STAT, PALETTE.gold, 'left', 'top');
 
   if (run.rig) {
     const rows = run.rig.chains;
@@ -80,11 +72,7 @@ export function drawSandboxHud(ctx, view, run) {
     ctx.strokeStyle = 'rgba(255,46,151,0.7)';
     ctx.lineWidth = 1;
     ctx.strokeRect(bx0 + 0.5, by0 + 0.5, bwid - 1, 9);
-    ctx.fillStyle = PALETTE.ink;
-    ctx.font = `700 12px ${DISPLAY}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(boss.def.name, view.w / 2, by0 - 2);
+    drawText(ctx, boss.def.name, view.w / 2, by0 - 2, `700 12px ${DISPLAY}`, PALETTE.ink, 'center', 'bottom');
   }
   if (run.rigRun) { drawChestArrows(ctx, view, run); drawShrineArrows(ctx, view, run); }                // an elite's chest waits where it fell: an arrow points at it
   if (run.toast) {
@@ -120,11 +108,7 @@ function drawStrip(ctx, run, chain, x, y) {
   ctx.fillStyle = color;                                          // the chain's badge: the same colour rings its attacks in the arena
   chamfer(ctx, x, y, 22, SLOT, 5);
   ctx.fill();
-  ctx.fillStyle = PALETTE.bg;
-  ctx.font = `700 17px ${DISPLAY}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(CHAIN_NAMES[chain.index], x + 11, y + SLOT / 2 + 1);
+  drawText(ctx, CHAIN_NAMES[chain.index], x + 11, y + SLOT / 2 + 1, `700 17px ${DISPLAY}`, PALETTE.bg, 'center', 'middle');
   x += 24;
   const waiting = (rule.while === 'moving' && !run.player.moving) || (rule.while === 'still' && run.player.moving);
   ctx.fillStyle = PALETTE.panel;
@@ -134,14 +118,8 @@ function drawStrip(ctx, run, chain, x, y) {
   ctx.lineWidth = 1;
   chamfer(ctx, x + 0.5, y + 0.5, 53, SLOT - 1, 5);
   ctx.stroke();
-  ctx.fillStyle = waiting ? PALETTE.dim : PALETTE.ink;
-  ctx.font = `700 12px ${DISPLAY}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(rule.name, x + 27, y + SLOT / 2 - 5);
-  ctx.font = `500 10px ${MONO}`;
-  ctx.fillStyle = PALETTE.dim;
-  ctx.fillText(rule.short, x + 27, y + SLOT / 2 + 8);
+  drawText(ctx, rule.name, x + 27, y + SLOT / 2 - 5, `700 12px ${DISPLAY}`, waiting ? PALETTE.dim : PALETTE.ink, 'center', 'middle');
+  drawText(ctx, rule.short, x + 27, y + SLOT / 2 + 8, `500 10px ${MONO}`, PALETTE.dim, 'center', 'middle');
 
   const slots = chain.def.slots;
   const dead = new Set(chain.problems.map((q) => q.idx));
@@ -168,11 +146,7 @@ function drawStrip(ctx, run, chain, x, y) {
     ctx.lineWidth = lit > 0 ? 2 : 1;
     ctx.strokeRect(sx + 0.5, y + 0.5, SLOT - 1, SLOT - 1);
     drawIcon(ctx, piece, sx + (SLOT - 20) / 2, y + 2, 20);
-    ctx.fillStyle = lit > 0 ? PALETTE.rigHot : PALETTE.ink;
-    ctx.font = `700 8px ${DISPLAY}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(piece.short, sx + SLOT / 2, y + SLOT - 3);
+    drawText(ctx, piece.short, sx + SLOT / 2, y + SLOT - 3, `700 8px ${DISPLAY}`, lit > 0 ? PALETTE.rigHot : PALETTE.ink, 'center', 'alphabetic');
     ctx.globalAlpha = 1;
   }
 
@@ -193,11 +167,7 @@ function drawStrip(ctx, run, chain, x, y) {
   }
   const label = chain.def.key ? TEST_CHAINS[chain.def.key].name : run.rigRun ? '' : 'Custom';
   if (label) {                                                   // the chain's name, under its strip
-    ctx.fillStyle = color;
-    ctx.font = `700 12px ${DISPLAY}`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(label, x, y + SLOT + 15);
+    drawText(ctx, label, x, y + SLOT + 15, `700 12px ${DISPLAY}`, color, 'left', 'top');
   }
 }
 

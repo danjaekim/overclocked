@@ -3,6 +3,7 @@
 
 import { elemBits, F_FROST, F_FIRE, F_STORM } from './shots.js';
 import { PALETTE as P, CHAIN_COLORS } from '../data/palette.js';
+import { drawGlyphs } from './textcache.js';
 
 const DISPLAY = '"Chakra Petch", system-ui, sans-serif';      // self-hosted (fonts/)
 
@@ -392,27 +393,18 @@ export function drawFx(ctx, view, run) {
     ctx.stroke();
   }
 
-  // numbers: normal first, then crits on top
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
+  // numbers: normal first, then crits on top. Each is a run of cached glyph images (textcache.js), outline included.
   for (let pass = 0; pass < 2; pass++) {
     const wantCrit = pass === 1;
-    ctx.font = wantCrit ? (numBig ? `700 28px ${DISPLAY}` : `700 16px ${DISPLAY}`) : (numBig ? `700 17px ${DISPLAY}` : `700 12px ${DISPLAY}`);
-    ctx.fillStyle = wantCrit ? P.gold : '#ffffff';
-    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-    ctx.lineWidth = wantCrit ? 3.5 : 2.5;
+    const font = wantCrit ? (numBig ? `700 28px ${DISPLAY}` : `700 16px ${DISPLAY}`) : (numBig ? `700 17px ${DISPLAY}` : `700 12px ${DISPLAY}`);
+    const base = wantCrit ? P.gold : '#ffffff';
+    const sw = wantCrit ? 3.5 : 2.5;
     for (let i = 0; i < list.length; i++) {
       const f = list[i];
       if (f.kind !== KIND_NUMBER || f.crit !== wantCrit) continue;
       if (f.x < x0 || f.x > x1 || f.y < y0 || f.y > y1) continue;
       ctx.globalAlpha = Math.min(wantCrit ? 1 : 0.7, (f.ttl / f.maxTtl) * 2.2);   // plain numbers sit back a little
-      ctx.strokeText(f.text, f.x, f.y);
-      if (f.c2 !== '') {
-        ctx.fillStyle = f.c2;
-        ctx.fillText(f.text, f.x, f.y);
-        ctx.fillStyle = wantCrit ? P.gold : '#ffffff';
-      } else ctx.fillText(f.text, f.x, f.y);
+      drawGlyphs(ctx, f.text, f.x, f.y, font, f.c2 !== '' ? f.c2 : base, 'rgba(0,0,0,0.75)', sw);
     }
   }
   ctx.globalAlpha = 1;
