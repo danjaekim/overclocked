@@ -112,14 +112,15 @@ Added in v0.6.0 so a run keeps asking you to rebuild: chains differ, energy bind
 | Chassis | Rule | Slots | Battery | Recharge | Quirk |
 | --- | --- | --- | --- | --- | --- |
 | Standard (start) | Pulse 1 s | 3-6 | 10 | 6/s | None |
-| Capacitor | Charge: when full, at most once a second | 4-6 | 24 | 5/s | x1.5 power |
-| Overdrive | Rapid 0.6 s | 3-4 | 8 | 8/s | Every piece costs 1 more (v0.9.0: the x1.3 power is gone) |
+| Capacitor | Charge: when full, at most once a second | 4-6 | 24 | 6/s | x1.6 power (v0.11.6: was 5/s and x1.5) |
+| Overdrive | Rapid 0.6 s | 3-5 | 10 | 9/s | None: a fast, smaller chain (v0.11.6: the +1 cost per piece is gone; was 3-4 slots, 8 battery, 8/s) |
 | Kiln | Pulse 1 s | 4-6 | 12 | 6/s | Element amplifier (v0.9.1): elements held by this chain hit as if held twice (burn x2, +1 chill stack, +2 shock jumps), and Steam, Plasma and Static come twice as often. No cost discount |
 | Relay | Pulse 1 s | 5-6 | 14 | 6/s | Payload doubler (v0.9.1): each payload run repeats 0.15 s later at 60% power, for free (from its own pool of 8, so nested triggers work), and a repeat never repeats again |
-| Strider | Stride: every 80 px you move | 4-6 | 10 | 7/s, only while moving | Fire rate is move speed (v0.9.2): about 1.9 a second at base speed, 2.6 with +40% speed. A jump of 50 px or more in one tick (a respawn) does not count |
+| Strider | Stride: every 80 px you move | 4-6 | 10 | 7/s | x1.25 power (v0.11.6: recharges standing still too, so a packed screen slows it but does not drain it). Fire rate is move speed (v0.9.2): about 1.9 a second at base speed, 2.6 with +40% speed. A jump of 50 px or more in one tick (a respawn) does not count |
 | Anchor | Anchor 0.6 s, only while still | 4-6 | 16 | 8/s, only while still | Turret (v0.9.2): x1.6 power and +50% area (radius, range, arc, jump). It stacks with the Turret Mode passive |
 | Reaper | On kill, at most twice a second, or every 3 s if nothing dies | 4-5 | 12 | 5/s | Each kill adds 0.3 energy (v0.9.0; was 4 a second and 0.5) |
 
+- v0.11.6 (Dan: Overdrive, Strider and Capacitor felt weak after the v0.8-0.9 pressure changes): `tools/chassisbench.mjs` puts every chain from your past runs, with your piece levels, on each chassis at Mk I. Before, against Standard on a crowd moving half the time: Overdrive 0.58, Strider 0.63, Capacitor 1.10, Kiln 1.13, Anchor 1.20, Relay 2.19 (Reaper reads low there, as the bench has few kills). After: Overdrive 1.17, Strider 1.10, Capacitor 1.23. Relay was left as it is.
 - v0.9.3 note: Overdrive holds at most 4 slots, so a 5-piece chain swapped onto it loses its last piece (the swap test reads about half). That is its trade; nothing was changed. On Dan's replays the old rigs lost about a third of their late dps to the nerfs (free payloads, Reaper rate), and still won.
 - v0.9.0 cut Long frame and Spite: neither was ever picked and their quirks (more slots, a heal on hit) did not matter late. Saved chains on either become Standard, keeping mark, pieces and upgrades. Standard now grows to 6 slots. Plan: `docs/plan-v09.md`.
 - Mk II and Mk III add a starting slot (up to the max), 25% battery and +1/s each.

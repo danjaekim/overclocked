@@ -47,7 +47,7 @@ test('v0.9.0: chassis cards never offer a cut chassis, and Standard grows to 6 s
 
 test('v0.9.0: Overdrive no longer has a power bonus, and Reaper is slower', () => {
   assert.equal(CHASSIS.overdrive.quirk.power, undefined);
-  assert.equal(CHASSIS.overdrive.quirk.costAdd, 1);
+  assert.equal(CHASSIS.overdrive.quirk.costAdd, undefined, 'v0.11.6: no extra cost per piece');
   assert.equal(CHASSIS.reaper.quirk.killCharge, 0.3);
 });
 

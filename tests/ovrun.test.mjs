@@ -160,18 +160,19 @@ test('replacing a chassis with the same one at an equal or higher mark keeps its
 
 test('replacing a chassis: pieces move over in order, extras go to the bench and then are sold, upgrades go with the old one', () => {
   let r = rigOf(['blaster', 'flame', 'nova']);
-  for (let i = 0; i < 2; i++) r = addSlot(r, 0);
+  for (let i = 0; i < 3; i++) r = addSlot(r, 0);
   r.chains[0].slots = ['blaster', 'flame', 'nova', 'echo', 'mortar'];
   r = addPower(r, 0, 'charge');
   const a = replaceChassis(r, 0, 'kiln');
   assert.deepEqual(a.rig.chains[0].slots, ['blaster', 'flame', 'nova', 'echo', 'mortar']);
   assert.equal(a.rig.chains[0].charge, 0, 'the recharge bought for the Standard is gone');
-  const b = replaceChassis(r, 0, 'overdrive');                     // 3 slots, max 4
-  assert.deepEqual(b.rig.chains[0].slots, ['blaster', 'flame', 'nova', 'echo']);
-  assert.deepEqual([b.benched, b.sold], [['mortar'], []]);
+  r.chains[0].slots = ['blaster', 'flame', 'nova', 'echo', 'mortar', 'slam'];
+  const b = replaceChassis(r, 0, 'overdrive');                     // 3 slots, max 5
+  assert.deepEqual(b.rig.chains[0].slots, ['blaster', 'flame', 'nova', 'echo', 'mortar']);
+  assert.deepEqual([b.benched, b.sold], [['slam'], []]);
   r.bench = ['slam', 'sunder', 'heavy'];
   const c = replaceChassis(r, 0, 'overdrive');
-  assert.deepEqual(c.sold, ['mortar'], 'bench full: sold');
+  assert.deepEqual(c.sold, ['slam'], 'bench full: sold');
   assert.equal(replaceChassis(r, 4, 'kiln'), null);
 });
 
