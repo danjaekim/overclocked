@@ -2,7 +2,7 @@
 // World pass uses a camera transform; the HUD pass uses plain view coordinates.
 
 import { drawHud, drawStick } from './hud.js';
-import { getSprite } from './sprites.js';
+import { getSprite, warmTints } from './sprites.js';
 import { drawGround } from './ground.js';
 import { PALETTE, CHAIN_COLORS } from '../data/palette.js';
 import { drawShield } from './shield.js';
@@ -165,6 +165,7 @@ function drawEvolvedGlow(p, t, front) {
     if (!(GROUND && drawGround(ctx, cam, view, GROUND, run ? run.time : 0))) drawGrid(cam);
     if (mark !== null) mark('ground');
     if (run) {
+      warmTints();
       if (run.drawWorld) run.drawWorld(ctx, view, mark);
       drawPlayer(run.player, run.time, run.rig);
       if (run.drawWeapons) run.drawWeapons(ctx);

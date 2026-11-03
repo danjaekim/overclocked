@@ -174,7 +174,7 @@ THEMES.forest = { free: true, bg: '#1b2416',
 
 // Neon Noir (v0.10): near-black asphalt, a faint violet grid, soft pools of pink, cyan and violet light like puddle reflections, and the odd
 // road marking. Painted once per chunk like every theme, so it costs nothing per frame.
-THEMES.neon = { free: true, bg: PALETTE.floor,
+THEMES.neon = { free: true, res: 1, bg: PALETTE.floor,
   cell(ctx, x, y, r) {
     ctx.strokeStyle = PALETTE.grid; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, y + 0.5); ctx.lineTo(x + CELL, y + 0.5); ctx.moveTo(x + 0.5, y); ctx.lineTo(x + 0.5, y + CELL); ctx.stroke();
@@ -207,34 +207,53 @@ function paint(ctx, th, x0, y0, x1, y1, t) {
   if (th.after) th.after(ctx, x0, y0, x1, y1, t);
 }
 
-// The floor never changes, so it is painted once into 256-unit chunks (at most 2 px per unit) and the frame just blits the
-// visible ones. Every chunk paints whatever overlaps it from the same hash, so neighbours join without a seam.
+// The floor never changes, so it is painted once into 256-unit chunks (at most 2 px per unit; the neon floor is dark and soft, so 1)
+// and the frame just blits the visible ones. Every chunk paints whatever overlaps it from the same hash, so neighbours join without
+// a seam. Painting is a long job (about 25 ms a chunk on a laptop), so a frame paints at most one: a visible chunk that is not ready
+// shows the flat floor colour for a frame or two, and when nothing visible is missing the spare time paints the ring just off screen
+// that the camera is heading for (v0.11.4).
 const CH = 256, MAX_CHUNKS = 48;
 const chunks = new Map();
-function chunkFor(th, id, cx, cy, res) {
-  const key = `${id}|${res}|${cx}|${cy}`;
-  let c = chunks.get(key);
-  if (c) { c.used = ++tick; return c.canvas; }
+const keyOf = (id, res, cx, cy) => `${id}|${res}|${cx}|${cy}`;
+function paintChunk(th, id, cx, cy, res) {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = Math.ceil(CH * res);
   const g = canvas.getContext('2d'); g.scale(res, res); g.translate(-cx * CH, -cy * CH);
   const pad = th.free ? 90 : 0;
   paint(g, th, cx * CH - pad, cy * CH - pad, (cx + 1) * CH + pad, (cy + 1) * CH + pad, 0);
-  chunks.set(key, { canvas, used: ++tick });
-  return canvas;
+  const c = { canvas, used: ++tick };
+  chunks.set(keyOf(id, res, cx, cy), c);
+  return c;
 }
 let tick = 0;
+let lastX = 0, lastY = 0;
 
 export function drawGround(ctx, cam, view, id, t) {
   const th = THEMES[id]; if (!th) return false;
-  const res = Math.min(2, Math.max(1, view.scale || 1));
+  const res = th.res || Math.min(2, Math.max(1, view.scale || 1));
   const x0 = cam.x - view.w / 2, y0 = cam.y - view.h / 2, x1 = cam.x + view.w / 2, y1 = cam.y + view.h / 2;
   const e = 1 / res;                                   // a device pixel of overlap hides hairlines between chunks
+  let painted = false;
   for (let cy = Math.floor(y0 / CH); cy * CH < y1; cy++) for (let cx = Math.floor(x0 / CH); cx * CH < x1; cx++) {
-    ctx.drawImage(chunkFor(th, id, cx, cy, res), cx * CH, cy * CH, CH + e, CH + e);
+    let c = chunks.get(keyOf(id, res, cx, cy));
+    if (!c && !painted) { c = paintChunk(th, id, cx, cy, res); painted = true; }
+    if (c) { c.used = ++tick; ctx.drawImage(c.canvas, cx * CH, cy * CH, CH + e, CH + e); }
+    else { ctx.fillStyle = th.bg; ctx.fillRect(cx * CH, cy * CH, CH + e, CH + e); }
   }
-  if (chunks.size > MAX_CHUNKS) {
-    const old = [...chunks.entries()].sort((a, b) => a[1].used - b[1].used);
-    for (let i = 0; i < old.length - MAX_CHUNKS + 12; i++) chunks.delete(old[i][0]);
+  if (!painted) {                                      // spare time: the missing chunk just off screen nearest where the camera is heading
+    const px = cam.x + (cam.x - lastX) * 40, py = cam.y + (cam.y - lastY) * 40;
+    let best = null, bd = 1e18;
+    for (let cy = Math.floor((y0 - CH) / CH); cy * CH < y1 + CH; cy++) for (let cx = Math.floor((x0 - CH) / CH); cx * CH < x1 + CH; cx++) {
+      if (chunks.has(keyOf(id, res, cx, cy))) continue;
+      const d = (cx * CH + CH / 2 - px) ** 2 + (cy * CH + CH / 2 - py) ** 2;
+      if (d < bd) { bd = d; best = [cx, cy]; }
+    }
+    if (best) paintChunk(th, id, best[0], best[1], res);
+  }
+  lastX = cam.x; lastY = cam.y;
+  while (chunks.size > MAX_CHUNKS) {                   // drop the least recently used
+    let oldK = null, oldU = Infinity;
+    for (const [k, c] of chunks) if (c.used < oldU) { oldU = c.used; oldK = k; }
+    chunks.delete(oldK);
   }
   return true;
 }

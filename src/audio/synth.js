@@ -25,10 +25,13 @@ export function lineMap(lines, res) {
   return map;
 }
 
-// ---- shared buffers per context ----
-const cache = new WeakMap();
+// ---- shared buffers per sample rate ----
+// An AudioBuffer is not tied to the context that made it, and every baked sound effect and song runs in its own offline
+// context: sharing by sample rate keeps each bake from regenerating the noise, the metal and the reverb impulses (~20 ms
+// each time, v0.11.4).
+const cache = new Map();
 function assets(ctx) {
-  let a = cache.get(ctx);
+  let a = cache.get(ctx.sampleRate);
   if (a) return a;
   const sr = ctx.sampleRate;
   const white = ctx.createBuffer(1, sr, sr);
@@ -45,7 +48,7 @@ function assets(ctx) {
   }
   const curves = {};
   a = { white, metal, imps: {}, curves };
-  cache.set(ctx, a);
+  cache.set(ctx.sampleRate, a);
   return a;
 }
 // dark impulse response: noise whose highs die faster than its lows; `secs` long, cached per length

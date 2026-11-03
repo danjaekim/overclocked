@@ -143,7 +143,7 @@ export function createSfx(ctx, dest, { bake = true } = {}) {
         if (r && r.then) r.then(done, () => setTimeout(next, 60)); else oc.oncomplete = (e) => done(e.renderedBuffer);
       } catch (e) { setTimeout(next, 60); }
     };
-    setTimeout(next, 300);
+    setTimeout(next, 1200);                                      // not on the tap that starts the run
   }
   const playBaked = (name, t, rate) => {
     const src = ctx.createBufferSource();

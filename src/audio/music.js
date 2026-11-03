@@ -141,7 +141,6 @@ export function createMusic() {
   function renderBuffer(id) {
     const sg = SONGS[id], loop = loopSecs(sg), N = Math.ceil((loop + BAKE_TAIL + 0.2) * BAKE_RATE);
     const oc = new (OAC())(2, N, BAKE_RATE);
-    renderSong(oc, oc.destination, id, sg.bars, 0);                       // steps start at t = 0.05
     const finish = (r) => {
       const off = Math.round(0.05 * BAKE_RATE), len = Math.round(loop * BAKE_RATE);
       const buf = ctx.createBuffer(2, len, BAKE_RATE);
@@ -152,15 +151,32 @@ export function createMusic() {
       }
       return buf;
     };
+    // Scheduling a whole song is one long job (up to ~0.5 s for the boss song on a laptop, more on a phone), so it goes four steps
+    // (a quarter of a bar, about 6 ms on a laptop) per timer tick and the game never waits on it (v0.11.4). Steps start at t = 0.05, as renderSong does.
     return new Promise((resolve, reject) => {
-      const r = oc.startRendering();
-      if (r && r.then) r.then((b) => resolve(finish(b)), reject);
-      else oc.oncomplete = (e) => resolve(finish(e.renderedBuffer));
+      try {
+        const v = voices(songGraph(oc, oc.destination, sg)), sd = 60 / sg.bpm / 4;
+        v.lite = 0;
+        let n = 0;
+        const total = sg.bars * 16;
+        const slice = () => {
+          try {
+            for (let k = 0; k < 4; k++, n++) sg.step(v, Math.floor(n / 16), n % 16, 0.05 + n * sd, sd);
+            if (n < total) { setTimeout(slice, 0); return; }
+            const r = oc.startRendering();
+            if (r && r.then) r.then((b) => resolve(finish(b)), reject);
+            else oc.oncomplete = (e) => resolve(finish(e.renderedBuffer));
+          } catch (e) { reject(e); }
+        };
+        slice();
+      } catch (e) { reject(e); }
     });
   }
 
+  let bakeAfter = 0;      // the first bake waits a couple of seconds, so it does not land on the tap that starts a run
   function pump() {
     if (baking || !queue.length || !ctx || !OAC()) return;
+    if (!bakeAfter) { bakeAfter = 1; setTimeout(pump, 2000); return; }
     const id = queue.shift();
     if (baked[id] || failed[id]) { pump(); return; }
     baking = true;

@@ -120,10 +120,10 @@ for (const at of AT) {
       t = performance.now(); let n = 0;
       for (const id of sp.SPRITE_IDS) if (sp.getSprite(id, false, ST.BURN | ST.SHOCK | ST.CHILL)) n++;
       out.tintMsEach = +((performance.now() - t) / Math.max(1, n)).toFixed(1);
-      const g = await import('/src/render/ground.js'); const c = document.createElement('canvas').getContext('2d');
+      const g = await import('/src/render/ground.js'); const c = { drawImage() {}, fillRect() {}, set fillStyle(v) {} };   // a stub: only the painting of the chunk is timed
       t = performance.now();
-      for (let k = 0; k < 4; k++) g.drawGround(c, { x: 1e5 + k * 3000 + r.time, y: 5000 }, { w: 480, h: 1040, scale: 2 }, 'neon', 0);
-      out.newFloorScreenMs = +((performance.now() - t) / 4).toFixed(1);
+      for (let k = 0; k < 4; k++) g.drawGround(c, { x: 1e5 + k * 3000 + r.time, y: 5000 }, { w: 480, h: 1040, scale: 2 }, 'neon', 0);   // a frame paints at most one chunk (v0.11.4), so this is the cost of one
+      out.floorChunkMs = +((performance.now() - t) / 4).toFixed(1);
       return out;
     });
     console.log('  once: ' + JSON.stringify(once));

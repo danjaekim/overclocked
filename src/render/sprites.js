@@ -153,3 +153,25 @@ export function getSprite(id, flash = false, status = 0) {
   if (mask & ST.FROZEN) mask &= ~ST.CHILL;
   return mask ? tinted(s, mask) : s.canvas;
 }
+
+// Builds the status-tinted copies of the enemy sprites in the background, one per frame, so the first time a crowd catches fire
+// and shocks at once does not stall a frame building them (v0.11.4). Called once a frame from the renderer; it does nothing once
+// every enemy (and elite body) has every status mix the game can show: subsets of burn / shock / chill, and frozen with burn / shock.
+let warmQ = null, warmI = 0, warmWait = 0;
+export function warmTints() {
+  if (warmQ === null) {
+    warmQ = [];
+    const masks = [];
+    const B = ST.BURN, S = ST.SHOCK, C = ST.CHILL, F = ST.FROZEN;
+    for (const m of [B, S, C, B | S, B | C, S | C, B | S | C, F, F | B, F | S, F | B | S]) masks.push(m);
+    const ids = Object.keys(ENEMIES).filter((k) => !ENEMIES[k].boss).concat(Object.keys(SPRITE_ART).filter((k) => k.startsWith('elite_')));
+    for (const id of ids) for (const m of masks) warmQ.push([id, m]);
+  }
+  if (warmI >= warmQ.length) return;
+  const [id, mask] = warmQ[warmI];
+  const sp = load(id);
+  if (sp && !sp.canvas && ++warmWait < 180) return;           // its art is still loading: wait, but not forever
+  warmWait = 0;
+  warmI++;
+  if (sp && sp.canvas) tinted(sp, mask);
+}
