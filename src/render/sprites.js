@@ -6,7 +6,7 @@
 import { SPRITE_ART as BASE_ART } from './sprite-art.js';
 import { ELITE_ART } from './elite-art.js';
 import { BOSS_ART } from './boss-art.js';
-import { NEON_ART } from './neon-art.js';
+import { NEON_ART, PILOT_SPRITES } from './neon-art.js';
 
 const SPRITE_ART = { ...BASE_ART, ...ELITE_ART, ...BOSS_ART, ...NEON_ART };          // the old woodcut art stays underneath; the Neon Noir sprites (v0.10.1) replace it id by id
 import { ST } from '../data/statuses.js';
@@ -41,7 +41,7 @@ export function rasterSize(id) {
   else if (id === 'chest') units = 46;
   else if (id === 'bosschest') units = 46 * 1.4;
   else if (id === 'shrine') units = 76;
-  else if (BASE_ART[id]) units = 68;                      // a class: the player sprite is 68 units wide (renderer.js SPRITE_W)
+  else if (BASE_ART[id] || PILOT_SPRITES.includes(id)) units = 68;                      // a class: the player sprite is 68 units wide (renderer.js SPRITE_W)
   if (!units) return SIZE;
   return Math.max(MIN_SIZE, Math.min(SIZE, Math.ceil((units * pad * PX_PER_UNIT) / 8) * 8));
 }

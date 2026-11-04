@@ -6,6 +6,7 @@ import { getSprite, warmTints } from './sprites.js';
 import { drawGround } from './ground.js';
 import { PALETTE, CHAIN_COLORS } from '../data/palette.js';
 import { drawShield } from './shield.js';
+import { PILOT_NODE_ORBIT } from './neon-art.js';
 // Floor: Neon Noir by default (v0.10); ?ground=forest tries the old forest, ?ground=forge|frost|cinder|ruins|crystal|catacomb tries the others, ?ground=grid is the old grid.
 const GROUND = new URLSearchParams(location.search).get('ground') || 'neon';
 
@@ -97,7 +98,7 @@ function drawEvolvedGlow(p, t, front) {
 
   // One node per chain orbiting the Runner, in the chain's colour; it swells for a moment each time that chain fires.
   // The glow is a faint larger dot under it (no shadowBlur).
-  const NODE_ORBIT = 25, NODE_R = 3.6, NODE_FLASH = 0.15;
+  const NODE_ORBIT = PILOT_NODE_ORBIT, NODE_R = 3.6, NODE_FLASH = 0.15;   // one orbit for every pilot hull (neon-art.js)
   function drawChainNodes(p, t, rig) {
     const n = rig.chains.length;
     if (!n) return;
