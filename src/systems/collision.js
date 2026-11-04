@@ -10,6 +10,7 @@ import { callStar } from '../behaviors/projectile.js';
 
 const RICOCHET_RANGE = 180;
 const RICOCHET_TTL = 0.5;
+const RIG_BOUNCE_KEEP = 0.85;                 // v0.11.7: a rig shot keeps this much damage per bounce (was a flat -20% on every shot)
 
 function playerContact(run) {
   const w = run.world;
@@ -50,6 +51,7 @@ function ricochet(run, pr) {
   pr.vy = pr.dy * speed;
   pr.bounce--;
   pr.pierce = 0;
+  if (pr.atk !== null) pr.dmg *= RIG_BOUNCE_KEEP;       // Ricochet passive: each bounce hits a little softer, the first hit is full strength
   if (pr.ttl < RICOCHET_TTL) pr.ttl = RICOCHET_TTL;
   return true;
 }

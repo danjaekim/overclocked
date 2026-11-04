@@ -85,7 +85,6 @@ export function applyPassives(run) {
   st.removeBySource('passive:');
   const has = run.rigState.passives || {};
   const n = (id) => Math.min(has[id] || 0, PASSIVES[id].max);
-  if (n('ricochet') > 0) st.add({ stat: 'damage', op: 'more', value: -0.2, tags: ['projectile'], source: 'passive:ricochet' });
   if (n('ricochet') > 0) st.add({ stat: 'ricochet', op: 'flat', value: PASSIVES.ricochet.values[n('ricochet') - 1], tags: ['projectile'], source: 'passive:ricochet' });
   for (let k = 0; k < n('glass_cannon'); k++) {
     st.add({ stat: 'maxHp', op: 'more', value: -0.3, source: 'passive:glass_cannon' });

@@ -29,8 +29,8 @@ export const PASSIVES = {
     fits: (rig) => hasAny(rig, TRIGGERS),
   },
   ricochet: {
-    name: 'Ricochet', max: 3, values: [1, 1, 2],
-    desc: (n) => `Shots bounce to ${PASSIVES.ricochet.values[n - 1]} more enem${PASSIVES.ricochet.values[n - 1] === 1 ? 'y' : 'ies'} and hit 20% softer`,
+    name: 'Ricochet', max: 3, values: [1, 2, 3],
+    desc: (n) => `Shots bounce to ${PASSIVES.ricochet.values[n - 1]} more enem${PASSIVES.ricochet.values[n - 1] === 1 ? 'y' : 'ies'}, each bounce 15% softer`,
     fits: (rig) => hasAny(rig, ['blaster', 'nova']),
   },
   pyromaniac: {

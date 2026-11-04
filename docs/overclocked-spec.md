@@ -300,3 +300,5 @@ Plan: `docs/plan-v10-neon.md`. The game wears a cyberpunk night-street look. Cya
 
 
 **Cast (v0.10.3).** goblin = Street Drone, brute = Bruiser, shieldbearer = Riot Unit, slinger = Spitter, splitter = Swarm Pod, shaman = Hacker, crusher = Wrecker, warlord = Enforcer (boss), seer = Oracle (boss), crate = Cargo Drop. Ids are unchanged. Runner is the player.
+
+- v0.11.7 Ricochet (Dan: pushing Blaster + Ricochet felt weak): stack 2 gave no extra bounce (values 1,1,2) and every projectile hit 20% softer even with nothing to bounce to (Blaster alone, single target -28%). Now 1/2/3 bounces, no flat penalty, each bounce keeps 85%. piecebench passives, Blaster, crowd at stack 1 and 3: +18% / +60% -> +52% / +158%; single target -28% -> 0.
