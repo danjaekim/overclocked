@@ -269,3 +269,9 @@ raw dps is 10-25k). Armor stays.
 Rookie is 0/12, 315 s on the floor and 1/5 on the replays; Courier 3/5. Part of the floor gain is the bot itself: it kites below half HP, so
 healing keeps it standing (and its Anchor firing) far longer. If Bulwark now feels too safe, lower `cap` first (data/pilots.js).
 
+
+### v0.12.5: Bulwark heal halved, 2026-11-04
+
+Dan: too strong; standing still through the whole Warlord fight he stayed at full HP. Heal per kill 1% -> 0.5% of max HP, cap 4% -> 2% a
+second (about 3.6 HP/s on 180 HP, against the Warlord's 18 a hit, 11 after braced armor). Floor (`--stand`): 3/12, 404 s, level 16.9: the
+floor bot can't tell the two apart (it is noise around the same wins), so this is set from Dan's play.

@@ -34,7 +34,7 @@ export const PILOTS = {
   },
   bulwark: {
     name: 'Bulwark', short: 'Bulwark',
-    desc: 'A turret. Starts on Anchor with Turret Mode (damage after standing still, up to Lv4). +50 max HP, +3 armor. Braced (still for 1 s): +4 armor, and each kill heals 1% max HP (up to 4% a second).',
+    desc: 'A turret. Starts on Anchor with Turret Mode (damage after standing still, up to Lv4). +50 max HP, +3 armor. Braced (still for 1 s): +4 armor, and each kill heals 0.5% max HP (up to 2% a second).',
     cost: '-15% move speed',
     start: { chassis: 'anchor', mk: 1, slots: ['blaster'], size: 4 },
     mods: [
@@ -42,7 +42,7 @@ export const PILOTS = {
       { stat: 'armor', op: 'flat', value: 3 },
       { stat: 'moveSpeed', op: 'inc', value: -0.15 },
     ],
-    sig: { id: 'turret', max: 4 }, rules: { braceArmor: 4, braceHeal: { perKill: 0.01, cap: 0.04 } },
+    sig: { id: 'turret', max: 4 }, rules: { braceArmor: 4, braceHeal: { perKill: 0.005, cap: 0.02 } },
   },
   splicer: {
     name: 'Splicer', short: 'Splicer',

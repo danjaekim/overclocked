@@ -60,7 +60,7 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 |---|---|---|---|
 | Rookie | Standard, Blaster | none | none |
 | Courier | Strider, Blaster, Momentum | +20% move speed, +40% pickup range | -20 max HP |
-| Bulwark | Anchor, Blaster, Turret Mode | +50 max HP, +3 armor, braced (1 s standing still): +4 more armor, and each kill heals 1% max HP, up to 4% a second | -15% move speed |
+| Bulwark | Anchor, Blaster, Turret Mode | +50 max HP, +3 armor, braced (1 s standing still): +4 more armor, and each kill heals 0.5% max HP, up to 2% a second | -15% move speed |
 | Splicer | Standard with Echo and Blaster, Hair Trigger | every chassis +1 starting slot and +2 max slots (8 on Standard) | 2 chains at most |
 
 The rig state carries `rig.pilot` (signature passive, slot bonuses, chain limit, brace armor), so saves, resumed runs and the editor all see it. A saved run, history entry or snapshot with no pilot is a Rookie run. Broker, Overclocker and Tinker, the picker screen, unlocks and balance numbers follow in the plan.

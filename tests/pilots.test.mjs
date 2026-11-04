@@ -56,20 +56,20 @@ test('Bulwark starts on Anchor with Turret Mode Lv1: more HP and armor, slower, 
   assert.equal(run.player.stats.mods.armor.filter((m) => m.source === 'pilot:brace').length, 1, 'one brace modifier, never stacked');
 });
 
-test('Bulwark: kills heal 1% max HP each while braced, at most 4% a second, and nothing while moving', () => {
+test('Bulwark: kills heal 0.5% max HP each while braced, at most 2% a second, and nothing while moving', () => {
   const run = start('bulwark', { god: true });
   run.director.update = () => {};
   run.world.enemies.releaseAll();                                           // no real kills: the test feeds them
-  for (let i = 0; i < 70; i++) run.update(STEP, { x: 0, y: 0 });         // braced for over a second, and the heal bank full (4% of 180 = 7.2)
-  approx(run.rig.healBank, 7.2, 1e-6);
+  for (let i = 0; i < 70; i++) run.update(STEP, { x: 0, y: 0 });         // braced for over a second, and the heal bank full (2% of 180 = 3.6)
+  approx(run.rig.healBank, 3.6, 1e-6);
   run.player.hp = 100;
   run.rig.kills = 3;
   run.update(STEP, { x: 0, y: 0 });
-  approx(run.player.hp - 100, 3 * 1.8 + 0.5 * STEP, 0.05);
+  approx(run.player.hp - 100, 3 * 0.9 + 0.5 * STEP, 0.05);
   run.player.hp = 100;
   run.rig.kills = 10;
   run.update(STEP, { x: 0, y: 0 });
-  assert.ok(run.player.hp - 100 < 7.2 - 5.4 + 0.5, `capped: ${run.player.hp - 100}`);
+  assert.ok(run.player.hp - 100 < 3.6 - 2.7 + 0.5, `capped: ${run.player.hp - 100}`);
   run.update(STEP, { x: 1, y: 0 });
   run.player.hp = 100;
   run.rig.kills = 5;
