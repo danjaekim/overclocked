@@ -5,7 +5,8 @@
 // The default boot is the full run (game/ovrun.js). The chain sandbox (game/sandbox.js) is a debug mode, opened
 // from the pause menu.
 
-import { isPilot } from '../data/pilots.js';
+import { isPilot, DEFAULT_PILOT } from '../data/pilots.js';
+import { showPilotSelect } from '../ui/pilot-select.js';
 import { createOverclockedRun } from './ovrun.js';
 import { randomSeed } from '../core/rng.js';
 import { showPause } from '../ui/pause.js';
@@ -90,12 +91,24 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   }
 
   // The full run: ten minutes, elites and a boss, a one-chain rig that you grow.
-  function startRun() {
+  function startRun(chosen = null) {
     if (runSave) runSave.clear();
-    const pilotId = isPilot(params.pilot) ? params.pilot : save.data.lastPilot;
+    const pilotId = chosen || (isPilot(params.pilot) ? params.pilot : save.data.lastPilot);
     if (!debug.god && !params.pilot) save.setLastPilot(pilotId);
     begin(createOverclockedRun({ seed: takeSeed(), view, debug, sfx, pilotId }));
     if (sandboxHost) panel = mountSandboxPanel(sandboxHost, { onEdit: () => openRigEditor(false) });
+  }
+
+  // Before each run, choose a pilot (ui/pilot-select.js). The game behind the picker is a fresh run that does not tick.
+  // ?pilot=, ?seed= and god runs skip it and start at once.
+  function newRun() {
+    if (debug.god || isPilot(params.pilot) || nextSeed != null) { startRun(); return; }
+    if (runSave) runSave.clear();                              // a new run was asked for: the old one is not offered again
+    const last = isPilot(save.data.lastPilot) ? save.data.lastPilot : DEFAULT_PILOT;
+    begin(createOverclockedRun({ seed: randomSeed(), view, debug, sfx, pilotId: last }));
+    game.state = 'picker';
+    scene('title');
+    showPilotSelect(overlays, { selected: last, won: save.data.history.filter((e) => e.won).map((e) => e.pilot), onStart: (id) => startRun(id) });
   }
 
   // Boot: pick up a saved run at its pause menu, or start a new one (also when the save cannot be read: a changed version, say).
@@ -112,7 +125,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
         runSave.clear();
       }
     }
-    startRun();
+    newRun();
   }
 
   // The chain sandbox (game/sandbox.js): an endless arena with test chains, for trying things.
@@ -180,7 +193,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
       onCompendium: () => showCompendium(overlays, { save, onBack: show }),
       onRig: () => { overlays.hide(); if (audio) audio.music.duck(false); openRigEditor(false); },
       onSandbox: game.run.sandbox ? null : () => startSandbox(),
-      onQuit: () => startRun(),
+      onQuit: () => newRun(),
       sandbox: game.run.sandbox,
       onToggleSound: () => toggleSound(show),
       sound: save.data.sound,
@@ -214,7 +227,7 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (audio) audio.music.stop();
     sfx(summary.won ? 'win' : 'lose');
     const { newBests } = debug.god ? { newBests: [] } : save.recordRun(summary);   // god-mode (debug) runs never touch the save
-    showResults(overlays, summary, { onAgain: startRun, newBests });
+    showResults(overlays, summary, { onAgain: newRun, newBests });
   }
 
   // Opens the next collected chest (run frozen): the rolls are already applied to the rig; this reveals them, and

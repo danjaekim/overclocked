@@ -52,7 +52,9 @@ await page.evaluate(() => { const r = window.__overclocked.game.run; r.player.hp
 await page.waitForSelector('.rrig'); await page.waitForTimeout(300); await shot('r8-results.png');
 const rigText = await page.locator('.rrig').innerText();
 if (!/Blaster/.test(rigText)) fail('the results do not show the rig: ' + rigText);
-await page.click('[data-act="again"]'); await page.waitForTimeout(500);
+await page.click('[data-act="again"]'); await page.waitForSelector('.overlay.pilots');          // Play again asks for a pilot (v0.12.1)
+s = await info(); if (s.state !== 'picker') fail('Play again did not open the pilot picker: ' + JSON.stringify(s));
+await page.click('[data-act="start"]'); await page.waitForTimeout(500);
 s = await info(); if (s.state !== 'run' || s.t > 2) fail('Play again did not start a new run: ' + JSON.stringify(s));
 console.log('ok', JSON.stringify(s));
 if (errs.length) { console.log('console errors', errs); process.exit(1); }

@@ -1,4 +1,5 @@
-import { pilotOf } from '../data/pilots.js';
+import { pilotOf, PILOTS, PILOT_IDS } from '../data/pilots.js';
+import { startLine } from './pilot-select.js';
 // The compendium (docs/overclocked-spec.md, "Compendium"): how chains run, every piece and rule card, the element
 // reactions (filled in as you see them happen in a run) and the rigs of your past runs. Opened from the pause menu.
 
@@ -11,7 +12,7 @@ import { VERSION } from '../version.js';
 import { TIMELINE_KEEP } from '../save/save.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const TABS = [['how', 'How it works'], ['pieces', 'Pieces'], ['rules', 'Chassis'], ['reactions', 'Reactions'], ['passives', 'Passives'], ['runs', 'Past runs']];
+const TABS = [['how', 'How it works'], ['pieces', 'Pieces'], ['rules', 'Chassis'], ['reactions', 'Reactions'], ['passives', 'Passives'], ['pilots', 'Pilots'], ['runs', 'Past runs']];
 
 const HOW = [
   ['Read left to right', 'A chain is a rule card and a row of slots. When the rule card fires, the chain runs its pieces from the left, one after another.'],
@@ -51,6 +52,15 @@ function passivesHtml() {
   }).join('');
 }
 
+// Every pilot, from the data (data/pilots.js), so this can never drift from what the game does.
+function pilotsHtml() {
+  return `<p class="sub">Pick one before each run. A pilot changes a rule for the whole run, so its bonus still works after its starting chassis is replaced.</p>` + PILOT_IDS.map((id) => {
+    const p = PILOTS[id];
+    const sig = p.sig ? `<br><em>Signature: ${esc(PASSIVES[p.sig.id].name)}, starts at Lv1 and reaches Lv${p.sig.max}. ${esc(PASSIVES[p.sig.id].desc(p.sig.max))} at Lv${p.sig.max}.</em>` : '';
+    return `<div class="cmp"><span><b>${esc(p.name)}</b> <small>${esc(startLine(p))}</small><br>${esc(p.desc)}<br><small>${esc(p.cost)}</small>${sig}</span></div>`;
+  }).join('');
+}
+
 // The newest runs as JSON, for the replay bench (tools/replaybench.mjs): paste it to Claude to test changes against your builds.
 export function runData(history) {
   return JSON.stringify({ game: 'overclocked', version: VERSION, runs: history.slice(-TIMELINE_KEEP) });
@@ -74,6 +84,7 @@ export function showCompendium(overlays, { save, onBack }) {
     if (tab === 'rules') return rulesHtml();
     if (tab === 'reactions') return reactionsHtml(save.data.discovered.reactions);
     if (tab === 'passives') return passivesHtml();
+    if (tab === 'pilots') return pilotsHtml();
     return runsHtml(save.data.history);
   };
   const render = () => overlays.show(`
