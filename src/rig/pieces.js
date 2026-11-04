@@ -150,6 +150,7 @@ export const REACTION_INFO = {
 export { CHAIN_COLORS } from '../data/palette.js';
 export const CHAIN_NAMES = 'ABCD';
 export const MAX_CHAINS = 3;            // each chain is a chassis (rig/chassis.js); a new one past this replaces one
+export const maxChains = (rig) => (rig && rig.pilot && rig.pilot.maxChains) || MAX_CHAINS;   // a pilot can lower it (Splicer: 2)
 
 // When a rule card starts an activation. `while` gates the timer: 'moving' or 'still'. `dist` replaces `every`: the card fires each time you have moved that many px. A card with `on` is not
 // timed: it runs when that event happens ('kill': any enemy dies; 'full': the chain's battery

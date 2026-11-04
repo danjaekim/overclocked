@@ -5,12 +5,14 @@
 // createSave(storage) takes the storage object so tests can pass a fake.
 
 import { migrateChassis } from '../rig/chassis.js';
+import { isPilot, DEFAULT_PILOT } from '../data/pilots.js';
 
 const KEY = 'overclocked.save.v1';
 
 export const DEFAULTS = {
   version: 3,
   lastClass: 'archer',
+  lastPilot: 'rookie',                // the pilot of the last run started (data/pilots.js)
   unlocked: [],                       // class ids unlocked through play
   bests: { time: 0, kills: 0, level: 0 },
   runs: 0,
@@ -41,6 +43,7 @@ export function entryFromSummary(summary, now = Date.now()) {
   return {
     t: now,
     cls: summary.classId,
+    pilot: isPilot(summary.pilot) ? summary.pilot : DEFAULT_PILOT,
     won: !!summary.won,
     time: Math.floor(summary.time),
     kills: summary.kills,
@@ -67,7 +70,7 @@ function cleanRig(r) {
   const levels = {};
   if (r.levels && typeof r.levels === 'object') for (const [k, v] of Object.entries(r.levels).slice(0, 20)) if (Number.isFinite(v)) levels[k === 'pierce' ? 'sunder' : String(k).slice(0, 20)] = Math.max(1, Math.min(5, Math.floor(v)));
   const passives = {};
-  if (r.passives && typeof r.passives === 'object') for (const [k, v] of Object.entries(r.passives).slice(0, 20)) if (Number.isFinite(v)) passives[String(k).slice(0, 20)] = Math.max(1, Math.min(3, Math.floor(v)));
+  if (r.passives && typeof r.passives === 'object') for (const [k, v] of Object.entries(r.passives).slice(0, 20)) if (Number.isFinite(v)) passives[String(k).slice(0, 20)] = Math.max(1, Math.min(4, Math.floor(v)));   // 4: a pilot's signature passive
   return { chains, levels, passives };
 }
 
@@ -101,7 +104,7 @@ function cleanEntry(e) {
   for (const k of ['t', 'time', 'kills', 'level']) if (!Number.isFinite(e[k]) || e[k] < 0) return null;
   const pairs = (l) => (Array.isArray(l) ? l.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1])).slice(0, 12).map((x) => [x[0], x[1]]) : []);
   return {
-    t: e.t, cls: e.cls, won: !!e.won, time: Math.floor(e.time), kills: Math.floor(e.kills), level: Math.floor(e.level),
+    t: e.t, cls: e.cls, pilot: isPilot(e.pilot) ? e.pilot : DEFAULT_PILOT, won: !!e.won, time: Math.floor(e.time), kills: Math.floor(e.kills), level: Math.floor(e.level),
     seed: Number.isFinite(e.seed) ? e.seed : 0, boss: !!e.boss,
     dmg: Number.isFinite(e.dmg) ? e.dmg : 0, dps: Number.isFinite(e.dps) ? e.dps : 0,
     gear: cleanGear(e.gear),
@@ -129,6 +132,7 @@ export function normalize(raw) {
   const out = clone(DEFAULTS);
   if (!raw || typeof raw !== 'object') return out;
   if (typeof raw.lastClass === 'string') out.lastClass = raw.lastClass;
+  if (isPilot(raw.lastPilot)) out.lastPilot = raw.lastPilot;
   if (Array.isArray(raw.unlocked)) out.unlocked = raw.unlocked.filter((x) => typeof x === 'string');
   if (raw.bests && typeof raw.bests === 'object') {
     for (const k of ['time', 'kills', 'level']) {
@@ -190,6 +194,12 @@ export function createSave(storage) {
       data.unlocked.push(classId);
       persist();
       return true;
+    },
+
+    setLastPilot(id) {
+      if (!isPilot(id)) return;
+      data.lastPilot = id;
+      persist();
     },
 
     setLastClass(id) {

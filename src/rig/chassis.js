@@ -50,12 +50,14 @@ export const chassisForRule = (rule) => BY_RULE[rule] || START_CHASSIS;
 export const MK_NAMES = ['', 'Mk I', 'Mk II', 'Mk III'];
 
 // A chain's numbers: { start, max, battery, recharge } for chain state { chassis, mk, charge, cell }.
-export function chassisStats(ch) {
+// `pilot` (rig.pilot) can add starting and maximum slots to every chassis (Splicer).
+export function chassisStats(ch, pilot = null) {
   const d = CHASSIS[ch.chassis] || CHASSIS[START_CHASSIS];
   const mk = Math.max(1, Math.min(MK_MAX, ch.mk || 1));
+  const max = d.max + ((pilot && pilot.slotsMax) || 0);
   return {
-    start: Math.min(d.max, d.slots + mk - 1),
-    max: d.max,
+    start: Math.min(max, d.slots + mk - 1 + ((pilot && pilot.slotsStart) || 0)),
+    max,
     battery: Math.round(d.battery * (1 + MK_BATTERY * (mk - 1) + CELL_STEP * (ch.cell || 0))),
     recharge: d.recharge + MK_RECHARGE * (mk - 1) + CHARGE_STEP * (ch.charge || 0),
   };

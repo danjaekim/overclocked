@@ -160,6 +160,7 @@ export function snapshotRun(run) {
     format: SNAPSHOT_FORMAT,
     seed: run.seed,
     classId: run.player.classId,
+    pilot: run.pilot,
     time: run.time,
     level: run.player.level,
     kills: run.kills,
@@ -177,7 +178,7 @@ export function snapshotRun(run) {
 // Builds a run from a snapshot. Throws if it cannot (the caller then drops the snapshot).
 export function restoreRun(snap, { view, debug, sfx }) {
   if (!snap || snap.format !== SNAPSHOT_FORMAT) throw new Error('snapshot: wrong format');
-  const run = createOverclockedRun({ seed: snap.seed, view, debug, sfx });
+  const run = createOverclockedRun({ seed: snap.seed, view, debug, sfx, pilotId: snap.pilot });
   removeRig(run);                                            // the fresh run's rig and its stat modifiers: the saved ones replace them
   const w = run.world;
   const fix = [];                                            // rig instances to point at once the rig is rebuilt: [object, key | index, inst index]

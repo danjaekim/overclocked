@@ -20,7 +20,7 @@ const enhSource = (inst, n) => `forge:${inst.instanceId}:enh:${n}:`;
 
 export function enhanceCost(run, inst) {
   const base = ENHANCE.cost[inst.enhance];
-  const mult = (CLASSES[run.player.classId].forge || {}).costMult || 1;
+  const mult = ((CLASSES[run.player.classId] || {}).forge || {}).costMult || 1;
   return Math.max(1, Math.ceil(base * mult));
 }
 

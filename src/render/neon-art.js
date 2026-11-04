@@ -121,6 +121,7 @@ const elite = (c, glyph) => art(
   `<polygon points="${hex(32, 34, 19)}" fill="${DEEP}" stroke="${c}" stroke-width="1.6" stroke-linejoin="round"/>` + glow(glyph), 18);
 
 export const NEON_ART = {
+  rookie: RUNNER, courier: RUNNER, bulwark: RUNNER, splicer: RUNNER,   // pilots (data/pilots.js); M3 gives each its own hull
   smith: RUNNER, archer: RUNNER, mage: RUNNER, berserker: RUNNER, summoner: RUNNER, saint: RUNNER,
   goblin, brute, shieldbearer, slinger, splitter, shaman, crusher, warlord, seer, crate,
   gem0: shard(P.xp, SHARD_SLIM),

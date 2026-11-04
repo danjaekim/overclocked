@@ -1,3 +1,4 @@
+import { pilotOf } from '../data/pilots.js';
 // The compendium (docs/overclocked-spec.md, "Compendium"): how chains run, every piece and rule card, the element
 // reactions (filled in as you see them happen in a run) and the rigs of your past runs. Opened from the pause menu.
 
@@ -61,7 +62,7 @@ function runsHtml(history) {
   if (!rows.length) return '<p class="sub">Finish a run and its rig shows up here.</p>';
   return `<button class="rbtn" data-act="copyruns">Copy run data</button>${copied ? `<p class="sub">${esc(copied)}</p>` : ''}` + rows.map((e) => {
     const chains = e.rig.chains.map((c, i) => `<div class="cmprow"><span><b>${'ABCD'[i]}</b> <small>${esc(CHASSIS[c.chassis] ? chassisName(c) : (RULES[c.rule] || { name: c.rule }).name)}</small></span>${c.slots.map((id) => (PIECES[id] ? `<i class="${PIECES[id].type}">${esc(PIECES[id].short)}${e.rig.levels[id] > 1 ? ' ' + e.rig.levels[id] : ''}</i>` : '')).join('')}</div>`).join('');
-    return `<div class="cmp col"><span><b>${e.won ? 'Survived' : 'Fell'}</b> <small>${fmtTime(e.time)} · level ${e.level} · ${e.kills} kills</small></span>${chains}</div>`;
+    return `<div class="cmp col"><span><b>${e.won ? 'Survived' : 'Fell'}</b> <small>${esc(pilotOf(e.pilot).name)} · ${fmtTime(e.time)} · level ${e.level} · ${e.kills} kills</small></span>${chains}</div>`;
   }).join('');
 }
 

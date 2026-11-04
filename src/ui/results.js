@@ -1,3 +1,4 @@
+import { pilotOf } from '../data/pilots.js';
 import { resultsSceneHtml } from './scenes.js';
 import { fmtTime } from './overlay.js';
 import { resultsDamageHtml } from './damage.js';
@@ -28,6 +29,7 @@ export function showResults(overlays, summary, { onAgain, newBests = [] }) {
     `<div><span>${label}${newBests.includes(key) ? ' · best!' : ''}</span><b>${value}</b></div>`;
   overlays.show(
     `<h2 class="ribbon ${summary.won ? 'win' : 'lose'}">${title}</h2>
+     ${summary.pilot ? `<p class="sub">Pilot: ${esc(pilotOf(summary.pilot).name)}</p>` : ''}
      ${resultsSceneHtml(summary.classId, summary.won)}
      <div class="stats">
        ${stat('time', 'Time', fmtTime(summary.time))}

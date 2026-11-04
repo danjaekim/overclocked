@@ -9,6 +9,7 @@ export function readParams() {
     sandbox: q.get('sandbox') === '1',   // ?sandbox=1 boots the chain sandbox instead of the run (tests; players reach it from the pause menu)
     numScale: q.has('numscale') ? Math.max(0.01, Number(q.get('numscale')) || 1) : 30,   // damage numbers SHOWN are x30 by default (not the damage); ?numscale=1 for true values
     numFx: q.get('numfx') !== '0',   // on by default: bigger crit text, numbers last longer, more of them alive; ?numfx=0 turns it off
+    pilot: q.get('pilot') || null,    // ?pilot=<id> starts a run as that pilot (data/pilots.js)
     seed: q.has('seed') ? Number(q.get('seed')) >>> 0 : null,
   };
 }

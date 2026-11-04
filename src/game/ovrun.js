@@ -8,6 +8,8 @@ import { applyRig } from './sandbox.js';
 import { PIECES } from '../rig/pieces.js';
 import { initClassTrait } from './class-traits.js';
 import { recentRawDps } from './run-stats.js';
+import { PILOTS, DEFAULT_PILOT, isPilot, pilotOf, pilotRig } from '../data/pilots.js';
+import { SLOTS } from '../rig/editor.js';
 
 // What every run starts with: a little more health than the stat default, and a trickle of regeneration (the Archer's
 // numbers from Overforged: bot runs lasted a third longer with them, docs/balance-playbook.md). Tune with the bench.
@@ -19,16 +21,23 @@ export const BASE = [
 
 export const START_CHAIN = { rule: 'pulse', slots: ['blaster'], size: 3 };
 
-export function createOverclockedRun({ seed, view, debug, sfx }) {
+export function createOverclockedRun({ seed, view, debug, sfx, pilotId = DEFAULT_PILOT }) {
   const run = createRun({ seed, view, debug, sfx, classId: 'smith' });
   run.rigRun = true;
+  run.pilot = isPilot(pilotId) ? pilotId : DEFAULT_PILOT;
+  const pilot = pilotOf(run.pilot);
   run.player.weapons.length = 0;                                 // no class weapon: chains are the only attacks
   run.player.stats.removeBySource('weapon:');
   run.player.stats.removeBySource('class:');                     // and no class bonuses or trait
+  run.player.classId = run.pilot;                                // the sprite key (render/neon-art.js)
   initClassTrait(run, 'none');
   for (const m of BASE) run.player.stats.add({ ...m, source: 'rigger:' });
+  for (const m of pilot.mods) run.player.stats.add({ ...m, source: 'pilot:' });
   run.player.maxHp = run.player.hp = run.player.stats.get('maxHp');
-  run.rigState = newRig([START_CHAIN]);
+  const rules = pilot.rules;
+  run.rigState = newRig([{ chassis: pilot.start.chassis, mk: pilot.start.mk, slots: pilot.start.slots, size: pilot.start.size }], SLOTS + (rules.slotsMax || 0));
+  run.rigState.pilot = pilotRig(run.pilot);
+  if (pilot.sig) run.rigState.passives[pilot.sig.id] = 1;     // the signature passive starts at Lv1
   applyRig(run);
 
   run.timeline = [];                                             // the rig every TIMELINE_STEP s, for the replay bench (tools/replaybench.mjs)
@@ -49,6 +58,7 @@ export function createOverclockedRun({ seed, view, debug, sfx }) {
       passives: { ...run.rigState.passives },
     },
     classId: 'smith',
+    pilot: run.pilot,
     timeline: [...run.timeline, timelinePoint(run)],
   });
   return run;

@@ -3,7 +3,7 @@
 // 5 once a piece is maxed), capacity (+1 slot, +1/s recharge or a bigger battery for a chain you pick), and on about one
 // visit in two a chassis (a new chain, or a replacement for one). Pure: every function takes a rig and an rng.
 
-import { PIECES, MAX_LEVEL, OVERCLOCK_MAX, MAX_CHAINS } from './pieces.js';
+import { PIECES, MAX_LEVEL, OVERCLOCK_MAX, maxChains } from './pieces.js';
 import { pieceCandidates, offerWeights, COPY_WEIGHT, chassisCards, describeChassis } from './offers.js';
 import { placeSuggested, levelUp, pieceLevel, owned, overclock, addSlot, addPower, addChassis, replaceChassis, hasSlotRoom } from './editor.js';
 import { CHARGE_STEP, CELL_STEP } from './chassis.js';
@@ -72,7 +72,7 @@ export function stockUp(rng, rig, banished = [], { slotBuys = 0 } = {}) {
 // Items that need a chain picked when bought. For a chassis, the chain is the one it replaces, or NEW_CHAIN.
 export const needsChain = (item) => item.kind === 'chassis' || item.kind === 'slot' || item.kind === 'charge' || item.kind === 'cell';
 export const NEW_CHAIN = -1;
-export const canTakeNew = (rig) => rig.chains.length < MAX_CHAINS;
+export const canTakeNew = (rig) => rig.chains.length < maxChains(rig);
 
 // Buys `item` for a rig. Returns { rig, placed } (placed: where a piece landed, or null), or null when it cannot be done
 // (no room for the piece, the piece is already maxed, no such chain).

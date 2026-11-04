@@ -54,7 +54,16 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 | Anchor | Every 0.6 s while standing still | Turret. Risky in a crowd |
 | Reaper | On any kill, at most 4 times per second, and every 3 s if nothing dies | Snowballs in big waves |
 
-Classes come after the proof of concept. Each class will start with a different rule card, for example a kiting class that starts with Stride.
+**Pilots** (v0.12.0 on; plan in `docs/plan-v12-pilots.md`, data in `src/data/pilots.js`). The classes. A pilot is chosen before a run and changes a rule for the whole run, not for one chain, so its bonus still works after the starting chassis is replaced. Each has a starting chain, a few stat changes, a cost, a signature passive that starts at Lv1 and can reach Lv4 (one more than anyone else), and its own sprite.
+
+| Pilot | Starts with | Advantage | Cost |
+|---|---|---|---|
+| Rookie | Standard, Blaster | none | none |
+| Courier | Strider, Blaster, Momentum | +20% move speed, +40% pickup range | -20 max HP |
+| Bulwark | Anchor, Blaster, Turret Mode | +50 max HP, +3 armor, +4 more armor after 1 s standing still | -15% move speed |
+| Splicer | Standard with Echo and Blaster, Hair Trigger | every chassis +1 starting slot and +2 max slots (8 on Standard) | 2 chains at most |
+
+The rig state carries `rig.pilot` (signature passive, slot bonuses, chain limit, brace armor), so saves, resumed runs and the editor all see it. A saved run, history entry or snapshot with no pilot is a Rookie run. Broker, Overclocker and Tinker, the picker screen, unlocks and balance numbers follow in the plan.
 
 **Triggers**
 
@@ -276,8 +285,7 @@ If the concept check fails, we stop and rethink the pieces before building the e
 - The game is called Overclocked, for now. The repo is `danjaekim/overclocked`.
 - The editor pauses the game instead of slowing it down.
 - Modifiers apply only to the next weapon.
-- Classes wait until after the proof of concept. When they arrive, each starts with a different rule card.
-- Unlocks wait until after the first test build.
+- Classes are pilots (see above). Unlocks follow in v0.12.5.
 - No query parameter. The game's default path boots into the build for the current milestone: the sandbox for M2, then the full run from M4.
 - The preset-chain buttons stay after M2 as a debug panel, so any chain can be loaded for testing. From M4 it opens from the pause menu ("Chain sandbox (debug)"); `?sandbox=1` boots it directly, for tests.
 - Piece levels are per piece, not per copy: every Mortar in the rig shares one level. Each level adds 10% damage to the piece's attack (a modifier: to the weapon it is held for; a trigger: to its payload), and levels 3 and 5 add a signature effect (v0.5.0). A trigger's payload power depends on its job (v0.6.8, `TRIGGER_POWER`): On Hit x0.9 (it runs for every enemy hit, so crowds supply the power), On Impact x2.5 (once per attack), On Kill x2.5 (and a payload's kills cascade), Every 3rd x3 (and its payload costs no energy). Each other payload piece costs 1 less energy (v0.5.0, retuned v0.5.4), so reactions are a multiplier on their own.

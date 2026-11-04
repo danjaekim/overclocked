@@ -115,6 +115,8 @@ Numbers are first guesses for M4 to tune. Lv4 of a signature passive is a new 4t
 
 **Goal.** Rookie, Courier, Bulwark and Splicer are each worth picking, and none is free power.
 
+**Bot caveat found in M1:** rigbench's bot backs away from any enemy within 110 px, so it never stands still. On Anchor (Bulwark's start) that means the chain never fires: a 1-seed run "won" with 0 kills and level 1, because nothing could hurt a kiting player. Before reading Bulwark's floor number, add a `--stand` bot policy (stand still while any enemy is within about 250 px, kite only when hurt below half HP) and use it for Bulwark, and say so in the table.
+
 **Measure (report all three, as usual):**
 
 - Floor: `node tools/rigbench.mjs --seeds 12 --pilot <id>` for each of the four (run them in parallel). Compare time alive, level and kills to Rookie.

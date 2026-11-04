@@ -9,11 +9,11 @@
 //   chassis a chain to build on (rig/chassis.js): a new chain while there is room, else it replaces one (the editor asks which)
 // Pure: every function takes a rig and an rng (anything with next() in [0, 1)).
 
-import { PIECES, RIG_STATS, MAX_LEVEL, OVERCLOCK_MAX, MAX_CHAINS, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
+import { PIECES, RIG_STATS, MAX_LEVEL, OVERCLOCK_MAX, maxChains, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
 import { owned, pieceLevel, levelUp, overclock, takeStat, takePassive, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
 import { CHASSIS, START_CHASSIS, CHARGE_STEP, CELL_STEP, MK_NAMES, chassisStats } from './chassis.js';
 import { compileChain, chainCost } from './chain.js';
-import { PASSIVES, PASSIVE_IDS } from './passives.js';
+import { PASSIVES, PASSIVE_IDS, passiveMax } from './passives.js';
 
 export const OFFER_COUNT = 3;
 export const STAT_CHANCE = 1 / 6;
@@ -121,7 +121,7 @@ export function upgradeOffers(rng, rig) {
 
 // Capacity cards: two chassis and +1 slot while there is room for another chain, else the upgrade cards.
 export function capacityOffers(rng, rig) {
-  if (rig.chains.length >= MAX_CHAINS) return upgradeOffers(rng, rig);
+  if (rig.chains.length >= maxChains(rig)) return upgradeOffers(rng, rig);
   const out = chassisCards(rng, 2);
   const slot = upgradeOffers(rng, rig).find((o) => o.cap === 'slot');
   out.push(slot || upgradeOffers(rng, rig)[0]);
@@ -129,7 +129,7 @@ export function capacityOffers(rng, rig) {
 }
 
 // Passives you can still be offered: below max stacks, and the element ones only once you own their element.
-export const passivePool = (rig) => PASSIVE_IDS.filter((id) => ((rig.passives && rig.passives[id]) || 0) < PASSIVES[id].max && !(PASSIVES[id].needs && !PASSIVES[id].fits(rig)));
+export const passivePool = (rig) => PASSIVE_IDS.filter((id) => ((rig.passives && rig.passives[id]) || 0) < passiveMax(rig, id) && !(PASSIVES[id].needs && !PASSIVES[id].fits(rig)));
 export const passiveWeight = (rig, id) => (PASSIVES[id].fits(rig) ? 3 : 0.5);
 
 // opts: { count, banished: [piece ids], capacity: true for a capacity level }
@@ -193,7 +193,7 @@ export function describeOffer(rig, o) {
     const n = ((rig.passives && rig.passives[o.id]) || 0) + 1;
     return { title: PASSIVES[o.id].name, tag: `passive \u00b7 ${n}/${PASSIVES[o.id].max}`, desc: PASSIVES[o.id].desc(n), piece: null, type: 'passive' };
   }
-  if (o.kind === 'chassis') return { ...describeChassis(o.chassis, o.mk), tag: `chassis · ${rig.chains.length < MAX_CHAINS ? 'new chain' : 'replaces one'}` };
+  if (o.kind === 'chassis') return { ...describeChassis(o.chassis, o.mk), tag: `chassis · ${rig.chains.length < maxChains(rig) ? 'new chain' : 'replaces one'}` };
   if (o.cap === 'slot') return { title: 'More room', tag: 'capacity', desc: `+1 slot in chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };
   if (o.cap === 'charge') return { title: 'Faster recharge', tag: 'capacity', desc: `+${CHARGE_STEP}/s recharge for chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };
   return { title: 'Bigger battery', tag: 'capacity', desc: `+${Math.round(CELL_STEP * 100)}% battery for chain ${CHAIN_NAMES[o.c]}`, piece: null, type: 'cap' };

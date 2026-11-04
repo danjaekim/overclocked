@@ -12,6 +12,7 @@ import { newRig } from '../src/rig/editor.js';
 import { CHASSIS, migrateChassis } from '../src/rig/chassis.js';
 import { PIECES } from '../src/rig/pieces.js';
 import { START_CHAIN } from '../src/game/ovrun.js';
+import { pilotOf, pilotRig } from '../src/data/pilots.js';
 import { applyRig } from '../src/game/sandbox.js';
 import { pathToFileURL } from 'node:url';
 
@@ -50,12 +51,25 @@ export function scheduleOf(e) {
   return { approx: true, points: [{ t: 0, rig: start }, { t: 120, rig: start }, { t: 1e9, rig: rigFrom(e.rig) }] };
 }
 
+// A replayed rig under the run's pilot (`--pilot` through rigbench's PILOT): the pilot's rig rules, its chain limit (extra chains past it are
+// dropped, last first) and its signature passive at least at Lv1. A Rookie run is untouched.
+function pilotRules(run) {
+  if (run.pilot === 'rookie') return;
+  const rig = run.rigState;
+  const p = pilotOf(run.pilot);
+  rig.pilot = pilotRig(run.pilot);
+  rig.cap = Math.max(rig.cap, 6 + (p.rules.slotsMax || 0));
+  if (p.rules.maxChains && rig.chains.length > p.rules.maxChains) rig.chains.length = p.rules.maxChains;
+  if (p.sig && !(rig.passives[p.sig.id] > 0)) rig.passives[p.sig.id] = 1;
+}
+
 export function replayOf(points) {
   let next = 1;
   return (run) => {
     // apply the rig of the minute you are in: the point recorded at the end of it
     while (next < points.length && run.time >= points[next - 1].t) {
       run.rigState = points[next].rig;
+      pilotRules(run);
       applyRig(run);
       next++;
     }

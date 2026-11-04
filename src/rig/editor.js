@@ -10,8 +10,8 @@
 // A location is { kind: 'slot', c, i } | { kind: 'bench', i }. A drop target may also be a gap,
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
-import { PASSIVES } from './passives.js';
-import { PIECES, RULES, MAX_CHAINS, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
+import { PASSIVES, passiveMax } from './passives.js';
+import { PIECES, RULES, maxChains, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
 import { CHASSIS, chassisStats, chassisForRule, keepsUpgrades, migrateChassis, MK_MAX } from './chassis.js';
 
 export const BENCH = 3;
@@ -40,7 +40,7 @@ export function padSlots(slots, cap = SLOTS) {
 }
 
 export function cloneRig(rig) {
-  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats }, passives: { ...rig.passives } };
+  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats }, passives: { ...rig.passives }, ...(rig.pilot ? { pilot: rig.pilot } : {}) };
 }
 
 export function pieceAt(rig, loc) {
@@ -176,7 +176,7 @@ function appendTo(rig, c, id) {
 // What the engine and the analyzer read for chain c: its rule card, slots, battery, recharge, quirk and the piece levels.
 export function chainDefOf(rig, c) {
   const ch = rig.chains[c];
-  const s = chassisStats(ch);
+  const s = chassisStats(ch, rig.pilot);
   const d = CHASSIS[ch.chassis];
   return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels, passives: rig.passives || {} };
 }
@@ -212,7 +212,7 @@ export function overclock(rig, id) {
 
 export function takePassive(rig, id) {
   const def = PASSIVES[id];
-  if (!def || ((rig.passives && rig.passives[id]) || 0) >= def.max) return null;
+  if (!def || ((rig.passives && rig.passives[id]) || 0) >= passiveMax(rig, id)) return null;
   const next = cloneRig(rig);
   next.passives[id] = ((rig.passives && rig.passives[id]) || 0) + 1;
   return next;
@@ -225,7 +225,7 @@ export function takeStat(rig, id) {
 }
 
 // How many slots chain c can grow to: its chassis's max, never past the rig's cap.
-export const slotMax = (rig, c) => Math.min(rig.cap, chassisStats(rig.chains[c]).max);
+export const slotMax = (rig, c) => Math.min(rig.cap, chassisStats(rig.chains[c], rig.pilot).max);
 export const hasSlotRoom = (rig, c) => rig.chains[c].slots.length < slotMax(rig, c);
 
 // The chain a +1 slot would go to: the one with the fewest slots (the first, on a tie), or -1 when all are full.
@@ -252,9 +252,9 @@ export function addPower(rig, c, kind) {
 
 // A new chain on `chassis`, when there is room for one.
 export function addChassis(rig, chassis, mk = 1) {
-  if (rig.chains.length >= MAX_CHAINS || !CHASSIS[chassis]) return null;
+  if (rig.chains.length >= maxChains(rig) || !CHASSIS[chassis]) return null;
   const next = cloneRig(rig);
-  next.chains.push(chainState(chassis, Math.min(MK_MAX, mk), padSlots([], Math.min(rig.cap, chassisStats({ chassis, mk }).start))));
+  next.chains.push(chainState(chassis, Math.min(MK_MAX, mk), padSlots([], Math.min(rig.cap, chassisStats({ chassis, mk }, rig.pilot).start))));
   return next;
 }
 
@@ -266,7 +266,7 @@ export function replaceChassis(rig, c, chassis, mk = 1) {
   if (!rig.chains[c] || !CHASSIS[chassis]) return null;
   const next = cloneRig(rig);
   const old = next.chains[c];
-  const s = chassisStats({ chassis, mk });
+  const s = chassisStats({ chassis, mk }, rig.pilot);
   const size = Math.min(rig.cap, s.max, Math.max(s.start, old.slots.length));
   const pieces = old.slots.filter(Boolean);
   const slots = padSlots(pieces.slice(0, size), size);

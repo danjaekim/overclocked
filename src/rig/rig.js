@@ -26,6 +26,7 @@ const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the res
 const MAX_QUEUE = 256;                 // queued payload runs; further events are dropped
 const PING_TIME = 0.4;                 // seconds a chain's ring stays on screen
 const SOURCE = 'rig:';                 // stat modifier source prefix for everything the rig adds
+const BRACE = 'pilot:brace';           // Bulwark's armor while braced (removed with the rig)
 
 const defs = new Map();                // piece id -> full weapon definition, built once
 
@@ -51,6 +52,7 @@ export function installRig(run, chainDefs, { log = false } = {}) {
 export function removeRig(run) {
   if (run.rig === null) return;
   run.player.stats.removeBySource(SOURCE);
+  run.player.stats.removeBySource(BRACE);
   run.rig = null;                       // shots still in flight find the rig gone and set off nothing
 }
 
@@ -244,6 +246,12 @@ export function updateRig(run, dt) {
   const rig = run.rig;
   const p = run.player;
   rig.stillT = p.moving ? 0 : (rig.stillT || 0) + dt;
+  const braceArmor = (run.rigState && run.rigState.pilot && run.rigState.pilot.braceArmor) || 0;       // Bulwark: armor while Turret Mode's second of standing still is up
+  if (braceArmor > 0 && (rig.stillT >= 1) !== !!rig.braced) {
+    rig.braced = rig.stillT >= 1;
+    p.stats.removeBySource(BRACE);
+    if (rig.braced) p.stats.add({ stat: 'armor', op: 'flat', value: braceArmor, source: BRACE });
+  }
   const hop = rig.px === undefined ? 0 : Math.hypot(p.x - rig.px, p.y - rig.py);       // Stride: how far you moved this tick (a jump of 50 px or more is a respawn, not a step)
   rig.px = p.x;
   rig.py = p.y;

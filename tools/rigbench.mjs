@@ -1,4 +1,4 @@
-// Bot runs of the full run (game/ovrun.js), for balance numbers: node tools/rigbench.mjs [--seeds N] [--policy smart|first] [--god]
+// Bot runs of the full run (game/ovrun.js), for balance numbers: node tools/rigbench.mjs [--seeds N] [--policy smart|first] [--god] [--pilot id]
 // MODS='[...]' adds stat modifiers to the player first, to try a number before changing it in the game.
 // The bot kites like the Overforged bench bot (tools/bench.mjs), takes level-up offers by a score, places pieces at their
 // suggested slot, opens chests, and walks to a shrine when nothing is close to spend its gold at the workbench
@@ -10,7 +10,7 @@ import { makeOffers, applyOffer, rigFull, CAPACITY_LEVELS, starved } from '../sr
 import { placeSuggested, owned, slotTarget, addChassis, replaceChassis } from '../src/rig/editor.js';
 import { openRigChest } from '../src/rig/chests.js';
 import { stockUp, buyItem, NEW_CHAIN } from '../src/rig/workbench.js';
-import { PIECES, MAX_CHAINS } from '../src/rig/pieces.js';
+import { PIECES, maxChains } from '../src/rig/pieces.js';
 import { PASSIVES } from '../src/rig/passives.js';
 import { WAVES, RATE_RAMP } from '../src/data/waves.js';
 import { ENEMIES } from '../src/data/enemies.js';
@@ -28,6 +28,7 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? proce
 const SEEDS = Number(arg('--seeds', 5));
 const POLICY = arg('--policy', 'smart');
 const GOD = process.argv.includes('--god');
+export const PILOT = arg('--pilot', process.env.PILOT || 'rookie');                 // --pilot courier|bulwark|splicer: run as that pilot (data/pilots.js)
 const STEP = 1 / 30;
 const VIEW = { w: 390, h: 844, insetTop: 0 };
 
@@ -59,7 +60,7 @@ function score(o, rig, hpFrac = 1) {
 // Where the bot puts a chassis: a new chain while there is room, else it replaces the lowest-mark chain below the offer's
 // mark (the first, on a tie), else nowhere (null): it passes on a chassis that is no better than any it has.
 function chassisTarget(rig, o) {
-  if (rig.chains.length < MAX_CHAINS) return NEW_CHAIN;
+  if (rig.chains.length < maxChains(rig)) return NEW_CHAIN;
   let best = null;
   rig.chains.forEach((c, i) => { if ((c.mk || 1) < o.mk && (best === null || c.mk < rig.chains[best].mk)) best = i; });
   return best;
@@ -72,7 +73,7 @@ function takeChassis(rig, o) {
 
 // replay(run): when given, the bot builds nothing (no offers, chests or shop); replay sets run.rigState itself (tools/replaybench.mjs).
 export function playRig(seed, { god = GOD, onTick = null, replay = null } = {}) {
-  const run = createOverclockedRun({ seed, view: VIEW, debug: { god }, sfx: () => {} });
+  const run = createOverclockedRun({ seed, view: VIEW, debug: { god }, sfx: () => {}, pilotId: PILOT });
   if (process.env.MODS) for (const m of JSON.parse(process.env.MODS)) run.player.stats.add({ ...m, source: 'bench:' });   // experiments: MODS='[{"stat":"damage","op":"inc","value":0.5}]'
   run.player.maxHp = run.player.hp = run.player.stats.get('maxHp');
   const move = { x: 0, y: 0 };

@@ -24,7 +24,7 @@ export const PASSIVES = {
     fits: (rig) => rig.chains.length >= 2,
   },
   hair_trigger: {
-    name: 'Hair Trigger', max: 3, values: [1.5, 1.8, 2.1],
+    name: 'Hair Trigger', max: 3, values: [1.5, 1.8, 2.1, 2.4],     // the 4th value is only reachable by the pilot whose signature it is (passiveMax)
     desc: (n) => `Payloads hit x${PASSIVES.hair_trigger.values[n - 1]}; every modifier costs 1 more`,
     fits: (rig) => hasAny(rig, TRIGGERS),
   },
@@ -67,12 +67,12 @@ export const PASSIVES = {
     fits: () => true,
   },
   momentum: {
-    name: 'Momentum', max: 3, values: [0.15, 0.3, 0.45],
+    name: 'Momentum', max: 3, values: [0.15, 0.3, 0.45, 0.6],
     desc: (n) => `+${Math.round(PASSIVES.momentum.values[n - 1] * 100)}% recharge while moving, -20% while standing still`,
     fits: (rig) => rig.chains.some((c) => c.chassis === 'strider'),
   },
   turret: {
-    name: 'Turret Mode', max: 3, values: [0.3, 0.45, 0.6],
+    name: 'Turret Mode', max: 3, values: [0.3, 0.45, 0.6, 0.75],
     desc: (n) => `After 1 s standing still, rig damage +${Math.round(PASSIVES.turret.values[n - 1] * 100)}%; moving resets it`,
     fits: (rig) => rig.chains.some((c) => c.chassis === 'anchor'),
   },
@@ -85,9 +85,12 @@ export const PASSIVES = {
 
 export const PASSIVE_IDS = Object.keys(PASSIVES);
 
+// How many stacks of a passive this rig can take: its own max, or one more for the pilot whose signature it is (rig.pilot).
+export const passiveMax = (rig, id) => (rig && rig.pilot && rig.pilot.sig === id ? Math.max(PASSIVES[id].max, rig.pilot.sigMax) : PASSIVES[id].max);
+
 // The numbers one chain's runtime reads: each is 0 (or 1 where it multiplies) when the passive is not owned.
 export function passiveValues(stacks) {
-  const v = (id) => { const n = (stacks && stacks[id]) || 0; return n > 0 ? PASSIVES[id].values[Math.min(n, PASSIVES[id].max) - 1] : 0; };
+  const v = (id) => { const n = (stacks && stacks[id]) || 0; return n > 0 ? PASSIVES[id].values[Math.min(n, PASSIVES[id].values.length) - 1] : 0; };
   return {
     lastWord: v('last_word') || 1,
     hairTrigger: v('hair_trigger') || 1,

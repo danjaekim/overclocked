@@ -5,6 +5,7 @@
 // The default boot is the full run (game/ovrun.js). The chain sandbox (game/sandbox.js) is a debug mode, opened
 // from the pause menu.
 
+import { isPilot } from '../data/pilots.js';
 import { createOverclockedRun } from './ovrun.js';
 import { randomSeed } from '../core/rng.js';
 import { showPause } from '../ui/pause.js';
@@ -91,7 +92,9 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
   // The full run: ten minutes, elites and a boss, a one-chain rig that you grow.
   function startRun() {
     if (runSave) runSave.clear();
-    begin(createOverclockedRun({ seed: takeSeed(), view, debug, sfx }));
+    const pilotId = isPilot(params.pilot) ? params.pilot : save.data.lastPilot;
+    if (!debug.god && !params.pilot) save.setLastPilot(pilotId);
+    begin(createOverclockedRun({ seed: takeSeed(), view, debug, sfx, pilotId }));
     if (sandboxHost) panel = mountSandboxPanel(sandboxHost, { onEdit: () => openRigEditor(false) });
   }
 

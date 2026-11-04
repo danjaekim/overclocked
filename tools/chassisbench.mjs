@@ -35,7 +35,7 @@ const runs = loadRuns(arg('--file', null)).slice(-Number(arg('--runs', 8)));
 const MOVES = { walk: () => 1, mixed: (t) => (Math.floor(t * 2) % 2 ? 0 : 1), still: () => 0 };
 
 function measure(chassis, slots, levels, crowd, mv) {
-  const run = createOverclockedRun({ seed: 5, view: VIEW, debug: { god: true }, sfx: () => {} });
+  const run = createOverclockedRun({ seed: 5, view: VIEW, debug: { god: true }, sfx: () => {}, pilotId: arg('--pilot', 'rookie') });
   run.director.update = () => {};
   const rig = newRig([{ chassis, mk: MK, slots, size: 6 }]);
   rig.levels = levels;
