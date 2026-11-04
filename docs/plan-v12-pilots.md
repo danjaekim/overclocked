@@ -253,3 +253,19 @@ Tinker is the most new code and the most likely to be cut; build it only if Dan 
 - Bulwark reads fine once the bot stands. Without `--stand` it can't fire at all (a kiting bot "wins" with 0 kills), so any Bulwark number needs `--stand`.
 
 Noise: one 12-seed run per pilot, so the floor times are about +-10%.
+
+### v0.12.4: Bulwark heals while braced (Dan's gate-1 playtest), 2026-11-04
+
+Dan played Courier and Bulwark: Courier's HP is fine; on Bulwark the armor helps but standing still is still a big downside, and kiting is
+stronger. Added: while braced (Turret Mode's second of standing still), each kill heals 1% of max HP, at most 4% of max HP a second (a bank
+that fills at 4%/s while braced, spent by kills). The cap keeps it from scaling with late damage the way plain lifesteal would (Dan's late
+raw dps is 10-25k). Armor stays.
+
+| Bulwark (`--stand`) | Floor wins | Mean time alive | Level | Kills | Dan's replays won |
+|---|---|---|---|---|---|
+| v0.12.3 | 0/12 | 313 s | 13.7 | 1365 | 2/5 |
+| v0.12.4 | 3/12 | 392 s | 22.6 | 5178 | 3/5 |
+
+Rookie is 0/12, 315 s on the floor and 1/5 on the replays; Courier 3/5. Part of the floor gain is the bot itself: it kites below half HP, so
+healing keeps it standing (and its Anchor firing) far longer. If Bulwark now feels too safe, lower `cap` first (data/pilots.js).
+

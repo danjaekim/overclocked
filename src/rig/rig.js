@@ -252,6 +252,15 @@ export function updateRig(run, dt) {
     p.stats.removeBySource(BRACE);
     if (rig.braced) p.stats.add({ stat: 'armor', op: 'flat', value: braceArmor, source: BRACE });
   }
+  const heal = run.rigState && run.rigState.pilot && run.rigState.pilot.braceHeal;            // Bulwark: kills heal while braced, up to a cap per second
+  if (heal && rig.stillT >= 1) {
+    rig.healBank = Math.min(heal.cap * p.maxHp, (rig.healBank || 0) + heal.cap * p.maxHp * dt);
+    if (rig.kills > 0 && p.hp > 0) {
+      const amt = Math.min(rig.healBank, rig.kills * heal.perKill * p.maxHp, p.maxHp - p.hp);
+      p.hp += amt;
+      rig.healBank -= amt;
+    }
+  } else if (heal) rig.healBank = 0;
   const hop = rig.px === undefined ? 0 : Math.hypot(p.x - rig.px, p.y - rig.py);       // Stride: how far you moved this tick (a jump of 50 px or more is a respawn, not a step)
   rig.px = p.x;
   rig.py = p.y;

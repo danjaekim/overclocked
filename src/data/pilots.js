@@ -6,7 +6,8 @@
 //   mods       stat modifiers for the whole run (source 'pilot:')
 //   sig        the signature passive: starts at Lv1 and can go to Lv `sigMax` (one more than anyone else's cap)
 //   rules      slotsStart / slotsMax (every chassis starts / can grow by that many slots), maxChains, braceArmor
-//              (armor while standing still for a second, which is when Turret Mode is on)
+//              (armor while standing still for a second, which is when Turret Mode is on), braceHeal { perKill, cap }
+//              (while braced, each kill heals perKill of max HP, at most cap of max HP a second)
 //   cost       the line shown under the rule in the picker
 
 export const DEFAULT_PILOT = 'rookie';
@@ -33,7 +34,7 @@ export const PILOTS = {
   },
   bulwark: {
     name: 'Bulwark', short: 'Bulwark',
-    desc: 'A turret. Starts on Anchor with Turret Mode (damage after standing still, up to Lv4). +50 max HP, +3 armor, and +4 more armor while braced.',
+    desc: 'A turret. Starts on Anchor with Turret Mode (damage after standing still, up to Lv4). +50 max HP, +3 armor. Braced (still for 1 s): +4 armor, and each kill heals 1% max HP (up to 4% a second).',
     cost: '-15% move speed',
     start: { chassis: 'anchor', mk: 1, slots: ['blaster'], size: 4 },
     mods: [
@@ -41,7 +42,7 @@ export const PILOTS = {
       { stat: 'armor', op: 'flat', value: 3 },
       { stat: 'moveSpeed', op: 'inc', value: -0.15 },
     ],
-    sig: { id: 'turret', max: 4 }, rules: { braceArmor: 4 },
+    sig: { id: 'turret', max: 4 }, rules: { braceArmor: 4, braceHeal: { perKill: 0.01, cap: 0.04 } },
   },
   splicer: {
     name: 'Splicer', short: 'Splicer',
