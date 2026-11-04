@@ -95,7 +95,7 @@ Numbers are first guesses for M4 to tune. Lv4 of a signature passive is a new 4t
 
 **Goal.** You can tell which pilot you are at a glance, in the picker and in the fight.
 
-**Art is decided before this milestone, not during it.** The first-pass sheet is `tools/art/pilots-concept.mjs` (render it with `--sheet out.html`; image at `/mnt/project-files/pilots/pilot-sprites-v2.png`; Dan OK'd the looks on 2026-11-04). Use the versions Dan approved. If Dan hasn't picked yet, stop and ask; don't draw your own.
+**Art is decided before this milestone, not during it.** The first-pass sheet is `tools/art/pilots-concept.mjs` (render it with `--sheet out.html`; image at `/mnt/project-files/pilots/pilot-sprites-v2.png`; Dan OK'd the looks on 2026-11-04). **Locked 2026-11-04:** Dan approved all seven as drawn in pass 2. Copy them exactly; don't redraw or restyle them.
 
 **Changes**
 
