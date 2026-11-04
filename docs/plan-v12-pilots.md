@@ -95,13 +95,13 @@ Numbers are first guesses for M4 to tune. Lv4 of a signature passive is a new 4t
 
 **Goal.** You can tell which pilot you are at a glance, in the picker and in the fight.
 
-**Art is decided before this milestone, not during it.** The first-pass sheet is `tools/art/pilots-concept.mjs` (render it with `--sheet out.html`; image at `/mnt/project-files/pilots/pilot-sprites-v1.png`). Use the versions Dan approved. If Dan hasn't picked yet, stop and ask; don't draw your own.
+**Art is decided before this milestone, not during it.** The first-pass sheet is `tools/art/pilots-concept.mjs` (render it with `--sheet out.html`; image at `/mnt/project-files/pilots/pilot-sprites-v2.png`; Dan OK'd the looks on 2026-11-04). Use the versions Dan approved. If Dan hasn't picked yet, stop and ask; don't draw your own.
 
 **Changes**
 
 - Copy the approved SVGs into `src/render/neon-art.js` as `rookie`, `courier`, `bulwark`, `splicer`, `broker`, `overclocker`, `tinker` keys (the Rookie is today's `RUNNER`). Keep the old class ids mapped to `RUNNER`.
 - Every pilot keeps the glowing core at the centre and the chain nodes orbiting it (`drawChainNodes` in `src/render/renderer.js`), so it still reads as the player. Only the hull changes. Cyan only.
-- If a hull is wider than the Runner (Bulwark, Splicer), check the nodes still orbit outside it; raise `NODE_ORBIT` per pilot only if they overlap.
+- Node spacing (Dan asked that the nodes look even on every pilot): every hull in the concept file is scaled to fit within `HULL_MAX` (20 world units) of the core, and the core is the same size on all of them. Set `NODE_ORBIT` in `renderer.js` to the concept file's `NODE_ORBIT` (28, was 25) for every pilot, Rookie included, so all pilots have one orbit. Don't give pilots different orbits. A new or redrawn hull must be measured to fit within `HULL_MAX` too.
 - Sprites are rasterized once (`src/render/sprites.js`); check the draw numbers don't move (`node tools/perfbench.mjs`, one run).
 
 **Acceptance**
