@@ -127,10 +127,10 @@ function passives() {
   };
   section('passives on a chain they fit (crowd / single dps at stack 0, 1, 3 and the gain over stack 0)');
   for (const [id, [chassisId, slots]] of Object.entries(builds)) {
-    const c = [0, 1, 3].map((n) => dps(id, chassisId, slots, n, true));
-    const o = [0, 1, 3].map((n) => dps(id, chassisId, slots, n, false));
+    const c = [0, 1, 3, 4].map((n) => dps(id, chassisId, slots, n, true));          // stack 4 is a pilot's signature passive only (data/pilots.js)
+    const o = [0, 1, 3, 4].map((n) => dps(id, chassisId, slots, n, false));
     const g = (a, b) => (a > 0 ? `${b >= a ? '+' : ''}${Math.round((b / a - 1) * 100)}%` : 'n/a');
-    console.log(`${id.padEnd(13)} ${chassisId.padEnd(9)} ${slots.join(' ').padEnd(34)} crowd ${c.map((x) => String(x).padStart(4)).join(' ')}  (${g(c[0], c[1])} ${g(c[0], c[2])})   one ${o.map((x) => String(x).padStart(4)).join(' ')}  (${g(o[0], o[1])} ${g(o[0], o[2])})`);
+    console.log(`${id.padEnd(13)} ${chassisId.padEnd(9)} ${slots.join(' ').padEnd(34)} crowd ${c.map((x) => String(x).padStart(4)).join(' ')}  (${g(c[0], c[1])} ${g(c[0], c[2])} ${g(c[0], c[3])})   one ${o.map((x) => String(x).padStart(4)).join(' ')}  (${g(o[0], o[1])} ${g(o[0], o[2])} ${g(o[0], o[3])})`);
   }
 }
 

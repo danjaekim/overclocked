@@ -51,15 +51,19 @@ export function scheduleOf(e) {
   return { approx: true, points: [{ t: 0, rig: start }, { t: 120, rig: start }, { t: 1e9, rig: rigFrom(e.rig) }] };
 }
 
-// A replayed rig under the run's pilot (`--pilot` through rigbench's PILOT): the pilot's rig rules, its chain limit (extra chains past it are
-// dropped, last first) and its signature passive at least at Lv1. A Rookie run is untouched.
+// A replayed rig under the run's pilot (`--pilot` through rigbench's PILOT): the pilot's rig rules, its chain limit (extra chains are
+// dropped, the one with the fewest pieces first) and its signature passive at least at Lv1. A Rookie run is untouched.
 function pilotRules(run) {
   if (run.pilot === 'rookie') return;
   const rig = run.rigState;
   const p = pilotOf(run.pilot);
   rig.pilot = pilotRig(run.pilot);
   rig.cap = Math.max(rig.cap, 6 + (p.rules.slotsMax || 0));
-  if (p.rules.maxChains && rig.chains.length > p.rules.maxChains) rig.chains.length = p.rules.maxChains;
+  while (p.rules.maxChains && rig.chains.length > p.rules.maxChains) {                       // the chain holding the fewest pieces goes (the last, on a tie)
+    let weakest = 0;
+    rig.chains.forEach((c, i) => { if (c.slots.filter(Boolean).length <= rig.chains[weakest].slots.filter(Boolean).length) weakest = i; });
+    rig.chains.splice(weakest, 1);
+  }
   if (p.sig && !(rig.passives[p.sig.id] > 0)) rig.passives[p.sig.id] = 1;
 }
 

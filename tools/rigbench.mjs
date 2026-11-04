@@ -1,4 +1,4 @@
-// Bot runs of the full run (game/ovrun.js), for balance numbers: node tools/rigbench.mjs [--seeds N] [--policy smart|first] [--god] [--pilot id]
+// Bot runs of the full run (game/ovrun.js), for balance numbers: node tools/rigbench.mjs [--seeds N] [--policy smart|first] [--god] [--pilot id] [--stand]
 // MODS='[...]' adds stat modifiers to the player first, to try a number before changing it in the game.
 // The bot kites like the Overforged bench bot (tools/bench.mjs), takes level-up offers by a score, places pieces at their
 // suggested slot, opens chests, and walks to a shrine when nothing is close to spend its gold at the workbench
@@ -28,6 +28,8 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? proce
 const SEEDS = Number(arg('--seeds', 5));
 const POLICY = arg('--policy', 'smart');
 const GOD = process.argv.includes('--god');
+const STAND = process.argv.includes('--stand');                 // stand and fight (for Bulwark / Anchor builds, which only fire when you stand still)
+const STAND_R = 250;
 export const PILOT = arg('--pilot', process.env.PILOT || 'rookie');                 // --pilot courier|bulwark|splicer: run as that pilot (data/pilots.js)
 const STEP = 1 / 30;
 const VIEW = { w: 390, h: 844, insetTop: 0 };
@@ -99,7 +101,9 @@ export function playRig(seed, { god = GOD, onTick = null, replay = null } = {}) 
     let chest = null;
     for (const g of run.world.pickups.active) if (g.kind === 2) { chest = g; break; }
     if (!chest && !process.env.NOSHOP && run.shrines.length) chest = run.shrines[0];            // a shrine is walked to the same way
-    if (l > 0) {                                  // back off the crowd, with a sideways bias so enemies stay in range
+    if (STAND && nd < STAND_R && p.hp >= p.maxHp * 0.5) {          // --stand: hold still while anything is close (a turret chain only fires standing still), kite only when hurt
+      move.x = 0; move.y = 0;
+    } else if (l > 0) {                           // back off the crowd, with a sideways bias so enemies stay in range
       const fx = sx / l;
       const fy = sy / l;
       move.x = fx * Math.cos(0.6) - fy * Math.sin(0.6);

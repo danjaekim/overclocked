@@ -224,4 +224,32 @@ Tinker is the most new code and the most likely to be cut; build it only if Dan 
 
 ## Results
 
-(M4 onward: before/after tables go here.)
+### M4 (v0.12.3): first balance pass, 2026-11-04. No pilot numbers changed.
+
+**Floor** (`rigbench --seeds 12 --pilot <id>`; Bulwark with `--stand`, the stand-and-fight bot added in M4: it holds still while anything is within 250 px and kites only below half HP). ±2 wins is noise and every pilot is 0/12, so read time, level and kills.
+
+| Pilot | Wins | Mean time alive | Level | Kills | Boss kills |
+|---|---|---|---|---|---|
+| Rookie | 0/12 | 315 s | 14.4 | 1430 | 1 |
+| Courier | 0/12 | 260 s (-17%) | 18.9 | 2068 | 0 |
+| Bulwark (`--stand`) | 0/12 | 313 s (-1%) | 13.7 | 1365 | 0 |
+| Splicer | 0/12 | 361 s (+14%) | 15.9 | 1616 | 2 |
+
+**Dan's rigs** (`replaybench --file dan-runs-v0115.json --runs 5`, bot movement, each of his 5 newest rigs under the pilot's stats and rules; Bulwark with `--stand`; Splicer drops the chain with the fewest pieces from his 3-chain rigs). Mean raw dps, as a share of Rookie's (8 min 10,026 and 10 min 13,881):
+
+| Pilot | Raw dps at 8 min | Raw dps at 10 min | Replay wins (Rookie 1/5) |
+|---|---|---|---|
+| Courier | 1.02x | 1.08x | 3/5 |
+| Bulwark | 1.05x | 0.98x | 2/5 |
+| Splicer | 1.02x | 1.03x | 1/5 |
+
+**Focused** (`piecebench --only passives`, stack 0 / 1 / 3 / 4 dps): Hair Trigger crowd 106 / 117 / 164 / 168, single 122 / 122 / 159 / 240. Turret Mode crowd 279 / 339 / 413 / 428, single 85 / 117 / 146 / 165. Momentum crowd 270 / 351 / 398 / 398 (Lv4 adds nothing in this scenario: the chain is rule-limited, not energy-limited, so the extra recharge goes unused).
+
+**Against the targets:**
+
+- Late raw dps is at most 1.08x Rookie on Dan's rigs (limit 1.3x): nothing to cut.
+- Splicer on replays is within 3% of Rookie on dps (limit +-15%): the 8-slot growth and Hair Trigger are not exercised by a replay, which keeps Dan's 6-slot chains as they are, so this is a lower bound.
+- Courier is the one floor miss: 17% less time alive than Rookie (limit about 15%), but 46% more kills and 4.5 more levels. It dies earlier because of -20 HP; it kills faster because Strider fires as it kites. It is also the best on Dan's replays (3/5 wins). I left it alone rather than give back HP and make it stronger, and the replays say it doesn't need help. Dan's phone playtest is the real check.
+- Bulwark reads fine once the bot stands. Without `--stand` it can't fire at all (a kiting bot "wins" with 0 kills), so any Bulwark number needs `--stand`.
+
+Noise: one 12-seed run per pilot, so the floor times are about +-10%.
