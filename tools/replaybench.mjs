@@ -32,7 +32,7 @@ const seed = Number(arg('--seed', 1));
 export function rigFrom(r) {
   const chains = r.chains.map((c) => migrateChassis({ ...c })).filter((c) => CHASSIS[c.chassis] || c.rule).map((c) => ({
     chassis: CHASSIS[c.chassis] ? c.chassis : undefined, rule: c.rule, mk: c.mk || 1, charge: c.charge || 0, cell: c.cell || 0,
-    slots: c.slots.filter((id) => PIECES[id]), size: 6,
+    slots: c.slots.filter((id) => PIECES[id]), size: Math.max(6, c.slots.length),     // Splicer chains have up to 8
   }));
   const rig = newRig(chains);
   rig.levels = { ...(r.levels || {}) };

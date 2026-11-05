@@ -169,6 +169,16 @@ test('the pilot is saved with a finished run, and old or odd saves read as Rooki
   assert.equal(lv4.history[0].rig.passives.momentum, 4, 'a Lv4 signature passive survives the save');
 });
 
+test('a Splicer chain of 8 pieces is recorded and read back whole (the history kept only 6)', () => {
+  const eight = ['echo', 'scatter', 'blaster', 'on_hit', 'nova', 'flame', 'heavy', 'slam'];
+  const summary = { ...start('splicer').summary(), rig: { chains: [{ chassis: 'relay', mk: 2, rule: 'pulse', slots: eight }], levels: {}, passives: {}, stats: {}, bench: [] } };
+  const entry = entryFromSummary(summary);
+  assert.deepEqual(entry.rig.chains[0].slots, eight);
+  const back = normalize({ history: [entry] });
+  assert.deepEqual(back.history[0].rig.chains[0].slots, eight);
+  assert.equal(entryFromSummary({ ...summary, rig: { ...summary.rig, chains: [{ ...summary.rig.chains[0], slots: [...eight, 'nova', 'nova'] }] } }).rig.chains[0].slots.length, 8, 'never more than 8');
+});
+
 test('every pilot has what the picker needs', () => {
   assert.equal(DEFAULT_PILOT, 'rookie');
   for (const id of PILOT_IDS) {

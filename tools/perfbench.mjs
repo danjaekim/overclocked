@@ -52,7 +52,7 @@ for (const at of AT) {
     const { applyRig } = await import('/src/game/sandbox.js');
     const o = window.__overclocked; const r = o.game.run; r.debug.god = true; o.game.state = 'run';
     const apply = (rr) => {
-      const rig = newRig(rr.chains.map((c) => migrateChassis({ ...c })).map((c) => ({ chassis: CHASSIS[c.chassis] ? c.chassis : undefined, rule: c.rule, mk: c.mk || 1, charge: c.charge || 0, cell: c.cell || 0, slots: c.slots, size: 6 })));
+      const rig = newRig(rr.chains.map((c) => migrateChassis({ ...c })).map((c) => ({ chassis: CHASSIS[c.chassis] ? c.chassis : undefined, rule: c.rule, mk: c.mk || 1, charge: c.charge || 0, cell: c.cell || 0, slots: c.slots, size: Math.max(6, c.slots.length) })));
       rig.levels = { ...(rr.levels || {}) }; rig.passives = { ...(rr.passives || {}) }; rig.stats = { ...(rr.stats || {}) };
       r.rigState = rig; applyRig(r);
     };
