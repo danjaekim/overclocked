@@ -24,7 +24,7 @@ let { page, errs } = await open();
 let s = await info(page);
 if (s.state !== 'picker' || !s.picker) fail('a plain boot did not show the picker: ' + JSON.stringify(s));
 if (s.sel.join() !== 'rookie') fail('first selection: ' + s.sel);
-const cards = await page.locator('.pcard').count(); if (cards !== 4) fail('cards: ' + cards);
+const cards = await page.locator('.pcard').count(); if (cards !== 6) fail('cards: ' + cards);
 const drawn = await page.evaluate(() => [...document.querySelectorAll('.pcard canvas')].every((c) => c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0)));
 if (!drawn) fail('a pilot sprite was not drawn');
 if (out) await page.screenshot({ path: out + 'p1-picker.png' });

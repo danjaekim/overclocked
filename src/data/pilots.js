@@ -8,6 +8,8 @@
 //   rules      slotsStart / slotsMax (every chassis starts / can grow by that many slots), maxChains, braceArmor
 //              (armor while standing still for a second, which is when Turret Mode is on), braceHeal { perKill, cap }
 //              (while braced, each kill heals perKill of max HP, at most cap of max HP a second)
+//   freeReroll / shopMult   Broker: free rerolls per level-up, and the workbench price multiplier
+//   offerCount / doubleEvery   Overclocker: cards per level-up, and every Nth level-up counts a taken card twice
 //   cost       the line shown under the rule in the picker
 
 export const DEFAULT_PILOT = 'rookie';
@@ -52,9 +54,27 @@ export const PILOTS = {
     mods: [],
     sig: { id: 'hair_trigger', max: 4 }, rules: { slotsStart: 1, slotsMax: 2, maxChains: 2 },
   },
+  broker: {
+    name: 'Broker', short: 'Broker',
+    desc: 'A dealer. The first reroll of every level-up is free, and the workbench sells everything 25% cheaper. Kills drop gold 20% less often.',
+    cost: '-25 max HP, less gold from kills',
+    start: { chassis: 'standard', mk: 1, slots: ['blaster'], size: 3 },
+    mods: [
+      { stat: 'maxHp', op: 'flat', value: -25 },
+      { stat: 'oreGain', op: 'inc', value: -0.2 },
+    ],
+    sig: null, rules: { freeReroll: 1, shopMult: 0.75 },
+  },
+  overclocker: {
+    name: 'Overclocker', short: 'Overclocker',
+    desc: 'Fewer, bigger upgrades. Level-ups offer 2 cards instead of 3, and every 4th level-up is doubled: the card you take counts twice.',
+    cost: 'Only 2 cards per level-up',
+    start: { chassis: 'standard', mk: 1, slots: ['blaster'], size: 3 },
+    mods: [], sig: null, rules: { offerCount: 2, doubleEvery: 4 },
+  },
 };
 
-export const PILOT_IDS = ['rookie', 'courier', 'bulwark', 'splicer'];
+export const PILOT_IDS = ['rookie', 'courier', 'bulwark', 'splicer', 'broker', 'overclocker'];
 export const pilotOf = (id) => PILOTS[id] || PILOTS[DEFAULT_PILOT];
 export const isPilot = (id) => typeof id === 'string' && Object.prototype.hasOwnProperty.call(PILOTS, id);
 

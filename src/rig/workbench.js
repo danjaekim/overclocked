@@ -22,7 +22,8 @@ export const overclockPrice = (to) => PRICE.overclock + PRICE.overclockStep * (t
 const upgradesOf = (rig, k) => rig.chains.reduce((n, c) => n + (c[k] || 0), 0);
 export const chargePrice = (rig) => PRICE.charge + PRICE.upgradeStep * upgradesOf(rig, 'charge');
 export const cellPrice = (rig) => PRICE.cell + PRICE.upgradeStep * upgradesOf(rig, 'cell');
-export const rerollPrice = (visitRerolls) => PRICE.reroll * 2 ** visitRerolls;          // 25, 50, 100 within one visit
+export const shopPrice = (rig, n) => Math.max(1, Math.round(n * ((rig.pilot && rig.pilot.shopMult) || 1)));        // Broker sells cheaper
+export const rerollPrice = (visitRerolls, rig = null) => (rig ? shopPrice(rig, PRICE.reroll * 2 ** visitRerolls) : PRICE.reroll * 2 ** visitRerolls);          // 25, 50, 100 within one visit
 
 function take(rng, list, weight = () => 1) {
   let total = 0;
@@ -66,6 +67,7 @@ export function stockUp(rng, rig, banished = [], { slotBuys = 0 } = {}) {
     const mk = rng.next() < CHASSIS_MK2 ? 2 : 1;
     out.push({ ...chassisCards(rng, 1, mk)[0], price: chassisPrice(mk) });
   }
+  for (const it of out) it.price = shopPrice(rig, it.price);
   return out;
 }
 

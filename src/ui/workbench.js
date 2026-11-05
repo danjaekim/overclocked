@@ -29,7 +29,7 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
   }
 
   function render() {
-    const rpr = rerollPrice(rerolls);
+    const rpr = rerollPrice(rerolls, st);
     const pi = pick === null ? null : items[pick];
     const what = pi === null ? '' : describeItem(st, pi).title;
     const ok = (i) => pi.kind !== 'slot' || hasSlotRoom(st, i);
@@ -65,7 +65,7 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
     const [kind, a] = act.split(':');
     if (kind === 'done') onDone(placed);
     else if (kind === 'reroll') {
-      const price = rerollPrice(rerolls);
+      const price = rerollPrice(rerolls, st);
       if (g < price) return;
       g -= price;
       rerolls++;

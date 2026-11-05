@@ -5,9 +5,10 @@ import { createOverclockedRun } from '../src/game/ovrun.js';
 import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 import { PILOTS, PILOT_IDS, DEFAULT_PILOT, pilotRig } from '../src/data/pilots.js';
 import { PASSIVES, passiveMax, passiveValues } from '../src/rig/passives.js';
-import { passivePool, capacityOffers, makeOffers } from '../src/rig/offers.js';
+import { passivePool, capacityOffers, makeOffers, applyOfferTimes, doubleChassis, doubleLevel } from '../src/rig/offers.js';
 import { addChassis, addSlot, takePassive, slotMax, replaceChassis, cloneRig } from '../src/rig/editor.js';
-import { canTakeNew } from '../src/rig/workbench.js';
+import { canTakeNew, stockUp, rerollPrice, shopPrice } from '../src/rig/workbench.js';
+import { pieceLevel } from '../src/rig/editor.js';
 import { chassisStats } from '../src/rig/chassis.js';
 import { createRng } from '../src/core/rng.js';
 import { createSave, normalize, entryFromSummary } from '../src/save/save.js';
@@ -186,4 +187,36 @@ test('every pilot has what the picker needs', () => {
     assert.ok(p.name && p.desc && p.cost && p.start.chassis && p.start.slots.length, id);
     if (p.sig) assert.ok(PASSIVES[p.sig.id] && PASSIVES[p.sig.id].values.length >= p.sig.max, `${id} has a value for every level`);
   }
+});
+
+test('Broker: 25 less HP, 20% fewer gold drops, shop 25% cheaper, the rule rides on the rig', () => {
+  const run = start('broker');
+  assert.equal(run.player.stats.get('maxHp'), 105);
+  approx(run.player.stats.get('oreGain') / start('rookie').player.stats.get('oreGain'), 0.8, 1e-6);
+  assert.equal(run.rigState.pilot.freeReroll, 1);
+  assert.equal(rerollPrice(0, run.rigState), 19);
+  assert.equal(rerollPrice(1, run.rigState), 38);
+  assert.equal(rerollPrice(0), 25);
+  const plain = stockUp(createRng(3), start('rookie').rigState);
+  const cheap = stockUp(createRng(3), run.rigState);
+  assert.equal(cheap.length, plain.length);
+  cheap.forEach((it, i) => assert.equal(it.price, shopPrice(run.rigState, plain[i].price)));
+});
+
+test('Overclocker: two cards a level-up, doubled cards count twice', () => {
+  const run = start('overclocker');
+  assert.equal(run.rigState.pilot.offerCount, 2);
+  assert.equal(makeOffers(createRng(5), run.rigState, { count: 2 }).length, 2);
+  let rig = run.rigState;
+  rig = applyOfferTimes(rig, { kind: 'level', id: 'blaster', to: 2 }, 2);
+  assert.equal(pieceLevel(rig, 'blaster'), 3);
+  assert.equal(pieceLevel(applyOfferTimes(rig, { kind: 'level', id: 'blaster', to: 4 }, 1), 'blaster'), 4);
+  rig = doubleLevel(rig, 'blaster');
+  assert.equal(pieceLevel(rig, 'blaster'), 4);
+  const two = applyOfferTimes(run.rigState, { kind: 'cap', cap: 'charge', c: 0 }, 2);
+  assert.equal(two.chains[0].charge, 2);
+  assert.equal(doubleChassis({ kind: 'chassis', chassis: 'relay', mk: 1 }).mk, 2);
+  assert.equal(doubleChassis({ kind: 'chassis', chassis: 'relay', mk: 3 }).mk, 3);
+  const p1 = applyOfferTimes(run.rigState, { kind: 'passive', id: 'hair_trigger' }, 2);
+  assert.equal(p1.passives.hair_trigger, 2);
 });

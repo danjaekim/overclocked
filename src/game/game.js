@@ -18,7 +18,7 @@ import { xpToNext, gainXp } from './xp.js';
 import { LEVELUP } from '../data/progression.js';
 import { createSandboxRun, loadChain, applyRig, chainKeys } from './sandbox.js';
 import { showRigEditor } from '../ui/rig-editor.js';
-import { makeOffers, CAPACITY_LEVELS, describeOffer, passOffers } from '../rig/offers.js';
+import { makeOffers, CAPACITY_LEVELS, describeOffer, passOffers, doubleChassis } from '../rig/offers.js';
 import { openRigChest } from '../rig/chests.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
 import { showWorkbench } from '../ui/workbench.js';
@@ -152,20 +152,28 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     run.cam.y = run.player.y + view.h * 0.2;                   // the sheet covers the lower part: lift the player into the clear top
     const level = run.player.level - (run.pendingLevelUps - 1);
     const capacity = withOffers && !extra && !run.sandbox && CAPACITY_LEVELS.includes(level);
-    const deal = (banished) => makeOffers(run.rng, run.rigState, { banished: [...run.banished, ...banished], capacity });
+    const pr = run.rigState.pilot || {};
+    const doubled = withOffers && !extra && !run.sandbox && !!pr.doubleEvery && ((run.levelsTaken || 0) + 1) % pr.doubleEvery === 0;
+    const deal = (banished) => {
+      const offers = makeOffers(run.rng, run.rigState, { banished: [...run.banished, ...banished], capacity, count: capacity ? undefined : pr.offerCount || undefined });
+      return doubled ? offers.map(doubleChassis) : offers;
+    };
+    const freeRerolls = withOffers && !extra && !run.sandbox && !capacity ? pr.freeReroll || 0 : 0;      // Broker: the first reroll of a level-up is free and never banks
     showRigEditor(overlays, {
       rig: run.rigState,
       offers: extra || (withOffers ? deal([]) : null),
       deal: withOffers && !capacity && !extra ? deal : null,
       upgrades: run.sandbox ? null : (r) => passOffers(run.rng, r),
-      rerolls: withOffers && !extra && !run.sandbox ? run.rerolls : 0,
+      rerolls: withOffers && !extra && !run.sandbox ? run.rerolls + freeRerolls : 0,
+      doubled,
       banishes: withOffers && !extra && !run.sandbox ? run.banishes : 0,
       onDone(rig, used) {
         run.rigState = rig;
         applyRig(run);
         if (withOffers && !extra) {
           run.pendingLevelUps--;
-          run.rerolls = used.rerolls;
+          run.rerolls = freeRerolls ? Math.min(run.rerolls, used.rerolls) : used.rerolls;
+          run.levelsTaken = (run.levelsTaken || 0) + 1;
           run.banishes = used.banishes;
           run.banished.push(...used.banished);
         }

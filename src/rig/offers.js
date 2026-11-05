@@ -11,7 +11,7 @@
 
 import { PIECES, RIG_STATS, MAX_LEVEL, OVERCLOCK_MAX, maxChains, LEVEL_STEP, SIGNATURE, SIG_LEVELS, CHAIN_NAMES } from './pieces.js';
 import { owned, pieceLevel, levelUp, overclock, takeStat, takePassive, addSlot, addPower, addChassis, hasSlotRoom, chainDefOf } from './editor.js';
-import { CHASSIS, START_CHASSIS, CHARGE_STEP, CELL_STEP, MK_NAMES, chassisStats } from './chassis.js';
+import { CHASSIS, START_CHASSIS, CHARGE_STEP, CELL_STEP, MK_NAMES, MK_MAX, chassisStats } from './chassis.js';
 import { compileChain, chainCost } from './chain.js';
 import { PASSIVES, PASSIVE_IDS, passiveMax } from './passives.js';
 
@@ -167,6 +167,19 @@ export function applyOffer(rig, o) {
   if (o.kind === 'chassis') return addChassis(rig, o.chassis, o.mk);     // null when every chain is taken: the editor asks which to replace
   return null;
 }
+
+// A doubled card (Overclocker): the card counts twice. A level goes up two (a spill past the maximum becomes an Overclock),
+// a fuse fuses twice, a passive or stat is taken twice (a second that cannot apply is dropped), a chassis arrives a mark up
+// (bumped when dealt, see doubleChassis). Pieces are placed by the editor, which then levels them once (see doubleLevel).
+export function applyOfferTimes(rig, o, n = 1) {
+  let r = applyOffer(rig, o);
+  if (!r || n < 2) return r;
+  if (o.kind === 'chassis') return r;
+  const again = o.kind === 'level' && pieceLevel(r, o.id) >= MAX_LEVEL ? overclock(r, o.id) : applyOffer(r, o);
+  return again || r;
+}
+export const doubleChassis = (o) => (o.kind === 'chassis' ? { ...o, mk: Math.min(MK_MAX, o.mk + 1) } : o);
+export const doubleLevel = (rig, id) => (pieceLevel(rig, id) >= MAX_LEVEL ? overclock(rig, id) : levelUp(rig, id)) || rig;
 
 const pct = (n) => `+${Math.round(n * 100)}%`;
 

@@ -62,6 +62,8 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 | Courier | Strider, Blaster, Momentum | +20% move speed, +40% pickup range | -20 max HP |
 | Bulwark | Anchor, Blaster, Turret Mode | +50 max HP, +3 armor, braced (1 s standing still): +4 more armor, and each kill heals 0.5% max HP, up to 2% a second | -15% move speed |
 | Splicer | Standard with Echo and Blaster, Hair Trigger | every chassis +1 starting slot and +2 max slots (8 on Standard) | 2 chains at most |
+| Broker | Standard and Blaster, no signature | first reroll of every level-up is free (never banks); workbench prices and rerolls x0.75 | -25 max HP, 20% fewer gold drops from kills |
+| Overclocker | Standard and Blaster, no signature | level-ups show 2 cards; every 4th level-up (capacity levels count) is doubled: the taken card counts twice (piece placed at Lv2, level +2, passive/stat/capacity twice, chassis a mark up) | only 2 cards per level-up |
 
 The rig state carries `rig.pilot` (signature passive, slot bonuses, chain limit, brace armor), so saves, resumed runs and the editor all see it. A saved run, history entry or snapshot with no pilot is a Rookie run. Broker, Overclocker and Tinker, the picker screen, unlocks and balance numbers follow in the plan.
 

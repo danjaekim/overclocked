@@ -275,3 +275,7 @@ healing keeps it standing (and its Anchor firing) far longer. If Bulwark now fee
 Dan: too strong; standing still through the whole Warlord fight he stayed at full HP. Heal per kill 1% -> 0.5% of max HP, cap 4% -> 2% a
 second (about 3.6 HP/s on 180 HP, against the Warlord's 18 a hit, 11 after braced armor). Floor (`--stand`): 3/12, 404 s, level 16.9: the
 floor bot can't tell the two apart (it is noise around the same wins), so this is set from Dan's play.
+
+### M5 (shipped as v0.12.7): Broker and Overclocker, 2026-11-05
+Both start Standard + Blaster, no signature. Broker: free reroll per level-up (rerolls + 1 on the sheet, banked count is min(before, after) so it never banks), workbench and reroll prices x0.75 (`shopPrice`), -25 max HP, oreGain -20% (kill drops only; elite, boss and shrine gold unchanged). Overclocker: `offerCount` 2 (capacity levels keep 3 so the slot card survives), `doubleEvery` 4 via `run.levelsTaken`; `applyOfferTimes`, `doubleChassis`, `doubleLevel` in rig/offers.js; the editor shows an x2 badge. Banish and reroll do not consume the double.
+Floor (12 seeds, bot): Broker 0/12 296 s; Overclocker 0/12 315 s, lvl 14.4 (Rookie 315 s). The bot does not use free rerolls or doubles, so these are a floor for stats only. Replays: the pilot rules do not change raw dps (same as Rookie), Broker earns ~12% less gold (1438 vs 1630). Real feel is for Dan's gate-2 playtest.
