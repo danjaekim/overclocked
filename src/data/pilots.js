@@ -9,7 +9,6 @@
 //              (armor while standing still for a second, which is when Turret Mode is on), braceHeal { perKill, cap }
 //              (while braced, each kill heals perKill of max HP, at most cap of max HP a second)
 //   freeReroll / shopMult   Broker: free rerolls per level-up, and the workbench price multiplier
-//   offerCount / doubleEvery   Overclocker: cards per level-up, and every Nth level-up counts a taken card twice
 //   cost       the line shown under the rule in the picker
 
 export const DEFAULT_PILOT = 'rookie';
@@ -67,10 +66,10 @@ export const PILOTS = {
   },
   overclocker: {
     name: 'Overclocker', short: 'Overclocker',
-    desc: 'Fewer, bigger upgrades. Level-ups offer 2 cards instead of 3, and every 4th level-up is doubled: the card you take counts twice.',
-    cost: 'Only 2 cards per level-up',
+    desc: 'Built for big picks. Its boss rewards (coming) triple one piece\'s defining number.',
+    cost: '-15 max HP',
     start: { chassis: 'standard', mk: 1, slots: ['blaster'], size: 3 },
-    mods: [], sig: null, rules: { offerCount: 2, doubleEvery: 4 },
+    mods: [{ stat: 'maxHp', op: 'flat', value: -15 }], sig: null, rules: {},
   },
 };
 

@@ -11,7 +11,7 @@
 // { kind: 'gap', c, i }: between slot i-1 and slot i of chain c, which pushes the pieces to its right along.
 
 import { PASSIVES, passiveMax } from './passives.js';
-import { PIECES, RULES, maxChains, MAX_LEVEL, OVERCLOCK_MAX } from './pieces.js';
+import { PIECES, RULES, maxChains, MAX_LEVEL } from './pieces.js';
 import { CHASSIS, chassisStats, chassisForRule, keepsUpgrades, migrateChassis, MK_MAX } from './chassis.js';
 
 export const BENCH = 3;
@@ -187,7 +187,7 @@ export function chainDefsOf(rig) {
 
 // ---- levels and capacity: pure, each returns a new rig ----
 
-export const pieceLevel = (rig, id) => (rig.levels && rig.levels[id]) || 1;
+export const pieceLevel = (rig, id) => Math.min(MAX_LEVEL, (rig.levels && rig.levels[id]) || 1);      // old saves had Overclock levels 6-7: they read as 5
 
 export function owned(rig) {
   const ids = new Set(rig.bench.filter(Boolean));
@@ -198,15 +198,6 @@ export function owned(rig) {
 export function levelUp(rig, id) {
   const next = cloneRig(rig);
   next.levels[id] = Math.min(MAX_LEVEL, pieceLevel(rig, id) + 1);
-  return next;
-}
-
-// The workbench's Overclock: a maxed piece goes one level further, up to OVERCLOCK_MAX.
-export function overclock(rig, id) {
-  const lv = pieceLevel(rig, id);
-  if (lv < MAX_LEVEL || lv >= OVERCLOCK_MAX) return null;
-  const next = cloneRig(rig);
-  next.levels[id] = lv + 1;
   return next;
 }
 

@@ -46,7 +46,6 @@ function score(o, rig, hpFrac = 1) {
   const n = types(rig);
   if (o.kind === 'chassis') return chassisTarget(rig, o) === null ? -1 : 72;
   if (o.kind === 'cap') return o.cap === 'slot' ? 65 : o.cap === 'charge' ? (starved(rig, o.c) > 1.5 ? 60 : 40) : 35;
-  if (o.kind === 'fuse') return 58;
   if (o.kind === 'stat') return o.id === 'hp' ? 30 : 15;
   if (o.kind === 'passive') {                        // a fitting passive beats a stat card, and a level card once the rig is full
     if (o.id === 'glass_cannon' && hpFrac <= 0.7) return 18;
@@ -129,7 +128,7 @@ export function playRig(seed, { god = GOD, onTick = null, replay = null } = {}) 
     if (run.forgeReady) {                                          // the workbench: buy what scores best while the gold lasts
       run.forgeReady = false;
       const items = stockUp(run.rng, run.rigState, run.banished, { slotBuys });
-      const shopScore = (it) => (it.kind === 'slot' ? 66 : it.kind === 'charge' ? 45 : it.kind === 'cell' ? 30 : it.kind === 'overclock' ? 50 : score(it, run.rigState));
+      const shopScore = (it) => (it.kind === 'slot' ? 66 : it.kind === 'charge' ? 45 : it.kind === 'cell' ? 30 : score(it, run.rigState));
       items.sort((a, b) => shopScore(b) - shopScore(a));
       for (const it of items) {
         if (run.ore < it.price || shopScore(it) < 0) continue;

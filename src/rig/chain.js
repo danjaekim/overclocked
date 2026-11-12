@@ -16,14 +16,14 @@
 //            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
-import { OVERCLOCK_STEP, MAX_LEVEL as MAXL, SUNDER } from './pieces.js';
+import { MAX_LEVEL as MAXL, SUNDER } from './pieces.js';
 import { passiveValues } from './passives.js';
 import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_POWER, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
 const sigPower = (levels, id) => Math.pow(SIG_TRIGGER_STEP, sigCount(levels, id));
 const lvlMult = (levels, id) => {
   const lv = (levels && levels[id]) || 1;
-  return (1 + LEVEL_STEP * (Math.min(lv, MAXL) - 1)) * Math.pow(OVERCLOCK_STEP, Math.max(0, lv - MAXL));   // past 5: overclocked
+  return 1 + LEVEL_STEP * (Math.min(lv, MAXL) - 1);
 };
 
 export function compileChain(def) {

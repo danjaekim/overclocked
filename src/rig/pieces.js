@@ -23,9 +23,6 @@ export const EVERY = 3;
 // Piece levels: each level after the first adds this to the piece's main number (an attack's damage, a payload's damage).
 export const LEVEL_STEP = 0.1;
 export const MAX_LEVEL = 5;
-// Overclock: the workbench alone takes a maxed piece past level 5, to OVERCLOCK_MAX, each step x OVERCLOCK_STEP power.
-export const OVERCLOCK_MAX = 7;
-export const OVERCLOCK_STEP = 1.1;
 
 // A trigger's payload power depends on the trigger's job (v0.6.8): On Hit runs it for every enemy hit, so each run is weaker and crowds
 // supply the power; On Impact runs it once per attack, so it hits hardest (bosses and elites); On Kill is a payload that can cascade (below);

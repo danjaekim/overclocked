@@ -10,7 +10,7 @@
 import { PIECES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { analyzeChain } from '../rig/chain.js';
 import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, replaceChassis, BENCH } from '../rig/editor.js';
-import { applyOfferTimes, doubleLevel, describeOffer } from '../rig/offers.js';
+import { applyOffer, describeOffer } from '../rig/offers.js';
 import { chassisName, keepsUpgrades } from '../rig/chassis.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -27,7 +27,7 @@ const CHASSIS_ICON = { filled: false, icon: 'M3 7h18v10H3z M7 7v10 M12 7v10 M17 
 // with every chain taken asks which chain it replaces, or lets you pass for an upgrade card (opts.upgrades(rig)); the others apply at once.
 let active = null;             // the open editor's AbortController: a new editor closes the old one's listeners
 
-export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = null, rerolls = 0, banishes = 0, doubled = false, onDone }) {
+export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = null, rerolls = 0, banishes = 0, onDone }) {
   const used = { rerolls, banishes, banished: [] };
   let st = cloneRig(rig);
   let snapshot = cloneRig(rig);
@@ -104,8 +104,8 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
     return `<div class="rcards">${pending.map((o, k) => {
       const d = describeOffer(st, o);
       const ic = d.piece || (o.kind === 'stat' || o.kind === 'passive' ? STAT_ICON : o.kind === 'chassis' ? CHASSIS_ICON : CAP_ICON);
-      const ban = used.banishes > 0 && (o.kind === 'piece' || o.kind === 'level' || o.kind === 'fuse') ? `<button class="rban" data-act="ban:${k}">Ban</button>` : '';
-      return `<div class="rcardw"><button class="rcard ${d.type}" data-act="offer:${k}">${doubled ? '<i class="x2">x2</i>' : ''}${icon(ic, 30)}<b>${esc(d.title)}</b><span>${esc(d.tag)}</span><em>${esc(d.desc)}</em></button>${ban}</div>`;
+      const ban = used.banishes > 0 && (o.kind === 'piece' || o.kind === 'level') ? `<button class="rban" data-act="ban:${k}">Ban</button>` : '';
+      return `<div class="rcardw"><button class="rcard ${d.type}" data-act="offer:${k}">${icon(ic, 30)}<b>${esc(d.title)}</b><span>${esc(d.tag)}</span><em>${esc(d.desc)}</em></button>${ban}</div>`;
     }).join('')}</div>`;
   }
 
@@ -128,7 +128,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
         <button class="rbtn primary" data-act="done"${pending || incoming || swap ? ' disabled' : ''}>Done</button></div>
       ${offersHtml()}${chains}
       <div class="rbench">${bench}<span class="rlabel">Bench: spare pieces</span></div>
-      <div class="rhint">${pending && !incoming && !swap ? (doubled ? 'Doubled level-up: the card you take counts twice.' : 'Pick one, or skip.') : hint}</div>`, onAct, 'sheet');
+      <div class="rhint">${pending && !incoming && !swap ? 'Pick one, or skip.' : hint}</div>`, onAct, 'sheet');
   }
 
   function commit(next) {
@@ -192,7 +192,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
     } else if (kind === 'offer') {
       const o = pending[Number(a)];
       if (o.kind !== 'piece') {                                // a level, a passive, capacity or a chassis: no slot needed
-        const next = applyOfferTimes(st, o, doubled ? 2 : 1);
+        const next = applyOffer(st, o);
         if (!next && o.kind === 'chassis') { swap = o; sel = null; render(); return; }   // every chain in use: replace one
         if (!next) return;
         const d = describeOffer(st, o);
@@ -212,7 +212,7 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
         render();
         return;
       }
-      st = doubled ? doubleLevel(placed.rig, id) : placed.rig;
+      st = placed.rig;
       snapshot = cloneRig(st);
       history.length = 0;
       suggest = placed.loc;
@@ -225,7 +225,6 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
         const old = pieceAt(st, loc);
         if (kind === 'gap' || !old) return;
         st = setPiece(st, loc, incoming);
-        if (doubled) st = doubleLevel(st, incoming);
         snapshot = cloneRig(st);
         history.length = 0;
         suggest = loc;

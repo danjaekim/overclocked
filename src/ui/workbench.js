@@ -24,7 +24,7 @@ export function showWorkbench(overlays, { rig, gold, stock, restock, onChange, o
     const bought = it.sold;
     const can = !bought && g >= it.price;
     const ic = d.piece;
-    const type = it.kind === 'chassis' ? 'chassis' : d.piece && it.kind !== 'overclock' ? d.piece.type : 'cap';
+    const type = it.kind === 'chassis' ? 'chassis' : d.piece ? d.piece.type : 'cap';
     return `<div class="rcardw"><button class="rcard ${type}${can ? '' : ' dim'}" data-act="buy:${k}"${bought ? ' disabled' : ''}>${ic ? icon(ic, 30) : ''}<b>${esc(d.title)}</b><span>${bought ? 'bought' : esc(d.tag)}</span><em>${esc(d.desc)}</em><strong class="price">${bought ? '' : `${it.price} ${GOLD_NAME.toLowerCase()}`}</strong></button></div>`;
   }
 

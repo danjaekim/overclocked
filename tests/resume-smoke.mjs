@@ -12,7 +12,7 @@ page.on('console', (m) => { if (['error'].includes(m.type())) errs.push(m.text()
 const fail = (m) => { console.log('FAIL', m); process.exit(1); };
 const info = () => page.evaluate(() => { const g = window.__overclocked.game; const r = g.run; return { state: g.state, t: +r.time.toFixed(2), kills: r.kills, lv: r.player.level, chains: r.rigState.chains.map((c) => c.chassis + ':' + c.slots.filter(Boolean).join(',')), saved: !!localStorage.getItem('overclocked.run.v1'), insts: r.rig.insts.length }; });
 const url = `http://localhost:${server.address().port}/`;
-await page.goto(url); await page.waitForTimeout(1500);
+await page.goto(url + "?pilot=rookie"); await page.waitForTimeout(1500);
 // a rig worth saving, a few seconds of play, then a pause
 await page.evaluate(() => { const r = window.__overclocked.game.run; r.rigState.chains[0].slots = ['blaster', 'flame', 'mortar']; r.rigState.levels = { blaster: 3 }; r.player.level = 5; r.pendingChests.push(0); });
 await page.waitForSelector('.card.reveal'); await page.waitForTimeout(2200);
@@ -47,7 +47,7 @@ p2.on('pageerror', (e) => errs.push('pageerror ' + e.message));
 await p2.addInitScript(() => localStorage.setItem('overclocked.run.v1', '{"format":2,"nodes":[1]}'));
 await p2.goto(url); await p2.waitForTimeout(1200);
 const fresh = await p2.evaluate(() => { const g = window.__overclocked.game; return { state: g.state, t: g.run.time, saved: !!localStorage.getItem('overclocked.run.v1') }; });
-if (fresh.state !== 'run' || fresh.t > 3 || fresh.saved) fail('a corrupt save should be dropped: ' + JSON.stringify(fresh));
+if ((fresh.state !== 'run' && fresh.state !== 'picker') || fresh.t > 3 || fresh.saved) fail('a corrupt save should be dropped: ' + JSON.stringify(fresh));
 console.log('ok', JSON.stringify({ before, after, played }));
 if (errs.length) { console.log('console errors', errs); process.exit(1); }
 await b.close(); server.close();

@@ -174,4 +174,6 @@ He judges whether each reward feels new, not just strong, and whether the boss c
 
 ## Results
 
-(Filled in as milestones ship.)
+### M1 (v0.13.0): overclocks removed, 2026-11-12
+Dan's last 5 v0.12.5 runs replayed before and after (raw dps at 8 / 10 min): 9905 / 6472 to 9105 / 5711, 9454 / 9264 to 9492 / 11561 (shop rolls differ per run, noise), 8379 / 4960 to 8287 / 4017, the rest unchanged (they had no Lv6-7 pieces). So roughly -3 to -20% late. Seer fights got longer: 20 s to 43 s, 63 s to 120 s, 36 s to 56 s; Warlord 57 s to 76 s in one run. 25 of Dan's 30 recorded runs have Lv6-7 pieces by the end. No numbers compensated, as planned. Overclocker is now 3 cards, -15 max HP, no rule until M2.
+Also: tests/resume-smoke.mjs was stale since the picker (M2 of plan-v12); it now boots with ?pilot=rookie and accepts the picker after a corrupt save.

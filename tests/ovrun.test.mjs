@@ -5,7 +5,7 @@ import { createRng } from '../src/core/rng.js';
 import { createOverclockedRun, START_CHAIN } from '../src/game/ovrun.js';
 import { applyRig, applyRigStats } from '../src/game/sandbox.js';
 import { spawnShrine, updateShrines } from '../src/systems/shrines.js';
-import { stockUp, buyItem, levelPrice, rerollPrice, describeItem, slotPrice, overclockPrice } from '../src/rig/workbench.js';
+import { stockUp, buyItem, levelPrice, rerollPrice, describeItem, slotPrice } from '../src/rig/workbench.js';
 import { spawnEnemy } from '../src/game/director.js';
 import { queueDamage } from '../src/systems/damage-queue.js';
 import { flushDamage } from '../src/systems/damage.js';
@@ -66,9 +66,8 @@ test('the workbench: stock, prices, buying a piece, a level, capacity and a chas
   assert.equal(buyItem(r, { kind: 'cell', price: 30 }, 0).rig.chains[0].cell, 1);
   let mx = r;
   for (let i = 0; i < 4; i++) mx = levelUp(mx, 'blaster');
-  const oc = stockUp(createRng(2), mx).find((i) => i.kind === 'overclock') || { kind: 'overclock', id: 'blaster', to: 6 };
-  assert.equal(pieceLevel(buyItem(mx, oc).rig, 'blaster'), 6);
-  assert.equal(overclockPrice(6), 100);
+  for (let i = 0; i < 40; i++) assert.ok(!stockUp(createRng(i), mx).some((it) => it.kind === 'overclock' || (it.kind === 'level' && it.id === 'blaster')), 'a maxed piece has nothing to buy');
+  assert.equal(buyItem(mx, { kind: 'overclock', id: 'blaster', to: 6 }), null);
   const piece = stock.find((i) => i.kind === 'piece');
   const bought = buyItem(r, piece);
   assert.ok(owned(bought.rig).has(piece.id) && bought.placed);
@@ -82,7 +81,7 @@ test('the workbench: stock, prices, buying a piece, a level, capacity and a chas
   let full = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo'], ['sunder', 'on_impact', 'on_kill']);
   full.bench = ['slam', 'chain_bolt', 'on_hit'];
   assert.equal(buyItem(full, { kind: 'piece', id: 'every_3rd', price: 40 }), null, 'no room');
-  assert.ok(describeItem(r, piece).title && describeItem(r, ch).desc && describeItem(r, { kind: 'slot' }).title && describeItem(mx, oc).title);
+  assert.ok(describeItem(r, piece).title && describeItem(r, ch).desc && describeItem(r, { kind: 'slot' }).title);
 });
 
 test('ore is gold in a run: enemies drop it', () => {
@@ -188,17 +187,16 @@ test('offers: a piece you own is offered as a level or a copy, a piece you lack 
   assert.ok(!pieceCandidates(rigOf(['blaster']), ['nova']).some((c) => c.id === 'nova'), 'a banished piece is not offered');
 });
 
-test('a full rig favors upgrades: copies of maxed pieces fuse into an Overclock level, other copies drop out, levels draw more', () => {
+test('a full rig favors upgrades: no copies, and no fuse cards for maxed pieces, levels draw more', () => {
   let r = rigOf(['blaster', 'nova', 'mortar'], ['scatter', 'flame', 'frost'], ['storm', 'heavy', 'echo']);
   r.bench = ['slam', 'chain_bolt', 'on_hit'];
   assert.ok(rigFull(r) && !rigFull(rigOf(['blaster'])));
   for (let i = 0; i < 4; i++) r = levelUp(r, 'blaster');
   const c = pieceCandidates(r);
-  assert.deepEqual(c.find((x) => x.id === 'blaster' && x.kind === 'fuse'), { kind: 'fuse', id: 'blaster', to: 6 });
+  assert.ok(!c.some((x) => x.kind === 'fuse') && !c.some((x) => x.id === 'blaster'), 'a maxed piece offers nothing');
   assert.ok(!c.some((x) => x.copy), 'no copies when there is nowhere to put one');
   assert.ok(c.some((x) => x.id === 'nova' && x.kind === 'level'));
-  assert.equal(pieceLevel(applyOffer(r, { kind: 'fuse', id: 'blaster', to: 6 }), 'blaster'), 6);
-  assert.ok(describeOffer(r, { kind: 'fuse', id: 'blaster', to: 6 }).title.startsWith('Fuse'));
+  assert.equal(applyOffer(r, { kind: 'fuse', id: 'blaster', to: 6 }), null, 'an old fuse card does nothing');
   let upg = 0;
   let cards = 0;
   for (let i = 0; i < 300; i++) for (const o of makeOffers(createRng(i), r)) { cards++; if (o.kind === 'level' || o.kind === 'fuse') upg++; }

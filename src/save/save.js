@@ -85,7 +85,7 @@ function cleanTimeline(tl) {
     const r = cleanRig(p.rig) || { chains: [], levels: {}, passives: {} };
     const src = p.rig && Array.isArray(p.rig.chains) ? p.rig.chains : [];
     r.chains.forEach((c, i) => { c.charge = num(src[i] && src[i].charge, 20); c.cell = num(src[i] && src[i].cell, 20); });
-    if (p.rig && p.rig.levels) for (const [k, v] of Object.entries(p.rig.levels)) if (r.levels[k] !== undefined) r.levels[k] = Math.max(1, Math.min(7, Math.floor(v) || 1));   // overclock goes to 7
+    if (p.rig && p.rig.levels) for (const [k, v] of Object.entries(p.rig.levels)) if (r.levels[k] !== undefined) r.levels[k] = Math.max(1, Math.min(5, Math.floor(v) || 1));
     const stats = {};
     if (p.rig && p.rig.stats && typeof p.rig.stats === 'object') for (const [k, v] of Object.entries(p.rig.stats).slice(0, 12)) stats[String(k).slice(0, 20)] = num(v, 20);
     r.stats = stats;

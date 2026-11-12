@@ -5,7 +5,7 @@ import { createOverclockedRun } from '../src/game/ovrun.js';
 import { snapshotRun, restoreRun } from '../src/game/run-snapshot.js';
 import { PILOTS, PILOT_IDS, DEFAULT_PILOT, pilotRig } from '../src/data/pilots.js';
 import { PASSIVES, passiveMax, passiveValues } from '../src/rig/passives.js';
-import { passivePool, capacityOffers, makeOffers, applyOfferTimes, doubleChassis, doubleLevel } from '../src/rig/offers.js';
+import { passivePool, capacityOffers, makeOffers } from '../src/rig/offers.js';
 import { addChassis, addSlot, takePassive, slotMax, replaceChassis, cloneRig } from '../src/rig/editor.js';
 import { canTakeNew, stockUp, rerollPrice, shopPrice } from '../src/rig/workbench.js';
 import { pieceLevel } from '../src/rig/editor.js';
@@ -203,20 +203,18 @@ test('Broker: 25 less HP, 20% fewer gold drops, shop 25% cheaper, the rule rides
   cheap.forEach((it, i) => assert.equal(it.price, shopPrice(run.rigState, plain[i].price)));
 });
 
-test('Overclocker: two cards a level-up, doubled cards count twice', () => {
+test('Overclocker: 15 less HP, three cards a level-up, no doubling', () => {
   const run = start('overclocker');
-  assert.equal(run.rigState.pilot.offerCount, 2);
-  assert.equal(makeOffers(createRng(5), run.rigState, { count: 2 }).length, 2);
-  let rig = run.rigState;
-  rig = applyOfferTimes(rig, { kind: 'level', id: 'blaster', to: 2 }, 2);
-  assert.equal(pieceLevel(rig, 'blaster'), 3);
-  assert.equal(pieceLevel(applyOfferTimes(rig, { kind: 'level', id: 'blaster', to: 4 }, 1), 'blaster'), 4);
-  rig = doubleLevel(rig, 'blaster');
-  assert.equal(pieceLevel(rig, 'blaster'), 4);
-  const two = applyOfferTimes(run.rigState, { kind: 'cap', cap: 'charge', c: 0 }, 2);
-  assert.equal(two.chains[0].charge, 2);
-  assert.equal(doubleChassis({ kind: 'chassis', chassis: 'relay', mk: 1 }).mk, 2);
-  assert.equal(doubleChassis({ kind: 'chassis', chassis: 'relay', mk: 3 }).mk, 3);
-  const p1 = applyOfferTimes(run.rigState, { kind: 'passive', id: 'hair_trigger' }, 2);
-  assert.equal(p1.passives.hair_trigger, 2);
+  assert.equal(run.player.stats.get('maxHp'), 115);
+  assert.deepEqual(run.rigState.pilot, { id: 'overclocker', sig: null, sigMax: 0 });
+  assert.equal(makeOffers(createRng(5), run.rigState).length, 3);
+});
+
+test('no Overclock: piece levels stop at 5, and old levels 6-7 read as 5', () => {
+  const run = start('rookie');
+  const rig = cloneRig(run.rigState);
+  rig.levels.blaster = 7;
+  assert.equal(pieceLevel(rig, 'blaster'), 5);
+  const n = normalize({ history: [{ ...entryFromSummary(run.summary()), rig: { chains: [{ rule: 'pulse', slots: ['blaster'] }], levels: { blaster: 7 }, passives: {} } }] });
+  assert.equal(n.history[0].rig.levels.blaster, 5);
 });
