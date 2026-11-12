@@ -156,6 +156,8 @@ Stop here. The question for Dan: does the pilot change how you build? If Courier
 
 ---
 
+> **2026-11-12:** Dan's Overclocker playtest led to docs/plan-v13-boss-rewards.md (per-pilot boss rewards, overclocks removed, Overclocker back to 3 cards). Run that plan first; M6-M8 below follow it.
+
 ## M6, v0.12.5: unlocks
 
 **Goal.** Rookie and Courier are open on a new save; the others unlock from milestones that teach their playstyle.
