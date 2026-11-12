@@ -72,7 +72,8 @@ function cleanRig(r) {
   if (r.levels && typeof r.levels === 'object') for (const [k, v] of Object.entries(r.levels).slice(0, 20)) if (Number.isFinite(v)) levels[k === 'pierce' ? 'sunder' : String(k).slice(0, 20)] = Math.max(1, Math.min(5, Math.floor(v)));
   const passives = {};
   if (r.passives && typeof r.passives === 'object') for (const [k, v] of Object.entries(r.passives).slice(0, 20)) if (Number.isFinite(v)) passives[String(k).slice(0, 20)] = Math.max(1, Math.min(4, Math.floor(v)));   // 4: a pilot's signature passive
-  return { chains, levels, passives };
+  const rewards = Array.isArray(r.rewards) ? r.rewards.slice(0, 4).filter((x) => x && typeof x.id === 'string').map((x) => ({ id: x.id.slice(0, 20), ...(typeof x.piece === 'string' ? { piece: x.piece.slice(0, 20) } : {}), n: Math.max(1, Math.min(2, Math.floor(Number(x.n)) || 1)) })) : [];
+  return { chains, levels, passives, ...(rewards.length ? { rewards } : {}) };
 }
 
 // A run's timeline (game/ovrun.js timelinePoint): the rig once a minute, for the replay bench. Only the newest

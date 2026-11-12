@@ -10,6 +10,7 @@
 import { PIECES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { analyzeChain } from '../rig/chain.js';
 import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, replaceChassis, BENCH } from '../rig/editor.js';
+import { overchargedOf } from '../rig/rewards.js';
 import { applyOffer, describeOffer } from '../rig/offers.js';
 import { chassisName, keepsUpgrades } from '../rig/chassis.js';
 
@@ -62,7 +63,8 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
     }
     if (incoming && p) cls.push('replace');
     const lv = id ? (rigView.levels && rigView.levels[id]) || 1 : 0;
-    return `<button class="${cls.join(' ')}" data-act="${act}">${p ? `${icon(p, 24)}<b>${esc(p.short)}</b><i>${p.cost}</i><em class="lv${lv > 5 ? ' oc' : ''}">L${lv}</em>` : ''}</button>`;
+    const ocd = !!id && overchargedOf(rigView).includes(id);
+    return `<button class="${cls.join(' ')}" data-act="${act}">${p ? `${icon(p, 24)}<b>${esc(p.short)}</b><i>${p.cost}</i><em class="lv${ocd ? ' oc' : ''}">${ocd ? 'x3' : 'L' + lv}</em>` : ''}</button>`;
   }
 
   function chainHtml(ci) {

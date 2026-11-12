@@ -91,6 +91,7 @@ function makeInstance(run, rig, node, chain) {
   }
   if (inst.addTags.length) inst.tags = instanceTagSet(inst);
   for (const m of node.sigMods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });   // level 3 and 5 signature effects
+  for (const m of node.ocMods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });   // Overcharge
   for (const id of node.mods) {                      // modifiers that are plain stat changes (Heavy, Pierce)
     const mods = PIECES[id].mods;
     if (mods) for (const m of mods) run.player.stats.add({ ...m, tags: [inst.instanceTag], source: `${SOURCE}${inst.instanceId}:` });
@@ -112,7 +113,7 @@ function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
   if (run.rig !== rig) return;
   if (ev === 'hit') {                   // the node's own direct hits drive its element reaction
     if (node.sunder > 0 && depth === 0 && target !== null && target.alive) {     // Sunder: one more stack on the enemy, and the clock restarts
-      target.sunderN = Math.min(node.sunder, (target.sunderN || 0) + 1);
+      target.sunderN = Math.min(node.sunder, (target.sunderN || 0) + (node.sunderAdd || 1));
       target.sunderS = SUNDER.duration;
     }
     if (node.reaction !== null && depth === 0 && target !== null) {
@@ -138,7 +139,7 @@ function onEvent(run, rig, chain, node, inst, ev, atk, x, y, target, depth) {
     act = inst.rigAct;
   }
   if (act === null || act.pool < 1 || rig.queue.length - rig.head >= MAX_QUEUE) return;
-  rig.queue.push({ trig, act, x, y, chain, gen: inst.rigGen || 0 });
+  for (let k = 0; k < (trig.reps || 1) && rig.queue.length - rig.head < MAX_QUEUE; k++) rig.queue.push({ trig, act, x, y, chain, gen: inst.rigGen || 0 });     // Overcharge: the payload runs more than once
 }
 
 function note(run, rig, ev, o) {
@@ -216,7 +217,7 @@ function fireNode(run, rig, chain, node, x, y, act, free = false, gen = 0) {
   inst.rigArmed = armed;
   if (node.echo) for (let k = 1; k <= node.echoShots; k++) rig.delayed.push({ t: ECHO.delay * k, node, x, y, act, mult, armed, gen });
   if (armed && node.trigger.on === 'every' && ++node.count % node.trigger.every === 0 && rig.queue.length - rig.head < MAX_QUEUE) {
-    rig.queue.push({ trig: node.trigger, act, x: run.player.x, y: run.player.y, chain, gen });   // Every 3rd: the payload runs from the player
+    for (let k = 0; k < (node.trigger.reps || 1); k++) rig.queue.push({ trig: node.trigger, act, x: run.player.x, y: run.player.y, chain, gen });   // Every 3rd: the payload runs from the player
   }
   chain.flash[node.idx] = run.time;
   if (rig.pings.length < 32) rig.pings.push({ x, y, t0: run.time, color: CHAIN_COLORS[chain.index % CHAIN_COLORS.length] });   // a ring where this chain's piece ran

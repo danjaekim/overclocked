@@ -3,6 +3,7 @@ import { startLine } from './pilot-select.js';
 // The compendium (docs/overclocked-spec.md, "Compendium"): how chains run, every piece and rule card, the element
 // reactions (filled in as you see them happen in a run) and the rigs of your past runs. Opened from the pause menu.
 
+import { REWARDS } from '../data/boss-rewards.js';
 import { PIECES, RULES, REACTION_INFO, SIGNATURE, SIG_LEVELS, EVERY, MAX_CHAINS } from '../rig/pieces.js';
 import { PASSIVES, PASSIVE_IDS } from '../rig/passives.js';
 import { CHASSIS, chassisName } from '../rig/chassis.js';
@@ -57,7 +58,7 @@ function pilotsHtml() {
   return `<p class="sub">Pick one before each run. A pilot changes a rule for the whole run, so its bonus still works after its starting chassis is replaced.</p>` + PILOT_IDS.map((id) => {
     const p = PILOTS[id];
     const sig = p.sig ? `<br><em>Signature: ${esc(PASSIVES[p.sig.id].name)}, starts at Lv1 and reaches Lv${p.sig.max}. ${esc(PASSIVES[p.sig.id].desc(p.sig.max))} at Lv${p.sig.max}.</em>` : '';
-    return `<div class="cmp"><span><b>${esc(p.name)}</b> <small>${esc(startLine(p))}</small><br>${esc(p.desc)}<br><small>${esc(p.cost)}</small>${sig}</span></div>`;
+    return `<div class="cmp"><span><b>${esc(p.name)}</b> <small>${esc(startLine(p))}</small><br>${esc(p.desc)}<br><small>${esc(p.cost)}</small>${sig}${p.reward ? `<br><em>Boss reward (after the Warlord and the Seer): ${esc(REWARDS[p.reward].name)}. ${esc(REWARDS[p.reward].desc)}</em>` : ''}</span></div>`;
   }).join('');
 }
 

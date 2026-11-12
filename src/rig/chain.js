@@ -16,7 +16,7 @@
 //            for each modifier held for it, and for the trigger that leads to it
 //   problems [{ idx, why }]: slots that can never run, for the editor to grey out
 
-import { MAX_LEVEL as MAXL, SUNDER } from './pieces.js';
+import { MAX_LEVEL as MAXL, SUNDER, OVERCHARGE } from './pieces.js';
 import { passiveValues } from './passives.js';
 import { PIECES, REACTIONS, REACTION_INFO, RULES, DEFAULT_ENERGY, SCATTER, ECHO, EVERY, LEVEL_STEP, TRIGGER_POWER, SIGNATURE, SIG_TRIGGER_STEP, sigCount } from './pieces.js';
 
@@ -30,7 +30,7 @@ export function compileChain(def) {
   const slots = def.slots;
   const problems = [];
   const pv = passiveValues(def.passives);
-  const q = { ...(def.quirk || NO_QUIRK), payloadPower: ((def.quirk && def.quirk.payloadPower) || 1) * pv.hairTrigger, modCost: pv.hairTrigger > 1 ? 1 : 0 };   // Hair Trigger: payloads hit harder, modifiers cost 1 more
+  const q = { ...(def.quirk || NO_QUIRK), payloadPower: ((def.quirk && def.quirk.payloadPower) || 1) * pv.hairTrigger, modCost: pv.hairTrigger > 1 ? 1 : 0, oc: new Set(def.overcharged || []) };   // Hair Trigger: payloads hit harder, modifiers cost 1 more
   const nodes = parse(slots, 0, problems, def.levels || null, q.power || 1, q);
   if (pv.lastWord > 1 && nodes.length) nodes[nodes.length - 1].power *= pv.lastWord;                 // Last Word: the chain's last weapon
   return { rule: def.rule, energy: def.energy === undefined ? DEFAULT_ENERGY : def.energy, recharge: def.recharge || 0, nodes, problems };
@@ -63,7 +63,8 @@ function parse(slots, start, problems, levels, outer, q, inPayload = false) {
         for (let k = i + 1; k < slots.length; k++) if (slots[k] !== null && slots[k] !== undefined) problems.push({ idx: k, why: 'follows a trigger that cannot run' });
         return nodes;
       }
-      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: piece.cost + (q.costAdd || 0), free: piece.on === 'every', payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_POWER[piece.on] * sigPower(levels, id) * (inPayload ? 1 : q.payloadPower || 1), q, true) };
+      const oc = q.oc && q.oc.has(id) ? OVERCHARGE[id] : null;                       // Overcharge: the trigger costs double and its payload runs 3 times
+      last.trigger = { piece: id, idx: i, on: piece.on, every: piece.on === 'every' ? (oc && oc.every ? oc.every : sigCount(levels, id) >= 2 ? EVERY - 1 : EVERY) : 0, cost: (piece.cost + (q.costAdd || 0)) * (oc ? 2 : 1), reps: oc && oc.reps ? oc.reps : 1, free: piece.on === 'every', payload: parse(slots, i + 1, problems, levels, outer * lvlMult(levels, id) * TRIGGER_POWER[piece.on] * sigPower(levels, id) * (inPayload ? 1 : q.payloadPower || 1), q, true) };
       return nodes;                           // the rest of the slots belong to the payload
     }
   }
@@ -77,19 +78,26 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
   let scatter = false;
   let echo = false;
   let sunder = 0;
-  let cost = PIECES[id].cost + (q.costAdd || 0);
+  const oc = q.oc || new Set();
+  const ocMods = [];                                           // Overcharge: stat changes for this weapon's instance
+  let cost = (PIECES[id].cost + (q.costAdd || 0)) * (oc.has(id) ? 2 : 1);
+  if (oc.has(id) && OVERCHARGE[id] && OVERCHARGE[id].mods) ocMods.push(...OVERCHARGE[id].mods);
   let power = outer * lvlMult(levels, id);
   let copies = SCATTER.copies + sigCount(levels, 'scatter');
+  let echoN = 0;
+  let sunderAdd = 1;
   const sigMods = [];
   const addSig = (pid) => { const g = SIGNATURE[pid]; if (g && g.mods) for (let k = sigCount(levels, pid); k > 0; k--) sigMods.push(...g.mods); };
   addSig(id);
   for (const h of held) {
     const m = PIECES[h.id];
-    cost += m.cost + (q.costAdd || 0) + (q.modCost || 0);
+    const o = oc.has(h.id) ? OVERCHARGE[h.id] : null;
+    cost += (m.cost + (q.costAdd || 0)) * (o ? 2 : 1) + (q.modCost || 0);
     power *= lvlMult(levels, h.id);
-    if (m.scatter) scatter = true;
-    if (m.echo) echo = true;
-    if (m.sunder) sunder = SUNDER.max + sigCount(levels, h.id);
+    if (o && o.mods) ocMods.push(...o.mods);
+    if (m.scatter) { scatter = true; if (o && o.copies) copies *= o.copies; }
+    if (m.echo) { echo = true; if (o && o.echoes) echoN = o.echoes; }
+    if (m.sunder) { sunder = (SUNDER.max + sigCount(levels, h.id)) * (o && o.sunder ? o.sunder : 1); if (o && o.sunder) sunderAdd = o.sunder; }
     addSig(h.id);
     if (m.element) {
       seq.push(m.element);
@@ -99,10 +107,10 @@ function makeNode(id, idx, held, levels, outer, q, inPayload) {
   if (inPayload) cost = Math.max(1, cost - 1);
   const sc = sigCount(levels, 'echo');
   const echoMult = sc >= 1 ? ECHO.boosted : ECHO.mult;
-  const echoShots = sc >= 2 ? 2 : 1;                           // extra shots after the first
+  const echoShots = echoN ? Math.max(echoN, sc >= 2 ? 2 : 1) : sc >= 2 ? 2 : 1;                           // extra shots after the first
   let reaction = null;                                         // the first neighbouring pair that makes one
   for (let k = 0; k + 1 < seq.length && !reaction; k++) reaction = REACTIONS[`${seq[k]}>${seq[k + 1]}`] || null;
-  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, copies, echo, echoMult, echoShots, sunder, sigMods, power, cost, boost: !!q.elemBoost && elements.length > 0, trigger: null };
+  return { kind: 'weapon', piece: id, idx, mods: held.map((h) => h.id), modIdx: held.map((h) => h.idx), elements, reaction, scatter, copies, echo, echoMult, echoShots, sunder, sunderAdd, sigMods, ocMods, power, cost, boost: !!q.elemBoost && elements.length > 0, trigger: null };
 }
 
 // Energy the whole chain uses if every attack lands and every trigger fires once: the number the

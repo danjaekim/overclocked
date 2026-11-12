@@ -13,6 +13,7 @@ import { CHASSIS, migrateChassis } from '../src/rig/chassis.js';
 import { PIECES } from '../src/rig/pieces.js';
 import { START_CHAIN } from '../src/game/ovrun.js';
 import { pilotOf, pilotRig } from '../src/data/pilots.js';
+import { rewardChoices, takeReward } from '../src/rig/rewards.js';
 import { applyRig } from '../src/game/sandbox.js';
 import { pathToFileURL } from 'node:url';
 
@@ -67,6 +68,28 @@ function pilotRules(run) {
   if (p.sig && !(rig.passives[p.sig.id] > 0)) rig.passives[p.sig.id] = 1;
 }
 
+// `--reward overcharge[:piece,piece]` (or REWARD=...): Overclocker's boss rewards on the replayed rig, one after the Warlord (240 s)
+// and one after the Seer (480 s). Pieces named are used in order; with none, the first takes the most levelled weapon and the second a
+// Scatter, a trigger, then the next weapon. Reported against the same replay without it.
+const rewardArg = arg('--reward', process.env.REWARD || '');
+function rewardRules(run) {
+  if (!rewardArg) return;
+  const [id, list = ''] = rewardArg.split(':');
+  const named = list.split(',').filter(Boolean);
+  let rig = run.rigState;
+  const times = [240, 480];
+  for (let n = 0; n < 2 && run.time >= times[n]; n++) {
+    const ch = rewardChoices(rig, id);
+    if (!ch.length) break;
+    const lv = (p) => (rig.levels && rig.levels[p]) || 1;
+    const byType = (t) => ch.filter((p) => PIECES[p].type === t).sort((a, b) => lv(b) - lv(a));
+    const auto = n === 0 ? byType('weapon')[0] : ch.includes('scatter') ? 'scatter' : byType('trigger')[0] || byType('weapon')[0];
+    const piece = named[n] && ch.includes(named[n]) ? named[n] : auto || ch[0];
+    rig = takeReward(rig, { id, piece, n: n + 1 }) || rig;
+  }
+  run.rigState = rig;
+}
+
 export function replayOf(points) {
   let next = 1;
   return (run) => {
@@ -74,6 +97,7 @@ export function replayOf(points) {
     while (next < points.length && run.time >= points[next - 1].t) {
       run.rigState = points[next].rig;
       pilotRules(run);
+      rewardRules(run);
       applyRig(run);
       next++;
     }

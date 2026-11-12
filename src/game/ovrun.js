@@ -73,7 +73,7 @@ export function timelinePoint(run) {
     t: Math.floor(run.time), lv: run.player.level, k: run.kills, hp: Math.round(run.player.hp), raw: Math.round(recentRawDps(run, 20)),
     rig: {
       chains: r.chains.map((c) => ({ chassis: c.chassis, mk: c.mk, rule: c.rule, slots: c.slots.slice(), charge: c.charge || 0, cell: c.cell || 0 })),
-      levels: { ...r.levels }, passives: { ...r.passives }, stats: { ...r.stats },
+      levels: { ...r.levels }, passives: { ...r.passives }, ...(r.rewards && r.rewards.length ? { rewards: r.rewards.map((x) => ({ ...x })) } : {}), stats: { ...r.stats },
     },
   };
 }

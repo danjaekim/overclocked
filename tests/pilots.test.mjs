@@ -206,7 +206,7 @@ test('Broker: 25 less HP, 20% fewer gold drops, shop 25% cheaper, the rule rides
 test('Overclocker: 15 less HP, three cards a level-up, no doubling', () => {
   const run = start('overclocker');
   assert.equal(run.player.stats.get('maxHp'), 115);
-  assert.deepEqual(run.rigState.pilot, { id: 'overclocker', sig: null, sigMax: 0 });
+  assert.deepEqual(run.rigState.pilot, { id: 'overclocker', sig: null, sigMax: 0, reward: 'overcharge' });
   assert.equal(makeOffers(createRng(5), run.rigState).length, 3);
 });
 

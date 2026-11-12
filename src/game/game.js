@@ -19,8 +19,11 @@ import { LEVELUP } from '../data/progression.js';
 import { createSandboxRun, loadChain, applyRig, chainKeys } from './sandbox.js';
 import { showRigEditor } from '../ui/rig-editor.js';
 import { makeOffers, CAPACITY_LEVELS, describeOffer, passOffers } from '../rig/offers.js';
-import { openRigChest } from '../rig/chests.js';
+import { openRigChest, chestChassis } from '../rig/chests.js';
 import { mountSandboxPanel } from '../ui/sandbox-panel.js';
+import { showBossReward } from '../ui/boss-reward.js';
+import { rewardOfPilot, REWARD_BOSSES } from '../data/boss-rewards.js';
+import { rewardChoices, takeReward } from '../rig/rewards.js';
 import { showWorkbench } from '../ui/workbench.js';
 import { showCompendium } from '../ui/compendium.js';
 import { REACTION_INFO } from '../rig/pieces.js';
@@ -240,6 +243,25 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     const tier = run.pendingChests.shift();
     game.state = 'treasure';
     input.reset();
+    const rewardId = tier === 1 ? rewardOfPilot(run.rigState.pilot) : null;
+    const rn = (run.bossRewards || 0) + 1;
+    if (rewardId && rn <= REWARD_BOSSES && rewardChoices(run.rigState, rewardId).length) {      // a pilot's boss reward replaces the chest's rolls
+      sfx('chest');
+      showBossReward(overlays, {
+        reward: rewardId, n: rn, choices: rewardChoices(run.rigState, rewardId),
+        onPick(piece) {
+          const next = takeReward(run.rigState, { id: rewardId, piece, n: rn });
+          if (!next) return;
+          run.rigState = next;
+          run.bossRewards = rn;
+          applyRig(run);
+          overlays.hide();
+          const chassis = chestChassis(run.rng, 1);
+          openRigEditor(false, chassis.length ? chassis : null);      // rearrange the chain around it (and pick a chassis, if one came)
+        },
+      });
+      return;
+    }
     const result = openRigChest(run.rng, run.rigState, tier, run.chestsOpened === 0);
     run.chestsOpened++;
     run.rigState = result.rig;

@@ -56,6 +56,27 @@ export const SIGNATURE = {
 };
 export const SIG_TRIGGER_STEP = 1.25;
 
+// Overcharge (Overclocker's boss reward, rig/rewards.js): the piece's defining number tripled, and the piece costs twice the energy.
+// `mods` are stat changes for the weapon it is (or is held for); the rest is read by chain.js (copies, echoes, stacks, payload runs).
+export const OVERCHARGE = {
+  blaster: { text: '9 shots instead of 3', mods: [{ stat: 'projectiles', op: 'flat', value: 6 }] },
+  nova: { text: 'a ring of 18 instead of 6', mods: [{ stat: 'projectiles', op: 'flat', value: 12 }] },
+  mortar: { text: '3 shells a shot', mods: [{ stat: 'projectiles', op: 'flat', value: 2 }] },
+  chain_bolt: { text: '12 jumps instead of 4', mods: [{ stat: 'chains', op: 'flat', value: 8 }] },
+  slam: { text: 'double the shockwave radius', mods: [{ stat: 'area', op: 'inc', value: 1 }] },
+  scatter: { text: '15 copies instead of 5', copies: 3 },
+  heavy: { text: 'shots and blasts 3x the size', mods: [{ stat: 'area', op: 'inc', value: 2 }] },
+  echo: { text: '3 echoes instead of 1', echoes: 3 },
+  sunder: { text: 'each hit adds 3 stacks (up to 15)', sunder: 3 },
+  flame: { text: 'burns for triple damage', mods: [{ stat: 'burnPower', op: 'flat', value: 0.6 }] },
+  frost: { text: 'chills 3 stacks a hit', mods: [{ stat: 'chillStacks', op: 'flat', value: 2 }] },
+  storm: { text: 'shocks jump 3 times as far', mods: [{ stat: 'chains', op: 'flat', value: 2 }] },
+  on_impact: { text: 'the payload runs 3 times', reps: 3 },
+  on_kill: { text: 'the payload runs 3 times', reps: 3 },
+  on_hit: { text: 'the payload runs 3 times', reps: 3 },
+  every_3rd: { text: 'fires on every hit', every: 1 },
+};
+
 
 // Each piece has an `icon` (SVG path data on a 24-unit square, drawn as strokes; `filled` adds a soft fill) and a `short`
 // name for tight places. The editor draws them as SVG and the HUD strip as Path2D, from the same data.

@@ -40,7 +40,7 @@ export function padSlots(slots, cap = SLOTS) {
 }
 
 export function cloneRig(rig) {
-  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats }, passives: { ...rig.passives }, ...(rig.pilot ? { pilot: rig.pilot } : {}) };
+  return { cap: rig.cap, chains: rig.chains.map((c) => ({ ...c, slots: c.slots.slice() })), bench: rig.bench.slice(), levels: { ...rig.levels }, stats: { ...rig.stats }, passives: { ...rig.passives }, ...(rig.pilot ? { pilot: rig.pilot } : {}), ...(rig.rewards && rig.rewards.length ? { rewards: rig.rewards.map((r) => ({ ...r })) } : {}) };
 }
 
 export function pieceAt(rig, loc) {
@@ -178,7 +178,7 @@ export function chainDefOf(rig, c) {
   const ch = rig.chains[c];
   const s = chassisStats(ch, rig.pilot);
   const d = CHASSIS[ch.chassis];
-  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels, passives: rig.passives || {} };
+  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels, passives: rig.passives || {}, overcharged: (rig.rewards || []).filter((r) => r.id === 'overcharge').map((r) => r.piece) };
 }
 
 export function chainDefsOf(rig) {

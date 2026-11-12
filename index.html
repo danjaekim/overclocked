@@ -198,6 +198,11 @@
 
     /* Title and results illustrations (ui/scenes.js) */
     /* The pilot picker (ui/pilot-select.js) */
+    .overlay.reward { justify-content: flex-start; gap: 10px; padding-bottom: 0; overflow: hidden; }
+    .rwdesc { margin: 0; font-size: 14px; color: #c9c8d8; text-align: center; max-width: 340px; }
+    .rwlist { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 380px; overflow-y: auto; flex: 0 1 auto; min-height: 0; align-content: start; }
+    .rwcard { min-height: 110px; }
+    .rwcard.sel { border-color: #ffd23f; box-shadow: 0 0 0 1px #ffd23f; }
     .overlay.pilots { justify-content: flex-start; gap: 10px; padding-bottom: 0; overflow: hidden; }
     .overlay.pilots h2 { margin: 0; }
     .plist { flex: 1; min-height: 0; width: 100%; max-width: 420px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 8px; padding: 2px 2px 8px; }

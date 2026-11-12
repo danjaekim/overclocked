@@ -9,6 +9,7 @@
 //              (armor while standing still for a second, which is when Turret Mode is on), braceHeal { perKill, cap }
 //              (while braced, each kill heals perKill of max HP, at most cap of max HP a second)
 //   freeReroll / shopMult   Broker: free rerolls per level-up, and the workbench price multiplier
+//   reward     the boss reward id (data/boss-rewards.js), taken after the Warlord and the Seer
 //   cost       the line shown under the rule in the picker
 
 export const DEFAULT_PILOT = 'rookie';
@@ -66,10 +67,10 @@ export const PILOTS = {
   },
   overclocker: {
     name: 'Overclocker', short: 'Overclocker',
-    desc: 'Built for big picks. Its boss rewards (coming) triple one piece\'s defining number.',
+    desc: 'Built for big picks. Its boss rewards (after the Warlord and the Seer): Overcharge triples one piece\'s defining number.',
     cost: '-15 max HP',
     start: { chassis: 'standard', mk: 1, slots: ['blaster'], size: 3 },
-    mods: [{ stat: 'maxHp', op: 'flat', value: -15 }], sig: null, rules: {},
+    mods: [{ stat: 'maxHp', op: 'flat', value: -15 }], sig: null, rules: {}, reward: 'overcharge',
   },
 };
 
@@ -80,5 +81,5 @@ export const isPilot = (id) => typeof id === 'string' && Object.prototype.hasOwn
 // What the rig needs to know (rig.pilot, kept in the rig state so saves, snapshots and clones carry it).
 export function pilotRig(id) {
   const p = pilotOf(id);
-  return { id: isPilot(id) ? id : DEFAULT_PILOT, sig: p.sig ? p.sig.id : null, sigMax: p.sig ? p.sig.max : 0, ...p.rules };
+  return { id: isPilot(id) ? id : DEFAULT_PILOT, sig: p.sig ? p.sig.id : null, sigMax: p.sig ? p.sig.max : 0, ...p.rules, ...(p.reward ? { reward: p.reward } : {}) };
 }
