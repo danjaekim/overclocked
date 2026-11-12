@@ -10,6 +10,11 @@ export const REWARDS = {
     name: 'Overcharge', pick: 'piece',
     desc: 'Pick a piece you own. Its defining number is tripled, and it costs twice the energy.',
   },
+  wake: {
+    name: 'Wake', pick: 'piece', verb: 'Wake',
+    desc: 'Pick a weapon. Every 80 px you move it drops a mine that fires the weapon (with its modifiers) when an enemy comes near. The second boss adds another weapon.',
+    note: () => 'a mine every 80 px, firing it when an enemy nears',
+  },
   retrofit: {
     name: 'Retrofit', pick: 'chain+rule',
     desc: 'Pick a chain and a second rule card for it. It fires on either card, from one battery. The second boss lets you add another.',

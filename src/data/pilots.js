@@ -24,7 +24,7 @@ export const PILOTS = {
   },
   courier: {
     name: 'Courier', short: 'Courier',
-    desc: 'Fast and light. Starts on Strider with Momentum (recharge while moving, up to Lv4). +20% move speed, +40% pickup range.',
+    desc: 'Fast and light. Starts on Strider with Momentum (recharge while moving, up to Lv4). +20% move speed, +40% pickup range. Boss rewards: a weapon that drops mines as you move (Wake).',
     cost: '-20 max HP',
     start: { chassis: 'strider', mk: 1, slots: ['blaster'], size: 4 },
     mods: [
@@ -32,7 +32,7 @@ export const PILOTS = {
       { stat: 'pickupRadius', op: 'inc', value: 0.4 },
       { stat: 'maxHp', op: 'flat', value: -20 },
     ],
-    sig: { id: 'momentum', max: 4 }, rules: {},
+    sig: { id: 'momentum', max: 4 }, rules: {}, reward: 'wake',
   },
   bulwark: {
     name: 'Bulwark', short: 'Bulwark',

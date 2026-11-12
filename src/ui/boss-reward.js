@@ -21,7 +21,7 @@ export function showBossReward(overlays, { reward, n = 1, rig, choices, onPick }
 
   const pieceCard = (id) => {
     const p = PIECES[id];
-    return `<button class="rcard ${p.type} rwcard${id === sel ? ' sel' : ''}" data-act="pick:${id}">${icon(p, 30)}<b>${esc(p.name)}</b><span>${esc(p.type)}</span><em>${esc(OVERCHARGE[id].text)}</em></button>`;
+    return `<button class="rcard ${p.type} rwcard${id === sel ? ' sel' : ''}" data-act="pick:${id}">${icon(p, 30)}<b>${esc(p.name)}</b><span>${esc(p.type)}</span><em>${esc(def.note ? def.note(id) : OVERCHARGE[id].text)}</em></button>`;
   };
   const chainCard = (i) => {
     const c = rig.chains[i];
@@ -32,7 +32,7 @@ export function showBossReward(overlays, { reward, n = 1, rig, choices, onPick }
   const ruleCard = (r) => `<button class="rcard rwchain${r === sel ? ' sel' : ''}" data-act="pick:${r}"><b>${esc(RULES[r].name)}</b><span>rule card</span><em>${esc(RULES[r].desc)}</em></button>`;
 
   const lists = () => {
-    if (step === 'piece') return { items: choices.map(pieceCard), valid: choices, label: 'Pick a piece', verb: (v) => `Overcharge ${PIECES[v].name}`, cols: 3 };
+    if (step === 'piece') return { items: choices.map(pieceCard), valid: choices, label: 'Pick a piece', verb: (v) => `${def.verb || def.name} ${PIECES[v].name}`, cols: 3 };
     if (step === 'chain') return { items: choices.map(chainCard), valid: choices.map(String), label: 'Pick a chain', verb: (v) => `${def.name}: chain ${CHAIN_NAMES[v]}`, cols: 1 };
     const rules = retrofitRules(rig, chain);
     return { items: rules.map(ruleCard), valid: rules, label: 'Pick a rule card', verb: (v) => `Add ${RULES[v].name} to chain ${CHAIN_NAMES[chain]}`, cols: 1 };

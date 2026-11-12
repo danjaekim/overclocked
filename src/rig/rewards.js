@@ -16,6 +16,10 @@ export function rewardChoices(rig, id) {
     const have = new Set(overchargedOf(rig));
     return [...owned(rig)].filter((p) => OVERCHARGE[p] && !have.has(p));
   }
+  if (id === 'wake') {
+    const have = new Set(rewardsOf(rig, 'wake').map((r) => r.piece));
+    return [...owned(rig)].filter((p) => PIECES[p].type === 'weapon' && !have.has(p));
+  }
   if (id === 'loop') return rig.chains.map((_, i) => i).filter((i) => (rig.chains[i].slots || []).some(Boolean));
   if (id === 'retrofit') return rig.chains.map((_, i) => i).filter((i) => retrofitRules(rig, i).length);
   return [];
@@ -32,6 +36,7 @@ export function retrofitRules(rig, c) {
 export function takeReward(rig, entry) {
   if (!REWARDS[entry.id]) return null;
   if (entry.id === 'overcharge' && !rewardChoices(rig, 'overcharge').includes(entry.piece)) return null;
+  if (entry.id === 'wake' && !rewardChoices(rig, 'wake').includes(entry.piece)) return null;
   if (entry.id === 'retrofit' && (!rewardChoices(rig, 'retrofit').includes(entry.chain) || !retrofitRules(rig, entry.chain).includes(entry.rule))) return null;
   if (entry.id === 'loop' && !rewardChoices(rig, 'loop').includes(entry.chain)) return null;
   const next = cloneRig(rig);

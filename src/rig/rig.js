@@ -15,6 +15,7 @@
 import { BEHAVIORS } from '../behaviors/index.js';
 import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
+import { PALETTE } from '../data/palette.js';
 import { PIECES, RULES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { RELAY_ECHO } from './chassis.js';
@@ -29,6 +30,7 @@ const SOURCE = 'rig:';                 // stat modifier source prefix for everyt
 const LOOP_DELAY = 0.35;               // Feedback loop: seconds between a chain's last payload and its repeat
 const LOOP_MAX = 3;                    // repeats deep
 const LOOP_POOL = 12;                  // a repeat's own energy, so it costs the chain nothing
+const MINE = { every: 80, arm: 0.4, near: 50, life: 6, max: 16, power: 0.7 };    // Courier's Wake: px per mine, seconds to arm, trigger radius, lifetime, live mines, share of the weapon's power
 const BRACE = 'pilot:brace';           // Bulwark's armor while braced (removed with the rig)
 
 const defs = new Map();                // piece id -> full weapon definition, built once
@@ -46,10 +48,59 @@ function weaponDef(id) {
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], echoes: [], loops: [], flags: { kill: false }, kills: 0 };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], echoes: [], loops: [], wake: wakeOf(run), wakeDist: 0, flags: { kill: false }, kills: 0 };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
+}
+
+// The weapons Courier's Wake drops as mines (rig.rewards, entries { id: 'wake', piece }).
+const wakeOf = (run) => ((run.rigState && run.rigState.rewards) || []).filter((r) => r.id === 'wake').map((r) => r.piece);
+
+// The compiled node of a weapon piece, wherever it sits (top level first, then payloads).
+function findNode(rig, piece) {
+  for (const deep of [false, true]) {
+    for (const c of rig.chains) {
+      const stack = [...c.nodes];
+      while (stack.length) {
+        const n = stack.shift();
+        if (n.piece === piece) return n;
+        if (deep && n.trigger) stack.push(...n.trigger.payload);
+      }
+    }
+  }
+  return null;
+}
+
+// Wake: every MINE.every px you move drops a mine per Wake weapon. Once armed, an enemy within MINE.near sets it off: the weapon
+// (with the modifiers held for it) fires from the mine, free, at MINE.power. Mines are plain data on run.mines so a snapshot keeps them.
+function updateMines(run, rig, dt, moved) {
+  const mines = run.mines || (run.mines = []);
+  if (rig.wake.length) {
+    rig.wakeDist += moved;
+    while (rig.wakeDist >= MINE.every) {
+      rig.wakeDist -= MINE.every;
+      for (const piece of rig.wake) {
+        if (mines.length >= MINE.max) mines.shift();
+        mines.push({ x: run.player.x, y: run.player.y, t: 0, piece });
+      }
+    }
+  }
+  for (let i = mines.length - 1; i >= 0; i--) {
+    const m = mines[i];
+    m.t += dt;
+    if (m.t > MINE.life) { mines.splice(i, 1); continue; }
+    if (m.t < MINE.arm) continue;
+    if (!run.world.hash.queryNearest(m.x, m.y, MINE.near, (o) => o.alive && o.hp > 0)) continue;
+    const node = findNode(rig, m.piece);
+    mines.splice(i, 1);
+    if (!node) continue;
+    const act = { id: ++rig.actN, chain: 0, bat: rig.chains[0] ? rig.chains[0].bat : null, spent: 0, scale: 1, pool: 0, loopDepth: 9, looped: true, echo: true };
+    if (launch(run, rig, node, m.x, m.y, act, node.power * MINE.power, false, 0) > 0) {
+      note(run, rig, 'mine', { piece: m.piece, x: m.x, y: m.y });
+      if (rig.pings.length < 32) rig.pings.push({ x: m.x, y: m.y, t0: run.time, color: CHAIN_COLORS[0], big: true });
+    }
+  }
 }
 
 export function removeRig(run) {
@@ -317,6 +368,7 @@ export function updateRig(run, dt) {
     for (const x of chain.extra) if (ruleDue(rig, x.rule, x, chain, dt, moved, p, bat)) fire = true;      // Retrofit: any of its rule cards starts the chain, from the one battery
     if (fire) activate(run, rig, chain);
   }
+  updateMines(run, rig, dt, moved);
   rig.flags.kill = false;
   rig.kills = 0;
 
@@ -409,6 +461,22 @@ export function drawRig(ctx, run) {
     }
   }
   ctx.globalAlpha = 1;
+  const mines = run.mines;
+  if (mines && mines.length) {                                   // Wake: a small diamond, brighter once armed, with a dot in the weapon's colour
+    for (let i = 0; i < mines.length; i++) {
+      const m = mines[i];
+      const armed = m.t >= MINE.arm;
+      ctx.globalAlpha = armed ? 0.95 : 0.45;
+      ctx.strokeStyle = PALETTE.rig;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(m.x, m.y - 5); ctx.lineTo(m.x + 5, m.y); ctx.lineTo(m.x, m.y + 5); ctx.lineTo(m.x - 5, m.y); ctx.closePath();
+      ctx.stroke();
+      ctx.fillStyle = PALETTE.ink;
+      ctx.fillRect(m.x - 1, m.y - 1, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
   const insts = run.rig.insts;
   for (let i = 0; i < insts.length; i++) {
     const b = BEHAVIORS[insts[i].def.behavior];

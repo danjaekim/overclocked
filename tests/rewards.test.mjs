@@ -26,8 +26,8 @@ const tick = (run, s) => { for (let i = 0; i < Math.round(s / STEP); i++) run.up
 const comp = (slots, overcharged = []) => compileChain({ rule: 'pulse', slots, overcharged });
 const start = () => createOverclockedRun({ seed: 7, view: { w: 390, h: 844, insetTop: 0 }, debug: {}, sfx: () => {}, pilotId: 'overclocker' });
 
-test('rewards by pilot: Rookie Retrofit, Splicer Feedback loop, Overclocker Overcharge, the rest none yet', () => {
-  const want = { rookie: 'retrofit', splicer: 'loop', overclocker: 'overcharge' };
+test('rewards by pilot: Rookie Retrofit, Courier Wake, Splicer Feedback loop, Overclocker Overcharge, the rest none yet', () => {
+  const want = { rookie: 'retrofit', courier: 'wake', splicer: 'loop', overclocker: 'overcharge' };
   for (const id of PILOT_IDS) assert.equal(rewardOfPilot(pilotRig(id)), want[id] || null, id);
   assert.ok(REWARDS.overcharge.name);
   for (const id of Object.keys(PIECES)) assert.ok(OVERCHARGE[id], `${id} has an overcharge`);
@@ -90,9 +90,11 @@ test('rewards survive a snapshot and resume, and an old run has none', () => {
   const run = start();
   run.rigState = takeReward(run.rigState, { id: 'overcharge', piece: 'blaster', n: 1 });
   run.bossRewards = 1;
+  run.mines = [{ x: 10, y: 20, t: 1.5, piece: 'blaster' }];
   const back = restoreRun(JSON.parse(JSON.stringify(snapshotRun(run))), { view: { w: 390, h: 844, insetTop: 0 }, debug: {}, sfx: () => {} });
   assert.deepEqual(overchargedOf(back.rigState), ['blaster']);
   assert.equal(back.bossRewards, 1);
+  assert.deepEqual(back.mines, [{ x: 10, y: 20, t: 1.5, piece: 'blaster' }], 'mines come back');
   assert.deepEqual(overchargedOf(start().rigState), []);
 });
 
@@ -184,4 +186,45 @@ test('takeReward Feedback loop: any chain with pieces; the second boss lifts eve
   assert.equal(takeReward(a, { id: 'loop', chain: 0, n: 2 }).chains[0].loop, 0.75);
   assert.equal(chainDefOf(a, 0).loop, 0.5);
   assert.equal(replaceChassis(a, 0, 'relay', 1).rig.chains[0].loop, 0.5, 'a chassis swap keeps it');
+});
+
+test('Wake: a mine every 80 px per weapon, armed after 0.4 s, fires the weapon once an enemy is near, then is gone', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'anchor', slots: ['heavy', 'blaster'], energy: 400, recharge: 0 }], { log: true });
+  rig.wake = ['blaster'];
+  for (let i = 0; i < 60; i++) run.update(STEP, { x: 1, y: 0 });                // about 150 px: one or two mines
+  assert.ok(run.mines.length >= 1 && run.mines.length <= 3, `mines dropped: ${run.mines.length}`);
+  const m = run.mines[0];
+  assert.equal(m.piece, 'blaster');
+  const fires = () => rig.log.filter((l) => l.ev === 'mine').length;
+  assert.equal(fires(), 0, 'no enemy near, nothing fires');
+  const e = dummy(run, m.x + 20, m.y);
+  e.speed = 0;
+  const before = run.mines.length;
+  tick(run, 0.1);
+  assert.equal(fires() >= 1, true, 'an enemy came within 50 px: it fired');
+  assert.ok(run.mines.length < before + 1, 'a mine that fired is gone');
+});
+
+test('Wake: a new mine pushes out the oldest past 16, and mines expire after 6 s', () => {
+  const run = newRun();
+  const rig = installRig(run, [{ rule: 'anchor', slots: ['blaster'], energy: 400, recharge: 0 }], { log: true });
+  rig.wake = ['blaster', 'blaster'];
+  for (let i = 0; i < 360; i++) run.update(STEP, { x: 1, y: 0 });               // 6 s of walking drops far more than 16
+  assert.ok(run.mines.length <= 16);
+  const n = run.mines.length;
+  rig.wake = [];
+  tick(run, 6.5);
+  assert.equal(run.mines.length, 0, `expired: ${n} mines gone`);
+});
+
+test('takeReward Wake: owned weapons only, not twice, and the rig knows its Wake weapons', () => {
+  const rig = createOverclockedRun({ seed: 7, view: { w: 390, h: 844, insetTop: 0 }, debug: {}, sfx: () => {}, pilotId: 'courier' }).rigState;
+  assert.deepEqual(rewardChoices(rig, 'wake'), ['blaster']);
+  assert.equal(takeReward(rig, { id: 'wake', piece: 'nova', n: 1 }), null);
+  const a = takeReward(rig, { id: 'wake', piece: 'blaster', n: 1 });
+  assert.deepEqual(rewardChoices(a, 'wake'), []);
+  const run = newRun();
+  run.rigState = a;
+  assert.deepEqual(installRig(run, [{ rule: 'anchor', slots: ['blaster'], energy: 10, recharge: 0 }]).wake, ['blaster']);
 });

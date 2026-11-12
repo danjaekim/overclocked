@@ -48,6 +48,21 @@ await page2.click('.rwchain[data-act="pick:reaper"]'); await page2.click('[data-
 const r = await page2.evaluate(() => { const g = window.__overclocked.game; return { state: g.state, extra: g.run.rigState.chains[0].extra, text: document.querySelector('.rpreview') && document.querySelector('.rpreview').textContent }; });
 if (r.state !== 'levelup' || !r.extra || r.extra[0] !== 'reaper' || !/Reaper/.test(r.text)) fail('Retrofit: ' + JSON.stringify(r));
 if (out) await page2.screenshot({ path: path.join(out, 'r5-retrofit-editor.png') });
+// Courier's Wake: pick the weapon, walk, and mines appear
+const ctx3 = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+const page3 = await ctx3.newPage();
+page3.on('pageerror', (e) => errs.push('pageerror ' + e.message));
+await page3.goto(`http://localhost:${server.address().port}/?pilot=courier`); await page3.waitForTimeout(1500);
+await page3.evaluate(() => { window.__overclocked.game.run.pendingChests.push(1); });
+await page3.waitForSelector('.overlay.reward');
+await page3.click('.rwcard[data-act="pick:blaster"]'); await page3.click('[data-act="go"]'); await page3.waitForTimeout(400);
+if (await page3.locator('[data-act="skip"]').count()) await page3.click('[data-act="skip"]');
+await page3.click('[data-act="done"]:not([disabled])'); await page3.waitForTimeout(300);
+await page3.evaluate(() => { const r = window.__overclocked.game.run; for (let i = 0; i < 100; i++) r.update(1 / 60, { x: 1, y: 0 }); });
+await page3.waitForTimeout(150);
+const mines = await page3.evaluate(() => (window.__overclocked.game.run.mines || []).length);
+if (out) await page3.screenshot({ path: path.join(out, 'r6-wake.png') });
+if (mines < 1) fail('Wake dropped no mines: ' + mines);
 console.log('reward smoke ok', JSON.stringify(s));
 if (errs.length) { console.log('console errors', errs); process.exit(1); }
 await b.close(); server.close();

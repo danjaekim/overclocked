@@ -68,7 +68,7 @@ function pilotRules(run) {
   if (p.sig && !(rig.passives[p.sig.id] > 0)) rig.passives[p.sig.id] = 1;
 }
 
-// `--reward overcharge[:piece,piece]` (also retrofit and loop, with chain indexes: `--reward loop:0,1`) (or REWARD=...): Overclocker's boss rewards on the replayed rig, one after the Warlord (240 s)
+// `--reward overcharge[:piece,piece]` (also wake, retrofit and loop, with chain indexes: `--reward loop:0,1`) (or REWARD=...): Overclocker's boss rewards on the replayed rig, one after the Warlord (240 s)
 // and one after the Seer (480 s). Pieces named are used in order; with none, the first takes the most levelled weapon and the second a
 // Scatter, a trigger, then the next weapon. Reported against the same replay without it.
 const rewardArg = arg('--reward', process.env.REWARD || '');
@@ -84,10 +84,10 @@ function rewardRules(run) {
     const ch = rewardChoices(rig, id);
     if (!ch.length) break;
     let entry;
-    if (id === 'overcharge') {
+    if (id === 'overcharge' || id === 'wake') {
       const lv = (p) => (rig.levels && rig.levels[p]) || 1;
       const byType = (t) => ch.filter((p) => PIECES[p].type === t).sort((a, b) => lv(b) - lv(a));
-      const auto = n === 0 ? byType('weapon')[0] : ch.includes('scatter') ? 'scatter' : byType('trigger')[0] || byType('weapon')[0];
+      const auto = n === 0 || id === 'wake' ? byType('weapon')[0] : ch.includes('scatter') ? 'scatter' : byType('trigger')[0] || byType('weapon')[0];
       entry = { piece: named[n] && ch.includes(named[n]) ? named[n] : auto || ch[0] };
     } else {                                         // chains: the longest, or the one named by index; Retrofit adds Reaper, then Rapid
       const c = named[n] !== undefined && ch.includes(Number(named[n])) ? Number(named[n]) : [...ch].sort((a, b) => (id === 'loop' ? trig(b) - trig(a) : 0) || pieces(b) - pieces(a))[0];
