@@ -7,7 +7,7 @@
 // sold. Undo steps back one move, Reset returns to how the rig was when the editor opened (or right after an
 // offer). With an offer on the table and the rig full, you replace a piece (it is sold) or skip the offer.
 
-import { PIECES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
+import { PIECES, RULES, CHAIN_COLORS, CHAIN_NAMES } from '../rig/pieces.js';
 import { analyzeChain } from '../rig/chain.js';
 import { cloneRig, planMove, setPiece, pieceAt, placeSuggested, sameLoc, chainDefOf, replaceChassis, BENCH } from '../rig/editor.js';
 import { overchargedOf } from '../rig/rewards.js';
@@ -80,10 +80,11 @@ export function showRigEditor(overlays, { rig, offers, deal = null, upgrades = n
     }
     row += sel ? `<button class="gap" data-act="gap:${ci}:${n}" aria-label="insert at the end"></button>` : '<span class="gapsp"></span>';
     const first = [...a.reasons.entries()].sort((x, y) => x[0] - y[0])[0];
+    const extras = [...(def.extra || []).map((r) => ` + ${RULES[r].name}`), ...(def.loop ? [` · loops ${Math.round(def.loop * 100)}%`] : [])].map(esc).join('');       // Retrofit rule cards, a Feedback loop
     const why = first ? ` <span class="why">Greyed: ${esc(PIECES[def.slots[first[0]]].name)} (${esc(first[1])})</span>` : '';
     return `<div class="rstrip"><span class="rbadge" style="background:${CHAIN_COLORS[ci]}">${CHAIN_NAMES[ci]}</span>
       <div class="rslots" data-chain="${ci}">${row}</div></div>
-      <div class="rpreview"><b>${esc(chassisName(rv.chains[ci]))}</b> · ${esc(a.text)}${why}</div>`;
+      <div class="rpreview"><b>${esc(chassisName(rv.chains[ci]))}</b>${extras} · ${esc(a.text)}${why}</div>`;
   }
 
   function offersHtml() {

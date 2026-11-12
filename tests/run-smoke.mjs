@@ -33,7 +33,7 @@ await page.click('.rcard.chassis >> nth=0'); await page.click('[data-act="done"]
 s = await info(); if (s.chains.length !== 2) fail('the chassis did not add a chain: ' + s.chains);
 // boss chests: the reveal, then the editor offers their chassis. The first fills the third chain, the second replaces one.
 for (let k = 0; k < 2; k++) {
-  await page.evaluate(() => { window.__overclocked.game.run.pendingChests.push(1); });
+  await page.evaluate(() => { const r = window.__overclocked.game.run; delete r.rigState.pilot.reward; r.pendingChests.push(1); });      // no pilot reward: the plain boss chest (the reward screens are in reward-smoke)
   await page.waitForSelector('.card.reveal'); await page.waitForTimeout(2600); await shot(`r5-chest${k}.png`);
   await page.click('[data-act="done"]'); await page.waitForTimeout(300);
   if ((await info()).state === 'treasure') fail('Collect did not leave the chest screen');

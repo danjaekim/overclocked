@@ -19,7 +19,7 @@ await page.evaluate(() => { const r = window.__overclocked.game.run; r.rigState.
 await page.waitForSelector('.overlay.reward'); await page.waitForTimeout(300);
 if (out) await page.screenshot({ path: path.join(out, 'r1-reward.png') });
 if ((await page.locator('.rwcard').count()) !== 3) fail('expected 3 choices: ' + (await page.locator('.rwcard').count()));
-await page.click('.rwcard[data-id="scatter"]'); await page.waitForTimeout(100);
+await page.click('.rwcard[data-act="pick:scatter"]'); await page.waitForTimeout(100);
 if (await page.locator('[data-act="go"][disabled]').count()) fail('the confirm button stayed disabled');
 await page.click('[data-act="go"]'); await page.waitForTimeout(500);
 let s = await page.evaluate(() => { const g = window.__overclocked.game; return { state: g.state, rewards: g.run.rigState.rewards, n: g.run.bossRewards, editor: !!document.querySelector('.overlay.sheet'), oc: document.querySelectorAll('.slot em.oc').length }; });
@@ -33,6 +33,21 @@ if (s.state !== 'run') fail('did not return to the run: ' + JSON.stringify(s));
 await page.evaluate(() => { window.__overclocked.game.run.pendingChests.push(1); });
 await page.waitForSelector('.overlay.reward'); 
 if ((await page.locator('.rwcard').count()) !== 2) fail('the second choice should leave 2 pieces');
+// Rookie's Retrofit: a chain, then a rule card
+const ctx2 = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+const page2 = await ctx2.newPage();
+page2.on('pageerror', (e) => errs.push('pageerror ' + e.message));
+await page2.goto(`http://localhost:${server.address().port}/?pilot=rookie`); await page2.waitForTimeout(1500);
+await page2.evaluate(() => { window.__overclocked.game.run.pendingChests.push(1); });
+await page2.waitForSelector('.overlay.reward');
+if (out) await page2.screenshot({ path: path.join(out, 'r3-retrofit-chain.png') });
+await page2.click('.rwchain[data-act="pick:0"]'); await page2.click('[data-act="go"]'); await page2.waitForTimeout(300);
+if (out) await page2.screenshot({ path: path.join(out, 'r4-retrofit-rule.png') });
+if ((await page2.locator('.rwchain').count()) !== 5) fail('Retrofit rule step: ' + (await page2.locator('.rwchain').count()));
+await page2.click('.rwchain[data-act="pick:reaper"]'); await page2.click('[data-act="go"]'); await page2.waitForTimeout(500);
+const r = await page2.evaluate(() => { const g = window.__overclocked.game; return { state: g.state, extra: g.run.rigState.chains[0].extra, text: document.querySelector('.rpreview') && document.querySelector('.rpreview').textContent }; });
+if (r.state !== 'levelup' || !r.extra || r.extra[0] !== 'reaper' || !/Reaper/.test(r.text)) fail('Retrofit: ' + JSON.stringify(r));
+if (out) await page2.screenshot({ path: path.join(out, 'r5-retrofit-editor.png') });
 console.log('reward smoke ok', JSON.stringify(s));
 if (errs.length) { console.log('console errors', errs); process.exit(1); }
 await b.close(); server.close();

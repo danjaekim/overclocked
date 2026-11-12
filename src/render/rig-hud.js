@@ -119,7 +119,7 @@ function drawStrip(ctx, run, chain, x, y) {
   chamfer(ctx, x + 0.5, y + 0.5, 53, SLOT - 1, 5);
   ctx.stroke();
   drawText(ctx, rule.name, x + 27, y + SLOT / 2 - 5, `700 12px ${DISPLAY}`, waiting ? PALETTE.dim : PALETTE.ink, 'center', 'middle');
-  drawText(ctx, rule.short, x + 27, y + SLOT / 2 + 8, `500 10px ${MONO}`, PALETTE.dim, 'center', 'middle');
+  drawText(ctx, rule.short + (chain.extra && chain.extra.length ? ` +${chain.extra.length}` : '') + (chain.loop ? ' lp' : ''), x + 27, y + SLOT / 2 + 8, `500 10px ${MONO}`, PALETTE.dim, 'center', 'middle');
 
   const slots = chain.def.slots;
   const dead = new Set(chain.problems.map((q) => q.idx));

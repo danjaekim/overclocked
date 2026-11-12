@@ -15,7 +15,7 @@
 import { BEHAVIORS } from '../behaviors/index.js';
 import { createRigWeapon, instanceTagSet } from '../game/weapons.js';
 import { makeFireCtx } from '../game/fire-ctx.js';
-import { PIECES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
+import { PIECES, RULES, ELEMENTS, SCATTER, ECHO, CHAIN_COLORS, SUNDER, CASCADE_MAX } from './pieces.js';
 import { compileChain, ruleOf } from './chain.js';
 import { RELAY_ECHO } from './chassis.js';
 import { passiveValues } from './passives.js';
@@ -26,6 +26,9 @@ const MAX_PAYLOADS_PER_TICK = 24;      // payload runs started per tick; the res
 const MAX_QUEUE = 256;                 // queued payload runs; further events are dropped
 const PING_TIME = 0.4;                 // seconds a chain's ring stays on screen
 const SOURCE = 'rig:';                 // stat modifier source prefix for everything the rig adds
+const LOOP_DELAY = 0.35;               // Feedback loop: seconds between a chain's last payload and its repeat
+const LOOP_MAX = 3;                    // repeats deep
+const LOOP_POOL = 12;                  // a repeat's own energy, so it costs the chain nothing
 const BRACE = 'pilot:brace';           // Bulwark's armor while braced (removed with the rig)
 
 const defs = new Map();                // piece id -> full weapon definition, built once
@@ -43,7 +46,7 @@ function weaponDef(id) {
 // earlier one. `log: true` records what the rig does in rig.log, for tests.
 export function installRig(run, chainDefs, { log = false } = {}) {
   removeRig(run);
-  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], echoes: [], flags: { kill: false }, kills: 0 };
+  const rig = { chains: [], insts: [], queue: [], head: 0, actN: 0, pings: [], log: log ? [] : null, ctx: makeFireCtx(), atks: [], delayed: [], echoes: [], loops: [], flags: { kill: false }, kills: 0 };
   for (let i = 0; i < chainDefs.length; i++) rig.chains.push(buildChain(run, rig, chainDefs[i], i));
   run.rig = rig;
   return rig;
@@ -63,6 +66,8 @@ function buildChain(run, rig, def, index) {
   const pv = passiveValues(def.passives);
   const chain = { index, def, rule, pv, energy: c.energy, nodes: c.nodes, problems: c.problems, t: rule.on ? 0 : rule.first,
     bat: { pool: c.energy, size: c.energy, rate: c.recharge, while: def.chargeWhile || null, kill: (q.killCharge || 0) + pv.siphon, over: 0 },
+    extra: (def.extra || []).filter((r) => RULES[r] && r !== def.rule).map((id) => { const r = ruleOf(id); return { id, rule: r, t: r.on ? 0 : r.first, dist: 0, idleT: 0 }; }),     // Retrofit: more rule cards
+    loop: def.loop || 0,                // Feedback loop: the share of power each repeat keeps (0: none)
     act: null,                          // the latest activation
     flash: new Float64Array(def.slots.length).fill(-1e9) };   // run.time each slot last ran, for the HUD strip
   const mark = (nodes, trig) => {                        // On Kill cascade: every payload node can set the carrier's trigger off again
@@ -235,11 +240,42 @@ function activate(run, rig, chain, scale = 1) {
     bat.over = 0;
   }
   if (pv.turret > 0 && rig.stillT >= 1) scale *= 1 + pv.turret;   // Turret Mode: standing still for a second
-  const act = { id: ++rig.actN, chain: chain.index, bat, spent: 0, scale, get pool() { return bat.pool; }, set pool(v) { bat.pool = v; } };
+  const act = { id: ++rig.actN, chain: chain.index, bat, spent: 0, scale, loopDepth: 0, looped: false, get pool() { return bat.pool; }, set pool(v) { bat.pool = v; } };
   chain.act = act;
   note(run, rig, 'activate', { act: act.id, chain: chain.index, pool: act.pool });
   const p = run.player;
   runNodes(run, rig, chain.nodes, p.x, p.y, act);
+}
+
+// Whether a rule card says "fire now". `st` holds its timers ({ t, dist, idleT }): the chain itself for its own rule card, an entry of
+// chain.extra for a Retrofit one. Each card keeps its own timer, so two cards on one chain fire independently.
+function ruleDue(rig, rule, st, chain, dt, moved, p, bat) {
+  if (rule.on === 'full') {                                    // Charge: fires each time the battery fills
+    if (st.t > 0) st.t -= dt;
+    if (bat.pool >= bat.size - 1e-6 && st.t <= 0) { st.t = rule.gap; return true; }
+    return false;
+  }
+  if (rule.on) {                                               // Reaper: an event starts it, at most once per `gap`
+    if (st.t > 0) st.t -= dt;
+    if (rule.idle) st.idleT = (st.idleT || 0) + dt;
+    const idle = rule.idle && st.idleT >= rule.idle;           // Reaper: nothing has died for `idle` s, so it fires anyway and cannot stall for good
+    if ((rig.flags[rule.on] || idle) && st.t <= 0) { st.t = rule.gap; st.idleT = 0; return true; }
+    return false;
+  }
+  if (rule.dist) {                                             // Stride: every `dist` px moved, after the first delay
+    if (st.t > 0) { st.t -= dt; return false; }
+    st.dist = Math.min(rule.dist, (st.dist || 0) + moved);
+    if (st.dist < rule.dist) return false;
+    st.dist -= rule.dist;
+    return true;
+  }
+  if (rule.while === 'moving' && !p.moving) return false;
+  if (rule.while === 'still' && p.moving) return false;
+  st.t -= dt;
+  if (st.t > 0) return false;
+  st.t += rule.every;
+  if (st.t <= 0) st.t = rule.every;
+  return true;
 }
 
 // Step 3b of the tick (after the player's own weapons): rule-card timers, queued payloads, then the pieces' shells and shots.
@@ -277,40 +313,9 @@ export function updateRig(run, dt) {
       if (pv.overflow > 0) bat.over = Math.min(pv.overflow * bat.size, bat.over + bat.pool - bat.size);
       bat.pool = bat.size;
     }
-    if (rule.on === 'full') {                                  // Charge: fires each time the battery fills
-      if (chain.t > 0) chain.t -= dt;
-      if (bat.pool >= bat.size - 1e-6 && chain.t <= 0) {
-        chain.t = rule.gap;
-        activate(run, rig, chain);
-      }
-      continue;
-    }
-    if (rule.on) {                                             // Reaper: an event starts it, at most once per `gap`
-      if (chain.t > 0) chain.t -= dt;
-      if (rule.idle) chain.idleT = (chain.idleT || 0) + dt;
-      const idle = rule.idle && chain.idleT >= rule.idle;           // Reaper: nothing has died for `idle` s, so it fires anyway and cannot stall for good
-      if ((rig.flags[rule.on] || idle) && chain.t <= 0) {
-        chain.t = rule.gap;
-        chain.idleT = 0;
-        activate(run, rig, chain);
-      }
-      continue;
-    }
-    if (rule.dist) {                                           // Stride: every `dist` px moved, after the first delay
-      if (chain.t > 0) { chain.t -= dt; continue; }
-      chain.dist = Math.min(rule.dist, (chain.dist || 0) + moved);
-      if (chain.dist < rule.dist) continue;
-      chain.dist -= rule.dist;
-      activate(run, rig, chain);
-      continue;
-    }
-    if (rule.while === 'moving' && !p.moving) continue;
-    if (rule.while === 'still' && p.moving) continue;
-    chain.t -= dt;
-    if (chain.t > 0) continue;
-    chain.t += rule.every;
-    if (chain.t <= 0) chain.t = rule.every;
-    activate(run, rig, chain);
+    let fire = ruleDue(rig, rule, chain, chain, dt, moved, p, bat);
+    for (const x of chain.extra) if (ruleDue(rig, x.rule, x, chain, dt, moved, p, bat)) fire = true;      // Retrofit: any of its rule cards starts the chain, from the one battery
+    if (fire) activate(run, rig, chain);
   }
   rig.flags.kill = false;
   rig.kills = 0;
@@ -337,6 +342,19 @@ export function updateRig(run, dt) {
     runNodes(run, rig, job.trig.payload, job.x, job.y, act, true, job.gen || 0);
   }
 
+  const lp = rig.loops;                                        // Feedback loop: the whole chain again, free, a share weaker each time
+  for (let i = lp.length - 1; i >= 0; i--) {
+    const l = lp[i];
+    l.t -= dt;
+    if (l.t > 0) continue;
+    lp.splice(i, 1);
+    const ch = l.chain;
+    const act = { id: ++rig.actN, chain: ch.index, bat: ch.bat, spent: 0, scale: Math.pow(ch.loop, l.depth), loopDepth: l.depth, looped: false, pool: LOOP_POOL };
+    note(run, rig, 'loop', { act: act.id, chain: ch.index, depth: l.depth, scale: act.scale });
+    addLabel(run, p.x, p.y - 26, `loop ${l.depth}`, '#ffe08a');
+    runNodes(run, rig, ch.nodes, p.x, p.y, act, true, 0);
+  }
+
   const q = rig.queue;
   for (let n = 0; rig.head < q.length && n < MAX_PAYLOADS_PER_TICK; n++) {
     const job = q[rig.head++];
@@ -346,6 +364,10 @@ export function updateRig(run, dt) {
     run.sfx('proc');
     if (job.gen > 0) addLabel(run, job.x, job.y - 14, `x${job.gen + 1}`, '#ffe08a');          // a cascade, counting up
     runNodes(run, rig, job.trig.payload, job.x, job.y, job.act, job.trig.free === true, job.gen || 0);
+    if (job.chain.loop > 0 && !job.act.echo && !job.act.looped && job.act.loopDepth < LOOP_MAX && !job.trig.payload.some((nd) => nd.trigger) && lp.length < 8) {   // the chain's last trigger just fired: run it all again
+      job.act.looped = true;
+      lp.push({ t: LOOP_DELAY, chain: job.chain, depth: job.act.loopDepth + 1 });
+    }
     const pe = job.chain.def.quirk && job.chain.def.quirk.payloadEcho;
     if (pe && !job.act.echo && ec.length < MAX_QUEUE) ec.push({ t: pe.delay, job });          // Relay: again a moment later
   }

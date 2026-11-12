@@ -178,7 +178,7 @@ export function chainDefOf(rig, c) {
   const ch = rig.chains[c];
   const s = chassisStats(ch, rig.pilot);
   const d = CHASSIS[ch.chassis];
-  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels, passives: rig.passives || {}, overcharged: (rig.rewards || []).filter((r) => r.id === 'overcharge').map((r) => r.piece) };
+  return { rule: ch.rule, slots: ch.slots, key: ch.key, energy: s.battery, recharge: s.recharge, chargeWhile: d.chargeWhile || null, quirk: d.quirk, levels: rig.levels, passives: rig.passives || {}, extra: ch.extra || [], loop: ch.loop || 0, overcharged: (rig.rewards || []).filter((r) => r.id === 'overcharge').map((r) => r.piece) };
 }
 
 export function chainDefsOf(rig) {
@@ -262,6 +262,8 @@ export function replaceChassis(rig, c, chassis, mk = 1) {
   const pieces = old.slots.filter(Boolean);
   const slots = padSlots(pieces.slice(0, size), size);
   next.chains[c] = chainState(chassis, Math.min(MK_MAX, mk), slots, keepsUpgrades(old, chassis, mk) ? { charge: old.charge, cell: old.cell, key: null } : {});
+  if (old.extra && old.extra.length) next.chains[c].extra = old.extra.filter((r) => r !== CHASSIS[chassis].rule);     // Retrofit rule cards and a Feedback loop belong to the chain, not the chassis
+  if (old.loop) next.chains[c].loop = old.loop;
   const benched = [];
   const sold = [];
   for (const id of pieces.slice(size)) {

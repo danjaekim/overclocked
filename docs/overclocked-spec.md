@@ -58,10 +58,10 @@ This is a chain from later in a run, with 5 slots. Every second, a burning shell
 
 | Pilot | Starts with | Advantage | Cost |
 |---|---|---|---|
-| Rookie | Standard, Blaster | none | none |
+| Rookie | Standard, Blaster | Boss reward **Retrofit** (after the Warlord and the Seer, replacing the boss chest's rolls): pick a chain and a second rule card for it (up to 2 extras); the chain fires on any of its cards, each on its own timer, from one battery | none |
 | Courier | Strider, Blaster, Momentum | +20% move speed, +40% pickup range | -20 max HP |
 | Bulwark | Anchor, Blaster, Turret Mode | +50 max HP, +3 armor, braced (1 s standing still): +4 more armor, and each kill heals 0.5% max HP, up to 2% a second | -15% move speed |
-| Splicer | Standard with Echo and Blaster, Hair Trigger | every chassis +1 starting slot and +2 max slots (8 on Standard) | 2 chains at most |
+| Splicer | Standard with Echo and Blaster, Hair Trigger | every chassis +1 starting slot and +2 max slots (8 on Standard) | 2 chains at most. Boss reward **Feedback loop**: pick a chain; when its last trigger fires, the whole chain runs again 0.35 s later, free, at 50% power (75% after the second boss), up to 3 repeats, each half the last |
 | Broker | Standard and Blaster, no signature | first reroll of every level-up is free (never banks); workbench prices and rerolls x0.75 | -25 max HP, 20% fewer gold drops from kills |
 | Overclocker | Standard and Blaster, no signature | Boss reward **Overcharge** after the Warlord and after the Seer (replaces the boss chest's rolls; the chassis pick stays): pick a piece you own, its defining number is tripled and it costs twice the energy (Blaster 9 shots, Nova ring 18, Scatter 15 copies, a trigger's payload runs 3 times, ...) | -15 max HP |
 

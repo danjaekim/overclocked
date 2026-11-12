@@ -248,9 +248,9 @@ export function createGame({ view, input, overlays, rotate, debug, params, save,
     if (rewardId && rn <= REWARD_BOSSES && rewardChoices(run.rigState, rewardId).length) {      // a pilot's boss reward replaces the chest's rolls
       sfx('chest');
       showBossReward(overlays, {
-        reward: rewardId, n: rn, choices: rewardChoices(run.rigState, rewardId),
-        onPick(piece) {
-          const next = takeReward(run.rigState, { id: rewardId, piece, n: rn });
+        reward: rewardId, n: rn, rig: run.rigState, choices: rewardChoices(run.rigState, rewardId),
+        onPick(pick) {
+          const next = takeReward(run.rigState, { id: rewardId, ...pick, n: rn });
           if (!next) return;
           run.rigState = next;
           run.bossRewards = rn;

@@ -17,10 +17,10 @@ export const DEFAULT_PILOT = 'rookie';
 export const PILOTS = {
   rookie: {
     name: 'Rookie', short: 'Rookie',
-    desc: 'The plain starter: a Standard chain and a Blaster, no rule change.',
+    desc: 'The plain starter: a Standard chain and a Blaster. Boss rewards: a second rule card for a chain (Retrofit).',
     cost: 'No cost, no bonus',
     start: { chassis: 'standard', mk: 1, slots: ['blaster'], size: 3 },
-    mods: [], sig: null, rules: {},
+    mods: [], sig: null, rules: {}, reward: 'retrofit',
   },
   courier: {
     name: 'Courier', short: 'Courier',
@@ -48,11 +48,11 @@ export const PILOTS = {
   },
   splicer: {
     name: 'Splicer', short: 'Splicer',
-    desc: 'Long chains. Every chain starts with 1 more slot and can grow 2 further. Starts with Hair Trigger (payload power, up to Lv4) and an Echo.',
+    desc: 'Long chains. Every chain starts with 1 more slot and can grow 2 further. Starts with Hair Trigger (payload power, up to Lv4) and an Echo. Boss rewards: a chain that runs itself again after its last trigger (Feedback loop).',
     cost: 'Two chains at most instead of three',
     start: { chassis: 'standard', mk: 1, slots: ['echo', 'blaster'], size: 4 },
     mods: [],
-    sig: { id: 'hair_trigger', max: 4 }, rules: { slotsStart: 1, slotsMax: 2, maxChains: 2 },
+    sig: { id: 'hair_trigger', max: 4 }, rules: { slotsStart: 1, slotsMax: 2, maxChains: 2 }, reward: 'loop',
   },
   broker: {
     name: 'Broker', short: 'Broker',

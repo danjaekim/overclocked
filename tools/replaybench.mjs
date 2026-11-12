@@ -13,7 +13,7 @@ import { CHASSIS, migrateChassis } from '../src/rig/chassis.js';
 import { PIECES } from '../src/rig/pieces.js';
 import { START_CHAIN } from '../src/game/ovrun.js';
 import { pilotOf, pilotRig } from '../src/data/pilots.js';
-import { rewardChoices, takeReward } from '../src/rig/rewards.js';
+import { rewardChoices, takeReward, retrofitRules } from '../src/rig/rewards.js';
 import { applyRig } from '../src/game/sandbox.js';
 import { pathToFileURL } from 'node:url';
 
@@ -68,7 +68,7 @@ function pilotRules(run) {
   if (p.sig && !(rig.passives[p.sig.id] > 0)) rig.passives[p.sig.id] = 1;
 }
 
-// `--reward overcharge[:piece,piece]` (or REWARD=...): Overclocker's boss rewards on the replayed rig, one after the Warlord (240 s)
+// `--reward overcharge[:piece,piece]` (also retrofit and loop, with chain indexes: `--reward loop:0,1`) (or REWARD=...): Overclocker's boss rewards on the replayed rig, one after the Warlord (240 s)
 // and one after the Seer (480 s). Pieces named are used in order; with none, the first takes the most levelled weapon and the second a
 // Scatter, a trigger, then the next weapon. Reported against the same replay without it.
 const rewardArg = arg('--reward', process.env.REWARD || '');
@@ -78,14 +78,22 @@ function rewardRules(run) {
   const named = list.split(',').filter(Boolean);
   let rig = run.rigState;
   const times = [240, 480];
+  const trig = (i) => (rig.chains[i].slots.some((p) => p && PIECES[p].type === 'trigger') ? 1 : 0);      // Feedback loop needs a trigger
+  const pieces = (i) => rig.chains[i].slots.filter(Boolean).length;
   for (let n = 0; n < 2 && run.time >= times[n]; n++) {
     const ch = rewardChoices(rig, id);
     if (!ch.length) break;
-    const lv = (p) => (rig.levels && rig.levels[p]) || 1;
-    const byType = (t) => ch.filter((p) => PIECES[p].type === t).sort((a, b) => lv(b) - lv(a));
-    const auto = n === 0 ? byType('weapon')[0] : ch.includes('scatter') ? 'scatter' : byType('trigger')[0] || byType('weapon')[0];
-    const piece = named[n] && ch.includes(named[n]) ? named[n] : auto || ch[0];
-    rig = takeReward(rig, { id, piece, n: n + 1 }) || rig;
+    let entry;
+    if (id === 'overcharge') {
+      const lv = (p) => (rig.levels && rig.levels[p]) || 1;
+      const byType = (t) => ch.filter((p) => PIECES[p].type === t).sort((a, b) => lv(b) - lv(a));
+      const auto = n === 0 ? byType('weapon')[0] : ch.includes('scatter') ? 'scatter' : byType('trigger')[0] || byType('weapon')[0];
+      entry = { piece: named[n] && ch.includes(named[n]) ? named[n] : auto || ch[0] };
+    } else {                                         // chains: the longest, or the one named by index; Retrofit adds Reaper, then Rapid
+      const c = named[n] !== undefined && ch.includes(Number(named[n])) ? Number(named[n]) : [...ch].sort((a, b) => (id === 'loop' ? trig(b) - trig(a) : 0) || pieces(b) - pieces(a))[0];
+      entry = id === 'retrofit' ? { chain: c, rule: (['reaper', 'rapid', 'charge', 'stride'].find((r) => retrofitRules(rig, c).includes(r))) } : { chain: c };
+    }
+    rig = takeReward(rig, { id, ...entry, n: n + 1 }) || rig;
   }
   run.rigState = rig;
 }
